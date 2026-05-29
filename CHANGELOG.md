@@ -7,6 +7,7 @@ and this project follows Semantic Versioning principles for release tags.
 
 ## [Unreleased]
 
+
 ### Added
 
 - Repository trust and governance foundation files.
@@ -18,3 +19,8 @@ and this project follows Semantic Versioning principles for release tags.
 - Deterministic `urgency_reason`, `category_reason`, and `sentiment_reason` fields in triage output.
 - Improved executive briefing Top Priorities formatting to include item ID and title.
 - Updated unit and integration tests for explainability output and briefing formatting.
+- FastAPI-based local API layer (`src/opspilot/api/main.py`)
+- Endpoints: `/health`, `/run`, `/briefing`, `/triage`
+- OpenAPI/Swagger docs
+- API tests (`tests/api/test_api.py`)
+- Updated README with API usage and endpoints

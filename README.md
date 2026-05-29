@@ -98,13 +98,35 @@ From project root in PowerShell:
 2. `.venv\Scripts\Activate.ps1`
 3. `pip install -e .[dev]`
 
-## Run
 
-`python -m opspilot.cli run --input data/raw/sample_input.json --output data/output --date 2026-05-29`
+## Run (CLI)
+
+```sh
+python -m opspilot.cli run --input data/raw/sample_input.json --output data/output --date 2026-05-29
+```
+
+## Run (API)
+
+Start the API server locally:
+
+```sh
+uvicorn opspilot.api.main:app --reload
+```
+
+Swagger/OpenAPI docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+### API Endpoints
+
+- `GET /health` — Health check
+- `POST /run` — Run the pipeline (body: `{ "input_file": "sample_input.json", "date": "YYYY-MM-DD" }`)
+- `GET /briefing` — Get latest daily briefing
+- `GET /triage` — Get latest triage results
 
 ## Test
 
-`pytest -q`
+```sh
+pytest -q
+```
 
 ## Output files
 

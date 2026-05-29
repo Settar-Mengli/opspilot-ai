@@ -64,3 +64,25 @@
   - Updated classifier unit tests and vertical slice integration test for new explainability and briefing format expectations
   - Updated `README.md` and `CHANGELOG.md` to document explainability and briefing quality improvements
 - Next: Expand explainability traces into richer briefing sections for Milestone 2 quality goals.
+
+- Date: 2026-05-29
+- Status: Commit 6 completed
+- Summary: README and documentation polish for recruiter/demo use.
+- Completed:
+  - Rewrote `README.md` with recruiter-friendly intro, how it works, architecture diagram, sample outputs, design decisions, and roadmap
+  - No code changes
+- Next: Add API layer (Commit 7)
+
+- Date: 2026-05-29
+- Status: Commit 7 implemented
+- Summary: Added FastAPI-based local API service and endpoints for health, pipeline run, and output retrieval.
+- Completed:
+  - Added `src/opspilot/api/main.py` (FastAPI app)
+  - Added API endpoints: `/health`, `/run`, `/briefing`, `/triage`
+  - OpenAPI/Swagger docs auto-generated
+  - API calls into existing pipeline, no business logic duplication
+  - File-based storage, no DB
+  - Added API tests in `tests/api/test_api.py`
+  - Updated `README.md` (API usage, endpoints, Swagger UI)
+  - Updated `pyproject.toml` (FastAPI/uvicorn dev dependencies)
+- Next: Plan Milestone 8 (optional: authentication, error handling, or dashboard UI)
