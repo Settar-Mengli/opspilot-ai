@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate-repository:
+    name: Validate Repository Skeleton
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify required foundational files
+        run: |
+          test -f README.md
+          test -f AGENTS.md
+          test -f PROGRESS.md
+          test -f LICENSE
+          test -f CHANGELOG.md
+          test -f CONTRIBUTING.md
+
+      - name: Show tracked top-level files
+        run: ls -la
