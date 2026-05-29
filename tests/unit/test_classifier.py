@@ -15,8 +15,11 @@ def test_classifier_critical_incident_negative() -> None:
 
     triage = classify_work_item(item)
     assert triage.urgency == "critical"
+    assert triage.urgency_reason == "Matched critical token 'sev1'"
     assert triage.category == "incident"
+    assert triage.category_reason == "Matched incident token 'outage'"
     assert triage.sentiment == "negative"
+    assert triage.sentiment_reason == "Matched negative sentiment token 'frustrated'"
 
 
 def test_classifier_request_positive() -> None:
@@ -32,5 +35,13 @@ def test_classifier_request_positive() -> None:
 
     triage = classify_work_item(item)
     assert triage.urgency in {"low", "medium", "high", "critical"}
+    assert triage.urgency_reason == "No urgency token matched; defaulted to low"
     assert triage.category == "request"
+    assert triage.category_reason == "Matched request token 'request'"
     assert triage.sentiment == "positive"
+    assert triage.sentiment_reason == "Matched positive sentiment token 'thank you'"
+
+    triage_again = classify_work_item(item)
+    assert triage.urgency_reason == triage_again.urgency_reason
+    assert triage.category_reason == triage_again.category_reason
+    assert triage.sentiment_reason == triage_again.sentiment_reason

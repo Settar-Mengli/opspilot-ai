@@ -24,16 +24,18 @@ This project is designed as a portfolio-quality example of practical AI product 
 
 ## Current Status
 
-Commit 3 delivers the first runnable vertical slice.
+Commit 5 delivers explainable triage and improved executive briefing readability.
 
 Current capabilities:
 
 - Read local JSON work items
 - Normalize Work Items
 - Classify Urgency, Category, and Sentiment
+- Capture deterministic reasoning for each triage label
 - Extract Action Items
 - Draft suggested responses
-- Generate an Executive Briefing and structured output artifacts
+- Generate an Executive Briefing with Top Priorities shown as item ID plus title
+- Generate structured output artifacts including triage reason fields
 
 ## Setup
 
@@ -57,6 +59,18 @@ From project root in PowerShell:
 - `data/output/action_items.json`
 - `data/output/suggested_responses.json`
 - `data/output/daily_briefing.txt`
+
+## Triage Output Fields
+
+Each triage record includes:
+
+- `id`
+- `urgency`
+- `urgency_reason`
+- `category`
+- `category_reason`
+- `sentiment`
+- `sentiment_reason`
 
 ## Planned Repository Areas
 

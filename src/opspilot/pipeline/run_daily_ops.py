@@ -48,7 +48,12 @@ def run_daily_ops(input_path: str, output_dir: str, run_date: str) -> dict[str, 
                 SuggestedResponse(work_item_id=item.id, suggested_response=response_text)
             )
 
-        briefing = generate_daily_briefing(run_date, triage_records, action_items)
+        briefing = generate_daily_briefing(
+            run_date,
+            triage_records,
+            action_items,
+            normalized_items,
+        )
 
         output_path = Path(output_dir)
         triage_file = output_path / "triage_results.json"

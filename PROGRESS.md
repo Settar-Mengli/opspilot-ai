@@ -52,3 +52,15 @@
   - Added unit tests for loader validation and CLI validation-failure behavior
   - Updated changelog and architecture decisions to document hardening decisions
 - Next: Add reasoning traces to triage output for explainability milestone work.
+
+- Date: 2026-05-29
+- Status: Commit 5 implemented
+- Summary: Added deterministic explainability reasons in triage output and improved Top Priorities readability in daily briefing.
+- Completed:
+  - Added `urgency_reason`, `category_reason`, and `sentiment_reason` to `TriageRecord` in `src/opspilot/models/schemas.py`
+  - Refactored `src/opspilot/rules/triage_rules.py` to produce deterministic label reasons from first token match or explicit fallback reasons
+  - Updated `src/opspilot/nlp/briefing_generator.py` to render Top Priorities as `ID: title`
+  - Updated `src/opspilot/pipeline/run_daily_ops.py` to pass normalized work item context into briefing generation
+  - Updated classifier unit tests and vertical slice integration test for new explainability and briefing format expectations
+  - Updated `README.md` and `CHANGELOG.md` to document explainability and briefing quality improvements
+- Next: Expand explainability traces into richer briefing sections for Milestone 2 quality goals.

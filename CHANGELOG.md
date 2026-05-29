@@ -15,3 +15,6 @@ and this project follows Semantic Versioning principles for release tags.
 - Structured logging helpers and pipeline lifecycle logging events.
 - User-facing CLI error handling with deterministic exit code for recoverable failures.
 - Unit tests for loader validation and CLI failure behavior.
+- Deterministic `urgency_reason`, `category_reason`, and `sentiment_reason` fields in triage output.
+- Improved executive briefing Top Priorities formatting to include item ID and title.
+- Updated unit and integration tests for explainability output and briefing formatting.

@@ -1,12 +1,18 @@
 from collections import Counter
 
-from opspilot.models.schemas import ActionItem, TriageRecord
+from opspilot.models.schemas import ActionItem, TriageRecord, WorkItem
 
 
-def generate_daily_briefing(run_date: str, triage_records: list[TriageRecord], action_items: list[ActionItem]) -> str:
+def generate_daily_briefing(
+    run_date: str,
+    triage_records: list[TriageRecord],
+    action_items: list[ActionItem],
+    work_items: list[WorkItem],
+) -> str:
     total = len(triage_records)
     urgency_counts = Counter(record.urgency for record in triage_records)
     sentiment_counts = Counter(record.sentiment for record in triage_records)
+    titles_by_id = {item.id: item.subject_or_title for item in work_items}
 
     high_priority = [record.id for record in triage_records if record.urgency in {"critical", "high"}]
     due_soon = [action for action in action_items if action.deadline in {"EOD", "tomorrow"}]
@@ -22,7 +28,9 @@ def generate_daily_briefing(run_date: str, triage_records: list[TriageRecord], a
     ]
 
     if high_priority:
-        lines.extend([f"- {work_item_id}" for work_item_id in high_priority[:5]])
+        for work_item_id in high_priority[:5]:
+            title = titles_by_id.get(work_item_id, "(title unavailable)")
+            lines.append(f"- {work_item_id}: {title}")
     else:
         lines.append("- None")
 

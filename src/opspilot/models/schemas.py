@@ -39,8 +39,11 @@ class WorkItem:
 class TriageRecord:
     id: str
     urgency: str
+    urgency_reason: str
     category: str
+    category_reason: str
     sentiment: str
+    sentiment_reason: str
 
 
 @dataclass

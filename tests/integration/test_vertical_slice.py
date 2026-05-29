@@ -30,7 +30,11 @@ def test_vertical_slice_generates_all_outputs(tmp_path: Path) -> None:
     assert len(triage_payload) == len(fixture_payload)
     assert len(triage_payload) == 6
     assert any(record["urgency"] == "critical" for record in triage_payload)
+    assert all("urgency_reason" in record for record in triage_payload)
+    assert all("category_reason" in record for record in triage_payload)
+    assert all("sentiment_reason" in record for record in triage_payload)
     assert len(response_payload) == len(fixture_payload)
     assert "Total Work Items" in briefing_text
     assert "Urgency Mix" in briefing_text
     assert "Top Priorities" in briefing_text
+    assert "- WI-001: Production outage in checkout service" in briefing_text
