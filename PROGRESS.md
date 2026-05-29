@@ -39,3 +39,16 @@
   - Updated `README.md` run/test guidance
 - Review note: Schema validation hardening, structured logging, and richer error handling are planned for the next hardening pass.
 - Next: Commit Commit 3 files and validate sample outputs for portfolio screenshots.
+
+- Date: 2026-05-29
+- Status: Commit 4 implemented
+- Summary: Hardened schema validation, structured logging, and user-facing error handling across loader, pipeline, and CLI.
+- Completed:
+  - Added explicit OpsPilot exception hierarchy and raw-item schema validators in `src/opspilot/models/schemas.py`
+  - Hardened JSON/file/read validation in `src/opspilot/ingest/loader.py`
+  - Added structured logging helpers in `src/opspilot/utils/logging_utils.py`
+  - Added pipeline lifecycle/failure logging and orchestration error boundary in `src/opspilot/pipeline/run_daily_ops.py`
+  - Added CLI failure handling with deterministic non-zero exit code in `src/opspilot/cli.py`
+  - Added unit tests for loader validation and CLI validation-failure behavior
+  - Updated changelog and architecture decisions to document hardening decisions
+- Next: Add reasoning traces to triage output for explainability milestone work.
