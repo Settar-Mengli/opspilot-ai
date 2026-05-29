@@ -24,16 +24,46 @@ This project is designed as a portfolio-quality example of practical AI product 
 
 ## Current Status
 
-Commit 1 establishes repository trust/governance and CI skeleton.
+Commit 3 delivers the first runnable vertical slice.
 
-Next milestone: build a runnable vertical slice that ingests sample JSON, classifies items, extracts actions, drafts responses, and generates a daily briefing.
+Current capabilities:
+
+- Read local JSON work items
+- Normalize Work Items
+- Classify Urgency, Category, and Sentiment
+- Extract Action Items
+- Draft suggested responses
+- Generate an Executive Briefing and structured output artifacts
+
+## Setup
+
+From project root in PowerShell:
+
+1. `python -m venv .venv`
+2. `.venv\Scripts\Activate.ps1`
+3. `pip install -e .[dev]`
+
+## Run
+
+`python -m opspilot.cli run --input data/raw/sample_input.json --output data/output --date 2026-05-29`
+
+## Test
+
+`pytest -q`
+
+## Expected Output Files
+
+- `data/output/triage_results.json`
+- `data/output/action_items.json`
+- `data/output/suggested_responses.json`
+- `data/output/daily_briefing.txt`
 
 ## Planned Repository Areas
 
 - `.github/workflows/` for CI
 - `data/` for local fixtures and outputs
-- `src/` for Python application code (created in next commit)
-- `tests/` for unit and integration tests (created in next commit)
+- `src/` for Python application code
+- `tests/` for unit and integration tests
 
 ## License
 

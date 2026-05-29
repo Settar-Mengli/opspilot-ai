@@ -1,0 +1,56 @@
+[
+  {
+    "id": "WI-001",
+    "source_type": "email",
+    "subject_or_title": "Production outage in checkout service",
+    "body_or_description": "We have a Sev1 outage. Checkout is down for all customers. Please escalate immediately. owner: SRE Team",
+    "sender_or_requester": "oncall@company.local",
+    "received_at": "2026-05-29T08:05:00Z",
+    "tags": ["incident", "checkout"]
+  },
+  {
+    "id": "WI-002",
+    "source_type": "support_request",
+    "subject_or_title": "Access request for analytics dashboard",
+    "body_or_description": "Please provision read access for the finance analyst by 2026-05-30. owner: IT Ops",
+    "sender_or_requester": "helpdesk@company.local",
+    "received_at": "2026-05-29T09:10:00Z",
+    "tags": ["access", "request"]
+  },
+  {
+    "id": "WI-003",
+    "source_type": "task",
+    "subject_or_title": "Expense policy reminder",
+    "body_or_description": "Reminder: submit Q2 expenses this week. Kindly follow up with your teams.",
+    "sender_or_requester": "finance-ops@company.local",
+    "received_at": "2026-05-29T10:15:00Z",
+    "tags": ["admin"]
+  },
+  {
+    "id": "WI-004",
+    "source_type": "email",
+    "subject_or_title": "Customer escalation on ticket #4032",
+    "body_or_description": "Customer is frustrated and blocked. Need you to provide an update by EOD.",
+    "sender_or_requester": "support-manager@company.local",
+    "received_at": "2026-05-29T11:05:00Z",
+    "tags": ["escalation", "support"]
+  },
+  {
+    "id": "WI-005",
+    "source_type": "support_request",
+    "subject_or_title": "Follow up on pending invoice approval",
+    "body_or_description": "Checking in on invoice approval status. Can you confirm owner and next steps?",
+    "sender_or_requester": "ap@company.local",
+    "received_at": "2026-05-29T12:45:00Z",
+    "tags": ["follow-up", "invoice"]
+  },
+  {
+    "id": "WI-006",
+    "source_type": "task",
+    "subject_or_title": "Great feedback from pilot rollout",
+    "body_or_description": "Good news: pilot users shared great feedback. Please capture action items for next sprint.",
+    "sender_or_requester": "product@company.local",
+    "received_at": "2026-05-29T14:20:00Z",
+    "tags": ["feedback"]
+  }
+]

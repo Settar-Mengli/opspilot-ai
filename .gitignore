@@ -31,3 +31,6 @@ Thumbs.db
 # Local data outputs
 data/output/
 data/processed/
+
+# Python packaging artifacts
+*.egg-info/
