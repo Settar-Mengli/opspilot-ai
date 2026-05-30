@@ -29,6 +29,15 @@ and this project follows Semantic Versioning principles for release tags.
 - Header health indicator and global API unavailable banner based on `GET /health`
 - Explainability drawer in triage explorer showing urgency/category/sentiment reasons
 - Frontend env template `frontend/.env.example` for `VITE_API_BASE_URL`
+- Immutable local run-history artifacts under `data/history/runs/YYYY/MM/DD/run-YYYYMMDD-HHMMSS-sss/`
+- Run metadata artifact `run.json` per successful run
+- Run-history API endpoints:
+	- `GET /runs`
+	- `GET /runs/{run_id}`
+	- `GET /runs/{run_id}/triage`
+	- `GET /runs/{run_id}/briefing`
+- Frontend historical snapshot support via shared run selector and `?run_id=` query parameter
+- Dashboard run history panel and latest/historical status context badge
 
 ### Changed
 
@@ -46,3 +55,5 @@ and this project follows Semantic Versioning principles for release tags.
 - Moved `fastapi` and `uvicorn[standard]` to runtime dependencies in `pyproject.toml`
 - Expanded README run instructions to include local frontend startup and API/UI flow
 - Updated architecture and demo docs to include command center UI walkthrough
+- Pipeline now writes immutable run artifacts while preserving latest-output compatibility in `data/output/`
+- Frontend pages now support both Latest and Historical run contexts without adding new routes

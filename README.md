@@ -124,6 +124,10 @@ Swagger/OpenAPI docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 - `POST /run` — Run the pipeline (body: `{ "input_file": "sample_input.json", "date": "YYYY-MM-DD" }`)
 - `GET /briefing` — Get latest daily briefing
 - `GET /triage` — Get latest triage results
+- `GET /runs` — List run-history metadata (newest first)
+- `GET /runs/{run_id}` — Get metadata for a specific historical run
+- `GET /runs/{run_id}/triage` — Get triage results for a specific historical run
+- `GET /runs/{run_id}/briefing` — Get briefing text for a specific historical run
 
 ## Run (UI)
 
@@ -150,6 +154,13 @@ UI routes:
 - Triage Explorer
 - Executive Briefing
 
+Run context behavior:
+
+- Default mode is **Latest** (no query parameter).
+- Historical mode is selected with `?run_id=<run-id>`.
+- In historical mode, Dashboard, Triage Explorer, and Executive Briefing render a consistent snapshot for the selected run.
+- Selecting Latest removes the query parameter and returns all pages to latest endpoints.
+
 ## Security & Reliability
 
 - Local-only architecture: no cloud services, no external APIs, no secrets.
@@ -170,6 +181,32 @@ pytest -q
 - `data/output/action_items.json`
 - `data/output/suggested_responses.json`
 - `data/output/daily_briefing.txt`
+
+These latest files remain the backward-compatible snapshot used by existing flows.
+
+## Run history artifacts
+
+Each successful run also writes immutable artifacts under:
+
+- `data/history/runs/YYYY/MM/DD/run-YYYYMMDD-HHMMSS-sss/`
+
+Each run folder contains:
+
+- `run.json`
+- `triage_results.json`
+- `action_items.json`
+- `suggested_responses.json`
+- `daily_briefing.txt`
+
+Notes:
+
+- `data/history/` is generated local runtime data.
+- `data/history/` is intentionally ignored by git and should not be committed.
+
+## Scheduling status
+
+- Local scheduling is **design-only** right now (not yet implemented in application code).
+- See `docs/scheduling.md` for local scheduling guidance and scope-safe recommendations.
 
 ## Triage Output Fields
 

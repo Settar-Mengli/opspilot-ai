@@ -22,6 +22,28 @@ OpsPilot AI is a local-only operations command center that transforms mock inbou
 7. Serve read-only outputs through local FastAPI endpoints
 8. Render command center UI from local API responses
 
+## Storage Model
+
+Latest snapshot (backward-compatible):
+
+- `data/output/triage_results.json`
+- `data/output/action_items.json`
+- `data/output/suggested_responses.json`
+- `data/output/daily_briefing.txt`
+
+Immutable history snapshot (per successful run):
+
+- `data/history/runs/YYYY/MM/DD/run-YYYYMMDD-HHMMSS-sss/`
+	- `run.json`
+	- `triage_results.json`
+	- `action_items.json`
+	- `suggested_responses.json`
+	- `daily_briefing.txt`
+
+Runtime data note:
+
+- `data/history/` is generated local runtime data and is git-ignored.
+
 ## Planned Module Boundaries
 
 - ingest: load and normalize input artifacts
@@ -45,6 +67,30 @@ Output contract:
 - Suggested response text
 - Daily briefing artifact
 
+History contract:
+
+- `run.json` stores run metadata (run_id, timestamps, status, counts, artifact names, error field)
+- historical artifacts preserve deterministic snapshot outputs for auditability and demo traceability
+
+## API Retrieval Modes
+
+Latest mode endpoints:
+
+- `GET /triage`
+- `GET /briefing`
+
+Historical mode endpoints:
+
+- `GET /runs`
+- `GET /runs/{run_id}`
+- `GET /runs/{run_id}/triage`
+- `GET /runs/{run_id}/briefing`
+
+Frontend run selection:
+
+- Query parameter `run_id` determines historical context.
+- No `run_id` means Latest mode.
+
 ## Adapter Seam For Future Integrations
 
 Future model integrations must be added behind adapter interfaces so core pipeline remains stable.
@@ -65,6 +111,7 @@ Adapter seam requirements:
 - Real inbox/calendar integrations
 - Autonomous agent actions on external systems
 - Production deployment concerns
+- In-app scheduler or background scheduling daemon
 
 ## Milestone 8 UI Scope Constraints
 

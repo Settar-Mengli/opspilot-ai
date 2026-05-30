@@ -23,11 +23,15 @@ Goal: show practical AI operations value with deterministic, local execution.
 
 4. Command Center UI
 - Start on Dashboard and show KPI cards plus top priorities.
+- Show run selector in header with default Latest mode.
+- Open run history on Dashboard and select a historical run.
 - Open Triage Explorer and click a row to show explainability reasons.
 - Open Executive Briefing page and show leadership-readable summary sections.
+- Confirm historical run context is reflected consistently across all three pages.
 
 5. Output Traceability
 - Tie UI values back to local API and output files.
+- Show immutable run folder under `data/history/runs/YYYY/MM/DD/run-...`.
 - Confirm no external service calls are required.
 
 6. Engineering Quality
@@ -44,3 +48,4 @@ A reviewer should be able to verify:
 - Local run succeeds without external services.
 - Outputs are understandable and operationally useful.
 - Project has clear governance, scope, and decision discipline.
+- Reviewer can switch between Latest and a Historical run without changing backend configuration.

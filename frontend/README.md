@@ -7,6 +7,10 @@ The UI is read-only and visualizes pipeline outputs from the local FastAPI backe
 - Triage Explorer
 - Executive Briefing
 
+The UI supports two contexts:
+- Latest mode (default)
+- Historical mode via `?run_id=<run-id>`
+
 ## Local Run
 
 1. Start API from repository root:
@@ -29,6 +33,19 @@ npm run dev
 - Default fallback is `http://127.0.0.1:8000`.
 - For local-first safety, only `localhost` and `127.0.0.1` origins are accepted.
 - Invalid or remote origins are rejected and safely fall back to `http://127.0.0.1:8000`.
+
+## Run History Behavior
+
+- Header run selector loads run metadata from `GET /runs`.
+- Latest mode uses:
+	- `GET /triage`
+	- `GET /briefing`
+- Historical mode uses:
+	- `GET /runs/{run_id}/triage`
+	- `GET /runs/{run_id}/briefing`
+- Dashboard, Triage Explorer, and Executive Briefing are all run-context aware.
+- Selecting Latest removes `run_id` from the URL query.
+- If no history exists, the UI remains functional in Latest mode.
 
 ## Build
 

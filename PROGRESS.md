@@ -155,3 +155,46 @@
   - Read-only flow
   - No auth, database, cloud deployment, or new backend endpoints
   - No `POST /run` button in the UI
+
+---
+
+## Automation Phase 1A: Immutable Run History (2026-05-29)
+
+- Summary:
+  - Added immutable local run-history artifacts while preserving latest output behavior.
+  - Each successful run now writes to `data/history/runs/YYYY/MM/DD/run-YYYYMMDD-HHMMSS-sss/`.
+  - Latest files under `data/output/` remain unchanged for backward compatibility.
+- Completed:
+  - Added `src/opspilot/history/run_history.py`
+  - Updated `src/opspilot/pipeline/run_daily_ops.py` to write run-history artifacts and `run.json`
+  - Added integration tests for history folder creation, metadata fields, uniqueness across runs, and latest-output compatibility
+
+## Automation Phase 1B: Run History API (2026-05-29)
+
+- Summary:
+  - Added read-only local run-history API support.
+- Completed:
+  - Added endpoints in `src/opspilot/api/main.py`:
+    - `GET /runs`
+    - `GET /runs/{run_id}`
+    - `GET /runs/{run_id}/triage`
+    - `GET /runs/{run_id}/briefing`
+  - Added history read helpers in `src/opspilot/history/run_history.py`
+  - Expanded `tests/api/test_api.py` for empty-history behavior, ordering, unknown IDs, and traversal-like IDs
+
+## Automation Phase 1C: Frontend Historical Snapshot View (2026-05-29)
+
+- Summary:
+  - Added run-history-aware frontend behavior while preserving default Latest mode.
+- Completed:
+  - Added shared run selector and run status badge in app header
+  - Added dashboard run history panel
+  - Added historical mode selection via `?run_id=`
+  - Updated Dashboard, Triage Explorer, and Executive Briefing to support latest and historical endpoints
+  - Added run metadata/types and run-history API client helpers in `frontend/src/api/`
+
+## Automation Phase 1D: Documentation Sync (2026-05-30)
+
+- Summary:
+  - Updated repository documentation to match implemented run-history storage, API endpoints, and frontend latest/historical behavior.
+  - Added local scheduling design notes and explicitly marked scheduling as not yet implemented.

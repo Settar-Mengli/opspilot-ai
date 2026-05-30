@@ -57,6 +57,24 @@ This file records architecture and product decisions in a concise ADR-lite forma
 - Alternatives considered: Keep raw exceptions and rely only on test coverage.
 - Consequences: Better debuggability and cleaner failures for local runs; slightly more code around orchestration.
 
+## D-006: Immutable Run History With Latest Compatibility
+
+- Date: 2026-05-29
+- Status: accepted
+- Context: The project needed run-to-run traceability for automation while preserving compatibility for existing latest-output consumers.
+- Decision: Keep writing latest artifacts to `data/output/` and additionally write immutable per-run artifacts to `data/history/runs/YYYY/MM/DD/run-YYYYMMDD-HHMMSS-sss/`.
+- Alternatives considered: Replace latest outputs entirely; add a database before proving local history value.
+- Consequences: Better auditability and demo traceability with minimal architecture churn; filesystem history may need lifecycle policies later.
+
+## D-007: URL Query Param As Frontend Run Context
+
+- Date: 2026-05-29
+- Status: accepted
+- Context: Frontend needed to switch between latest and historical snapshots without adding complex state infrastructure.
+- Decision: Use `?run_id=` as shared run context across Dashboard, Triage Explorer, and Executive Briefing.
+- Alternatives considered: localStorage-only context; new dedicated run-history route before proving UX value.
+- Consequences: Simple deep-linkable behavior and refresh persistence; invalid run IDs require graceful fallback UX.
+
 ## Tradeoffs Made Intentionally
 
 - Determinism over semantic flexibility in Milestone 1.
