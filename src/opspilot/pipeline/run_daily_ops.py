@@ -21,9 +21,14 @@ from opspilot.models.schemas import (
 from opspilot.nlp.action_extractor import extract_action_items
 from opspilot.nlp.briefing_generator import generate_daily_briefing
 from opspilot.nlp.response_drafter import draft_suggested_response
+from opspilot.adapters.factory import get_adapter
 from opspilot.rules.triage_rules import classify_work_item
 from opspilot.utils.file_io import write_json_file, write_text_file
 from opspilot.utils.logging_utils import log_event
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 logger = logging.getLogger("opspilot.pipeline")
@@ -48,8 +53,9 @@ def run_daily_ops(input_path: str, output_dir: str, run_date: str) -> dict[str, 
         action_items = []
         suggested_responses = []
 
+        adapter = get_adapter()
         for item in normalized_items:
-            triage = classify_work_item(item)
+            triage = adapter.classify(item)
             actions = extract_action_items(item)
             response_text = draft_suggested_response(item, triage, actions)
 
