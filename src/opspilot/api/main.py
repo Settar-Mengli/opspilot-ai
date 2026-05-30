@@ -55,6 +55,7 @@ def _safe_error(status_code: int, code: str, message: str) -> HTTPException:
 
 def _safe_history_metadata(payload: dict) -> dict:
     metadata = dict(payload)
+    metadata.pop("input_file", None)
     metadata.pop("output_dir", None)
     metadata.pop("history_dir", None)
     return metadata

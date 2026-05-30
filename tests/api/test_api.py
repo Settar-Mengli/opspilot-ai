@@ -116,6 +116,7 @@ def test_get_runs_metadata_is_sanitized_and_safe(isolated_run_dirs: Path):
     assert payload
 
     for item in payload:
+        assert "input_file" not in item
         assert "output_dir" not in item
         assert "history_dir" not in item
 
@@ -195,6 +196,7 @@ def test_get_run_metadata_is_sanitized_and_safe(isolated_run_dirs: Path):
     assert run_meta_resp.status_code == 200
     payload = run_meta_resp.json()
 
+    assert "input_file" not in payload
     assert "output_dir" not in payload
     assert "history_dir" not in payload
 
