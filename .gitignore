@@ -34,3 +34,5 @@ data/processed/
 
 # Python packaging artifacts
 *.egg-info/
+
+data/history/
