@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getTriage } from '../api/client'
+import { getRunTriage, getTriage } from '../api/client'
 import type { Category, TriageRecord, Urgency } from '../api/types'
 import { ExplainabilityDrawer } from '../components/ExplainabilityDrawer'
 
 interface TriageExplorerPageProps {
   refreshToken: number
+  selectedRunId: string | null
+  onSelectLatest: () => void
 }
 
 const URGENCY_FILTERS: Array<Urgency | 'all'> = ['all', 'critical', 'high', 'medium', 'low']
@@ -19,7 +21,7 @@ const CATEGORY_LABELS: Record<Category | 'all', string> = {
   other: 'other',
 }
 
-export function TriageExplorerPage({ refreshToken }: TriageExplorerPageProps) {
+export function TriageExplorerPage({ refreshToken, selectedRunId, onSelectLatest }: TriageExplorerPageProps) {
   const [records, setRecords] = useState<TriageRecord[]>([])
   const [selectedUrgency, setSelectedUrgency] = useState<Urgency | 'all'>('all')
   const [selectedCategory, setSelectedCategory] = useState<Category | 'all'>('all')
@@ -34,7 +36,7 @@ export function TriageExplorerPage({ refreshToken }: TriageExplorerPageProps) {
       setLoading(true)
       setError(null)
       try {
-        const triage = await getTriage()
+        const triage = selectedRunId ? await getRunTriage(selectedRunId) : await getTriage()
         if (!cancelled) {
           setRecords(triage)
         }
@@ -54,7 +56,7 @@ export function TriageExplorerPage({ refreshToken }: TriageExplorerPageProps) {
     return () => {
       cancelled = true
     }
-  }, [refreshToken])
+  }, [refreshToken, selectedRunId])
 
   const filtered = useMemo(() => {
     return records.filter((record) => {
@@ -69,7 +71,16 @@ export function TriageExplorerPage({ refreshToken }: TriageExplorerPageProps) {
   }
 
   if (error) {
-    return <div className="page-state page-error">{error}</div>
+    return (
+      <div className="page-state page-error">
+        <p>{error}</p>
+        {selectedRunId ? (
+          <button type="button" className="drawer-close" onClick={onSelectLatest}>
+            Return to Latest
+          </button>
+        ) : null}
+      </div>
+    )
   }
 
   return (
@@ -77,6 +88,9 @@ export function TriageExplorerPage({ refreshToken }: TriageExplorerPageProps) {
       <section className="panel">
         <h2>Triage Explorer</h2>
         <p className="muted section-intro">Inspect how each work item was classified and why.</p>
+        <p className="muted section-intro">
+          {selectedRunId ? `Historical snapshot: ${selectedRunId}` : 'Viewing latest snapshot.'}
+        </p>
         <p className="muted section-intro">Click a row to view explainability details.</p>
 
         <div className="filter-row">

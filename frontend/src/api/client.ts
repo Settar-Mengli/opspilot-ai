@@ -1,4 +1,4 @@
-import type { TriageRecord } from './types'
+import type { RunMetadata, RunSummary, TriageRecord } from './types'
 
 const FALLBACK_API_BASE_URL = 'http://127.0.0.1:8000'
 
@@ -39,18 +39,22 @@ function toApiError(status: number, detail: unknown): Error {
   return new Error(`${status}: Request failed`)
 }
 
+async function getErrorDetail(response: Response): Promise<unknown> {
+  try {
+    const payload = await response.json()
+    if (payload && typeof payload === 'object' && 'detail' in payload) {
+      return (payload as { detail: unknown }).detail
+    }
+    return payload
+  } catch {
+    return response.text()
+  }
+}
+
 async function requestText(path: string): Promise<string> {
   const response = await fetch(`${API_BASE_URL}${path}`)
   if (!response.ok) {
-    let detail: unknown = null
-    try {
-      detail = await response.json()
-      if (detail && typeof detail === 'object' && 'detail' in detail) {
-        detail = (detail as { detail: unknown }).detail
-      }
-    } catch {
-      detail = await response.text()
-    }
+    const detail = await getErrorDetail(response)
     throw toApiError(response.status, detail)
   }
 
@@ -60,15 +64,7 @@ async function requestText(path: string): Promise<string> {
 async function requestJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`)
   if (!response.ok) {
-    let detail: unknown = null
-    try {
-      detail = await response.json()
-      if (detail && typeof detail === 'object' && 'detail' in detail) {
-        detail = (detail as { detail: unknown }).detail
-      }
-    } catch {
-      detail = await response.text()
-    }
+    const detail = await getErrorDetail(response)
     throw toApiError(response.status, detail)
   }
 
@@ -92,6 +88,23 @@ function isRecord(value: unknown): value is TriageRecord {
   )
 }
 
+function isRunSummary(value: unknown): value is RunSummary {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const candidate = value as Record<string, unknown>
+  return typeof candidate.run_id === 'string'
+}
+
+function toRunSummary(value: unknown): RunSummary {
+  if (!isRunSummary(value)) {
+    throw new Error('Unexpected run metadata payload')
+  }
+
+  return value
+}
+
 export async function getHealth(): Promise<boolean> {
   const text = await requestText('/health')
   return text.trim().toLowerCase() === 'ok'
@@ -113,6 +126,41 @@ export async function getTriage(): Promise<TriageRecord[]> {
   }
 
   return records
+}
+
+export async function getRuns(): Promise<RunSummary[]> {
+  const payload = await requestJson<unknown>('/runs')
+  if (!Array.isArray(payload)) {
+    throw new Error('Unexpected runs response shape')
+  }
+
+  return payload.map(toRunSummary)
+}
+
+export async function getRunMetadata(runId: string): Promise<RunMetadata> {
+  const encodedRunId = encodeURIComponent(runId)
+  const payload = await requestJson<unknown>(`/runs/${encodedRunId}`)
+  return toRunSummary(payload)
+}
+
+export async function getRunTriage(runId: string): Promise<TriageRecord[]> {
+  const encodedRunId = encodeURIComponent(runId)
+  const payload = await requestJson<unknown>(`/runs/${encodedRunId}/triage`)
+  if (!Array.isArray(payload)) {
+    throw new Error('Unexpected run triage response shape')
+  }
+
+  const records = payload.filter(isRecord)
+  if (records.length !== payload.length) {
+    throw new Error('Unexpected run triage record payload')
+  }
+
+  return records
+}
+
+export async function getRunBriefing(runId: string): Promise<string> {
+  const encodedRunId = encodeURIComponent(runId)
+  return requestText(`/runs/${encodedRunId}/briefing`)
 }
 
 export { API_BASE_URL }

@@ -32,3 +32,26 @@ export interface ParsedBriefing {
   dueSoon: string[]
   rawText: string
 }
+
+export interface RunArtifacts {
+  triage_results?: string
+  action_items?: string
+  suggested_responses?: string
+  daily_briefing?: string
+}
+
+export interface RunSummary {
+  run_id: string
+  started_at?: string
+  finished_at?: string
+  duration_ms?: number
+  status?: string
+  item_count?: number
+  triage_count?: number
+  action_count?: number
+  suggested_response_count?: number
+  artifacts?: RunArtifacts
+  error?: string | null
+}
+
+export type RunMetadata = RunSummary

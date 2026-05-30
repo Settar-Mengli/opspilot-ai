@@ -1,14 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getBriefing, getTriage } from '../api/client'
-import type { TriageRecord } from '../api/types'
+import { getBriefing, getRunBriefing, getRunTriage, getTriage } from '../api/client'
+import type { RunSummary, TriageRecord } from '../api/types'
+import { RunHistoryPanel } from '../components/RunHistoryPanel'
 import { UrgencyDistribution } from '../components/UrgencyDistribution'
 import { parseBriefing } from '../utils/briefing'
 
 interface DashboardPageProps {
   refreshToken: number
+  selectedRunId: string | null
+  runs: RunSummary[]
+  runsLoading: boolean
+  runsError: string | null
+  onSelectRun: (runId: string | null) => void
 }
 
-export function DashboardPage({ refreshToken }: DashboardPageProps) {
+export function DashboardPage({ refreshToken, selectedRunId, runs, runsLoading, runsError, onSelectRun }: DashboardPageProps) {
   const [triage, setTriage] = useState<TriageRecord[]>([])
   const [briefing, setBriefing] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -21,7 +27,9 @@ export function DashboardPage({ refreshToken }: DashboardPageProps) {
       setLoading(true)
       setError(null)
       try {
-        const [triageData, briefingText] = await Promise.all([getTriage(), getBriefing()])
+        const [triageData, briefingText] = selectedRunId
+          ? await Promise.all([getRunTriage(selectedRunId), getRunBriefing(selectedRunId)])
+          : await Promise.all([getTriage(), getBriefing()])
         if (!cancelled) {
           setTriage(triageData)
           setBriefing(briefingText)
@@ -42,7 +50,7 @@ export function DashboardPage({ refreshToken }: DashboardPageProps) {
     return () => {
       cancelled = true
     }
-  }, [refreshToken])
+  }, [refreshToken, selectedRunId])
 
   const metrics = useMemo(() => {
     return {
@@ -60,7 +68,16 @@ export function DashboardPage({ refreshToken }: DashboardPageProps) {
   }
 
   if (error) {
-    return <div className="page-state page-error">{error}</div>
+    return (
+      <div className="page-state page-error">
+        <p>{error}</p>
+        {selectedRunId ? (
+          <button type="button" className="drawer-close" onClick={() => onSelectRun(null)}>
+            Return to Latest
+          </button>
+        ) : null}
+      </div>
+    )
   }
 
   return (
@@ -98,7 +115,11 @@ export function DashboardPage({ refreshToken }: DashboardPageProps) {
 
       <section className="panel">
         <h3>Top Operational Risks</h3>
-        <p className="muted section-intro">Top operational risks detected from the latest run.</p>
+        <p className="muted section-intro">
+          {selectedRunId
+            ? `Top operational risks detected from historical run ${selectedRunId}.`
+            : 'Top operational risks detected from the latest run.'}
+        </p>
         {parsedBriefing.topPriorities.length === 0 ? (
           <p className="muted">No priority items available.</p>
         ) : (
@@ -109,6 +130,14 @@ export function DashboardPage({ refreshToken }: DashboardPageProps) {
           </ul>
         )}
       </section>
+
+      <RunHistoryPanel
+        runs={runs}
+        selectedRunId={selectedRunId}
+        isLoading={runsLoading}
+        error={runsError}
+        onSelectRun={onSelectRun}
+      />
 
       <UrgencyDistribution triage={triage} />
     </div>

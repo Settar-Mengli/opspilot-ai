@@ -59,6 +59,55 @@ body {
   gap: 0.6rem;
 }
 
+.run-controls {
+  display: grid;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.run-status-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+}
+
+.run-status-latest {
+  color: #8ec5ff;
+  background: rgba(59, 130, 246, 0.16);
+}
+
+.run-status-historical {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.16);
+}
+
+.run-selector-label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.run-selector {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #0f1520;
+  color: var(--text-primary);
+  padding: 0.45rem 0.6rem;
+  min-width: 260px;
+  max-width: 420px;
+}
+
+.run-selector-error {
+  color: #fca5a5;
+  font-size: 0.78rem;
+}
+
 .route-nav a {
   color: var(--text-secondary);
   text-decoration: none;
@@ -190,6 +239,57 @@ body {
 
 .triage-layout .panel > h2 {
   margin-bottom: 0.4rem;
+}
+
+.run-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.8rem;
+}
+
+.run-history-header h3 {
+  margin: 0;
+}
+
+.run-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.run-history-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #0f1724;
+  color: var(--text-primary);
+  padding: 0.6rem 0.7rem;
+  display: grid;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
+.run-history-item strong {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.run-history-item span {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.run-history-item:hover {
+  background: #182131;
+}
+
+.run-history-item-active {
+  border-color: var(--accent);
 }
 
 .kpi-card {
@@ -400,7 +500,7 @@ tbody tr:focus-visible {
 
 @media (min-width: 960px) {
   .top-nav {
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr auto auto auto;
   }
 
   .triage-layout {

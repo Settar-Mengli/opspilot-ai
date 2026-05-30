@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getBriefing } from '../api/client'
+import { getBriefing, getRunBriefing } from '../api/client'
 import { parseBriefing } from '../utils/briefing'
 
 interface ExecutiveBriefingPageProps {
   refreshToken: number
+  selectedRunId: string | null
+  onSelectLatest: () => void
 }
 
-export function ExecutiveBriefingPage({ refreshToken }: ExecutiveBriefingPageProps) {
+export function ExecutiveBriefingPage({ refreshToken, selectedRunId, onSelectLatest }: ExecutiveBriefingPageProps) {
   const [briefing, setBriefing] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -18,7 +20,7 @@ export function ExecutiveBriefingPage({ refreshToken }: ExecutiveBriefingPagePro
       setLoading(true)
       setError(null)
       try {
-        const text = await getBriefing()
+        const text = selectedRunId ? await getRunBriefing(selectedRunId) : await getBriefing()
         if (!cancelled) {
           setBriefing(text)
         }
@@ -38,7 +40,7 @@ export function ExecutiveBriefingPage({ refreshToken }: ExecutiveBriefingPagePro
     return () => {
       cancelled = true
     }
-  }, [refreshToken])
+  }, [refreshToken, selectedRunId])
 
   const parsed = useMemo(() => parseBriefing(briefing), [briefing])
 
@@ -47,14 +49,27 @@ export function ExecutiveBriefingPage({ refreshToken }: ExecutiveBriefingPagePro
   }
 
   if (error) {
-    return <div className="page-state page-error">{error}</div>
+    return (
+      <div className="page-state page-error">
+        <p>{error}</p>
+        {selectedRunId ? (
+          <button type="button" className="drawer-close" onClick={onSelectLatest}>
+            Return to Latest
+          </button>
+        ) : null}
+      </div>
+    )
   }
 
   return (
     <section className="briefing-layout">
       <header className="panel">
         <h2>{parsed.title}</h2>
-        <p className="muted section-intro">Leadership-ready summary generated from the latest operational work items.</p>
+        <p className="muted section-intro">
+          {selectedRunId
+            ? `Leadership-ready summary from historical run ${selectedRunId}.`
+            : 'Leadership-ready summary generated from the latest operational work items.'}
+        </p>
         <div className="metric-grid">
           <article>
             <span>Total Work Items</span>
