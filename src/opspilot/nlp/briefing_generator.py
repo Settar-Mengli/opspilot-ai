@@ -1,7 +1,11 @@
 from collections import Counter
 from pathlib import Path
 
-from opspilot.history.run_history import find_previous_run_id, read_run_json_artifact
+from opspilot.history.run_history import (
+    find_previous_run_id,
+    list_run_metadata,
+    read_run_json_artifact,
+)
 from opspilot.models.schemas import ActionItem, TriageRecord, WorkItem
 
 
@@ -56,6 +60,7 @@ def generate_daily_briefing(
         lines.append("- None")
 
     lines.extend(_render_since_last_run_section(current_run_id, runs_root, triage_records))
+    lines.extend(_render_recent_trend_section(current_run_id, runs_root, triage_records))
 
     return "\n".join(lines) + "\n"
 
@@ -78,7 +83,10 @@ def _render_since_last_run_section(
         section.extend(["", "---"])
         return section
 
-    previous_payload = read_run_json_artifact(previous_run_id, "triage_results.json", runs_root)
+    try:
+        previous_payload = read_run_json_artifact(previous_run_id, "triage_results.json", runs_root)
+    except (FileNotFoundError, OSError, ValueError):
+        previous_payload = None
     if not isinstance(previous_payload, list):
         section.append("No previous run available for comparison.")
         section.extend(["", "---"])
@@ -118,6 +126,88 @@ def _priority_counts_from_payload(payload: list[object]) -> dict[str, int]:
             counts[urgency] += 1
 
     return {priority: int(counts.get(priority, 0)) for priority, _ in PRIORITY_ORDER}
+
+
+def _render_recent_trend_section(
+    current_run_id: str | None,
+    runs_root: Path | None,
+    current_triage_records: list[TriageRecord],
+) -> list[str]:
+    section = ["", "## Recent Trend (Last 7 Runs)"]
+
+    trend_points = _collect_recent_high_risk_series(
+        current_run_id=current_run_id,
+        runs_root=runs_root,
+        current_triage_records=current_triage_records,
+        limit=7,
+    )
+
+    if not trend_points:
+        section.append("Trend unavailable without run history context.")
+        return section
+
+    section.append("High-Risk Items (critical + high):")
+    for run_id, high_risk_count in trend_points:
+        section.append(f"- {run_id}: high_risk={high_risk_count}")
+
+    if len(trend_points) == 1:
+        section.append("Only current run available; additional runs are needed for trend comparison.")
+        return section
+
+    latest_count = trend_points[0][1]
+    oldest_count = trend_points[-1][1]
+    net_change = _format_priority_change(oldest_count, latest_count)
+    section.append(f"Net change across {len(trend_points)} runs: {net_change}.")
+
+    return section
+
+
+def _collect_recent_high_risk_series(
+    current_run_id: str | None,
+    runs_root: Path | None,
+    current_triage_records: list[TriageRecord],
+    limit: int,
+) -> list[tuple[str, int]]:
+    if not current_run_id or runs_root is None:
+        return []
+
+    series: list[tuple[str, int]] = [
+        (current_run_id, _high_risk_count_from_triage(current_triage_records))
+    ]
+
+    metadata = list_run_metadata(runs_root)
+    for item in metadata:
+        run_id = item.get("run_id")
+        if not isinstance(run_id, str) or run_id >= current_run_id:
+            continue
+
+        try:
+            payload = read_run_json_artifact(run_id, "triage_results.json", runs_root)
+        except (FileNotFoundError, OSError, ValueError):
+            continue
+        if not isinstance(payload, list):
+            continue
+
+        series.append((run_id, _high_risk_count_from_payload(payload)))
+        if len(series) >= limit:
+            break
+
+    return series
+
+
+def _high_risk_count_from_triage(triage_records: list[TriageRecord]) -> int:
+    return sum(1 for record in triage_records if record.urgency in {"critical", "high"})
+
+
+def _high_risk_count_from_payload(payload: list[object]) -> int:
+    count = 0
+    for entry in payload:
+        if not isinstance(entry, dict):
+            continue
+        urgency = entry.get("urgency")
+        if urgency in {"critical", "high"}:
+            count += 1
+    return count
 
 
 def _format_priority_change(previous: int, current: int) -> str:

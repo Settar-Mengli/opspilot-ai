@@ -215,6 +215,11 @@ def test_get_run_unknown_id_returns_404(isolated_run_dirs: Path):
     assert resp.status_code == 404
 
 
+def test_get_run_metadata_rejects_path_traversal_like_id(isolated_run_dirs: Path):
+    resp = client.get("/runs/..%2F..%2Fwindows%2Fsystem32")
+    assert resp.status_code == 404
+
+
 def test_get_run_artifact_unknown_id_returns_404(isolated_run_dirs: Path):
     triage_resp = client.get("/runs/run-19990101-000000-000/triage")
     briefing_resp = client.get("/runs/run-19990101-000000-000/briefing")

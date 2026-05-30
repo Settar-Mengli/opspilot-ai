@@ -39,6 +39,7 @@ and this project follows Semantic Versioning principles for release tags.
 - Frontend historical snapshot support via shared run selector and `?run_id=` query parameter
 - Dashboard run history panel and latest/historical status context badge
 - Executive Briefing "Since Last Run" delta section comparing priority counts (`critical`, `high`, `medium`, `low`) to the immediately previous run
+- Executive Briefing "Recent Trend (Last 7 Runs)" section summarizing deterministic high-risk (`critical + high`) counts and net change
 
 ### Changed
 
@@ -65,3 +66,4 @@ and this project follows Semantic Versioning principles for release tags.
 - CI workflow now runs backend `pytest -q` and frontend `npm ci`, `npm run lint`, and `npm run build` on push and pull request
 - Run-history metadata API responses now sanitize `input_file`, `output_dir`, and `history_dir` for `GET /runs` and `GET /runs/{run_id}`
 - Expanded API metadata safety tests to assert sanitized fields are excluded and artifact names remain path-safe
+- Added API test coverage to reject traversal-like run IDs for `GET /runs/{run_id}` metadata endpoint

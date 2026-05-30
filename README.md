@@ -15,7 +15,7 @@ OpsPilot AI is a local, rule-based operations command center that simulates how 
 4. **Explain**: Captures the exact rule or token that triggered each label.
 5. **Extract Actions**: Finds deadlines, owners, and explicit asks.
 6. **Draft Responses**: Suggests a reply template for each item.
-7. **Briefing**: Generates a daily executive summary with top priorities, due-soon action items, and a "Since Last Run" priority delta section when a prior run exists.
+7. **Briefing**: Generates a daily executive summary with top priorities, due-soon action items, a "Since Last Run" priority delta section, and a deterministic recent high-risk trend summary.
 
 ---
 
@@ -81,6 +81,14 @@ _Compared to run-20260530-043052-422_
 | High | 2 | 1 | -1 |
 | Medium | 0 | 0 | 0 |
 | Low | 1 | 1 | 0 |
+
+## Recent Trend (Last 7 Runs)
+High-Risk Items (critical + high):
+- run-20260530-043115-901: high_risk=3
+- run-20260530-043052-422: high_risk=2
+- run-20260530-042745-115: high_risk=4
+
+Net change across 3 runs: -1.
 ```
 
 If no previous run exists, the briefing shows: `No previous run available for comparison.`
