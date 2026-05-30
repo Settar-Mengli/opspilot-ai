@@ -1,6 +1,15 @@
 import logging
 from pathlib import Path
 
+from opspilot.history.run_history import (
+    create_run_directory,
+    generate_run_id,
+    history_runs_root,
+    to_iso_utc,
+    utc_now,
+    write_run_artifacts,
+    write_run_metadata,
+)
 from opspilot.ingest.loader import load_raw_items
 from opspilot.ingest.normalizer import normalize_items
 from opspilot.models.schemas import (
@@ -21,6 +30,8 @@ logger = logging.getLogger("opspilot.pipeline")
 
 
 def run_daily_ops(input_path: str, output_dir: str, run_date: str) -> dict[str, str]:
+    started_at = utc_now()
+
     log_event(
         logger,
         "pipeline_start",
@@ -61,10 +72,45 @@ def run_daily_ops(input_path: str, output_dir: str, run_date: str) -> dict[str, 
         response_file = output_path / "suggested_responses.json"
         briefing_file = output_path / "daily_briefing.txt"
 
-        write_json_file(triage_file, [to_dict(record) for record in triage_records])
-        write_json_file(action_file, [to_dict(action) for action in action_items])
-        write_json_file(response_file, [to_dict(response) for response in suggested_responses])
+        triage_payload = [to_dict(record) for record in triage_records]
+        action_payload = [to_dict(action) for action in action_items]
+        response_payload = [to_dict(response) for response in suggested_responses]
+
+        write_json_file(triage_file, triage_payload)
+        write_json_file(action_file, action_payload)
+        write_json_file(response_file, response_payload)
         write_text_file(briefing_file, briefing)
+
+        run_id = generate_run_id(started_at)
+        runs_root = history_runs_root(output_path)
+        run_dir = create_run_directory(runs_root, started_at, run_id)
+        artifacts = write_run_artifacts(
+            run_dir=run_dir,
+            triage_payload=triage_payload,
+            action_payload=action_payload,
+            response_payload=response_payload,
+            briefing_text=briefing,
+        )
+
+        finished_at = utc_now()
+        duration_ms = int((finished_at - started_at).total_seconds() * 1000)
+        metadata = {
+            "run_id": run_dir.name,
+            "started_at": to_iso_utc(started_at),
+            "finished_at": to_iso_utc(finished_at),
+            "duration_ms": duration_ms,
+            "status": "success",
+            "input_file": input_path,
+            "output_dir": str(output_path),
+            "history_dir": str(run_dir),
+            "item_count": len(normalized_items),
+            "triage_count": len(triage_records),
+            "action_count": len(action_items),
+            "suggested_response_count": len(suggested_responses),
+            "artifacts": artifacts,
+            "error": None,
+        }
+        write_run_metadata(run_dir, metadata)
 
         log_event(
             logger,
@@ -73,6 +119,7 @@ def run_daily_ops(input_path: str, output_dir: str, run_date: str) -> dict[str, 
             triage_records=len(triage_records),
             action_items=len(action_items),
             suggested_responses=len(suggested_responses),
+            run_id=run_dir.name,
         )
 
         return {
