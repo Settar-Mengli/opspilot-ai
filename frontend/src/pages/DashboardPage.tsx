@@ -65,27 +65,40 @@ export function DashboardPage({ refreshToken }: DashboardPageProps) {
 
   return (
     <div className="page-grid">
+      <section className="panel hero-panel">
+        <h2>OpsPilot Mission</h2>
+        <p className="hero-copy">
+          OpsPilot turns operational work items into explainable priorities, action queues, and executive-ready daily briefings.
+        </p>
+        <div className="how-it-works" aria-label="How OpsPilot works">
+          <span>Input Work Items</span>
+          <span>Triage &amp; Explainability</span>
+          <span>Executive Briefing</span>
+        </div>
+      </section>
+
       <section className="kpi-grid">
         <article className="kpi-card">
-          <span>Total Items</span>
+          <span>Total Work Items</span>
           <strong>{metrics.total}</strong>
         </article>
         <article className="kpi-card">
-          <span>Critical</span>
+          <span>Critical Risks</span>
           <strong>{metrics.critical}</strong>
         </article>
         <article className="kpi-card">
-          <span>High</span>
+          <span>High Priority Items</span>
           <strong>{metrics.high}</strong>
         </article>
         <article className="kpi-card">
-          <span>Negative Sentiment</span>
+          <span>Negative Sentiment Signals</span>
           <strong>{metrics.negative}</strong>
         </article>
       </section>
 
       <section className="panel">
-        <h3>Top Priorities</h3>
+        <h3>Top Operational Risks</h3>
+        <p className="muted section-intro">Top operational risks detected from the latest run.</p>
         {parsedBriefing.topPriorities.length === 0 ? (
           <p className="muted">No priority items available.</p>
         ) : (

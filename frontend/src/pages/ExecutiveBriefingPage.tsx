@@ -54,6 +54,7 @@ export function ExecutiveBriefingPage({ refreshToken }: ExecutiveBriefingPagePro
     <section className="briefing-layout">
       <header className="panel">
         <h2>{parsed.title}</h2>
+        <p className="muted section-intro">Leadership-ready summary generated from the latest operational work items.</p>
         <div className="metric-grid">
           <article>
             <span>Total Work Items</span>
