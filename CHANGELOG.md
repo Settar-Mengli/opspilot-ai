@@ -62,3 +62,6 @@ and this project follows Semantic Versioning principles for release tags.
 	- `0` for no change
 	- `+N` for increase
 	- `-N` for decrease
+- CI workflow now runs backend `pytest -q` and frontend `npm ci`, `npm run lint`, and `npm run build` on push and pull request
+- Run-history metadata API responses now sanitize `input_file`, `output_dir`, and `history_dir` for `GET /runs` and `GET /runs/{run_id}`
+- Expanded API metadata safety tests to assert sanitized fields are excluded and artifact names remain path-safe

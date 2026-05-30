@@ -101,7 +101,7 @@
   - Executive Briefing includes a "Since Last Run" section with ASCII delta markers (`0`, `+N`, `-N`)
   - Explainable triage outputs with deterministic reason fields
 - Test status:
-  - `pytest -q` => `36 passed` (includes API, integration, and unit tests)
+  - `pytest -q` => `38 passed` (includes API, integration, and unit tests)
 - Working tree expectation:
   - Clean (`git status --short` shows no file entries)
 - Known issues fixed in this pass:
@@ -215,4 +215,12 @@
   - Updated `src/opspilot/pipeline/run_daily_ops.py` to generate `run_id` earlier and pass run context into briefing generation
   - Added unit tests in `tests/unit/test_briefing_generator.py` covering previous-run lookup, fallback behavior, and delta rendering
   - Updated `README.md` feature summary for new briefing behavior
-  - Verified with `pytest -q` (36 passed)
+  - Verified with `pytest -q` (38 passed)
+
+## Final Polish Pass: Traceability + Metadata Safety (2026-05-30)
+
+- Summary:
+  - Updated project traceability docs to reflect the current quality baseline and recent delivery details.
+  - Confirmed API run-history metadata responses sanitize `input_file`, `output_dir`, and `history_dir` for `/runs` and `/runs/{run_id}`.
+  - Confirmed API tests cover metadata sanitization and artifact filename path safety checks.
+  - Confirmed CI includes backend test execution and frontend lint/build checks.
