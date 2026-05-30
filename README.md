@@ -15,7 +15,7 @@ OpsPilot AI is a local, rule-based operations command center that simulates how 
 4. **Explain**: Captures the exact rule or token that triggered each label.
 5. **Extract Actions**: Finds deadlines, owners, and explicit asks.
 6. **Draft Responses**: Suggests a reply template for each item.
-7. **Briefing**: Generates a daily executive summary with top priorities and action items.
+7. **Briefing**: Generates a daily executive summary with top priorities, due-soon action items, and a "Since Last Run" priority delta section when a prior run exists.
 
 ---
 

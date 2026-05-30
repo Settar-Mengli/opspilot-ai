@@ -59,14 +59,18 @@ def run_daily_ops(input_path: str, output_dir: str, run_date: str) -> dict[str, 
                 SuggestedResponse(work_item_id=item.id, suggested_response=response_text)
             )
 
+        output_path = Path(output_dir)
+        run_id = generate_run_id(started_at)
+        runs_root = history_runs_root(output_path)
         briefing = generate_daily_briefing(
             run_date,
             triage_records,
             action_items,
             normalized_items,
+            current_run_id=run_id,
+            runs_root=runs_root,
         )
 
-        output_path = Path(output_dir)
         triage_file = output_path / "triage_results.json"
         action_file = output_path / "action_items.json"
         response_file = output_path / "suggested_responses.json"
@@ -81,8 +85,6 @@ def run_daily_ops(input_path: str, output_dir: str, run_date: str) -> dict[str, 
         write_json_file(response_file, response_payload)
         write_text_file(briefing_file, briefing)
 
-        run_id = generate_run_id(started_at)
-        runs_root = history_runs_root(output_path)
         run_dir = create_run_directory(runs_root, started_at, run_id)
         artifacts = write_run_artifacts(
             run_dir=run_dir,

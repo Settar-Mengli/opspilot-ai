@@ -151,3 +151,25 @@ def read_run_text_artifact(run_id: str, artifact_name: str, runs_root: Path) -> 
 
     with path.open("r", encoding="utf-8") as file:
         return file.read()
+
+
+def find_previous_run_id(current_run_id: str, runs_root: Path) -> str | None:
+    if not RUN_ID_PATTERN.fullmatch(current_run_id):
+        return None
+    if not runs_root.exists() or not runs_root.is_dir():
+        return None
+
+    run_ids: list[str] = []
+    for run_dir in runs_root.rglob("run-*"):
+        if not run_dir.is_dir():
+            continue
+        run_id = run_dir.name
+        if RUN_ID_PATTERN.fullmatch(run_id):
+            run_ids.append(run_id)
+
+    previous_ids = [run_id for run_id in run_ids if run_id < current_run_id]
+    if not previous_ids:
+        return None
+
+    previous_ids.sort()
+    return previous_ids[-1]

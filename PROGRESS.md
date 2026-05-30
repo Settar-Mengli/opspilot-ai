@@ -198,3 +198,16 @@
 - Summary:
   - Updated repository documentation to match implemented run-history storage, API endpoints, and frontend latest/historical behavior.
   - Added local scheduling design notes and explicitly marked scheduling as not yet implemented.
+
+## Automation Phase 2A-1: Briefing Delta Section (2026-05-30)
+
+- Summary:
+  - Added a "Since Last Run" section to daily briefing output comparing urgency mix across `critical`, `high`, `medium`, and `low`.
+  - Comparison uses the immediately previous run by run-id ordering and falls back gracefully when no prior run exists.
+- Completed:
+  - Added previous-run lookup helper in `src/opspilot/history/run_history.py`
+  - Updated `src/opspilot/nlp/briefing_generator.py` to render markdown delta table with change symbols
+  - Updated `src/opspilot/pipeline/run_daily_ops.py` to generate `run_id` earlier and pass run context into briefing generation
+  - Added unit tests in `tests/unit/test_briefing_generator.py` covering previous-run lookup, fallback behavior, and delta rendering
+  - Updated `README.md` feature summary for new briefing behavior
+  - Verified with `pytest -q` (36 passed)
