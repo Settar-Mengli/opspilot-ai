@@ -105,6 +105,30 @@ def test_get_runs_returns_metadata_after_pipeline_run(isolated_run_dirs: Path):
     assert payload[0]["run_id"].startswith("run-")
 
 
+def test_get_runs_metadata_is_sanitized_and_safe(isolated_run_dirs: Path):
+    run_resp = client.post("/run", json={"input_file": "sample_input.json", "date": "2026-05-29"})
+    assert run_resp.status_code == 200
+
+    resp = client.get("/runs")
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert isinstance(payload, list)
+    assert payload
+
+    for item in payload:
+        assert "output_dir" not in item
+        assert "history_dir" not in item
+
+        artifacts = item.get("artifacts")
+        if isinstance(artifacts, dict):
+            for name in artifacts.values():
+                assert isinstance(name, str)
+                assert name
+                assert "/" not in name
+                assert "\\" not in name
+                assert ":" not in name
+
+
 def test_get_runs_sorted_newest_first(isolated_run_dirs: Path):
     first = client.post("/run", json={"input_file": "sample_input.json", "date": "2026-05-29"})
     second = client.post("/run", json={"input_file": "sample_input.json", "date": "2026-05-29"})
@@ -158,6 +182,30 @@ def test_get_run_metadata_for_specific_run(isolated_run_dirs: Path):
     payload = run_meta_resp.json()
     assert payload["run_id"] == run_id
     assert payload["status"] == "success"
+
+
+def test_get_run_metadata_is_sanitized_and_safe(isolated_run_dirs: Path):
+    run_resp = client.post("/run", json={"input_file": "sample_input.json", "date": "2026-05-29"})
+    assert run_resp.status_code == 200
+
+    runs_resp = client.get("/runs")
+    run_id = runs_resp.json()[0]["run_id"]
+
+    run_meta_resp = client.get(f"/runs/{run_id}")
+    assert run_meta_resp.status_code == 200
+    payload = run_meta_resp.json()
+
+    assert "output_dir" not in payload
+    assert "history_dir" not in payload
+
+    artifacts = payload.get("artifacts")
+    assert isinstance(artifacts, dict)
+    for name in artifacts.values():
+        assert isinstance(name, str)
+        assert name
+        assert "/" not in name
+        assert "\\" not in name
+        assert ":" not in name
 
 
 def test_get_run_unknown_id_returns_404(isolated_run_dirs: Path):
