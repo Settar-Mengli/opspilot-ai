@@ -123,7 +123,7 @@ def _priority_counts_from_payload(payload: list[object]) -> dict[str, int]:
 def _format_priority_change(previous: int, current: int) -> str:
     delta = current - previous
     if delta == 0:
-        return "—"
+        return "0"
     if delta > 0:
-        return f"+{delta} ↑"
-    return f"{delta} ↓"
+        return f"+{delta}"
+    return f"{delta}"

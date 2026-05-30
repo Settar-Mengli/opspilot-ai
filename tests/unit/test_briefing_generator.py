@@ -93,10 +93,10 @@ def test_generate_daily_briefing_renders_since_last_run_table(tmp_path: Path) ->
     assert "## Since Last Run" in briefing
     assert f"_Compared to {previous_run_id}_" in briefing
     assert "| Priority | Previous | Current | Change |" in briefing
-    assert "| Critical | 1 | 2 | +1 ↑ |" in briefing
-    assert "| High | 2 | 0 | -2 ↓ |" in briefing
-    assert "| Medium | 0 | 0 | — |" in briefing
-    assert "| Low | 0 | 1 | +1 ↑ |" in briefing
+    assert "| Critical | 1 | 2 | +1 |" in briefing
+    assert "| High | 2 | 0 | -2 |" in briefing
+    assert "| Medium | 0 | 0 | 0 |" in briefing
+    assert "| Low | 0 | 1 | +1 |" in briefing
 
 
 def test_generate_daily_briefing_falls_back_when_no_previous_run(tmp_path: Path) -> None:
