@@ -5,22 +5,48 @@ on:
   pull_request:
 
 jobs:
-  validate-repository:
-    name: Validate Repository Skeleton
+  backend-tests:
+    name: Backend Tests
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify required foundational files
-        run: |
-          test -f README.md
-          test -f AGENTS.md
-          test -f PROGRESS.md
-          test -f LICENSE
-          test -f CHANGELOG.md
-          test -f CONTRIBUTING.md
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-      - name: Show tracked top-level files
-        run: ls -la
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+
+      - name: Run backend test suite
+        run: pytest -q
+
+  frontend-checks:
+    name: Frontend Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
