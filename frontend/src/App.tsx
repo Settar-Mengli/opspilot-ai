@@ -4,6 +4,7 @@ import { getHealth, getRuns } from './api/client'
 import type { RunSummary } from './api/types'
 import { ApiUnavailableBanner } from './components/ApiUnavailableBanner'
 import { HealthIndicator } from './components/HealthIndicator'
+import { Logo } from './components/Logo'
 import { RunSelector } from './components/RunSelector'
 import { RunStatusBadge } from './components/RunStatusBadge'
 import { DashboardPage } from './pages/DashboardPage'
@@ -96,9 +97,11 @@ function App() {
     <div className="app-shell">
       <header className="top-nav">
         <div className="brand-block">
-          <h1>OpsPilot Command Center</h1>
-          <p>Local-only operational intelligence console</p>
+          <Logo size={32} />
+          <h1>OpsPilot</h1>
         </div>
+
+        <div className="nav-divider" />
 
         <nav className="route-nav" aria-label="Primary">
           <NavLink to="/dashboard">Dashboard</NavLink>

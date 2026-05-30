@@ -4,13 +4,14 @@ interface HealthIndicatorProps {
 }
 
 export function HealthIndicator({ isHealthy, isLoading }: HealthIndicatorProps) {
-  const label = isLoading ? 'Checking API' : isHealthy ? 'API Healthy' : 'API Unavailable'
-  const dotClass = isLoading ? 'health-dot' : isHealthy ? 'health-dot healthy' : 'health-dot unhealthy'
+  if (isLoading) {
+    return null
+  }
 
   return (
-    <div className="health-indicator" role="status" aria-live="polite">
-      <span className={dotClass} />
-      <span>{label}</span>
+    <div className="health-indicator">
+      <span className={`health-dot ${isHealthy ? 'healthy' : 'unhealthy'}`} />
+      <span>{isHealthy ? 'API Healthy' : 'API Offline'}</span>
     </div>
   )
 }

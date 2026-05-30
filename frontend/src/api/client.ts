@@ -176,6 +176,15 @@ export async function runPipeline(inputFile: string, date: string): Promise<RunP
   return response.json() as Promise<RunPipelineResult>
 }
 
+export async function getAiBriefing(): Promise<string> {
+  return requestText('/ai-briefing')
+}
+
+export async function getRunAiBriefing(runId: string): Promise<string> {
+  const encodedRunId = encodeURIComponent(runId)
+  return requestText(`/runs/${encodedRunId}/ai-briefing`)
+}
+
 export async function getInputFiles(): Promise<string[]> {
   const payload = await requestJson<{ files: string[] }>('/inputs')
   return payload.files

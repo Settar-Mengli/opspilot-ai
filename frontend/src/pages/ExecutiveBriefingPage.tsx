@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getBriefing, getRunBriefing } from '../api/client'
+import { getAiBriefing, getRunAiBriefing } from '../api/client'
 
 interface ExecutiveBriefingPageProps {
   refreshToken: number
@@ -19,7 +19,7 @@ export function ExecutiveBriefingPage({ refreshToken, selectedRunId, onSelectLat
       setLoading(true)
       setError(null)
       try {
-        const text = selectedRunId ? await getRunBriefing(selectedRunId) : await getBriefing()
+        const text = selectedRunId ? await getRunAiBriefing(selectedRunId) : await getAiBriefing()
         if (!cancelled) {
           setBriefing(text)
         }
