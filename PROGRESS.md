@@ -92,13 +92,18 @@
 ## Restart Handoff (Current State)
 
 - Branch: `main`
-- Latest commit: `3e008df` (`feat(api): add local FastAPI layer with health, run, and output endpoints`)
+- Current baseline: includes run history, historical frontend views, briefing delta section, and ASCII marker compatibility
 - Current capabilities:
   - Local CLI pipeline for ingest, normalization, triage, action extraction, response drafting, and briefing generation
-  - Local FastAPI endpoints: `/health`, `/run`, `/briefing`, `/triage`
+  - Local FastAPI endpoints: `/health`, `/run`, `/briefing`, `/triage`, `/runs`, `/runs/{run_id}`, `/runs/{run_id}/triage`, `/runs/{run_id}/briefing`
+  - Immutable per-run history artifacts under `data/history/runs/YYYY/MM/DD/run-YYYYMMDD-HHMMSS-sss/` with latest-output compatibility in `data/output/`
+  - Frontend run-context selection with `?run_id=` across Dashboard, Triage Explorer, and Executive Briefing
+  - Executive Briefing includes a "Since Last Run" section with ASCII delta markers (`0`, `+N`, `-N`)
   - Explainable triage outputs with deterministic reason fields
 - Test status:
-  - `pytest -q` => `19 passed` (includes API, integration, and unit tests)
+  - `pytest -q` => `36 passed` (includes API, integration, and unit tests)
+- Working tree expectation:
+  - Clean (`git status --short` shows no file entries)
 - Known issues fixed in this pass:
   - `/triage` now returns parsed JSON payload instead of raw JSON string
   - `/run` now uses explicit date contract (validation at API boundary) to avoid avoidable 500s

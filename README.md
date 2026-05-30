@@ -69,7 +69,21 @@ Top Priorities:
 
 Due-Soon Action Items:
 - WI-004: Customer escalation on ticket #4032 (owner=unassigned, deadline=EOD)
+
+---
+
+## Since Last Run
+_Compared to run-20260530-043052-422_
+
+| Priority | Previous | Current | Change |
+|----------|----------|---------|--------|
+| Critical | 1 | 2 | +1 |
+| High | 2 | 1 | -1 |
+| Medium | 0 | 0 | 0 |
+| Low | 1 | 1 | 0 |
 ```
+
+If no previous run exists, the briefing shows: `No previous run available for comparison.`
 
 ---
 

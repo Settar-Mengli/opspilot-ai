@@ -38,6 +38,7 @@ and this project follows Semantic Versioning principles for release tags.
 	- `GET /runs/{run_id}/briefing`
 - Frontend historical snapshot support via shared run selector and `?run_id=` query parameter
 - Dashboard run history panel and latest/historical status context badge
+- Executive Briefing "Since Last Run" delta section comparing priority counts (`critical`, `high`, `medium`, `low`) to the immediately previous run
 
 ### Changed
 
@@ -57,3 +58,7 @@ and this project follows Semantic Versioning principles for release tags.
 - Updated architecture and demo docs to include command center UI walkthrough
 - Pipeline now writes immutable run artifacts while preserving latest-output compatibility in `data/output/`
 - Frontend pages now support both Latest and Historical run contexts without adding new routes
+- Briefing delta markers now use ASCII-only output for terminal compatibility:
+	- `0` for no change
+	- `+N` for increase
+	- `-N` for decrease
