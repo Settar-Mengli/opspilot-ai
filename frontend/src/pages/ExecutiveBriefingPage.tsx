@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getBriefing, getRunBriefing } from '../api/client'
-import { parseBriefing } from '../utils/briefing'
 
 interface ExecutiveBriefingPageProps {
   refreshToken: number
@@ -42,8 +41,6 @@ export function ExecutiveBriefingPage({ refreshToken, selectedRunId, onSelectLat
     }
   }, [refreshToken, selectedRunId])
 
-  const parsed = useMemo(() => parseBriefing(briefing), [briefing])
-
   if (loading) {
     return <div className="page-state">Loading executive briefing...</div>
   }
@@ -63,55 +60,16 @@ export function ExecutiveBriefingPage({ refreshToken, selectedRunId, onSelectLat
 
   return (
     <section className="briefing-layout">
-      <header className="panel">
-        <h2>{parsed.title}</h2>
-        <p className="muted section-intro">
+      <div className="page-header">
+        <h1 className="page-title">Executive Briefing</h1>
+        <p className="page-subtitle">
           {selectedRunId
             ? `Leadership-ready summary from historical run ${selectedRunId}.`
             : 'Leadership-ready summary generated from the latest operational work items.'}
         </p>
-        <div className="metric-grid">
-          <article>
-            <span>Total Work Items</span>
-            <strong>{parsed.metrics.totalWorkItems}</strong>
-          </article>
-          <article>
-            <span>Urgency Mix</span>
-            <strong>{parsed.metrics.urgencyMix}</strong>
-          </article>
-          <article>
-            <span>Sentiment Mix</span>
-            <strong>{parsed.metrics.sentimentMix}</strong>
-          </article>
-        </div>
-      </header>
+      </div>
 
-      <section className="panel">
-        <h3>Top Priorities</h3>
-        <ul className="priority-list">
-          {parsed.topPriorities.map((entry) => (
-            <li key={entry}>{entry}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="panel">
-        <h3>Due-Soon Action Items</h3>
-        {parsed.dueSoon.length === 0 ? (
-          <p className="muted">No due-soon action items listed.</p>
-        ) : (
-          <ul className="priority-list">
-            {parsed.dueSoon.map((entry) => (
-              <li key={entry}>{entry}</li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="panel">
-        <h3>Raw Briefing</h3>
-        <pre className="briefing-raw">{parsed.rawText}</pre>
-      </section>
+      <div className="briefing-content">{briefing}</div>
     </section>
   )
 }

@@ -85,74 +85,68 @@ export function TriageExplorerPage({ refreshToken, selectedRunId, onSelectLatest
 
   return (
     <div className="triage-layout">
-      <section className="panel">
-        <h2>Triage Explorer</h2>
-        <p className="muted section-intro">Inspect how each work item was classified and why.</p>
-        <p className="muted section-intro">
-          {selectedRunId ? `Historical snapshot: ${selectedRunId}` : 'Viewing latest snapshot.'}
+      <div className="page-header">
+        <h1 className="page-title">Triage Explorer</h1>
+        <p className="page-subtitle">
+          {selectedRunId ? `Historical snapshot: ${selectedRunId}` : 'Inspect how each work item was classified and why.'}
         </p>
-        <p className="muted section-intro">Click a row to view explainability details.</p>
+      </div>
 
-        <div className="filter-row">
-          <label>
-            Urgency
-            <select value={selectedUrgency} onChange={(event) => setSelectedUrgency(event.target.value as Urgency | 'all')}>
-              {URGENCY_FILTERS.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Category
-            <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value as Category | 'all')}>
-              {CATEGORY_FILTERS.map((value) => (
-                <option key={value} value={value}>
-                  {CATEGORY_LABELS[value]}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+      <div className="filter-bar">
+        <select
+          className="filter-select"
+          value={selectedUrgency}
+          onChange={(event) => setSelectedUrgency(event.target.value as Urgency | 'all')}
+        >
+          {URGENCY_FILTERS.map((value) => (
+            <option key={value} value={value}>{value}</option>
+          ))}
+        </select>
+        <select
+          className="filter-select"
+          value={selectedCategory}
+          onChange={(event) => setSelectedCategory(event.target.value as Category | 'all')}
+        >
+          {CATEGORY_FILTERS.map((value) => (
+            <option key={value} value={value}>{CATEGORY_LABELS[value]}</option>
+          ))}
+        </select>
+      </div>
 
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Urgency</th>
-                <th>Category</th>
-                <th>Sentiment</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((record) => (
-                <tr
-                  key={record.id}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`View explainability details for ${record.id}`}
-                  onClick={() => setSelectedRecord(record)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault()
-                      setSelectedRecord(record)
-                    }
-                  }}
-                >
-                  <td>{record.id}</td>
-                  <td>
-                    <span className={`urgency-chip urgency-${record.urgency}`}>{record.urgency}</span>
-                  </td>
-                  <td>{record.category}</td>
-                  <td>{record.sentiment}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Urgency</th>
+            <th>Category</th>
+            <th>Sentiment</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map((record) => (
+            <tr
+              key={record.id}
+              tabIndex={0}
+              role="button"
+              aria-label={`View explainability details for ${record.id}`}
+              onClick={() => setSelectedRecord(record)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  setSelectedRecord(record)
+                }
+              }}
+            >
+              <td>{record.id}</td>
+              <td>
+                <span className={`urgency-chip ${record.urgency}`}>{record.urgency}</span>
+              </td>
+              <td>{record.category}</td>
+              <td>{record.sentiment}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       <ExplainabilityDrawer record={selectedRecord} onClose={() => setSelectedRecord(null)} />
     </div>

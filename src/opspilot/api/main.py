@@ -25,7 +25,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 API_OUTPUT_DIR = PROJECT_ROOT / "data" / "output"
 HISTORY_RUNS_DIR = PROJECT_ROOT / "data" / "history" / "runs"
 RAW_INPUT_DIR = PROJECT_ROOT / "data" / "raw"
-RUN_TIMEOUT_SECONDS = 30
+RUN_TIMEOUT_SECONDS = 120
 LOCAL_UI_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -237,3 +237,47 @@ def get_run_briefing(run_id: str):
         raise HTTPException(status_code=404, detail="Run not found.")
 
     return payload
+
+
+@app.get("/ai-briefing", response_class=PlainTextResponse)
+def get_ai_briefing():
+    """Return the latest AI-generated executive briefing."""
+    ai_path = API_OUTPUT_DIR / "ai_briefing.txt"
+    if ai_path.exists():
+        with ai_path.open("r", encoding="utf-8") as f:
+            return f.read()
+    # Fallback to daily_briefing.txt
+    fallback_path = API_OUTPUT_DIR / "daily_briefing.txt"
+    if not fallback_path.exists():
+        raise HTTPException(status_code=404, detail="No briefing available.")
+    with fallback_path.open("r", encoding="utf-8") as f:
+        return f.read()
+
+
+@app.get("/runs/{run_id}/ai-briefing", response_class=PlainTextResponse)
+def get_run_ai_briefing(run_id: str):
+    """Return AI briefing text for a specific run."""
+    try:
+        payload = read_run_text_artifact(run_id, "ai_briefing.txt", HISTORY_RUNS_DIR)
+    except FileNotFoundError:
+        # Fall back to daily_briefing.txt for this run
+        try:
+            payload = read_run_text_artifact(run_id, "daily_briefing.txt", HISTORY_RUNS_DIR)
+        except (FileNotFoundError, OSError, ValueError):
+            raise _safe_error(404, "artifact_not_found", "Run AI briefing artifact not found.")
+    except (OSError, ValueError):
+        raise _safe_error(500, "artifact_read_failed", "Failed to read run AI briefing artifact.")
+
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Run not found.")
+
+    return payload
+
+
+@app.get("/inputs", response_class=JSONResponse)
+def get_inputs():
+    """Return list of .json input files in data/raw/."""
+    if not RAW_INPUT_DIR.exists():
+        return {"files": []}
+    files = sorted(f.name for f in RAW_INPUT_DIR.iterdir() if f.is_file() and f.suffix == ".json")
+    return {"files": files}

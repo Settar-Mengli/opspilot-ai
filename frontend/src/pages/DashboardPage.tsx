@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getBriefing, getRunBriefing, getRunTriage, getTriage } from '../api/client'
+import { getBriefing, getInputFiles, getRunBriefing, getRunTriage, getTriage, runPipeline } from '../api/client'
 import type { RunSummary, TriageRecord } from '../api/types'
 import { RunHistoryPanel } from '../components/RunHistoryPanel'
 import { UrgencyDistribution } from '../components/UrgencyDistribution'
@@ -12,13 +12,57 @@ interface DashboardPageProps {
   runsLoading: boolean
   runsError: string | null
   onSelectRun: (runId: string | null) => void
+  onRefresh: () => void
 }
 
-export function DashboardPage({ refreshToken, selectedRunId, runs, runsLoading, runsError, onSelectRun }: DashboardPageProps) {
+export function DashboardPage({ refreshToken, selectedRunId, runs, runsLoading, runsError, onSelectRun, onRefresh }: DashboardPageProps) {
   const [triage, setTriage] = useState<TriageRecord[]>([])
   const [briefing, setBriefing] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Run Pipeline state
+  const [inputFiles, setInputFiles] = useState<string[]>([])
+  const [selectedInput, setSelectedInput] = useState('')
+  const [runDate, setRunDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [runLoading, setRunLoading] = useState(false)
+  const [runSuccess, setRunSuccess] = useState(false)
+  const [runError, setRunError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadInputs() {
+      try {
+        const files = await getInputFiles()
+        if (!cancelled) {
+          setInputFiles(files)
+          if (files.length > 0 && !selectedInput) {
+            setSelectedInput(files[0])
+          }
+        }
+      } catch {
+        // Non-critical - run panel just won't show files
+      }
+    }
+    void loadInputs()
+    return () => { cancelled = true }
+  }, [])
+
+  async function handleRunPipeline() {
+    if (!selectedInput) return
+    setRunLoading(true)
+    setRunSuccess(false)
+    setRunError(null)
+    try {
+      await runPipeline(selectedInput, runDate)
+      setRunSuccess(true)
+      onRefresh()
+    } catch (err) {
+      setRunError(err instanceof Error ? err.message : 'Pipeline run failed')
+    } finally {
+      setRunLoading(false)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -82,34 +126,53 @@ export function DashboardPage({ refreshToken, selectedRunId, runs, runsLoading, 
 
   return (
     <div className="page-grid">
-      <section className="panel hero-panel">
-        <h2>OpsPilot Mission</h2>
-        <p className="hero-copy">
-          OpsPilot turns operational work items into explainable priorities, action queues, and executive-ready daily briefings.
-        </p>
-        <div className="how-it-works" aria-label="How OpsPilot works">
-          <span>Input Work Items</span>
-          <span>Triage &amp; Explainability</span>
-          <span>Executive Briefing</span>
-        </div>
+      <section className="run-panel">
+        <span className="run-panel-label">Run Pipeline</span>
+        <select
+          className="run-select"
+          value={selectedInput}
+          onChange={(e) => setSelectedInput(e.target.value)}
+          disabled={runLoading}
+        >
+          {inputFiles.map((f) => (
+            <option key={f} value={f}>{f}</option>
+          ))}
+        </select>
+        <input
+          type="date"
+          className="run-date-input"
+          value={runDate}
+          onChange={(e) => setRunDate(e.target.value)}
+          disabled={runLoading}
+        />
+        <button
+          type="button"
+          className="btn-run"
+          onClick={handleRunPipeline}
+          disabled={runLoading || !selectedInput}
+        >
+          {runLoading ? 'Running...' : '\u25B6 Run Pipeline'}
+        </button>
+        {runSuccess && <span className="run-status-success">{'\u2713'} Pipeline complete</span>}
+        {runError && <span className="run-status-error">{runError}</span>}
       </section>
 
       <section className="kpi-grid">
         <article className="kpi-card">
-          <span>Total Work Items</span>
-          <strong>{metrics.total}</strong>
+          <span className="kpi-label">Total Work Items</span>
+          <strong className="kpi-value">{metrics.total}</strong>
         </article>
         <article className="kpi-card">
-          <span>Critical Risks</span>
-          <strong>{metrics.critical}</strong>
+          <span className="kpi-label">Critical Risks</span>
+          <strong className="kpi-value critical">{metrics.critical}</strong>
         </article>
         <article className="kpi-card">
-          <span>High Priority Items</span>
-          <strong>{metrics.high}</strong>
+          <span className="kpi-label">High Priority Items</span>
+          <strong className="kpi-value high">{metrics.high}</strong>
         </article>
         <article className="kpi-card">
-          <span>Negative Sentiment Signals</span>
-          <strong>{metrics.negative}</strong>
+          <span className="kpi-label">Negative Sentiment</span>
+          <strong className="kpi-value negative">{metrics.negative}</strong>
         </article>
       </section>
 

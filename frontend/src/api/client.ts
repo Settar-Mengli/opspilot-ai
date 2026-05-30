@@ -1,4 +1,4 @@
-import type { RunMetadata, RunSummary, TriageRecord } from './types'
+import type { RunMetadata, RunPipelineResult, RunSummary, TriageRecord } from './types'
 
 const FALLBACK_API_BASE_URL = 'http://127.0.0.1:8000'
 
@@ -161,6 +161,24 @@ export async function getRunTriage(runId: string): Promise<TriageRecord[]> {
 export async function getRunBriefing(runId: string): Promise<string> {
   const encodedRunId = encodeURIComponent(runId)
   return requestText(`/runs/${encodedRunId}/briefing`)
+}
+
+export async function runPipeline(inputFile: string, date: string): Promise<RunPipelineResult> {
+  const response = await fetch(`${API_BASE_URL}/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ input_file: inputFile, date }),
+  })
+  if (!response.ok) {
+    const detail = await getErrorDetail(response)
+    throw toApiError(response.status, detail)
+  }
+  return response.json() as Promise<RunPipelineResult>
+}
+
+export async function getInputFiles(): Promise<string[]> {
+  const payload = await requestJson<{ files: string[] }>('/inputs')
+  return payload.files
 }
 
 export { API_BASE_URL }

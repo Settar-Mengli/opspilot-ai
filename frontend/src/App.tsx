@@ -135,6 +135,7 @@ function App() {
                 runsLoading={runsLoading}
                 runsError={runsError}
                 onSelectRun={handleSelectRun}
+                onRefresh={handleRetry}
               />
             }
           />

@@ -11,31 +11,26 @@ export function ExplainabilityDrawer({ record, onClose }: ExplainabilityDrawerPr
   }
 
   return (
-    <aside className="drawer" aria-label="Explainability details">
-      <div className="drawer-header">
-        <h3>Explainability</h3>
+    <>
+      <div className="drawer-overlay" onClick={onClose} />
+      <aside className="drawer" aria-label="Explainability details">
+        <h3 className="drawer-title">Explainability — {record.id}</h3>
+        <div className="drawer-field">
+          <p className="drawer-field-label">Urgency</p>
+          <p className="drawer-field-value">{record.urgency_reason}</p>
+        </div>
+        <div className="drawer-field">
+          <p className="drawer-field-label">Category</p>
+          <p className="drawer-field-value">{record.category_reason}</p>
+        </div>
+        <div className="drawer-field">
+          <p className="drawer-field-label">Sentiment</p>
+          <p className="drawer-field-value">{record.sentiment_reason}</p>
+        </div>
         <button type="button" className="drawer-close" onClick={onClose}>
           Close
         </button>
-      </div>
-      <div className="drawer-content">
-        <div>
-          <p className="muted">Record ID</p>
-          <p className="record-id">{record.id}</p>
-        </div>
-        <div className="reason-block">
-          <p className="muted">Urgency</p>
-          <p>{record.urgency_reason}</p>
-        </div>
-        <div className="reason-block">
-          <p className="muted">Category</p>
-          <p>{record.category_reason}</p>
-        </div>
-        <div className="reason-block">
-          <p className="muted">Sentiment</p>
-          <p>{record.sentiment_reason}</p>
-        </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   )
 }

@@ -55,3 +55,8 @@ export interface RunSummary {
 }
 
 export type RunMetadata = RunSummary
+
+export interface RunPipelineResult {
+  status: string
+  stdout: string
+}

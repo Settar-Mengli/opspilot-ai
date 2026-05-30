@@ -21,6 +21,7 @@ from opspilot.models.schemas import (
 from opspilot.nlp.action_extractor import extract_action_items
 from opspilot.nlp.briefing_generator import generate_daily_briefing
 from opspilot.nlp.response_drafter import draft_suggested_response
+from opspilot.adapters.briefing_adapter import generate_ai_briefing
 from opspilot.adapters.factory import get_adapter
 from opspilot.rules.triage_rules import classify_work_item
 from opspilot.utils.file_io import write_json_file, write_text_file
@@ -91,6 +92,12 @@ def run_daily_ops(input_path: str, output_dir: str, run_date: str) -> dict[str, 
         write_json_file(response_file, response_payload)
         write_text_file(briefing_file, briefing)
 
+        ai_briefing = generate_ai_briefing(
+            run_date, triage_records, action_items, normalized_items, briefing
+        )
+        ai_briefing_file = output_path / "ai_briefing.txt"
+        write_text_file(ai_briefing_file, ai_briefing)
+
         run_dir = create_run_directory(runs_root, started_at, run_id)
         artifacts = write_run_artifacts(
             run_dir=run_dir,
@@ -99,6 +106,7 @@ def run_daily_ops(input_path: str, output_dir: str, run_date: str) -> dict[str, 
             response_payload=response_payload,
             briefing_text=briefing,
         )
+        write_text_file(run_dir / "ai_briefing.txt", ai_briefing)
 
         finished_at = utc_now()
         duration_ms = int((finished_at - started_at).total_seconds() * 1000)
