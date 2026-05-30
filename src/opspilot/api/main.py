@@ -8,6 +8,12 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from opspilot.history.run_history import (
+    list_run_metadata,
+    read_run_json_artifact,
+    read_run_metadata,
+    read_run_text_artifact,
+)
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, JSONResponse
@@ -16,6 +22,7 @@ import subprocess
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 API_OUTPUT_DIR = PROJECT_ROOT / "data" / "output"
+HISTORY_RUNS_DIR = PROJECT_ROOT / "data" / "history" / "runs"
 RAW_INPUT_DIR = PROJECT_ROOT / "data" / "raw"
 RUN_TIMEOUT_SECONDS = 30
 LOCAL_UI_ORIGINS = [
@@ -44,6 +51,13 @@ def _safe_error(status_code: int, code: str, message: str) -> HTTPException:
         status_code=status_code,
         detail={"error": code, "message": message},
     )
+
+
+def _safe_history_metadata(payload: dict) -> dict:
+    metadata = dict(payload)
+    metadata.pop("output_dir", None)
+    metadata.pop("history_dir", None)
+    return metadata
 
 
 def _resolve_input_file(input_file: str) -> Path:
@@ -109,6 +123,27 @@ def get_briefing():
     with path.open("r", encoding="utf-8") as f:
         return f.read()
 
+
+@app.get("/runs", response_class=JSONResponse)
+def get_runs():
+    """Return metadata for all local history runs, newest first."""
+    metadata = list_run_metadata(HISTORY_RUNS_DIR)
+    return [_safe_history_metadata(item) for item in metadata]
+
+
+@app.get("/runs/{run_id}", response_class=JSONResponse)
+def get_run(run_id: str):
+    """Return metadata for a specific run."""
+    try:
+        metadata = read_run_metadata(run_id, HISTORY_RUNS_DIR)
+    except (OSError, ValueError):
+        raise _safe_error(500, "run_read_failed", "Failed to read run metadata.")
+
+    if metadata is None:
+        raise HTTPException(status_code=404, detail="Run not found.")
+
+    return _safe_history_metadata(metadata)
+
 @app.get("/triage", response_class=JSONResponse)
 def get_triage():
     """Return the latest triage results as JSON."""
@@ -117,3 +152,35 @@ def get_triage():
         raise HTTPException(status_code=404, detail="Triage results not found.")
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
+
+
+@app.get("/runs/{run_id}/triage", response_class=JSONResponse)
+def get_run_triage(run_id: str):
+    """Return triage results for a specific run."""
+    try:
+        payload = read_run_json_artifact(run_id, "triage_results.json", HISTORY_RUNS_DIR)
+    except FileNotFoundError:
+        raise _safe_error(404, "artifact_not_found", "Run triage artifact not found.")
+    except (OSError, ValueError):
+        raise _safe_error(500, "artifact_read_failed", "Failed to read run triage artifact.")
+
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Run not found.")
+
+    return payload
+
+
+@app.get("/runs/{run_id}/briefing", response_class=PlainTextResponse)
+def get_run_briefing(run_id: str):
+    """Return briefing text for a specific run."""
+    try:
+        payload = read_run_text_artifact(run_id, "daily_briefing.txt", HISTORY_RUNS_DIR)
+    except FileNotFoundError:
+        raise _safe_error(404, "artifact_not_found", "Run briefing artifact not found.")
+    except (OSError, ValueError):
+        raise _safe_error(500, "artifact_read_failed", "Failed to read run briefing artifact.")
+
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Run not found.")
+
+    return payload

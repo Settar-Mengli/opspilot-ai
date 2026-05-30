@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
+import re
 from typing import Any
 
-from opspilot.utils.file_io import ensure_directory, write_json_file, write_text_file
+from opspilot.utils.file_io import ensure_directory, read_json_file, write_json_file, write_text_file
+
+
+RUN_ID_PATTERN = re.compile(r"^run-\d{8}-\d{6}-\d{3}(?:-\d{2})?$")
 
 
 def utc_now() -> datetime:
@@ -66,3 +70,84 @@ def write_run_artifacts(
 
 def write_run_metadata(run_dir: Path, metadata: dict[str, Any]) -> None:
     write_json_file(run_dir / "run.json", metadata)
+
+
+def list_run_metadata(runs_root: Path) -> list[dict[str, Any]]:
+    if not runs_root.exists() or not runs_root.is_dir():
+        return []
+
+    records: list[dict[str, Any]] = []
+    for metadata_file in runs_root.rglob("run.json"):
+        try:
+            payload = read_json_file(metadata_file)
+        except (OSError, ValueError):
+            continue
+
+        if not isinstance(payload, dict):
+            continue
+
+        records.append(dict(payload))
+
+    records.sort(
+        key=lambda item: (
+            str(item.get("finished_at", "")),
+            str(item.get("started_at", "")),
+            str(item.get("run_id", "")),
+        ),
+        reverse=True,
+    )
+    return records
+
+
+def find_run_directory(run_id: str, runs_root: Path) -> Path | None:
+    if not RUN_ID_PATTERN.fullmatch(run_id):
+        return None
+    if not runs_root.exists() or not runs_root.is_dir():
+        return None
+
+    for run_dir in runs_root.rglob("run-*"):
+        if run_dir.is_dir() and run_dir.name == run_id:
+            return run_dir
+
+    return None
+
+
+def read_run_metadata(run_id: str, runs_root: Path) -> dict[str, Any] | None:
+    run_dir = find_run_directory(run_id, runs_root)
+    if run_dir is None:
+        return None
+
+    metadata_file = run_dir / "run.json"
+    if not metadata_file.exists() or not metadata_file.is_file():
+        raise FileNotFoundError("run.json not found")
+
+    payload = read_json_file(metadata_file)
+    if not isinstance(payload, dict):
+        raise ValueError("run.json is not an object")
+
+    return dict(payload)
+
+
+def read_run_json_artifact(run_id: str, artifact_name: str, runs_root: Path) -> Any:
+    run_dir = find_run_directory(run_id, runs_root)
+    if run_dir is None:
+        return None
+
+    path = run_dir / artifact_name
+    if not path.exists() or not path.is_file():
+        raise FileNotFoundError(f"Artifact not found: {artifact_name}")
+
+    return read_json_file(path)
+
+
+def read_run_text_artifact(run_id: str, artifact_name: str, runs_root: Path) -> str | None:
+    run_dir = find_run_directory(run_id, runs_root)
+    if run_dir is None:
+        return None
+
+    path = run_dir / artifact_name
+    if not path.exists() or not path.is_file():
+        raise FileNotFoundError(f"Artifact not found: {artifact_name}")
+
+    with path.open("r", encoding="utf-8") as file:
+        return file.read()
