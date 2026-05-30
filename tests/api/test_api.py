@@ -1,4 +1,5 @@
 import os
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -18,6 +19,12 @@ def isolated_run_dirs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr("opspilot.api.main.API_OUTPUT_DIR", output_dir)
     monkeypatch.setattr("opspilot.api.main.HISTORY_RUNS_DIR", history_dir)
     return tmp_path
+
+
+def _write_run_metadata(history_dir: Path, run_id: str, payload: dict) -> None:
+    run_dir = history_dir / "2026" / "05" / "30" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "run.json").write_text(json.dumps(payload), encoding="utf-8")
 
 def test_health():
     resp = client.get("/health")
@@ -130,6 +137,69 @@ def test_get_runs_metadata_is_sanitized_and_safe(isolated_run_dirs: Path):
                 assert ":" not in name
 
 
+def test_get_runs_metadata_allowlist_and_artifact_filtering(isolated_run_dirs: Path):
+    history_dir = isolated_run_dirs / "history" / "runs"
+    run_id = "run-20260530-120000-123"
+    _write_run_metadata(
+        history_dir,
+        run_id,
+        {
+            "run_id": run_id,
+            "started_at": "2026-05-30T12:00:00Z",
+            "finished_at": "2026-05-30T12:01:00Z",
+            "duration_ms": 1000,
+            "status": "success",
+            "item_count": 6,
+            "triage_count": 6,
+            "action_count": 4,
+            "suggested_response_count": 6,
+            "error": None,
+            "input_file": "data/raw/sample_input.json",
+            "output_dir": "C:/sensitive/output",
+            "history_dir": "C:/sensitive/history",
+            "unexpected_key": "must_not_be_exposed",
+            "artifacts": {
+                "triage_results": "triage_results.json",
+                "action_items": "../action_items.json",
+                "suggested_responses": "",
+                "daily_briefing": "daily briefing.txt",
+                "custom": "custom.json",
+            },
+        },
+    )
+
+    resp = client.get("/runs")
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert isinstance(payload, list)
+    assert len(payload) == 1
+
+    item = payload[0]
+    assert item["run_id"] == run_id
+    assert "input_file" not in item
+    assert "output_dir" not in item
+    assert "history_dir" not in item
+    assert "unexpected_key" not in item
+
+    expected_keys = {
+        "run_id",
+        "started_at",
+        "finished_at",
+        "duration_ms",
+        "status",
+        "item_count",
+        "triage_count",
+        "action_count",
+        "suggested_response_count",
+        "error",
+        "artifacts",
+    }
+    assert set(item.keys()).issubset(expected_keys)
+
+    artifacts = item.get("artifacts")
+    assert artifacts == {"triage_results": "triage_results.json"}
+
+
 def test_get_runs_sorted_newest_first(isolated_run_dirs: Path):
     first = client.post("/run", json={"input_file": "sample_input.json", "date": "2026-05-29"})
     second = client.post("/run", json={"input_file": "sample_input.json", "date": "2026-05-29"})
@@ -210,6 +280,39 @@ def test_get_run_metadata_is_sanitized_and_safe(isolated_run_dirs: Path):
         assert ":" not in name
 
 
+def test_get_run_metadata_allowlist_and_artifact_filtering(isolated_run_dirs: Path):
+    history_dir = isolated_run_dirs / "history" / "runs"
+    run_id = "run-20260530-121500-456"
+    _write_run_metadata(
+        history_dir,
+        run_id,
+        {
+            "run_id": run_id,
+            "status": "success",
+            "item_count": 1,
+            "output_dir": "C:/sensitive/output",
+            "unexpected": "leak",
+            "artifacts": {
+                "triage_results": "triage_results.json",
+                "action_items": "nested/action_items.json",
+                "suggested_responses": "..\\suggested_responses.json",
+                "daily_briefing": "@briefing.txt",
+            },
+        },
+    )
+
+    run_meta_resp = client.get(f"/runs/{run_id}")
+    assert run_meta_resp.status_code == 200
+
+    payload = run_meta_resp.json()
+    assert payload["run_id"] == run_id
+    assert payload["status"] == "success"
+    assert payload["item_count"] == 1
+    assert "output_dir" not in payload
+    assert "unexpected" not in payload
+    assert payload.get("artifacts") == {"triage_results": "triage_results.json"}
+
+
 def test_get_run_unknown_id_returns_404(isolated_run_dirs: Path):
     resp = client.get("/runs/run-19990101-000000-000")
     assert resp.status_code == 404
@@ -234,3 +337,34 @@ def test_get_run_artifact_rejects_path_traversal_like_id(isolated_run_dirs: Path
 
     assert triage_resp.status_code == 404
     assert briefing_resp.status_code == 404
+
+
+def test_cors_preflight_allows_post_for_local_origin():
+    resp = client.options(
+        "/run",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+
+    assert resp.status_code == 200
+    assert resp.headers.get("access-control-allow-origin") == "http://localhost:5173"
+    allow_methods = resp.headers.get("access-control-allow-methods", "")
+    assert "POST" in allow_methods
+    assert "GET" in allow_methods
+
+
+def test_cors_preflight_disallows_non_local_origin():
+    resp = client.options(
+        "/run",
+        headers={
+            "Origin": "http://evil.local:5173",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+
+    assert resp.status_code == 400
+
+    allow_origin = resp.headers.get("access-control-allow-origin")
+    assert allow_origin is None or allow_origin != "*"

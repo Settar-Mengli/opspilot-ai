@@ -40,6 +40,10 @@ and this project follows Semantic Versioning principles for release tags.
 - Dashboard run history panel and latest/historical status context badge
 - Executive Briefing "Since Last Run" delta section comparing priority counts (`critical`, `high`, `medium`, `low`) to the immediately previous run
 - Executive Briefing "Recent Trend (Last 7 Runs)" section summarizing deterministic high-risk (`critical + high`) counts and net change
+- Frontend unit/component test baseline with Vitest + Testing Library
+- Focused frontend tests for briefing parsing robustness, API unavailable banner behavior, and run selector latest/historical behavior
+- API tests for metadata allow-listing and artifact-name edge-case handling
+- API tests for local-origin CORS preflight behavior
 
 ### Changed
 
@@ -67,3 +71,8 @@ and this project follows Semantic Versioning principles for release tags.
 - Run-history metadata API responses now sanitize `input_file`, `output_dir`, and `history_dir` for `GET /runs` and `GET /runs/{run_id}`
 - Expanded API metadata safety tests to assert sanitized fields are excluded and artifact names remain path-safe
 - Added API test coverage to reject traversal-like run IDs for `GET /runs/{run_id}` metadata endpoint
+- Run-history metadata responses now use explicit allow-listed key shaping at API boundary
+- Artifact names in metadata responses now drop invalid/path-like/empty/unexpected values defensively
+- CORS policy now explicitly allows `GET` and `POST` for local UI origins only, with credentials disabled
+- README and docs now include local-first security checklist, reproducible validation flow, scheduling status clarity, and roadmap-only integration notes
+- `.gitignore` now includes frontend generated artifacts and local runtime log hygiene

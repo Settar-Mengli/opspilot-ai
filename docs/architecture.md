@@ -86,6 +86,19 @@ Historical mode endpoints:
 - `GET /runs/{run_id}/triage`
 - `GET /runs/{run_id}/briefing`
 
+API boundary hardening:
+
+- Metadata responses use an explicit allow-list of safe keys.
+- Local path-like metadata values are excluded from API responses.
+- Artifact names in metadata are validated at response time; invalid, empty, or path-like names are dropped.
+
+Local browser CORS policy:
+
+- Allowed origins: `http://localhost:5173`, `http://127.0.0.1:5173`
+- Allowed methods: `GET`, `POST`
+- Credentials disabled
+- Purpose: support local UI operation while avoiding broad cross-origin exposure
+
 Frontend run selection:
 
 - Query parameter `run_id` determines historical context.

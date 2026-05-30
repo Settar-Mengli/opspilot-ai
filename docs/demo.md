@@ -41,6 +41,33 @@ Goal: show practical AI operations value with deterministic, local execution.
 7. Forward Path
 - Explain how adapter seam enables future model providers without rewriting orchestration.
 
+## Reproducible Demo Commands
+
+From repository root:
+
+```powershell
+python -m opspilot.cli run --input data/raw/sample_input.json --output data/output --date 2026-05-30
+uvicorn opspilot.api.main:app --reload
+```
+
+In another terminal:
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+Optional validation before recording demo:
+
+```powershell
+pytest -q
+cd frontend
+npm run lint
+npm run build
+npm run test -- --run
+```
+
 ## Reviewer Checklist
 
 A reviewer should be able to verify:
@@ -49,3 +76,4 @@ A reviewer should be able to verify:
 - Outputs are understandable and operationally useful.
 - Project has clear governance, scope, and decision discipline.
 - Reviewer can switch between Latest and a Historical run without changing backend configuration.
+- Reviewer can verify local-only scope with no cloud/auth/database/external AI dependencies.

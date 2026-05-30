@@ -151,6 +151,15 @@ Swagger/OpenAPI docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 - `GET /runs/{run_id}/triage` — Get triage results for a specific historical run
 - `GET /runs/{run_id}/briefing` — Get briefing text for a specific historical run
 
+### API CORS Policy
+
+- Allowed browser origins are local UI origins only:
+	- `http://localhost:5173`
+	- `http://127.0.0.1:5173`
+- Allowed methods are `GET` and `POST`.
+- Credentials are disabled.
+- This policy keeps local browser orchestration possible while preventing remote cross-origin usage patterns.
+
 ## Run (UI)
 
 Start the API first in one terminal:
@@ -189,12 +198,34 @@ Run context behavior:
 - `/run` uses strict input filename validation to block path traversal attempts.
 - `/run` uses a bounded subprocess timeout to prevent indefinite API hangs.
 - API error responses are intentionally safe and structured; internal command details are logged but not exposed to clients.
+- Run metadata responses are allow-listed and sanitize artifact names so path-like or unexpected metadata values are not exposed.
 - Frontend consumes only local API endpoints and uses no external network calls.
+
+### Local-First Security Checklist
+
+- No cloud dependency in runtime path.
+- No auth layer or identity provider.
+- No database dependency.
+- No external AI/LLM provider calls.
+- No secrets or API keys required.
+- Local file-path metadata is not exposed through API metadata endpoints.
+- Input filename validation blocks traversal-like values.
+- Generated runtime artifacts are git-ignored.
 
 ## Test
 
 ```sh
 pytest -q
+```
+
+Frontend validation:
+
+```sh
+cd frontend
+npm ci
+npm run lint
+npm run build
+npm run test -- --run
 ```
 
 ## Output files
@@ -224,11 +255,29 @@ Notes:
 
 - `data/history/` is generated local runtime data.
 - `data/history/` is intentionally ignored by git and should not be committed.
+- Frontend generated artifacts (`frontend/node_modules/`, `frontend/dist/`, `frontend/coverage/`) are local-only and should not be committed.
 
 ## Scheduling status
 
 - Local scheduling is **design-only** right now (not yet implemented in application code).
 - See `docs/scheduling.md` for local scheduling guidance and scope-safe recommendations.
+
+## Automation roadmap (roadmap-only)
+
+The following items are future direction only and are not active features in this repository:
+
+- Optional AI/LLM adapter interfaces behind deterministic fallback contracts.
+- Optional email/connectivity adapters for external systems.
+- Optional notification sinks for local operator workflows.
+- Optional in-app scheduler once local operational needs justify it.
+
+## Submission checklist
+
+- `pytest -q` passes.
+- Frontend lint, build, and tests pass.
+- Demo flow works from local fixture to API/UI output.
+- Generated runtime files remain uncommitted.
+- Scope remains local-first with no cloud/auth/db/deployment dependencies.
 
 ## Triage Output Fields
 

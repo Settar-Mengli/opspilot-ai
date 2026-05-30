@@ -4,6 +4,7 @@ Exposes endpoints for health, running the pipeline, and retrieving outputs.
 """
 import json
 import logging
+import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -29,6 +30,26 @@ LOCAL_UI_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
+SAFE_RUN_METADATA_KEYS = {
+    "run_id",
+    "started_at",
+    "finished_at",
+    "duration_ms",
+    "status",
+    "item_count",
+    "triage_count",
+    "action_count",
+    "suggested_response_count",
+    "artifacts",
+    "error",
+}
+SAFE_ARTIFACT_KEYS = {
+    "triage_results",
+    "action_items",
+    "suggested_responses",
+    "daily_briefing",
+}
+SAFE_ARTIFACT_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 logger = logging.getLogger("opspilot.api")
 
@@ -37,8 +58,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=LOCAL_UI_ORIGINS,
     allow_credentials=False,
-    allow_methods=["GET"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 class RunPipelineRequest(BaseModel):
@@ -53,12 +74,43 @@ def _safe_error(status_code: int, code: str, message: str) -> HTTPException:
     )
 
 
+def _safe_artifact_name(raw_name: object) -> str | None:
+    if not isinstance(raw_name, str):
+        return None
+
+    candidate = raw_name.strip()
+    if not candidate:
+        return None
+
+    if "/" in candidate or "\\" in candidate or ":" in candidate or ".." in candidate:
+        return None
+
+    if not SAFE_ARTIFACT_NAME.fullmatch(candidate):
+        return None
+
+    return candidate
+
+
 def _safe_history_metadata(payload: dict) -> dict:
-    metadata = dict(payload)
-    metadata.pop("input_file", None)
-    metadata.pop("output_dir", None)
-    metadata.pop("history_dir", None)
-    return metadata
+    safe_payload: dict = {}
+    for key in SAFE_RUN_METADATA_KEYS:
+        if key == "artifacts":
+            continue
+        if key in payload:
+            safe_payload[key] = payload[key]
+
+    artifacts = payload.get("artifacts")
+    if isinstance(artifacts, dict):
+        safe_artifacts: dict[str, str] = {}
+        for key, value in artifacts.items():
+            if key not in SAFE_ARTIFACT_KEYS:
+                continue
+            safe_name = _safe_artifact_name(value)
+            if safe_name is not None:
+                safe_artifacts[key] = safe_name
+        safe_payload["artifacts"] = safe_artifacts
+
+    return safe_payload
 
 
 def _resolve_input_file(input_file: str) -> Path:

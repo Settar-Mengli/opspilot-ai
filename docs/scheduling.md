@@ -19,6 +19,8 @@ This document captures scope-safe guidance for future local scheduling and expli
 - Pipeline can be run manually via CLI or API.
 - Latest outputs are written to `data/output/`.
 - Immutable history artifacts are written to `data/history/runs/...`.
+- No in-app scheduler is active in code.
+- CI validates build/test quality but does not schedule production-style runs.
 
 ## Recommended First Scheduling Path
 
@@ -49,6 +51,11 @@ Use a wrapper PowerShell script only if needed for:
 - APScheduler/background loop in FastAPI
 - Hosted cron jobs
 - Notification delivery integrations
+
+## Roadmap-Only Notes
+
+- Future AI/LLM integrations remain design-time only and are not active runtime features.
+- Future email/connectivity/notification automation remains roadmap-only until explicitly scoped.
 
 ## Future Documentation Follow-Up
 

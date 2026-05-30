@@ -232,3 +232,17 @@
   - Trend summarizes high-risk item counts (`critical + high`) across current and recent runs with a net-change line.
   - Added API test coverage for traversal-like run IDs on `GET /runs/{run_id}` metadata endpoint.
   - Updated README and changelog to reflect implemented behavior.
+
+## Safe Sprint: API Contract + CORS + Frontend Test Baseline (2026-05-30)
+
+- Summary:
+  - Hardened API run metadata response shaping with explicit allow-listing.
+  - Added defense-in-depth filtering for artifact names returned in metadata responses.
+  - Clarified and implemented local-only CORS policy with `GET` and `POST` allowed for local UI origins.
+  - Added backend API tests for metadata allow-listing, artifact edge cases, and CORS preflight behavior.
+  - Added minimal frontend Vitest + Testing Library baseline and focused tests for banner behavior, run selector behavior, and briefing parsing fallback behavior.
+  - Updated README/architecture/demo/scheduling docs and gitignore for portfolio readiness and generated artifact hygiene.
+- Scope constraints honored:
+  - Local-only deterministic behavior preserved.
+  - No cloud/auth/database/deployment/external AI integrations introduced.
+  - No runtime connector automation added; future integrations remain roadmap-only in docs.

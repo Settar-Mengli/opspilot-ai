@@ -31,8 +31,16 @@ Thumbs.db
 # Local data outputs
 data/output/
 data/processed/
+data/history/
+
+# Frontend generated artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/.env.local
 
 # Python packaging artifacts
 *.egg-info/
 
-data/history/
+# Runtime logs
+*.log
