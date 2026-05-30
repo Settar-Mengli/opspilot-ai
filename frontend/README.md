@@ -61,3 +61,7 @@ npm run build
 - No database
 - No deployment configuration
 - No AI/LLM calls in frontend
+
+## Portfolio Review Alignment
+
+- For reviewer-facing quickstart, screenshot guidance, and end-to-end demo flow, use the root README and `docs/demo.md`.

@@ -5,6 +5,71 @@
 
 OpsPilot AI is a local, rule-based operations command center that simulates how an assistant triages and summarizes incoming work (emails, tasks, support requests). It turns unstructured signals into prioritized action items, suggested responses, and a daily executive briefing—entirely offline, with no paid APIs or secrets required.
 
+## Quickstart (2 minutes)
+
+From project root in PowerShell:
+
+1. Setup Python environment:
+
+```sh
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -e .[dev]
+```
+
+2. Run one local pipeline pass:
+
+```sh
+python -m opspilot.cli run --input data/raw/sample_input.json --output data/output --date 2026-05-30
+```
+
+3. Start API in terminal A:
+
+```sh
+uvicorn opspilot.api.main:app --reload
+```
+
+4. Start frontend in terminal B:
+
+```sh
+cd frontend
+npm ci
+npm run dev
+```
+
+5. Run checks:
+
+```sh
+pytest -q
+cd frontend
+npm run lint
+npm run build
+npm run test -- --run
+```
+
+## Why This Project Is Portfolio-Strong
+
+- Deterministic explainability: each triage label includes reason fields, not opaque scoring.
+- End-to-end local workflow: ingest, classify, extract, draft, brief, and review through API + UI.
+- Local-first safety: no cloud dependency, no secrets, and no external API requirement.
+- Engineering discipline: backend tests, frontend checks, and CI coverage for repeatability.
+- Operational traceability: immutable run history plus executive briefing delta/trend context.
+- Future-ready seam: roadmap supports adapter-based extensions without active external integrations today.
+
+## Screenshots
+
+For portfolio submission, capture and include these four screenshots:
+
+1. Dashboard with KPI cards and Top Operational Risks.
+2. Triage Explorer with the Explainability drawer open for one record.
+3. Executive Briefing page showing summary metrics and top priorities.
+4. Historical run context using run selector/status to demonstrate Latest vs Historical behavior.
+
+Suggested placement and naming:
+
+- Store images under `docs/images/`.
+- Use stable names such as `dashboard-kpi.png`, `triage-explainability.png`, `executive-briefing.png`, `historical-run-context.png`.
+
 ---
 
 ## How it works

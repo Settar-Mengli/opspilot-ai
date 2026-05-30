@@ -68,6 +68,28 @@ npm run build
 npm run test -- --run
 ```
 
+## Demo Recording Checklist (3 to 5 minutes)
+
+Show this sequence:
+
+1. Project purpose in one sentence: local deterministic ops triage to executive briefing.
+2. Scope guardrails: local-first, no secrets, no external APIs required.
+3. Run pipeline once (or show an existing fresh output run) from local fixture data.
+4. Show API surface quickly (`/health`, `/triage`, `/briefing`, `/runs`).
+5. Dashboard: KPI cards and top priorities.
+6. Triage Explorer: open explainability drawer to show reason fields.
+7. Executive Briefing: highlight priority sections and trend/delta context.
+8. Run history: switch Latest vs Historical context.
+9. Engineering quality proof: show passing tests/CI checks.
+
+Do not claim these are implemented today:
+
+- Cloud deployment
+- Authentication/authorization
+- Database-backed persistence
+- External AI/LLM inference calls
+- Real email ingestion or notification sending
+
 ## Reviewer Checklist
 
 A reviewer should be able to verify:
