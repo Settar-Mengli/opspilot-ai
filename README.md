@@ -23,7 +23,7 @@ OpsPilot AI is a local, rule-based operations command center that simulates how 
 
 ```mermaid
 flowchart TD
-		A[Input JSON<br>(emails, tasks, support)] --> B[Ingest/Normalize]
+		A[Input JSON emails tasks support] --> B[Ingest Normalize]
 		B --> C[Rule-based Classifier]
 		C --> D[Action Extractor]
 		C --> E[Suggested Response Drafter]
@@ -33,7 +33,7 @@ flowchart TD
 		D --> H[Action Items Output]
 		E --> I[Suggested Responses Output]
 		F --> J[Daily Briefing Output]
-		K[FastAPI Local API<br>/health /triage /briefing] --> L[React Command Center UI]
+		K[FastAPI Local API health triage briefing] --> L[React Command Center UI]
 		G --> K
 		J --> K
 ```
