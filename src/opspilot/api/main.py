@@ -9,6 +9,7 @@ from datetime import date
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, JSONResponse
 from pydantic import BaseModel
 import subprocess
@@ -17,10 +18,21 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 API_OUTPUT_DIR = PROJECT_ROOT / "data" / "output"
 RAW_INPUT_DIR = PROJECT_ROOT / "data" / "raw"
 RUN_TIMEOUT_SECONDS = 30
+LOCAL_UI_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 
 logger = logging.getLogger("opspilot.api")
 
 app = FastAPI(title="OpsPilot AI API", description="Local API for running and retrieving OpsPilot outputs.", version="0.1.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=LOCAL_UI_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 
 class RunPipelineRequest(BaseModel):
     input_file: str = "sample_input.json"
