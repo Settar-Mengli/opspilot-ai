@@ -76,7 +76,7 @@ Due-Soon Action Items:
 - **Local-only**: No secrets, no cloud dependencies, runs on any machine.
 - **Explicit validation**: Fails fast on bad input, with clear error messages.
 - **Explainability**: Every label is accompanied by a reason string for transparency.
-- **CLI-first**: No UI or web server—just a single command to run the full pipeline.
+- **CLI + local API**: Operate via command line or local FastAPI endpoints, with no cloud dependency.
 - **Extensible**: Architecture is modular, with clear seams for future model or API adapters.
 
 ---
@@ -122,6 +122,13 @@ Swagger/OpenAPI docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 - `GET /briefing` — Get latest daily briefing
 - `GET /triage` — Get latest triage results
 
+## Security & Reliability
+
+- Local-only architecture: no cloud services, no external APIs, no secrets.
+- `/run` uses strict input filename validation to block path traversal attempts.
+- `/run` uses a bounded subprocess timeout to prevent indefinite API hangs.
+- API error responses are intentionally safe and structured; internal command details are logged but not exposed to clients.
+
 ## Test
 
 ```sh
@@ -148,52 +155,6 @@ Each triage record includes:
 - `sentiment_reason`
 
 ---
-
-## License
-
-MIT (see `LICENSE`).
-
-## Setup
-
-From project root in PowerShell:
-
-1. `python -m venv .venv`
-2. `.venv\Scripts\Activate.ps1`
-3. `pip install -e .[dev]`
-
-## Run
-
-`python -m opspilot.cli run --input data/raw/sample_input.json --output data/output --date 2026-05-29`
-
-## Test
-
-`pytest -q`
-
-## Expected Output Files
-
-- `data/output/triage_results.json`
-- `data/output/action_items.json`
-- `data/output/suggested_responses.json`
-- `data/output/daily_briefing.txt`
-
-## Triage Output Fields
-
-Each triage record includes:
-
-- `id`
-- `urgency`
-- `urgency_reason`
-- `category`
-- `category_reason`
-- `sentiment`
-- `sentiment_reason`
-
-## Planned Repository Areas
-
-- `.github/workflows/` for CI
-- `data/` for local fixtures and outputs
-- `src/` for Python application code
-- `tests/` for unit and integration tests
 
 ## License
 

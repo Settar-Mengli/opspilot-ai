@@ -24,3 +24,18 @@ and this project follows Semantic Versioning principles for release tags.
 - OpenAPI/Swagger docs
 - API tests (`tests/api/test_api.py`)
 - Updated README with API usage and endpoints
+
+### Changed
+
+- Hardened API run contract in `src/opspilot/api/main.py`:
+	- `date` is validated by API request schema
+	- subprocess execution uses `sys.executable`
+	- `input_file` is restricted to filenames under `data/raw`
+	- subprocess execution now has a bounded timeout for reliability
+- `/triage` now returns parsed JSON payloads instead of raw JSON strings
+- `/run` now returns safe structured error payloads and avoids exposing raw stderr to clients
+- Strengthened API tests in `tests/api/test_api.py` for JSON shape, timeout handling, subprocess failure behavior, and invalid date input
+- Cleaned duplicated/stale sections in `README.md` and aligned wording to CLI + local API
+- Added a short Security & Reliability section to `README.md`
+- Added explicit restart handoff section to `PROGRESS.md`
+- Moved `fastapi` and `uvicorn[standard]` to runtime dependencies in `pyproject.toml`

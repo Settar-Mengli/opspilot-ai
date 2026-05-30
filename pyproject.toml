@@ -9,12 +9,14 @@ description = "Local rule-based AI operations command center vertical slice"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "OpsPilot AI Contributors" }]
+dependencies = [
+	"fastapi",
+	"uvicorn[standard]"
+]
 
 [project.optional-dependencies]
 dev = [
 	"pytest>=8.0",
-	"fastapi",
-	"uvicorn[standard]",
 	"httpx2"
 ]
 

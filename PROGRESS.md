@@ -86,3 +86,52 @@
   - Updated `README.md` (API usage, endpoints, Swagger UI)
   - Updated `pyproject.toml` (FastAPI/uvicorn dev dependencies)
 - Next: Plan Milestone 8 (optional: authentication, error handling, or dashboard UI)
+
+---
+
+## Restart Handoff (Current State)
+
+- Branch: `main`
+- Latest commit: `3e008df` (`feat(api): add local FastAPI layer with health, run, and output endpoints`)
+- Current capabilities:
+  - Local CLI pipeline for ingest, normalization, triage, action extraction, response drafting, and briefing generation
+  - Local FastAPI endpoints: `/health`, `/run`, `/briefing`, `/triage`
+  - Explainable triage outputs with deterministic reason fields
+- Test status:
+  - `pytest -q` => `19 passed` (includes API, integration, and unit tests)
+- Known issues fixed in this pass:
+  - `/triage` now returns parsed JSON payload instead of raw JSON string
+  - `/run` now uses explicit date contract (validation at API boundary) to avoid avoidable 500s
+  - `/run` now uses current Python interpreter (`sys.executable`) for subprocess execution
+  - `input_file` path traversal blocked for `/run` (`../` and nested paths rejected)
+  - README duplicate/stale sections removed and wording aligned to CLI + local API
+- Security rules:
+  - Local-only operation
+  - No cloud services, external APIs, auth systems, databases, or secrets
+  - No API keys/tokens in code, tests, or docs
+- Next recommended action:
+  - Create a small follow-up commit for this hardening pass, then optionally add stricter API error-path coverage (still local-only)
+
+---
+
+## Hardening Pass: API Reliability & Safe Errors (2026-05-29)
+
+- Summary:
+  - Added subprocess timeout handling for `/run` to prevent indefinite hangs.
+  - Replaced raw stderr exposure with safe structured API errors.
+  - Kept useful internal error details in logs.
+  - Moved FastAPI/Uvicorn to runtime dependencies for clean API installation.
+  - Expanded API tests for timeout, subprocess failure, invalid date format, and safe error response shape.
+- Files changed:
+  - `src/opspilot/api/main.py`
+  - `tests/api/test_api.py`
+  - `pyproject.toml`
+  - `README.md`
+  - `CHANGELOG.md`
+- Validation:
+  - `pytest -q` (post-change) passes.
+- Security stance (unchanged):
+  - Local-only
+  - No cloud/external APIs/auth/databases/secrets
+- Next recommended action:
+  - Keep this pass focused and commit as a single reliability/security hardening change set.
