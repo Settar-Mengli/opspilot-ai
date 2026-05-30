@@ -19,17 +19,22 @@ Goal: show practical AI operations value with deterministic, local execution.
 
 3. Run
 - Execute one CLI command for full triage pipeline.
+- Start local API and frontend command center.
 
-4. Output
-- Show per-item labels: urgency, category, sentiment.
-- Show extracted action items and suggested responses.
-- Show generated daily executive briefing.
+4. Command Center UI
+- Start on Dashboard and show KPI cards plus top priorities.
+- Open Triage Explorer and click a row to show explainability reasons.
+- Open Executive Briefing page and show leadership-readable summary sections.
 
-5. Engineering Quality
+5. Output Traceability
+- Tie UI values back to local API and output files.
+- Confirm no external service calls are required.
+
+6. Engineering Quality
 - Highlight deterministic behavior and test coverage.
 - Highlight decision log and milestone acceptance criteria.
 
-6. Forward Path
+7. Forward Path
 - Explain how adapter seam enables future model providers without rewriting orchestration.
 
 ## Reviewer Checklist

@@ -33,6 +33,9 @@ flowchart TD
 		D --> H[Action Items Output]
 		E --> I[Suggested Responses Output]
 		F --> J[Daily Briefing Output]
+		K[FastAPI Local API<br>/health /triage /briefing] --> L[React Command Center UI]
+		G --> K
+		J --> K
 ```
 
 ---
@@ -122,12 +125,38 @@ Swagger/OpenAPI docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 - `GET /briefing` — Get latest daily briefing
 - `GET /triage` — Get latest triage results
 
+## Run (UI)
+
+Start the API first in one terminal:
+
+```sh
+uvicorn opspilot.api.main:app --reload
+```
+
+In another terminal, run the frontend:
+
+```sh
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend defaults to `http://127.0.0.1:8000` for API calls.
+To override, copy `frontend/.env.example` to `.env` and set `VITE_API_BASE_URL`.
+
+UI routes:
+
+- Dashboard
+- Triage Explorer
+- Executive Briefing
+
 ## Security & Reliability
 
 - Local-only architecture: no cloud services, no external APIs, no secrets.
 - `/run` uses strict input filename validation to block path traversal attempts.
 - `/run` uses a bounded subprocess timeout to prevent indefinite API hangs.
 - API error responses are intentionally safe and structured; internal command details are logged but not exposed to clients.
+- Frontend consumes only local API endpoints and uses no external network calls.
 
 ## Test
 

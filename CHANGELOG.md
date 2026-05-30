@@ -24,6 +24,11 @@ and this project follows Semantic Versioning principles for release tags.
 - OpenAPI/Swagger docs
 - API tests (`tests/api/test_api.py`)
 - Updated README with API usage and endpoints
+- React + Vite + TypeScript frontend in `frontend/` for local command center experience
+- Command center routes: Dashboard, Triage Explorer, Executive Briefing
+- Header health indicator and global API unavailable banner based on `GET /health`
+- Explainability drawer in triage explorer showing urgency/category/sentiment reasons
+- Frontend env template `frontend/.env.example` for `VITE_API_BASE_URL`
 
 ### Changed
 
@@ -39,3 +44,5 @@ and this project follows Semantic Versioning principles for release tags.
 - Added a short Security & Reliability section to `README.md`
 - Added explicit restart handoff section to `PROGRESS.md`
 - Moved `fastapi` and `uvicorn[standard]` to runtime dependencies in `pyproject.toml`
+- Expanded README run instructions to include local frontend startup and API/UI flow
+- Updated architecture and demo docs to include command center UI walkthrough

@@ -19,6 +19,8 @@ OpsPilot AI is a local-only operations command center that transforms mock inbou
 4. Extract action items
 5. Draft suggested responses
 6. Generate executive briefing and structured outputs
+7. Serve read-only outputs through local FastAPI endpoints
+8. Render command center UI from local API responses
 
 ## Planned Module Boundaries
 
@@ -26,6 +28,8 @@ OpsPilot AI is a local-only operations command center that transforms mock inbou
 - rules: deterministic classification logic
 - nlp: extraction, response drafting, briefing composition
 - pipeline: orchestration of end-to-end run
+- api: local read/write orchestration boundary for run + output retrieval
+- frontend: local read-only command center routes (dashboard, triage explorer, briefing)
 - models: shared schemas and enums
 - utils: IO and logging helpers
 
@@ -61,3 +65,11 @@ Adapter seam requirements:
 - Real inbox/calendar integrations
 - Autonomous agent actions on external systems
 - Production deployment concerns
+
+## Milestone 8 UI Scope Constraints
+
+- Local-only frontend execution
+- No authentication or authorization layer
+- No database persistence
+- No cloud deployment setup
+- No new backend endpoints required for initial command center views

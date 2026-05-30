@@ -135,3 +135,23 @@
   - No cloud/external APIs/auth/databases/secrets
 - Next recommended action:
   - Keep this pass focused and commit as a single reliability/security hardening change set.
+
+---
+
+## Milestone 8: OpsPilot Command Center UI (2026-05-29)
+
+- Summary:
+  - Added a separate React + Vite + TypeScript frontend in `frontend/`.
+  - Implemented dark-mode-first local command center UI with three routes:
+    - Dashboard
+    - Triage Explorer
+    - Executive Briefing
+  - Added global local-API availability banner and header health indicator via `GET /health`.
+  - Added typed API client for `GET /health`, `GET /triage`, and `GET /briefing` with safe error handling.
+  - Added KPI cards, top-priority panel, urgency distribution visual, triage filters, and explainability drawer.
+  - Added frontend configuration template with `VITE_API_BASE_URL` defaulting to `http://127.0.0.1:8000`.
+- Scope constraints honored:
+  - Local-only UI
+  - Read-only flow
+  - No auth, database, cloud deployment, or new backend endpoints
+  - No `POST /run` button in the UI
