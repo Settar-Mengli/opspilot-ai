@@ -1,6 +1,6 @@
 export type Urgency = 'low' | 'medium' | 'high' | 'critical'
 
-export type Category = 'incident' | 'request' | 'admin' | 'follow-up' | 'other'
+export type Category = 'incident' | 'request' | 'admin' | 'follow_up' | 'other'
 
 export type Sentiment = 'negative' | 'neutral' | 'positive'
 

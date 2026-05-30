@@ -2,6 +2,8 @@ import type { TriageRecord } from './types'
 
 const FALLBACK_API_BASE_URL = 'http://127.0.0.1:8000'
 
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1'])
+
 function sanitizeBaseUrl(url: string | undefined): string {
   if (!url) {
     return FALLBACK_API_BASE_URL
@@ -12,6 +14,11 @@ function sanitizeBaseUrl(url: string | undefined): string {
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       return FALLBACK_API_BASE_URL
     }
+
+    if (!LOCAL_HOSTNAMES.has(parsed.hostname)) {
+      return FALLBACK_API_BASE_URL
+    }
+
     return parsed.origin
   } catch {
     return FALLBACK_API_BASE_URL

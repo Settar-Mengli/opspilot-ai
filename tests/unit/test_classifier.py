@@ -45,3 +45,19 @@ def test_classifier_request_positive() -> None:
     assert triage.urgency_reason == triage_again.urgency_reason
     assert triage.category_reason == triage_again.category_reason
     assert triage.sentiment_reason == triage_again.sentiment_reason
+
+
+def test_classifier_follow_up_category_uses_snake_case() -> None:
+    item = WorkItem(
+        id="WI-Z",
+        source_type="email",
+        subject_or_title="Reminder on deployment checklist",
+        body_or_description="Checking in with a follow-up on yesterday's checklist.",
+        sender_or_requester="ops@local",
+        received_at="2026-05-29T00:00:00Z",
+        tags=[],
+    )
+
+    triage = classify_work_item(item)
+    assert triage.category == "follow_up"
+    assert triage.category_reason.startswith("Matched follow-up token")

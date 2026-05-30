@@ -72,3 +72,5 @@ def test_get_triage():
     assert isinstance(payload, list)
     assert payload
     assert "urgency_reason" in payload[0]
+    categories = {record["category"] for record in payload}
+    assert categories.issubset({"incident", "request", "admin", "follow_up", "other"})
