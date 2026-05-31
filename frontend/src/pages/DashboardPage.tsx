@@ -84,7 +84,7 @@ export function DashboardPage({ userName, assistantName, askPilotRef, onMicClick
       <TimeframeTabs
         active={view}
         todayCount={todayCount}
-        tomorrowCount={1}
+        tomorrowCount={0}
         onChange={setView}
       />
       <Greeting userName={userName} assistantName={assistantName} dateLabel={dateLabel} briefing={greetingSummary} />
@@ -109,9 +109,7 @@ export function DashboardPage({ userName, assistantName, askPilotRef, onMicClick
 
       {view === 'tomorrow' && (
         <div className="fade-in d3">
-          <div className="section-label">
-            Tomorrow <span className="section-count">1 ITEM</span>
-          </div>
+          <div className="section-label">Tomorrow</div>
           <QuietState />
         </div>
       )}
@@ -119,7 +117,7 @@ export function DashboardPage({ userName, assistantName, askPilotRef, onMicClick
       {view === 'week' && (
         <>
           <div className="section-label">Week of June 1 — 5</div>
-          <WeekView />
+          <WeekView records={records} />
         </>
       )}
 

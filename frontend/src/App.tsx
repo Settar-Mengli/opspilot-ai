@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { NavLink, Route, Routes, Navigate } from 'react-router-dom'
-import { getHealth } from './api/client'
+import { getHealth, getTriage } from './api/client'
 import { Brand } from './components/Brand'
 import { AssistantPill } from './components/AssistantPill'
 import { HealthBell } from './components/HealthBell'
@@ -14,12 +14,8 @@ import { BriefingPage } from './pages/BriefingPage'
 import { useUserName } from './hooks/useUserName'
 import { useAssistantName } from './hooks/useAssistantName'
 import { useGlobalShortcut } from './hooks/useGlobalShortcut'
-
-const MOCK_NOTIFICATIONS = [
-  { id: '1', text: 'SRE acknowledged the checkout outage. Tracking response.', time: '12 minutes ago' },
-  { id: '2', text: 'Customer ticket #4032 has been viewed by support lead.', time: '28 minutes ago' },
-  { id: '3', text: '3 new items came in overnight — all medium priority.', time: '1 hour ago' },
-]
+import { deriveObservations } from './utils/observations'
+import type { Observation } from './utils/observations'
 
 function App() {
   const [healthy, setHealthy] = useState(true)
@@ -27,6 +23,7 @@ function App() {
   const [voiceOpen, setVoiceOpen] = useState(false)
   const [userName, setUserName] = useUserName()
   const [assistantName, setAssistantName, hasChosenAssistant] = useAssistantName()
+  const [observations, setObservations] = useState<Observation[]>([])
   const askPilotRef = useRef<HTMLInputElement>(null)
 
   const focusAskPilot = useCallback(() => {
@@ -37,6 +34,12 @@ function App() {
 
   useEffect(() => {
     getHealth().then(setHealthy).catch(() => setHealthy(false))
+  }, [])
+
+  useEffect(() => {
+    getTriage()
+      .then(records => setObservations(deriveObservations(records)))
+      .catch(() => setObservations([]))
   }, [])
 
   if (userName === null || !hasChosenAssistant) {
@@ -56,12 +59,12 @@ function App() {
           <NavLink to="/briefing" className={({isActive}) => `nav-tab ${isActive ? 'active' : ''}`}>Briefing</NavLink>
         </nav>
         <div className="nav-right">
-          <HealthBell hasNotifications={true} onClick={() => setNotifyOpen(o => !o)} />
+          <HealthBell hasNotifications={observations.length > 0} onClick={() => setNotifyOpen(o => !o)} />
           <AssistantPill assistantName={assistantName} />
         </div>
       </header>
 
-      <NotifyPanel open={notifyOpen} notifications={MOCK_NOTIFICATIONS} />
+      <NotifyPanel open={notifyOpen} notifications={observations} assistantName={assistantName} />
 
       {!healthy && (
         <div className="api-banner">

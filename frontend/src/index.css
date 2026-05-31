@@ -576,3 +576,69 @@ select option { background: #1c1c1a; color: var(--text-1); }
   padding: 0;
 }
 .onboarding-back:hover { color: var(--text-1); }
+
+/* Notify empty state */
+.notify-empty {
+  padding: 18px 4px 8px;
+  font-family: var(--font-prose);
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* Week summary view */
+.week-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.week-summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'label count'
+    'desc count';
+  gap: 4px 16px;
+  align-items: center;
+}
+.week-summary-label {
+  grid-area: label;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+.week-summary-count {
+  grid-area: count;
+  font-family: var(--font-prose);
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--accent);
+  line-height: 1;
+}
+.week-summary-desc {
+  grid-area: desc;
+  font-family: var(--font-prose);
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.week-summary-note {
+  font-family: var(--font-prose);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.55;
+  padding: 4px 4px 0;
+}
+
+@media (max-width: 768px) {
+  .week-summary-count { font-size: 26px; }
+  .week-summary-card { padding: 14px 16px; }
+}
