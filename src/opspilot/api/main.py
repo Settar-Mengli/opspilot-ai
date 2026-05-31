@@ -25,7 +25,7 @@ from opspilot.history.run_history import (
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import subprocess
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -75,16 +75,31 @@ class RunPipelineRequest(BaseModel):
 
 
 class AskRequest(BaseModel):
-    question: str
-    assistant_name: str = "OpsPilot"
+    question: str = Field(..., min_length=1, max_length=2000)
+    assistant_name: str = Field(
+        default="OpsPilot",
+        min_length=1,
+        max_length=60,
+        pattern=r"^[A-Za-z0-9 .'\-]+$",
+    )
 
 
 class EveningSummaryRequest(BaseModel):
-    assistant_name: str = "OpsPilot"
+    assistant_name: str = Field(
+        default="OpsPilot",
+        min_length=1,
+        max_length=60,
+        pattern=r"^[A-Za-z0-9 .'\-]+$",
+    )
 
 
 class InsightsRequest(BaseModel):
-    assistant_name: str = "OpsPilot"
+    assistant_name: str = Field(
+        default="OpsPilot",
+        min_length=1,
+        max_length=60,
+        pattern=r"^[A-Za-z0-9 .'\-]+$",
+    )
 
 
 def _safe_error(status_code: int, code: str, message: str) -> HTTPException:
