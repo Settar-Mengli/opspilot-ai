@@ -31,9 +31,10 @@ interface Props {
   assistantName: string
   askPilotRef?: RefObject<HTMLInputElement | null>
   onMicClick?: () => void
+  onAsk: (question: string) => void
 }
 
-export function DashboardPage({ userName, assistantName, askPilotRef, onMicClick }: Props) {
+export function DashboardPage({ userName, assistantName, askPilotRef, onMicClick, onAsk }: Props) {
   const [records, setRecords] = useState<TriageRecord[]>([])
   const [view, setView] = useState<View>('today')
   const [loading, setLoading] = useState(true)
@@ -121,7 +122,7 @@ export function DashboardPage({ userName, assistantName, askPilotRef, onMicClick
         </>
       )}
 
-      <AskPilot assistantName={assistantName} inputRef={askPilotRef} onMicClick={onMicClick} />
+      <AskPilot assistantName={assistantName} inputRef={askPilotRef} onMicClick={onMicClick} onAsk={onAsk} />
       <MemoryChip assistantName={assistantName} />
       <EveningSummary assistantName={assistantName} />
 

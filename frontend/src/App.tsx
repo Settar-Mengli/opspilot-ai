@@ -8,6 +8,7 @@ import { NotifyPanel } from './components/NotifyPanel'
 import { MobileDock } from './components/MobileDock'
 import { VoiceOverlay } from './components/VoiceOverlay'
 import { Onboarding } from './components/Onboarding'
+import { AskPanel } from './components/AskPanel'
 import { DashboardPage } from './pages/DashboardPage'
 import { AllItemsPage } from './pages/AllItemsPage'
 import { BriefingPage } from './pages/BriefingPage'
@@ -21,6 +22,8 @@ function App() {
   const [healthy, setHealthy] = useState(true)
   const [notifyOpen, setNotifyOpen] = useState(false)
   const [voiceOpen, setVoiceOpen] = useState(false)
+  const [askOpen, setAskOpen] = useState(false)
+  const [askInitialQuestion, setAskInitialQuestion] = useState('')
   const [userName, setUserName] = useUserName()
   const [assistantName, setAssistantName, hasChosenAssistant] = useAssistantName()
   const [observations, setObservations] = useState<Observation[]>([])
@@ -31,6 +34,11 @@ function App() {
   }, [])
 
   useGlobalShortcut('k', focusAskPilot)
+
+  function handleAsk(question: string) {
+    setAskInitialQuestion(question)
+    setAskOpen(true)
+  }
 
   useEffect(() => {
     getHealth().then(setHealthy).catch(() => setHealthy(false))
@@ -76,14 +84,17 @@ function App() {
       <main className="content-shell">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage userName={userName} assistantName={assistantName} askPilotRef={askPilotRef} onMicClick={() => setVoiceOpen(true)} />} />
+          <Route path="/dashboard" element={<DashboardPage userName={userName} assistantName={assistantName} askPilotRef={askPilotRef} onMicClick={() => setVoiceOpen(true)} onAsk={handleAsk} />} />
           <Route path="/items" element={<AllItemsPage />} />
           <Route path="/briefing" element={<BriefingPage />} />
         </Routes>
       </main>
 
-      <MobileDock assistantName={assistantName} onMicClick={() => setVoiceOpen(true)} />
+      <MobileDock assistantName={assistantName} onMicClick={() => setVoiceOpen(true)} onAsk={handleAsk} />
       <VoiceOverlay open={voiceOpen} onClose={() => setVoiceOpen(false)} />
+      {askOpen && (
+        <AskPanel open={askOpen} assistantName={assistantName} initialQuestion={askInitialQuestion} onClose={() => setAskOpen(false)} />
+      )}
     </div>
   )
 }

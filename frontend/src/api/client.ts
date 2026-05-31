@@ -191,3 +191,16 @@ export async function getInputFiles(): Promise<string[]> {
 }
 
 export { API_BASE_URL }
+
+export async function askOpsPilot(question: string, assistantName: string): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}/ask`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, assistant_name: assistantName }),
+  })
+  if (!response.ok) {
+    throw new Error(`Ask failed: ${response.status} ${response.statusText}`)
+  }
+  const data = await response.json()
+  return data.answer || ''
+}

@@ -11,13 +11,28 @@ interface Props {
   assistantName: string
   inputRef?: RefObject<HTMLInputElement | null>
   onMicClick?: () => void
+  onAsk: (question: string) => void
 }
 
-export function AskPilot({ assistantName, inputRef, onMicClick }: Props) {
+export function AskPilot({ assistantName, inputRef, onMicClick, onAsk }: Props) {
   const [text, setText] = useState('')
 
   const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('MAC')
   const shortcutHint = isMac ? '⌘K' : 'Ctrl+K'
+
+  function handleSubmit() {
+    const trimmed = text.trim()
+    if (!trimmed) return
+    onAsk(trimmed)
+    setText('')
+  }
+
+  function handleKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit()
+    }
+  }
 
   return (
     <div className="ask-section fade-in d4">
@@ -30,8 +45,9 @@ export function AskPilot({ assistantName, inputRef, onMicClick }: Props) {
           placeholder={`Ask ${assistantName} anything — draft a message, summarize a thread… ${shortcutHint}`}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onKeyDown={handleKey}
         />
-        <button className="ask-send" disabled={!text.trim()}>
+        <button className="ask-send" disabled={!text.trim()} onClick={handleSubmit}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
           </svg>
@@ -49,7 +65,7 @@ export function AskPilot({ assistantName, inputRef, onMicClick }: Props) {
       </div>
       <div className="ask-suggestions">
         {SUGGESTIONS.map(s => (
-          <button key={s} className="suggestion-chip" onClick={() => setText(s)}>{s}</button>
+          <button key={s} className="suggestion-chip" onClick={() => onAsk(s)}>{s}</button>
         ))}
       </div>
     </div>

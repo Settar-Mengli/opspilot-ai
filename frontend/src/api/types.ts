@@ -60,3 +60,19 @@ export interface RunPipelineResult {
   status: string
   stdout: string
 }
+
+export interface AskRequest {
+  question: string
+  assistant_name: string
+}
+
+export interface AskResponse {
+  answer: string
+}
+
+export interface AskMessage {
+  id: string
+  role: 'user' | 'assistant'
+  text: string
+  timestamp: number
+}
