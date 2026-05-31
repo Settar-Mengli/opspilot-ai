@@ -1,162 +1,66 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Navigate, Route, Routes, useSearchParams } from 'react-router-dom'
-import { getHealth, getRuns } from './api/client'
-import type { RunSummary } from './api/types'
-import { ApiUnavailableBanner } from './components/ApiUnavailableBanner'
-import { HealthIndicator } from './components/HealthIndicator'
-import { Logo } from './components/Logo'
-import { RunSelector } from './components/RunSelector'
+import { NavLink, Route, Routes, Navigate } from 'react-router-dom'
+import { getHealth } from './api/client'
+import { Brand } from './components/Brand'
+import { AssistantPill } from './components/AssistantPill'
+import { HealthBell } from './components/HealthBell'
+import { NotifyPanel } from './components/NotifyPanel'
+import { MobileDock } from './components/MobileDock'
+import { VoiceOverlay } from './components/VoiceOverlay'
 import { DashboardPage } from './pages/DashboardPage'
-import { ExecutiveBriefingPage } from './pages/ExecutiveBriefingPage'
-import { TriageExplorerPage } from './pages/TriageExplorerPage'
+import { AllItemsPage } from './pages/AllItemsPage'
+import { BriefingPage } from './pages/BriefingPage'
+
+const MOCK_NOTIFICATIONS = [
+  { id: '1', text: 'SRE acknowledged the checkout outage. Tracking response.', time: '12 minutes ago' },
+  { id: '2', text: 'Customer ticket #4032 has been viewed by support lead.', time: '28 minutes ago' },
+  { id: '3', text: '3 new items came in overnight — all medium priority.', time: '1 hour ago' },
+]
 
 function App() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const [apiHealthy, setApiHealthy] = useState(false)
-  const [healthLoading, setHealthLoading] = useState(true)
-  const [refreshToken, setRefreshToken] = useState(0)
-  const [runs, setRuns] = useState<RunSummary[]>([])
-  const [runsLoading, setRunsLoading] = useState(true)
-  const [runsError, setRunsError] = useState<string | null>(null)
-
-  const selectedRunId = searchParams.get('run_id')?.trim() || null
+  const [healthy, setHealthy] = useState(true)
+  const [notifyOpen, setNotifyOpen] = useState(false)
+  const [voiceOpen, setVoiceOpen] = useState(false)
 
   useEffect(() => {
-    let cancelled = false
-
-    async function checkHealth() {
-      setHealthLoading(true)
-      try {
-        const health = await getHealth()
-        if (!cancelled) {
-          setApiHealthy(health)
-        }
-      } catch {
-        if (!cancelled) {
-          setApiHealthy(false)
-        }
-      } finally {
-        if (!cancelled) {
-          setHealthLoading(false)
-        }
-      }
-    }
-
-    void checkHealth()
-
-    return () => {
-      cancelled = true
-    }
-  }, [refreshToken])
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadRuns() {
-      setRunsLoading(true)
-      setRunsError(null)
-      try {
-        const payload = await getRuns()
-        if (!cancelled) {
-          setRuns(payload)
-        }
-      } catch (loadError) {
-        if (!cancelled) {
-          setRunsError(loadError instanceof Error ? loadError.message : 'Failed to load run history')
-        }
-      } finally {
-        if (!cancelled) {
-          setRunsLoading(false)
-        }
-      }
-    }
-
-    void loadRuns()
-
-    return () => {
-      cancelled = true
-    }
-  }, [refreshToken])
-
-  function handleRetry() {
-    setRefreshToken((value) => value + 1)
-  }
-
-  function handleSelectRun(runId: string | null) {
-    const nextParams = new URLSearchParams(searchParams)
-    if (runId) {
-      nextParams.set('run_id', runId)
-    } else {
-      nextParams.delete('run_id')
-    }
-    setSearchParams(nextParams)
-  }
+    getHealth().then(setHealthy).catch(() => setHealthy(false))
+  }, [])
 
   return (
     <div className="app-shell">
       <header className="top-nav">
-        <div className="brand-block">
-          <Logo size={28} />
-          <h1>OpsPilot</h1>
-        </div>
-        <nav className="route-nav" aria-label="Primary">
-          <NavLink to="/dashboard">Dashboard</NavLink>
-          <NavLink to="/triage">Triage Explorer</NavLink>
-          <NavLink to="/briefing">Executive Briefing</NavLink>
+        <Brand />
+        <nav className="nav-tabs" aria-label="Primary">
+          <NavLink to="/dashboard" className={({isActive}) => `nav-tab ${isActive ? 'active' : ''}`}>Dashboard</NavLink>
+          <NavLink to="/items" className={({isActive}) => `nav-tab ${isActive ? 'active' : ''}`}>All items</NavLink>
+          <NavLink to="/briefing" className={({isActive}) => `nav-tab ${isActive ? 'active' : ''}`}>Briefing</NavLink>
         </nav>
-        <div className="run-controls">
-          <RunSelector
-            runs={runs}
-            selectedRunId={selectedRunId}
-            isLoading={runsLoading}
-            error={runsError}
-            onSelectRun={handleSelectRun}
-          />
-          <HealthIndicator isHealthy={apiHealthy} isLoading={healthLoading} />
+        <div className="nav-right">
+          <HealthBell hasNotifications={true} onClick={() => setNotifyOpen(o => !o)} />
+          <AssistantPill />
         </div>
       </header>
 
-      <ApiUnavailableBanner visible={!healthLoading && !apiHealthy} onRetry={handleRetry} />
+      <NotifyPanel open={notifyOpen} notifications={MOCK_NOTIFICATIONS} />
+
+      {!healthy && (
+        <div className="api-banner">
+          <span>API unavailable. OpsPilot could not reach the backend.</span>
+          <button onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      )}
 
       <main className="content-shell">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route
-            path="/dashboard"
-            element={
-              <DashboardPage
-                refreshToken={refreshToken}
-                selectedRunId={selectedRunId}
-                runs={runs}
-                runsLoading={runsLoading}
-                runsError={runsError}
-                onSelectRun={handleSelectRun}
-                onRefresh={handleRetry}
-              />
-            }
-          />
-          <Route
-            path="/triage"
-            element={
-              <TriageExplorerPage
-                refreshToken={refreshToken}
-                selectedRunId={selectedRunId}
-                onSelectLatest={() => handleSelectRun(null)}
-              />
-            }
-          />
-          <Route
-            path="/briefing"
-            element={
-              <ExecutiveBriefingPage
-                refreshToken={refreshToken}
-                selectedRunId={selectedRunId}
-                onSelectLatest={() => handleSelectRun(null)}
-              />
-            }
-          />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/items" element={<AllItemsPage />} />
+          <Route path="/briefing" element={<BriefingPage />} />
         </Routes>
       </main>
+
+      <MobileDock onMicClick={() => setVoiceOpen(true)} />
+      <VoiceOverlay open={voiceOpen} onClose={() => setVoiceOpen(false)} />
     </div>
   )
 }

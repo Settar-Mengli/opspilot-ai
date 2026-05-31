@@ -1,211 +1,118 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getBriefing, getInputFiles, getRunBriefing, getRunTriage, getTriage, runPipeline } from '../api/client'
-import type { RunSummary, TriageRecord } from '../api/types'
-import { RunHistoryPanel } from '../components/RunHistoryPanel'
-import { UrgencyDistribution } from '../components/UrgencyDistribution'
-import { parseBriefing } from '../utils/briefing'
+import { getTriage, getAiBriefing } from '../api/client'
+import type { TriageRecord } from '../api/types'
+import { TimeframeTabs } from '../components/TimeframeTabs'
+import { Greeting } from '../components/Greeting'
+import { OpenLoop } from '../components/OpenLoop'
+import { HandledBar } from '../components/HandledBar'
+import { QuietState } from '../components/QuietState'
+import { AskPilot } from '../components/AskPilot'
+import { MemoryChip } from '../components/MemoryChip'
+import { EveningSummary } from '../components/EveningSummary'
+import { WeekView } from '../components/WeekView'
 
-interface DashboardPageProps {
-  refreshToken: number
-  selectedRunId: string | null
-  runs: RunSummary[]
-  runsLoading: boolean
-  runsError: string | null
-  onSelectRun: (runId: string | null) => void
-  onRefresh: () => void
-}
+type View = 'today' | 'tomorrow' | 'week'
 
-export function DashboardPage({ refreshToken, selectedRunId, runs, runsLoading, runsError, onSelectRun, onRefresh }: DashboardPageProps) {
-  const [triage, setTriage] = useState<TriageRecord[]>([])
-  const [briefing, setBriefing] = useState('')
-  const [error, setError] = useState<string | null>(null)
+const URGENCY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 }
+
+export function DashboardPage() {
+  const [records, setRecords] = useState<TriageRecord[]>([])
+  const [briefing, setBriefing] = useState<string>('')
+  const [view, setView] = useState<View>('today')
   const [loading, setLoading] = useState(true)
-
-  // Run Pipeline state
-  const [inputFiles, setInputFiles] = useState<string[]>([])
-  const [selectedInput, setSelectedInput] = useState('')
-  const [runDate, setRunDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [runLoading, setRunLoading] = useState(false)
-  const [runSuccess, setRunSuccess] = useState(false)
-  const [runError, setRunError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    async function loadInputs() {
+    async function load() {
+      setLoading(true)
       try {
-        const files = await getInputFiles()
+        const [t, b] = await Promise.all([getTriage(), getAiBriefing()])
         if (!cancelled) {
-          setInputFiles(files)
-          if (files.length > 0 && !selectedInput) {
-            setSelectedInput(files[0])
-          }
+          setRecords(t)
+          setBriefing(b)
         }
-      } catch {
-        // Non-critical - run panel just won't show files
+      } catch (e) {
+        if (!cancelled) {
+          console.error(e)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     }
-    void loadInputs()
+    load()
     return () => { cancelled = true }
   }, [])
 
-  async function handleRunPipeline() {
-    if (!selectedInput) return
-    setRunLoading(true)
-    setRunSuccess(false)
-    setRunError(null)
-    try {
-      await runPipeline(selectedInput, runDate)
-      setRunSuccess(true)
-      onRefresh()
-    } catch (err) {
-      setRunError(err instanceof Error ? err.message : 'Pipeline run failed')
-    } finally {
-      setRunLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadData() {
-      setLoading(true)
-      setError(null)
-      try {
-        const [triageData, briefingText] = selectedRunId
-          ? await Promise.all([getRunTriage(selectedRunId), getRunBriefing(selectedRunId)])
-          : await Promise.all([getTriage(), getBriefing()])
-        if (!cancelled) {
-          setTriage(triageData)
-          setBriefing(briefingText)
-        }
-      } catch (loadError) {
-        if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : 'Failed to load dashboard data')
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false)
-        }
-      }
-    }
-
-    void loadData()
-
-    return () => {
-      cancelled = true
-    }
-  }, [refreshToken, selectedRunId])
-
-  const metrics = useMemo(() => {
-    return {
-      total: triage.length,
-      critical: triage.filter((entry) => entry.urgency === 'critical').length,
-      high: triage.filter((entry) => entry.urgency === 'high').length,
-      negative: triage.filter((entry) => entry.sentiment === 'negative').length,
-    }
-  }, [triage])
-
-  const parsedBriefing = useMemo(() => parseBriefing(briefing), [briefing])
-
-  if (loading) {
-    return <div className="page-state">Loading dashboard data...</div>
-  }
-
-  if (error) {
-    return (
-      <div className="page-state page-error">
-        <p>{error}</p>
-        {selectedRunId ? (
-          <button type="button" className="drawer-close" onClick={() => onSelectRun(null)}>
-            Return to Latest
-          </button>
-        ) : null}
-      </div>
+  const sorted = useMemo(() => {
+    return [...records].sort((a, b) =>
+      (URGENCY_ORDER[a.urgency as keyof typeof URGENCY_ORDER] ?? 99) -
+      (URGENCY_ORDER[b.urgency as keyof typeof URGENCY_ORDER] ?? 99)
     )
-  }
+  }, [records])
+
+  const openLoops = sorted.filter(r => r.urgency === 'critical' || r.urgency === 'high').slice(0, 2)
+  const inFlightCount = records.length - openLoops.length
+  const todayCount = openLoops.length
+
+  // Format today's date
+  const today = new Date()
+  const dateLabel = today.toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+  })
+
+  // First 250 chars of the AI briefing as the greeting text
+  const briefingPreview = briefing.split('\n').filter(l => l.trim()).slice(0, 3).join(' ').slice(0, 280) ||
+    `${openLoops.length} ${openLoops.length === 1 ? 'item needs' : 'items need'} you today.`
 
   return (
-    <div>
-      <section className="run-panel">
-        <span className="run-panel-label">Run Pipeline</span>
-        <select
-          className="run-select"
-          value={selectedInput}
-          onChange={(e) => setSelectedInput(e.target.value)}
-          disabled={runLoading}
-        >
-          {inputFiles.map((f) => (
-            <option key={f} value={f}>{f}</option>
-          ))}
-        </select>
-        <input
-          type="date"
-          className="run-date-input"
-          value={runDate}
-          onChange={(e) => setRunDate(e.target.value)}
-          disabled={runLoading}
-        />
-        <button
-          type="button"
-          className="btn-run"
-          onClick={handleRunPipeline}
-          disabled={runLoading || !selectedInput}
-        >
-          {runLoading ? 'Running...' : '\u25B6 Run Pipeline'}
-        </button>
-        {runSuccess && <span className="run-status-success">{'\u2713'} Pipeline complete</span>}
-        {runError && <span className="run-status-error">{runError}</span>}
-      </section>
-
-      <div className="kpi-grid">
-        <div className="kpi-card">
-          <div className="kpi-label">TOTAL WORK ITEMS</div>
-          <div className="kpi-value">{metrics.total}</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-label">CRITICAL RISKS</div>
-          <div className="kpi-value critical">{metrics.critical}</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-label">HIGH PRIORITY</div>
-          <div className="kpi-value high">{metrics.high}</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-label">NEGATIVE SENTIMENT</div>
-          <div className="kpi-value negative">{metrics.negative}</div>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="card-title">Top Operational Risks</div>
-        <div className="card-subtitle">
-          {selectedRunId
-            ? `Risks detected from historical run ${selectedRunId}.`
-            : 'Risks detected from the latest run.'}
-        </div>
-        {parsedBriefing.topPriorities.length === 0 ? (
-          <p style={{ fontSize: '13px', color: 'var(--t3)' }}>No priority items available.</p>
-        ) : (
-          <div className="risk-list">
-            {parsedBriefing.topPriorities.map((item, i) => (
-              <div key={i} className="risk-item">
-                <span className={`risk-dot ${i < metrics.critical ? 'critical' : 'high'}`} />
-                <span>{item}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <RunHistoryPanel
-        runs={runs}
-        selectedRunId={selectedRunId}
-        isLoading={runsLoading}
-        error={runsError}
-        onSelectRun={onSelectRun}
+    <>
+      <TimeframeTabs
+        active={view}
+        todayCount={todayCount}
+        tomorrowCount={1}
+        onChange={setView}
       />
+      <Greeting dateLabel={dateLabel} briefing={briefingPreview} />
 
-      <UrgencyDistribution triage={triage} />
-    </div>
+      {view === 'today' && (
+        <div className="fade-in d3">
+          {openLoops.length > 0 ? (
+            <>
+              <div className="section-label">
+                Open loops <span className="section-count">{openLoops.length} NEED YOU</span>
+              </div>
+              <div className="loops">
+                {openLoops.map((r, i) => <OpenLoop key={r.id} number={i + 1} record={r} />)}
+              </div>
+              {inFlightCount > 0 && <HandledBar count={inFlightCount} />}
+            </>
+          ) : (
+            <QuietState />
+          )}
+        </div>
+      )}
+
+      {view === 'tomorrow' && (
+        <div className="fade-in d3">
+          <div className="section-label">
+            Tomorrow <span className="section-count">1 ITEM</span>
+          </div>
+          <QuietState />
+        </div>
+      )}
+
+      {view === 'week' && (
+        <>
+          <div className="section-label">Week of June 1 — 5</div>
+          <WeekView />
+        </>
+      )}
+
+      <AskPilot />
+      <MemoryChip />
+      <EveningSummary />
+
+      {loading && <div style={{ display: 'none' }}>loading...</div>}
+    </>
   )
 }
