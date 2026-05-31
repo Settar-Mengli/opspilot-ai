@@ -56,6 +56,7 @@ export interface SpeechRecognitionState {
 export interface SpeechRecognitionControls {
   start: () => void
   stop: () => void
+  cancel: () => void
   reset: () => void
 }
 
@@ -71,6 +72,7 @@ export function useSpeechRecognition(options?: {
   })
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
+  const cancelledRef = useRef(false)
   const [supported] = useState<boolean>(() => isSpeechRecognitionSupported())
   const [listening, setListening] = useState(false)
   const [transcript, setTranscript] = useState('')
@@ -130,6 +132,12 @@ export function useSpeechRecognition(options?: {
     recognition.onend = () => {
       setListening(false)
       setInterimTranscript('')
+      if (cancelledRef.current) {
+        // User explicitly cancelled — discard captured text, do not fire callback
+        setTranscript('')
+        cancelledRef.current = false
+        return
+      }
       // Pull the final transcript at end so we don't fire callbacks mid-stream
       setTranscript(current => {
         const finalText = current.trim()
@@ -156,6 +164,7 @@ export function useSpeechRecognition(options?: {
 
   const start = useCallback(() => {
     if (!recognitionRef.current || listening) return
+    cancelledRef.current = false
     setTranscript('')
     setInterimTranscript('')
     setError(null)
@@ -175,6 +184,16 @@ export function useSpeechRecognition(options?: {
     }
   }, [])
 
+  const cancel = useCallback(() => {
+    if (!recognitionRef.current) return
+    cancelledRef.current = true
+    try {
+      recognitionRef.current.abort()
+    } catch {
+      // ignore
+    }
+  }, [])
+
   const reset = useCallback(() => {
     setTranscript('')
     setInterimTranscript('')
@@ -189,6 +208,7 @@ export function useSpeechRecognition(options?: {
     error,
     start,
     stop,
+    cancel,
     reset,
   }
 }

@@ -122,7 +122,9 @@ export async function getTriage(): Promise<TriageRecord[]> {
 
   const records = payload.filter(isRecord)
   if (records.length !== payload.length) {
-    throw new Error('Unexpected triage record payload')
+    console.warn(
+      `Dropped ${payload.length - records.length} invalid triage record(s) from response`
+    )
   }
 
   return records
@@ -152,7 +154,9 @@ export async function getRunTriage(runId: string): Promise<TriageRecord[]> {
 
   const records = payload.filter(isRecord)
   if (records.length !== payload.length) {
-    throw new Error('Unexpected run triage record payload')
+    console.warn(
+      `Dropped ${payload.length - records.length} invalid run triage record(s) from response`
+    )
   }
 
   return records

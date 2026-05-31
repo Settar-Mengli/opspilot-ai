@@ -22,7 +22,12 @@ export function useAssistantName(): [string, (name: string) => void, boolean] {
   const setName = (next: string) => {
     const clean = next.trim().slice(0, 20)
     if (clean) {
-      window.localStorage.setItem(STORAGE_KEY, clean)
+      try {
+        window.localStorage.setItem(STORAGE_KEY, clean)
+      } catch {
+        // localStorage may be unavailable (private browsing, full quota).
+        // The in-memory state still works for the current session.
+      }
       setNameState(clean)
       setHasChosen(true)
     }

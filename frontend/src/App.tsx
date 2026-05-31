@@ -55,7 +55,7 @@ function App() {
   }
 
   function handleVoiceClose() {
-    speech.stop()
+    speech.cancel()
     setVoiceOpen(false)
   }
 
