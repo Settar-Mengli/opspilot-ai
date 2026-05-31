@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getTriage, getAiBriefing } from '../api/client'
+import type { RefObject } from 'react'
+import { getTriage } from '../api/client'
 import type { TriageRecord } from '../api/types'
 import { TimeframeTabs } from '../components/TimeframeTabs'
 import { Greeting } from '../components/Greeting'
@@ -15,9 +16,24 @@ type View = 'today' | 'tomorrow' | 'week'
 
 const URGENCY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 }
 
-export function DashboardPage() {
+function buildGreetingSummary(openLoopCount: number): string {
+  if (openLoopCount === 0) {
+    return "It's a quiet morning. Nothing needs you right now."
+  }
+  if (openLoopCount === 1) {
+    return 'One thing needs you today. Everything else is being handled.'
+  }
+  return 'Two things need you today. The rest is being handled and you don\'t need to think about it.'
+}
+
+interface Props {
+  userName?: string | null
+  askPilotRef?: RefObject<HTMLInputElement | null>
+  onMicClick?: () => void
+}
+
+export function DashboardPage({ userName, askPilotRef, onMicClick }: Props) {
   const [records, setRecords] = useState<TriageRecord[]>([])
-  const [briefing, setBriefing] = useState<string>('')
   const [view, setView] = useState<View>('today')
   const [loading, setLoading] = useState(true)
 
@@ -26,10 +42,9 @@ export function DashboardPage() {
     async function load() {
       setLoading(true)
       try {
-        const [t, b] = await Promise.all([getTriage(), getAiBriefing()])
+        const t = await getTriage()
         if (!cancelled) {
           setRecords(t)
-          setBriefing(b)
         }
       } catch (e) {
         if (!cancelled) {
@@ -61,8 +76,7 @@ export function DashboardPage() {
   })
 
   // First 250 chars of the AI briefing as the greeting text
-  const briefingPreview = briefing.split('\n').filter(l => l.trim()).slice(0, 3).join(' ').slice(0, 280) ||
-    `${openLoops.length} ${openLoops.length === 1 ? 'item needs' : 'items need'} you today.`
+  const greetingSummary = buildGreetingSummary(openLoops.length)
 
   return (
     <>
@@ -72,7 +86,7 @@ export function DashboardPage() {
         tomorrowCount={1}
         onChange={setView}
       />
-      <Greeting dateLabel={dateLabel} briefing={briefingPreview} />
+      <Greeting userName={userName} dateLabel={dateLabel} briefing={greetingSummary} />
 
       {view === 'today' && (
         <div className="fade-in d3">
@@ -108,7 +122,7 @@ export function DashboardPage() {
         </>
       )}
 
-      <AskPilot />
+      <AskPilot inputRef={askPilotRef} onMicClick={onMicClick} />
       <MemoryChip />
       <EveningSummary />
 

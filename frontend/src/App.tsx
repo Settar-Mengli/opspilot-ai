@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { NavLink, Route, Routes, Navigate } from 'react-router-dom'
 import { getHealth } from './api/client'
 import { Brand } from './components/Brand'
@@ -7,9 +7,12 @@ import { HealthBell } from './components/HealthBell'
 import { NotifyPanel } from './components/NotifyPanel'
 import { MobileDock } from './components/MobileDock'
 import { VoiceOverlay } from './components/VoiceOverlay'
+import { Onboarding } from './components/Onboarding'
 import { DashboardPage } from './pages/DashboardPage'
 import { AllItemsPage } from './pages/AllItemsPage'
 import { BriefingPage } from './pages/BriefingPage'
+import { useUserName } from './hooks/useUserName'
+import { useGlobalShortcut } from './hooks/useGlobalShortcut'
 
 const MOCK_NOTIFICATIONS = [
   { id: '1', text: 'SRE acknowledged the checkout outage. Tracking response.', time: '12 minutes ago' },
@@ -21,10 +24,22 @@ function App() {
   const [healthy, setHealthy] = useState(true)
   const [notifyOpen, setNotifyOpen] = useState(false)
   const [voiceOpen, setVoiceOpen] = useState(false)
+  const [userName, setUserName] = useUserName()
+  const askPilotRef = useRef<HTMLInputElement>(null)
+
+  const focusAskPilot = useCallback(() => {
+    askPilotRef.current?.focus()
+  }, [])
+
+  useGlobalShortcut('k', focusAskPilot)
 
   useEffect(() => {
     getHealth().then(setHealthy).catch(() => setHealthy(false))
   }, [])
+
+  if (userName === null) {
+    return <Onboarding onSubmit={setUserName} />
+  }
 
   return (
     <div className="app-shell">
@@ -53,7 +68,7 @@ function App() {
       <main className="content-shell">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<DashboardPage userName={userName} askPilotRef={askPilotRef} onMicClick={() => setVoiceOpen(true)} />} />
           <Route path="/items" element={<AllItemsPage />} />
           <Route path="/briefing" element={<BriefingPage />} />
         </Routes>
