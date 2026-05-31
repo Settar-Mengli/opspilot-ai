@@ -6,7 +6,6 @@ import { ApiUnavailableBanner } from './components/ApiUnavailableBanner'
 import { HealthIndicator } from './components/HealthIndicator'
 import { Logo } from './components/Logo'
 import { RunSelector } from './components/RunSelector'
-import { RunStatusBadge } from './components/RunStatusBadge'
 import { DashboardPage } from './pages/DashboardPage'
 import { ExecutiveBriefingPage } from './pages/ExecutiveBriefingPage'
 import { TriageExplorerPage } from './pages/TriageExplorerPage'
@@ -97,20 +96,15 @@ function App() {
     <div className="app-shell">
       <header className="top-nav">
         <div className="brand-block">
-          <Logo size={32} />
+          <Logo size={28} />
           <h1>OpsPilot</h1>
         </div>
-
-        <div className="nav-divider" />
-
         <nav className="route-nav" aria-label="Primary">
           <NavLink to="/dashboard">Dashboard</NavLink>
           <NavLink to="/triage">Triage Explorer</NavLink>
           <NavLink to="/briefing">Executive Briefing</NavLink>
         </nav>
-
         <div className="run-controls">
-          <RunStatusBadge selectedRunId={selectedRunId} />
           <RunSelector
             runs={runs}
             selectedRunId={selectedRunId}
@@ -118,9 +112,8 @@ function App() {
             error={runsError}
             onSelectRun={handleSelectRun}
           />
+          <HealthIndicator isHealthy={apiHealthy} isLoading={healthLoading} />
         </div>
-
-        <HealthIndicator isHealthy={apiHealthy} isLoading={healthLoading} />
       </header>
 
       <ApiUnavailableBanner visible={!healthLoading && !apiHealthy} onRetry={handleRetry} />

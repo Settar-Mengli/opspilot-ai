@@ -125,7 +125,7 @@ export function DashboardPage({ refreshToken, selectedRunId, runs, runsLoading, 
   }
 
   return (
-    <div className="page-grid">
+    <div>
       <section className="run-panel">
         <span className="run-panel-label">Run Pipeline</span>
         <select
@@ -157,42 +157,45 @@ export function DashboardPage({ refreshToken, selectedRunId, runs, runsLoading, 
         {runError && <span className="run-status-error">{runError}</span>}
       </section>
 
-      <section className="kpi-grid">
-        <article className="kpi-card">
-          <span className="kpi-label">Total Work Items</span>
-          <strong className="kpi-value">{metrics.total}</strong>
-        </article>
-        <article className="kpi-card kpi-critical">
-          <span className="kpi-label">Critical Risks</span>
-          <strong className="kpi-value critical">{metrics.critical}</strong>
-        </article>
-        <article className="kpi-card kpi-high">
-          <span className="kpi-label">High Priority</span>
-          <strong className="kpi-value high">{metrics.high}</strong>
-        </article>
-        <article className="kpi-card kpi-negative">
-          <span className="kpi-label">Negative Sentiment</span>
-          <strong className="kpi-value negative">{metrics.negative}</strong>
-        </article>
-      </section>
+      <div className="kpi-grid">
+        <div className="kpi-card">
+          <div className="kpi-label">TOTAL WORK ITEMS</div>
+          <div className="kpi-value">{metrics.total}</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-label">CRITICAL RISKS</div>
+          <div className="kpi-value critical">{metrics.critical}</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-label">HIGH PRIORITY</div>
+          <div className="kpi-value high">{metrics.high}</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-label">NEGATIVE SENTIMENT</div>
+          <div className="kpi-value negative">{metrics.negative}</div>
+        </div>
+      </div>
 
-      <section className="panel">
-        <h3>Top Operational Risks</h3>
-        <p className="muted section-intro">
+      <div className="card">
+        <div className="card-title">Top Operational Risks</div>
+        <div className="card-subtitle">
           {selectedRunId
-            ? `Top operational risks detected from historical run ${selectedRunId}.`
-            : 'Top operational risks detected from the latest run.'}
-        </p>
+            ? `Risks detected from historical run ${selectedRunId}.`
+            : 'Risks detected from the latest run.'}
+        </div>
         {parsedBriefing.topPriorities.length === 0 ? (
-          <p className="muted">No priority items available.</p>
+          <p style={{ fontSize: '13px', color: 'var(--t3)' }}>No priority items available.</p>
         ) : (
-          <ul className="priority-list">
-            {parsedBriefing.topPriorities.map((item) => (
-              <li key={item}>{item}</li>
+          <div className="risk-list">
+            {parsedBriefing.topPriorities.map((item, i) => (
+              <div key={i} className="risk-item">
+                <span className={`risk-dot ${i < metrics.critical ? 'critical' : 'high'}`} />
+                <span>{item}</span>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
-      </section>
+      </div>
 
       <RunHistoryPanel
         runs={runs}
