@@ -9,6 +9,10 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from opspilot.adapters.conversation_adapter import answer_question
 from opspilot.adapters.evening_adapter import generate_evening_summary
 from opspilot.adapters.insights_adapter import generate_insights
