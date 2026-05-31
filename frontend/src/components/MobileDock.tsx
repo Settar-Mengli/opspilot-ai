@@ -4,9 +4,10 @@ interface Props {
   assistantName: string
   onMicClick: () => void
   onAsk: (question: string) => void
+  voiceSupported: boolean
 }
 
-export function MobileDock({ assistantName, onMicClick, onAsk }: Props) {
+export function MobileDock({ assistantName, onMicClick, onAsk, voiceSupported }: Props) {
   const [text, setText] = useState('')
 
   function handleSubmit() {
@@ -40,7 +41,7 @@ export function MobileDock({ assistantName, onMicClick, onAsk }: Props) {
             <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
           </svg>
         </button>
-      ) : (
+      ) : voiceSupported ? (
         <button className="mic-btn" onClick={onMicClick} aria-label="Voice input">
           <svg className="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
@@ -49,7 +50,7 @@ export function MobileDock({ assistantName, onMicClick, onAsk }: Props) {
             <line x1="8" y1="23" x2="16" y2="23"/>
           </svg>
         </button>
-      )}
+      ) : null}
     </div>
   )
 }

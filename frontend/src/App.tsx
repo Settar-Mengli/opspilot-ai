@@ -17,6 +17,7 @@ import { BriefingPage } from './pages/BriefingPage'
 import { useUserName } from './hooks/useUserName'
 import { useAssistantName } from './hooks/useAssistantName'
 import { useGlobalShortcut } from './hooks/useGlobalShortcut'
+import { useSpeechRecognition, isSpeechRecognitionSupported } from './hooks/useSpeechRecognition'
 import { deriveObservations } from './utils/observations'
 import type { Observation } from './utils/observations'
 
@@ -37,6 +38,26 @@ function App() {
   }, [])
 
   useGlobalShortcut('k', focusAskPilot)
+
+  const speechSupported = isSpeechRecognitionSupported()
+
+  const speech = useSpeechRecognition({
+    onFinalTranscript: (text) => {
+      handleAsk(text)
+      setVoiceOpen(false)
+    },
+  })
+
+  function handleMicClick() {
+    if (!speechSupported) return
+    setVoiceOpen(true)
+    speech.start()
+  }
+
+  function handleVoiceClose() {
+    speech.stop()
+    setVoiceOpen(false)
+  }
 
   function handleAsk(question: string) {
     setAskInitialQuestion(question)
@@ -88,15 +109,22 @@ function App() {
       <main className="content-shell">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage userName={userName} assistantName={assistantName} askPilotRef={askPilotRef} onMicClick={() => setVoiceOpen(true)} onAsk={handleAsk} onEveningClick={() => setEveningOpen(true)} />} />
+          <Route path="/dashboard" element={<DashboardPage userName={userName} assistantName={assistantName} askPilotRef={askPilotRef} onMicClick={handleMicClick} onAsk={handleAsk} onEveningClick={() => setEveningOpen(true)} voiceSupported={speechSupported} />} />
           <Route path="/items" element={<AllItemsPage />} />
           <Route path="/insights" element={<InsightsPage assistantName={assistantName} />} />
           <Route path="/briefing" element={<BriefingPage />} />
         </Routes>
       </main>
 
-      <MobileDock assistantName={assistantName} onMicClick={() => setVoiceOpen(true)} onAsk={handleAsk} />
-      <VoiceOverlay open={voiceOpen} onClose={() => setVoiceOpen(false)} />
+      <MobileDock assistantName={assistantName} onMicClick={handleMicClick} onAsk={handleAsk} voiceSupported={speechSupported} />
+      <VoiceOverlay
+        open={voiceOpen}
+        listening={speech.listening}
+        transcript={speech.transcript}
+        interimTranscript={speech.interimTranscript}
+        error={speech.error}
+        onClose={handleVoiceClose}
+      />
       {askOpen && (
         <AskPanel open={askOpen} assistantName={assistantName} initialQuestion={askInitialQuestion} onClose={() => setAskOpen(false)} />
       )}
