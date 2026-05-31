@@ -204,3 +204,16 @@ export async function askOpsPilot(question: string, assistantName: string): Prom
   const data = await response.json()
   return data.answer || ''
 }
+
+export async function getEveningSummary(assistantName: string): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}/evening-summary`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ assistant_name: assistantName }),
+  })
+  if (!response.ok) {
+    throw new Error(`Evening summary failed: ${response.status} ${response.statusText}`)
+  }
+  const data = await response.json()
+  return data.summary || ''
+}

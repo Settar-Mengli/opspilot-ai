@@ -9,6 +9,7 @@ import { MobileDock } from './components/MobileDock'
 import { VoiceOverlay } from './components/VoiceOverlay'
 import { Onboarding } from './components/Onboarding'
 import { AskPanel } from './components/AskPanel'
+import { EveningPanel } from './components/EveningPanel'
 import { DashboardPage } from './pages/DashboardPage'
 import { AllItemsPage } from './pages/AllItemsPage'
 import { BriefingPage } from './pages/BriefingPage'
@@ -23,6 +24,7 @@ function App() {
   const [notifyOpen, setNotifyOpen] = useState(false)
   const [voiceOpen, setVoiceOpen] = useState(false)
   const [askOpen, setAskOpen] = useState(false)
+  const [eveningOpen, setEveningOpen] = useState(false)
   const [askInitialQuestion, setAskInitialQuestion] = useState('')
   const [userName, setUserName] = useUserName()
   const [assistantName, setAssistantName, hasChosenAssistant] = useAssistantName()
@@ -84,7 +86,7 @@ function App() {
       <main className="content-shell">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage userName={userName} assistantName={assistantName} askPilotRef={askPilotRef} onMicClick={() => setVoiceOpen(true)} onAsk={handleAsk} />} />
+          <Route path="/dashboard" element={<DashboardPage userName={userName} assistantName={assistantName} askPilotRef={askPilotRef} onMicClick={() => setVoiceOpen(true)} onAsk={handleAsk} onEveningClick={() => setEveningOpen(true)} />} />
           <Route path="/items" element={<AllItemsPage />} />
           <Route path="/briefing" element={<BriefingPage />} />
         </Routes>
@@ -94,6 +96,9 @@ function App() {
       <VoiceOverlay open={voiceOpen} onClose={() => setVoiceOpen(false)} />
       {askOpen && (
         <AskPanel open={askOpen} assistantName={assistantName} initialQuestion={askInitialQuestion} onClose={() => setAskOpen(false)} />
+      )}
+      {eveningOpen && (
+        <EveningPanel open={eveningOpen} assistantName={assistantName} onClose={() => setEveningOpen(false)} />
       )}
     </div>
   )

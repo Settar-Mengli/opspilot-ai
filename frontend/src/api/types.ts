@@ -76,3 +76,11 @@ export interface AskMessage {
   text: string
   timestamp: number
 }
+
+export interface EveningSummaryRequest {
+  assistant_name: string
+}
+
+export interface EveningSummaryResponse {
+  summary: string
+}
