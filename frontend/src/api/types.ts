@@ -84,3 +84,14 @@ export interface EveningSummaryRequest {
 export interface EveningSummaryResponse {
   summary: string
 }
+
+export interface InsightItem {
+  title: string
+  body: string
+  category: string
+}
+
+export interface InsightsResponse {
+  intro: string
+  insights: InsightItem[]
+}

@@ -1142,3 +1142,173 @@ select option { background: #1c1c1a; color: var(--text-1); }
     align-items: center;
   }
 }
+
+/* Insights page */
+.insights-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.insights-title {
+  font-family: var(--font-prose);
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--text-1);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+.insights-subtitle {
+  font-family: var(--font-prose);
+  font-size: 14px;
+  color: var(--text-3);
+  line-height: 1.55;
+  max-width: 560px;
+}
+.insights-refresh {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r);
+  padding: 9px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.insights-refresh:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--accent-border);
+  color: var(--text-1);
+}
+.insights-refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.insights-intro {
+  font-family: var(--font-prose);
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 22px 26px;
+  margin-bottom: 20px;
+  max-width: 800px;
+}
+.insights-error {
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+  border-radius: var(--r);
+  padding: 14px 18px;
+  font-size: 13px;
+  color: #fca5a5;
+  font-family: var(--font-prose);
+  max-width: 800px;
+}
+.insights-empty {
+  font-family: var(--font-prose);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-3);
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 22px 26px;
+  max-width: 800px;
+}
+.insights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 800px;
+}
+.insight-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s;
+}
+.insight-card:hover {
+  border-color: var(--accent-border);
+}
+.insight-category {
+  align-self: flex-start;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--surface-3);
+  color: var(--text-3);
+}
+.insight-category-pattern,
+.insight-category-tempo {
+  background: var(--accent-bg);
+  color: var(--accent-bright);
+}
+.insight-category-risk,
+.insight-category-ownership {
+  background: rgba(217, 119, 87, 0.14);
+  color: #d97757;
+}
+.insight-category-process,
+.insight-category-people,
+.insight-category-finance {
+  background: var(--blue-bg);
+  color: var(--blue);
+}
+.insight-title {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-1);
+  letter-spacing: -0.2px;
+  line-height: 1.35;
+}
+.insight-body {
+  font-family: var(--font-prose);
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text-2);
+}
+.insight-card-skeleton {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .insights-title {
+    font-size: 22px;
+  }
+  .insights-subtitle {
+    font-size: 13px;
+  }
+  .insights-header {
+    margin-bottom: 18px;
+  }
+  .insights-intro {
+    padding: 18px 20px;
+    font-size: 15px;
+  }
+  .insight-card {
+    padding: 16px 18px;
+  }
+}

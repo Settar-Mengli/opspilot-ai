@@ -12,6 +12,7 @@ import { AskPanel } from './components/AskPanel'
 import { EveningPanel } from './components/EveningPanel'
 import { DashboardPage } from './pages/DashboardPage'
 import { AllItemsPage } from './pages/AllItemsPage'
+import { InsightsPage } from './pages/InsightsPage'
 import { BriefingPage } from './pages/BriefingPage'
 import { useUserName } from './hooks/useUserName'
 import { useAssistantName } from './hooks/useAssistantName'
@@ -66,6 +67,7 @@ function App() {
         <nav className="nav-tabs" aria-label="Primary">
           <NavLink to="/dashboard" className={({isActive}) => `nav-tab ${isActive ? 'active' : ''}`}>Dashboard</NavLink>
           <NavLink to="/items" className={({isActive}) => `nav-tab ${isActive ? 'active' : ''}`}>All items</NavLink>
+          <NavLink to="/insights" className={({isActive}) => `nav-tab ${isActive ? 'active' : ''}`}>Insights</NavLink>
           <NavLink to="/briefing" className={({isActive}) => `nav-tab ${isActive ? 'active' : ''}`}>Briefing</NavLink>
         </nav>
         <div className="nav-right">
@@ -88,6 +90,7 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage userName={userName} assistantName={assistantName} askPilotRef={askPilotRef} onMicClick={() => setVoiceOpen(true)} onAsk={handleAsk} onEveningClick={() => setEveningOpen(true)} />} />
           <Route path="/items" element={<AllItemsPage />} />
+          <Route path="/insights" element={<InsightsPage assistantName={assistantName} />} />
           <Route path="/briefing" element={<BriefingPage />} />
         </Routes>
       </main>

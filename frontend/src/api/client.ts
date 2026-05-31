@@ -1,4 +1,4 @@
-import type { RunMetadata, RunPipelineResult, RunSummary, TriageRecord } from './types'
+import type { RunMetadata, RunPipelineResult, RunSummary, TriageRecord, InsightsResponse } from './types'
 
 const FALLBACK_API_BASE_URL = 'http://127.0.0.1:8000'
 
@@ -216,4 +216,20 @@ export async function getEveningSummary(assistantName: string): Promise<string> 
   }
   const data = await response.json()
   return data.summary || ''
+}
+
+export async function getInsights(assistantName: string): Promise<InsightsResponse> {
+  const response = await fetch(`${API_BASE_URL}/insights`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ assistant_name: assistantName }),
+  })
+  if (!response.ok) {
+    throw new Error(`Insights failed: ${response.status} ${response.statusText}`)
+  }
+  const data = await response.json()
+  return {
+    intro: typeof data.intro === 'string' ? data.intro : '',
+    insights: Array.isArray(data.insights) ? data.insights : [],
+  }
 }
