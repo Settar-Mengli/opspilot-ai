@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react'
 import { getAiBriefing } from '../api/client'
+import { BriefingSkeleton } from '../components/skeletons/BriefingSkeleton'
 
 export function BriefingPage() {
-  const [text, setText] = useState('Loading…')
+  const [text, setText] = useState('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getAiBriefing().then(setText).catch(e => setText(`Error: ${e.message}`))
+    let cancelled = false
+    getAiBriefing()
+      .then(t => { if (!cancelled) setText(t) })
+      .catch(e => { if (!cancelled) setText(`Error: ${e.message}`) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [])
 
   const renderText = (raw: string) => {
@@ -24,8 +31,12 @@ export function BriefingPage() {
     })
   }
 
+  if (loading) {
+    return <BriefingSkeleton />
+  }
+
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '32px 36px', maxWidth: '800px' }}>
+    <div className="content-loaded" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '32px 36px', maxWidth: '800px' }}>
       {renderText(text)}
     </div>
   )

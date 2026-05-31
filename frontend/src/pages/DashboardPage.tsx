@@ -11,6 +11,7 @@ import { AskPilot } from '../components/AskPilot'
 import { MemoryChip } from '../components/MemoryChip'
 import { EveningSummary } from '../components/EveningSummary'
 import { WeekView } from '../components/WeekView'
+import { LoopSkeleton } from '../components/skeletons/LoopSkeleton'
 
 type View = 'today' | 'tomorrow' | 'week'
 
@@ -92,7 +93,17 @@ export function DashboardPage({ userName, assistantName, askPilotRef, onMicClick
 
       {view === 'today' && (
         <div className="fade-in d3">
-          {openLoops.length > 0 ? (
+          {loading ? (
+            <>
+              <div className="section-label">
+                Open loops <span className="section-count">LOADING</span>
+              </div>
+              <div className="loops">
+                <LoopSkeleton />
+                <LoopSkeleton />
+              </div>
+            </>
+          ) : openLoops.length > 0 ? (
             <>
               <div className="section-label">
                 Open loops <span className="section-count">{openLoops.length} NEED YOU</span>
@@ -110,15 +121,25 @@ export function DashboardPage({ userName, assistantName, askPilotRef, onMicClick
 
       {view === 'tomorrow' && (
         <div className="fade-in d3">
-          <div className="section-label">Tomorrow</div>
-          <QuietState />
+          {loading ? (
+            <div className="loops"><LoopSkeleton /></div>
+          ) : (
+            <>
+              <div className="section-label">Tomorrow</div>
+              <QuietState />
+            </>
+          )}
         </div>
       )}
 
       {view === 'week' && (
         <>
           <div className="section-label">Week of June 1 — 5</div>
-          <WeekView records={records} />
+          {loading ? (
+            <div className="loops"><LoopSkeleton /></div>
+          ) : (
+            <WeekView records={records} />
+          )}
         </>
       )}
 
@@ -126,7 +147,7 @@ export function DashboardPage({ userName, assistantName, askPilotRef, onMicClick
       <MemoryChip assistantName={assistantName} />
       <EveningSummary assistantName={assistantName} />
 
-      {loading && <div style={{ display: 'none' }}>loading...</div>}
+
     </>
   )
 }
