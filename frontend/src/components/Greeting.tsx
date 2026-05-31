@@ -1,10 +1,11 @@
 interface Props {
   userName?: string | null
+  assistantName: string
   dateLabel: string
   briefing: string
 }
 
-export function Greeting({ userName, dateLabel, briefing }: Props) {
+export function Greeting({ userName, assistantName, dateLabel, briefing }: Props) {
   // Render briefing with **bold** turned into <strong>
   const renderBriefing = (text: string) => {
     const parts = text.split(/(\*\*[^*]+\*\*)/g)
@@ -26,8 +27,8 @@ export function Greeting({ userName, dateLabel, briefing }: Props) {
       </div>
       <div className="g-text">{renderBriefing(briefing)}</div>
       <div className="g-byline">
-        <div className="g-byline-dot">P</div>
-        <span>Pilot · 2 minutes ago</span>
+        <div className="g-byline-dot">{assistantName.charAt(0).toUpperCase()}</div>
+        <span>{assistantName} · 2 minutes ago</span>
       </div>
     </div>
   )

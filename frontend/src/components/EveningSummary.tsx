@@ -1,4 +1,8 @@
-export function EveningSummary() {
+interface Props {
+  assistantName: string
+}
+
+export function EveningSummary({ assistantName }: Props) {
   return (
     <div className="evening-card fade-in d6">
       <div className="evening-icon">
@@ -7,7 +11,7 @@ export function EveningSummary() {
         </svg>
       </div>
       <div style={{ flex: 1 }}>
-        <div className="evening-label">Pilot · End of day summary</div>
+        <div className="evening-label">{assistantName} · End of day summary</div>
         <div className="evening-text">I'll prepare your closing summary at 6 PM.</div>
       </div>
       <div className="evening-time">in 4h 22m</div>

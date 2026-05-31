@@ -526,3 +526,53 @@ input { font-family: var(--font-ui); }
 ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
 
 select option { background: #1c1c1a; color: var(--text-1); }
+
+/* Two-step onboarding additions */
+.onboarding-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+  width: 100%;
+}
+.onboarding-preset {
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r);
+  padding: 10px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-ui);
+}
+.onboarding-preset:hover {
+  background: var(--surface-3);
+  border-color: var(--accent-border);
+  color: var(--text-1);
+}
+.onboarding-preset.selected {
+  background: var(--accent-bg-2);
+  border-color: var(--accent);
+  color: var(--text-1);
+}
+.onboarding-step-indicator {
+  margin-top: 14px;
+  font-size: 11px;
+  color: var(--text-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.onboarding-back {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-size: 11px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  padding: 0;
+}
+.onboarding-back:hover { color: var(--text-1); }

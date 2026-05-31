@@ -28,11 +28,12 @@ function buildGreetingSummary(openLoopCount: number): string {
 
 interface Props {
   userName?: string | null
+  assistantName: string
   askPilotRef?: RefObject<HTMLInputElement | null>
   onMicClick?: () => void
 }
 
-export function DashboardPage({ userName, askPilotRef, onMicClick }: Props) {
+export function DashboardPage({ userName, assistantName, askPilotRef, onMicClick }: Props) {
   const [records, setRecords] = useState<TriageRecord[]>([])
   const [view, setView] = useState<View>('today')
   const [loading, setLoading] = useState(true)
@@ -86,7 +87,7 @@ export function DashboardPage({ userName, askPilotRef, onMicClick }: Props) {
         tomorrowCount={1}
         onChange={setView}
       />
-      <Greeting userName={userName} dateLabel={dateLabel} briefing={greetingSummary} />
+      <Greeting userName={userName} assistantName={assistantName} dateLabel={dateLabel} briefing={greetingSummary} />
 
       {view === 'today' && (
         <div className="fade-in d3">
@@ -122,9 +123,9 @@ export function DashboardPage({ userName, askPilotRef, onMicClick }: Props) {
         </>
       )}
 
-      <AskPilot inputRef={askPilotRef} onMicClick={onMicClick} />
-      <MemoryChip />
-      <EveningSummary />
+      <AskPilot assistantName={assistantName} inputRef={askPilotRef} onMicClick={onMicClick} />
+      <MemoryChip assistantName={assistantName} />
+      <EveningSummary assistantName={assistantName} />
 
       {loading && <div style={{ display: 'none' }}>loading...</div>}
     </>

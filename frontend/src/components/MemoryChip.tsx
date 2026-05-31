@@ -1,6 +1,10 @@
 import { useState } from 'react'
 
-export function MemoryChip() {
+interface Props {
+  assistantName: string
+}
+
+export function MemoryChip({ assistantName }: Props) {
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -13,9 +17,9 @@ export function MemoryChip() {
           </svg>
         </div>
         <div className="memory-text">
-          <strong>Pilot remembers</strong> your preferences and adapts over time.
+          <strong>{assistantName} remembers</strong> your preferences and adapts over time.
         </div>
-        <span className="memory-count">12 prefs</span>
+        <span className="memory-count">Learning</span>
         <svg className={`memory-chevron ${expanded ? 'open' : ''}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="6 9 12 15 18 9"/>
         </svg>

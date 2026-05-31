@@ -8,11 +8,12 @@ const SUGGESTIONS = [
 ]
 
 interface Props {
+  assistantName: string
   inputRef?: RefObject<HTMLInputElement | null>
   onMicClick?: () => void
 }
 
-export function AskPilot({ inputRef, onMicClick }: Props) {
+export function AskPilot({ assistantName, inputRef, onMicClick }: Props) {
   const [text, setText] = useState('')
 
   const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('MAC')
@@ -20,13 +21,13 @@ export function AskPilot({ inputRef, onMicClick }: Props) {
 
   return (
     <div className="ask-section fade-in d4">
-      <div className="section-label">Ask Pilot</div>
+      <div className="section-label">Ask {assistantName}</div>
       <div className="ask-bar">
-        <div className="ask-icon-sm">P</div>
+        <div className="ask-icon-sm">{assistantName.charAt(0).toUpperCase()}</div>
         <input
           ref={inputRef}
           className="ask-input"
-          placeholder={`Ask me anything — draft a message, summarize a thread… ${shortcutHint}`}
+          placeholder={`Ask ${assistantName} anything — draft a message, summarize a thread… ${shortcutHint}`}
           value={text}
           onChange={(e) => setText(e.target.value)}
         />

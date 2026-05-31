@@ -12,6 +12,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { AllItemsPage } from './pages/AllItemsPage'
 import { BriefingPage } from './pages/BriefingPage'
 import { useUserName } from './hooks/useUserName'
+import { useAssistantName } from './hooks/useAssistantName'
 import { useGlobalShortcut } from './hooks/useGlobalShortcut'
 
 const MOCK_NOTIFICATIONS = [
@@ -25,6 +26,7 @@ function App() {
   const [notifyOpen, setNotifyOpen] = useState(false)
   const [voiceOpen, setVoiceOpen] = useState(false)
   const [userName, setUserName] = useUserName()
+  const [assistantName, setAssistantName, hasChosenAssistant] = useAssistantName()
   const askPilotRef = useRef<HTMLInputElement>(null)
 
   const focusAskPilot = useCallback(() => {
@@ -37,8 +39,11 @@ function App() {
     getHealth().then(setHealthy).catch(() => setHealthy(false))
   }, [])
 
-  if (userName === null) {
-    return <Onboarding onSubmit={setUserName} />
+  if (userName === null || !hasChosenAssistant) {
+    return <Onboarding onComplete={(user, assistant) => {
+      setUserName(user)
+      setAssistantName(assistant)
+    }} />
   }
 
   return (
@@ -52,7 +57,7 @@ function App() {
         </nav>
         <div className="nav-right">
           <HealthBell hasNotifications={true} onClick={() => setNotifyOpen(o => !o)} />
-          <AssistantPill />
+          <AssistantPill assistantName={assistantName} />
         </div>
       </header>
 
@@ -68,13 +73,13 @@ function App() {
       <main className="content-shell">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage userName={userName} askPilotRef={askPilotRef} onMicClick={() => setVoiceOpen(true)} />} />
+          <Route path="/dashboard" element={<DashboardPage userName={userName} assistantName={assistantName} askPilotRef={askPilotRef} onMicClick={() => setVoiceOpen(true)} />} />
           <Route path="/items" element={<AllItemsPage />} />
           <Route path="/briefing" element={<BriefingPage />} />
         </Routes>
       </main>
 
-      <MobileDock onMicClick={() => setVoiceOpen(true)} />
+      <MobileDock assistantName={assistantName} onMicClick={() => setVoiceOpen(true)} />
       <VoiceOverlay open={voiceOpen} onClose={() => setVoiceOpen(false)} />
     </div>
   )

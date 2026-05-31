@@ -1,18 +1,19 @@
 import { useState } from 'react'
 
 interface Props {
+  assistantName: string
   onMicClick: () => void
 }
 
-export function MobileDock({ onMicClick }: Props) {
+export function MobileDock({ assistantName, onMicClick }: Props) {
   const [text, setText] = useState('')
 
   return (
     <div className="mobile-dock">
       <div className="mobile-ask-pill">
-        <div className="ask-icon-sm">P</div>
+        <div className="ask-icon-sm">{assistantName.charAt(0).toUpperCase()}</div>
         <input
-          placeholder="Ask Pilot anything…"
+          placeholder={`Ask ${assistantName} anything…`}
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
