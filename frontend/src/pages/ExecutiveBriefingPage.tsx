@@ -69,7 +69,16 @@ export function ExecutiveBriefingPage({ refreshToken, selectedRunId, onSelectLat
         </p>
       </div>
 
-      <div className="briefing-content">{briefing}</div>
+      <div
+        className="briefing-content"
+        dangerouslySetInnerHTML={{
+          __html: briefing
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        }}
+      />
     </section>
   )
 }

@@ -66,6 +66,14 @@ export function TriageExplorerPage({ refreshToken, selectedRunId, onSelectLatest
     })
   }, [records, selectedUrgency, selectedCategory])
 
+  const urgencyCounts = useMemo(() => {
+    const counts: Record<string, number> = { critical: 0, high: 0, medium: 0, low: 0 }
+    for (const r of records) {
+      counts[r.urgency] = (counts[r.urgency] || 0) + 1
+    }
+    return counts
+  }, [records])
+
   if (loading) {
     return <div className="page-state">Loading triage records...</div>
   }
@@ -90,6 +98,14 @@ export function TriageExplorerPage({ refreshToken, selectedRunId, onSelectLatest
         <p className="page-subtitle">
           {selectedRunId ? `Historical snapshot: ${selectedRunId}` : 'Inspect how each work item was classified and why.'}
         </p>
+      </div>
+
+      <div className="triage-summary">
+        <span className="triage-summary-total">{records.length} items</span>
+        {urgencyCounts.critical > 0 && <span className="urgency-chip critical">{urgencyCounts.critical} critical</span>}
+        {urgencyCounts.high > 0 && <span className="urgency-chip high">{urgencyCounts.high} high</span>}
+        {urgencyCounts.medium > 0 && <span className="urgency-chip medium">{urgencyCounts.medium} medium</span>}
+        {urgencyCounts.low > 0 && <span className="urgency-chip low">{urgencyCounts.low} low</span>}
       </div>
 
       <div className="filter-bar">

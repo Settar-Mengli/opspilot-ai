@@ -162,15 +162,15 @@ export function DashboardPage({ refreshToken, selectedRunId, runs, runsLoading, 
           <span className="kpi-label">Total Work Items</span>
           <strong className="kpi-value">{metrics.total}</strong>
         </article>
-        <article className="kpi-card">
+        <article className="kpi-card kpi-critical">
           <span className="kpi-label">Critical Risks</span>
           <strong className="kpi-value critical">{metrics.critical}</strong>
         </article>
-        <article className="kpi-card">
-          <span className="kpi-label">High Priority Items</span>
+        <article className="kpi-card kpi-high">
+          <span className="kpi-label">High Priority</span>
           <strong className="kpi-value high">{metrics.high}</strong>
         </article>
-        <article className="kpi-card">
+        <article className="kpi-card kpi-negative">
           <span className="kpi-label">Negative Sentiment</span>
           <strong className="kpi-value negative">{metrics.negative}</strong>
         </article>

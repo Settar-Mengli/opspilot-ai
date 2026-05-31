@@ -9,7 +9,14 @@ interface RunHistoryPanelProps {
 }
 
 function formatRunTimestamp(run: RunSummary): string {
-  return run.finished_at ?? run.started_at ?? 'Unknown time'
+  const raw = run.finished_at ?? run.started_at
+  if (!raw) return 'Unknown time'
+  try {
+    const d = new Date(raw)
+    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return raw
+  }
 }
 
 export function RunHistoryPanel({ runs, selectedRunId, isLoading, error, onSelectRun }: RunHistoryPanelProps) {
@@ -31,7 +38,8 @@ export function RunHistoryPanel({ runs, selectedRunId, isLoading, error, onSelec
         <ul className="run-history-list">
           {runs.slice(0, 12).map((run) => {
             const isActive = run.run_id === selectedRunId
-            const itemCount = typeof run.item_count === 'number' ? run.item_count : 'n/a'
+            const itemCount = typeof run.item_count === 'number' ? run.item_count : null
+            const isFailed = run.status === 'failed'
             return (
               <li key={run.run_id}>
                 <button
@@ -39,8 +47,14 @@ export function RunHistoryPanel({ runs, selectedRunId, isLoading, error, onSelec
                   className={`run-history-item${isActive ? ' run-history-item-active' : ''}`}
                   onClick={() => onSelectRun(run.run_id)}
                 >
-                  <strong>{run.run_id}</strong>
-                  <span>{run.status ?? 'unknown'} | {formatRunTimestamp(run)} | items {itemCount}</span>
+                  <span className={`run-history-dot${isFailed ? ' failed' : ''}`} />
+                  <span className="run-history-info">
+                    <span className="run-history-id">{run.run_id}</span>
+                    <span className="run-history-meta">{formatRunTimestamp(run)}</span>
+                  </span>
+                  {itemCount !== null && (
+                    <span className="run-history-badge">{itemCount} items</span>
+                  )}
                 </button>
               </li>
             )

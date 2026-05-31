@@ -22,11 +22,11 @@ export function UrgencyDistribution({ triage }: UrgencyDistributionProps) {
         {counts.map((item) => (
           <div key={item.urgency} className="distribution-row">
             <div className="distribution-label">
-              <span className={`urgency-chip urgency-${item.urgency}`}>{item.urgency}</span>
-              <span>{item.count}</span>
+              <span className={`urgency-chip ${item.urgency}`}>{item.urgency}</span>
+              <span>{item.count} ({item.percentage}%)</span>
             </div>
             <div className="distribution-track">
-              <div className={`distribution-fill urgency-${item.urgency}`} style={{ width: `${item.percentage}%` }} />
+              <div className={`distribution-fill ${item.urgency}`} style={{ width: `${item.percentage}%` }} />
             </div>
           </div>
         ))}
