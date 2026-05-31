@@ -1,135 +1,141 @@
-# Architecture
+# OpsPilot Architecture
 
-## Purpose
+This document describes the technical architecture of OpsPilot and the design principles that guide it.
 
-OpsPilot AI is a local-only operations command center that transforms mock inbound work into prioritized actions and a daily briefing.
+---
 
-## Constraints
+## Design Principles
 
-- Local-only development and execution
-- Rule-based AI simulation first
-- No paid API dependencies
-- No real external integrations in Milestone 1
+1. **The AI is a commodity layer.** The product's value is the chief-of-staff workflow, design quality, trust, and integrations. The AI provider is replaceable.
 
-## System Flow
+2. **Adapter-first.** Every external dependency — AI providers, integrations, data sources — is accessed through a thin adapter interface. This makes the system testable, swappable, and future-proof.
 
-1. Ingest local JSON fixtures
-2. Normalize to a common work-item structure
-3. Classify each item (urgency, category, sentiment)
-4. Extract action items
-5. Draft suggested responses
-6. Generate executive briefing and structured outputs
-7. Serve read-only outputs through local FastAPI endpoints
-8. Render command center UI from local API responses
+3. **Local-first development.** OpsPilot runs entirely on a developer's machine with sample data. No cloud dependency for development or demo.
 
-## Storage Model
+4. **Calm by default.** No alarms, no red urgency bars, no notification spam. The system speaks like a trusted advisor, not a notification engine.
 
-Latest snapshot (backward-compatible):
+---
 
-- `data/output/triage_results.json`
-- `data/output/action_items.json`
-- `data/output/suggested_responses.json`
-- `data/output/daily_briefing.txt`
+## High-Level Architecture
 
-Immutable history snapshot (per successful run):
+Frontend (TypeScript + React + Vite)
+  - Mobile-first responsive UI
+  - Anthropic-inspired design language
+  - State management via React hooks
+        |
+        | REST API (localhost:8000)
+        v
+Backend (FastAPI + Python)
+  - /triage    - returns classified work items
+  - /briefing  - returns natural-language briefing
+  - /health    - liveness check
+  - /runs/*    - run history endpoints
+        |
+   -----+-----+-----
+   |          |
+   v          v
+Adapter    Pipeline    Rules
+Layer      (orches-    (keyword
+(AI)       trator)     fallback)
+   |
+   v
+Anthropic Claude
+(claude-haiku-4-5)
 
-- `data/history/runs/YYYY/MM/DD/run-YYYYMMDD-HHMMSS-sss/`
-	- `run.json`
-	- `triage_results.json`
-	- `action_items.json`
-	- `suggested_responses.json`
-	- `daily_briefing.txt`
+---
 
-Runtime data note:
+## The Adapter Pattern
 
-- `data/history/` is generated local runtime data and is git-ignored.
+The single most important architectural decision in OpsPilot.
 
-## Planned Module Boundaries
+Located in `src/opspilot/adapters/`:
 
-- ingest: load and normalize input artifacts
-- rules: deterministic classification logic
-- nlp: extraction, response drafting, briefing composition
-- pipeline: orchestration of end-to-end run
-- api: local read/write orchestration boundary for run + output retrieval
-- frontend: local read-only command center routes (dashboard, triage explorer, briefing)
-- models: shared schemas and enums
-- utils: IO and logging helpers
+- `base.py` — defines `TriageAdapter` abstract base class
+- `rule_based.py` — wraps the keyword classifier (no API needed)
+- `claude_adapter.py` — calls Anthropic Claude
+- `factory.py` — selects which adapter to use based on environment
+- `briefing_adapter.py` — generates natural-language briefings
 
-## Data Contracts
+**Why this matters:** Adding a new AI provider (OpenAI, Gemini, local Llama) is a single new file in this directory. The pipeline code never changes.
 
-Input contract:
-- Source types: email, task, support_request
-- Required fields: id, source_type, subject_or_title, body_or_description
+---
 
-Output contract:
-- Per-item triage record with urgency, category, sentiment
-- Action extraction payload
-- Suggested response text
-- Daily briefing artifact
+## Frontend Architecture
 
-History contract:
+`frontend/src/`:
 
-- `run.json` stores run metadata (run_id, timestamps, status, counts, artifact names, error field)
-- historical artifacts preserve deterministic snapshot outputs for auditability and demo traceability
+- `components/` — Pure UI components, no API calls
+- `pages/` — Top-level views (Dashboard, AllItems, Briefing). These own the data fetching.
+- `hooks/` — `useUserName`, `useGlobalShortcut`. localStorage-backed.
+- `api/` — Thin API client (`client.ts`) and shared types (`types.ts`)
+- `index.css` — Design system tokens (Anthropic palette + olive accent, Poppins/Lora fonts, spacing, radii)
 
-## API Retrieval Modes
+**State management:** No Redux or Zustand. React hooks plus localStorage cover everything OpsPilot needs today.
 
-Latest mode endpoints:
+**Routing:** React Router DOM, three routes: `/dashboard`, `/items`, `/briefing`.
 
-- `GET /triage`
-- `GET /briefing`
+---
 
-Historical mode endpoints:
+## Backend Architecture
 
-- `GET /runs`
-- `GET /runs/{run_id}`
-- `GET /runs/{run_id}/triage`
-- `GET /runs/{run_id}/briefing`
+`src/opspilot/`:
 
-API boundary hardening:
+- `api/` — FastAPI routes
+- `pipeline/` — `run_daily_ops.py` orchestrates a full triage run
+- `adapters/` — AI provider abstraction (see above)
+- `rules/` — keyword-based fallback (`triage_rules.py`)
+- `models/` — Pydantic schemas for triage records, briefings
 
-- Metadata responses use an explicit allow-list of safe keys.
-- Local path-like metadata values are excluded from API responses.
-- Artifact names in metadata are validated at response time; invalid, empty, or path-like names are dropped.
+**Data flow for a triage request:**
+1. API endpoint receives a request
+2. Pipeline reads work items from `data/raw/sample_input.json`
+3. For each item, the active adapter's `classify(item)` is called
+4. Results are written to `data/output/triage_results.json`
+5. AI briefing is generated by `briefing_adapter.py`
+6. Both files are served to the frontend
 
-Local browser CORS policy:
+---
 
-- Allowed origins: `http://localhost:5173`, `http://127.0.0.1:5173`
-- Allowed methods: `GET`, `POST`
-- Credentials disabled
-- Purpose: support local UI operation while avoiding broad cross-origin exposure
+## Evolution Path
 
-Frontend run selection:
+The current architecture is intentionally simple. As OpsPilot grows, the following evolutions are anticipated:
 
-- Query parameter `run_id` determines historical context.
-- No `run_id` means Latest mode.
+**Phase B (deployment):**
+- Add user authentication (Google OAuth)
+- Add per-user data isolation
+- Move from JSON files to PostgreSQL
+- Add a job queue for long-running triage operations
 
-## Adapter Seam For Future Integrations
+**Phase C (integrations):**
+- New adapter category: `integrations/` — Gmail, Calendar, Slack
+- Each integration is a separate adapter with its own OAuth flow
+- Integration data feeds into the same triage pipeline
 
-Future model integrations must be added behind adapter interfaces so core pipeline remains stable.
+**Phase D (enterprise):**
+- Multi-model routing layer in front of the AI adapters
+- BYOK support — adapters accept user-provided API keys
+- MCP server support for BYOA — adapters can be remote
+- Per-tenant isolation, audit logging, role-based access
 
-Adapter seam requirements:
-- Stable interface for classify, extract, draft, and summarize operations
-- Deterministic fallback to rule-based providers
-- No direct provider calls from pipeline orchestration layer
+---
 
-## Error Handling Principles
+## Key Files Quick Reference
 
-- Fail fast on invalid input schema
-- Continue processing valid items when isolated item-level errors occur
-- Emit explicit processing status for each item
+| Purpose | Location |
+|---------|----------|
+| Claude integration | `src/opspilot/adapters/claude_adapter.py` |
+| Briefing generation | `src/opspilot/adapters/briefing_adapter.py` |
+| API entrypoint | `src/opspilot/api/main.py` |
+| Frontend entrypoint | `frontend/src/App.tsx` |
+| Dashboard logic | `frontend/src/pages/DashboardPage.tsx` |
+| Design tokens | `frontend/src/index.css` |
+| Sample data | `data/raw/sample_input.json` |
+| Environment config | `.env.example` |
 
-## Non-Goals For Current Phase
+---
 
-- Real inbox/calendar integrations
-- Autonomous agent actions on external systems
-- Production deployment concerns
-- In-app scheduler or background scheduling daemon
+## Contributing to the Architecture
 
-## Milestone 8 UI Scope Constraints
+Architectural changes should be discussed before implementation. If you're considering a change that touches the adapter pattern, the pipeline orchestration, or the integration boundary, open a discussion first.
 
-- Local-only frontend execution
-- No authentication or authorization layer
-- No database persistence
-- No cloud deployment setup
-- No new backend endpoints required for initial command center views
+The bar for new dependencies is high. Adding an npm or pip package should be justified by capability we cannot reasonably build ourselves.

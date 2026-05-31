@@ -1,363 +1,119 @@
-
 # OpsPilot AI
 
-**From noisy inbox to clear priorities in minutes.**
+**Your AI chief of staff.** OpsPilot transforms operational chaos into clarity — surfacing the 2–3 things that need you today, handling the rest, and briefing you like a trusted advisor.
 
-OpsPilot AI is a local, rule-based operations command center that simulates how an assistant triages and summarizes incoming work (emails, tasks, support requests). It turns unstructured signals into prioritized action items, suggested responses, and a daily executive briefing—entirely offline, with no paid APIs or secrets required.
+Built with TypeScript, React, FastAPI, and Anthropic Claude.
 
-## Quickstart (2 minutes)
+---
 
-From project root in PowerShell:
+## What It Does Today
 
-1. Setup Python environment:
+OpsPilot ingests operational work items and uses Claude to:
 
-```sh
+- **Triage** each item by urgency and category
+- **Surface "open loops"** that need executive attention
+- **Generate a morning briefing** in natural language
+- **Present a calm, focused dashboard** that translates hundreds of signals into 2–3 priorities
+
+Mobile-first design. Warm aesthetic. Reads like a memo, not a control panel.
+
+---
+
+## What Makes It Different
+
+Most ops tools show you everything. OpsPilot shows you what matters. The design language is borrowed from Anthropic's own brand — minimalist, warm, high-readability. The voice is borrowed from the world's best chiefs of staff: calm, trustworthy, generous when things are quiet.
+
+---
+
+## Roadmap
+
+OpsPilot is on a path from demo → real product → enterprise platform.
+
+### Phase A — Working Demo *(current)*
+- Mobile-first dashboard with onboarding personalization
+- Claude-powered triage and briefing
+- Beautiful, deployable interface
+
+### Phase B — Deployed Demo with Real Integrations
+- Public deployment with authentication
+- Gmail integration (read inbox, surface escalations, draft replies)
+
+### Phase C — Operational Platform
+- Google Calendar integration (week-ahead intelligence)
+- Slack integration (team signal monitoring)
+- Notion integration (decision memory, document context)
+
+### Phase D — Enterprise Platform
+- Multi-tenant architecture
+- Bring Your Own Key (BYOK) for cost control
+- Bring Your Own Agent (BYOA) via MCP for compliance
+
+---
+
+## Integration Vision
+
+OpsPilot is designed to wire into the places work actually happens:
+
+**Essential (Phase B–C)** — Gmail, Outlook, Google Calendar, Slack, Microsoft Teams, Notion, Linear
+
+**Expanded (Phase D)** — Jira, Asana, HubSpot, Salesforce, Zendesk, Intercom, GitHub, PagerDuty, Granola, Otter
+
+The integration philosophy: meet users where their work lives. Never make them switch tools to get value.
+
+---
+
+## AI Architecture
+
+OpsPilot uses Anthropic Claude today via a clean adapter pattern (`src/opspilot/adapters/`). The architecture is designed to evolve:
+
+- **Today:** Claude Haiku for classification, briefings, and insights. Rule-based fallback when no API key is configured.
+- **Near future:** Multi-model abstraction — route tasks to the optimal model (cost, capability, latency). OpenAI and Gemini adapters will slot in alongside Claude.
+- **Enterprise:** BYOK (users bring their own API key) and BYOA (users plug in their own agents via Model Context Protocol).
+
+The principle: **the AI is a commodity layer. The product value is the chief-of-staff workflow, design, trust, and integrations.**
+
+---
+
+## Architecture Overview
+
+opspilot-ai/
+├── src/opspilot/         # Python backend (FastAPI)
+│   ├── adapters/         # AI provider abstraction
+│   ├── pipeline/         # Triage orchestration
+│   ├── api/              # REST endpoints
+│   └── rules/            # Keyword-based fallback classifier
+├── frontend/             # TypeScript + React + Vite
+│   ├── src/components/   # UI components
+│   ├── src/pages/        # Dashboard, All Items, Briefing
+│   └── src/hooks/        # User name, keyboard shortcuts
+└── data/                 # Sample inputs and run history
+
+See `docs/ARCHITECTURE.md` for technical detail and `ROADMAP.md` for phase-by-phase plans.
+
+---
+
+## Getting Started
+
+**Prerequisites:** Python 3.10+, Node.js 18+, an Anthropic API key (optional — falls back to rule-based triage)
+
+# Backend
 python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -e .[dev]
-```
+.venv\Scripts\activate   # Windows
+pip install -e .
+cp .env.example .env     # add ANTHROPIC_API_KEY
+python -m uvicorn opspilot.api.main:app --reload
 
-2. Run one local pipeline pass:
-
-```sh
-python -m opspilot.cli run --input data/raw/sample_input.json --output data/output --date 2026-05-30
-```
-
-3. Start API in terminal A:
-
-```sh
-uvicorn opspilot.api.main:app --reload
-```
-
-4. Start frontend in terminal B:
-
-```sh
-cd frontend
-npm ci
-npm run dev
-```
-
-5. Run checks:
-
-```sh
-pytest -q
-cd frontend
-npm run lint
-npm run build
-npm run test -- --run
-```
-
-## Why This Project Is Portfolio-Strong
-
-- Deterministic explainability: each triage label includes reason fields, not opaque scoring.
-- End-to-end local workflow: ingest, classify, extract, draft, brief, and review through API + UI.
-- Local-first safety: no cloud dependency, no secrets, and no external API requirement.
-- Engineering discipline: backend tests, frontend checks, and CI coverage for repeatability.
-- Operational traceability: immutable run history plus executive briefing delta/trend context.
-- Future-ready seam: roadmap supports adapter-based extensions without active external integrations today.
-
-## Screenshots
-
-For portfolio submission, capture and include these four screenshots:
-
-1. Dashboard with KPI cards and Top Operational Risks.
-2. Triage Explorer with the Explainability drawer open for one record.
-3. Executive Briefing page showing summary metrics and top priorities.
-4. Historical run context using run selector/status to demonstrate Latest vs Historical behavior.
-
-Suggested placement and naming:
-
-- Store images under `docs/images/`.
-- Use stable names such as `dashboard-kpi.png`, `triage-explainability.png`, `executive-briefing.png`, `historical-run-context.png`.
-
----
-
-## How it works
-
-1. **Ingest**: Reads local JSON files with mock emails, tasks, and support tickets.
-2. **Normalize**: Converts each item to a unified internal format.
-3. **Classify**: Assigns urgency, category, and sentiment using deterministic rules.
-4. **Explain**: Captures the exact rule or token that triggered each label.
-5. **Extract Actions**: Finds deadlines, owners, and explicit asks.
-6. **Draft Responses**: Suggests a reply template for each item.
-7. **Briefing**: Generates a daily executive summary with top priorities, due-soon action items, a "Since Last Run" priority delta section, and a deterministic recent high-risk trend summary.
-
----
-
-## Architecture
-
-```mermaid
-flowchart TD
-		A[Input JSON emails tasks support] --> B[Ingest Normalize]
-		B --> C[Rule-based Classifier]
-		C --> D[Action Extractor]
-		C --> E[Suggested Response Drafter]
-		D --> F[Briefing Generator]
-		E --> F
-		C --> G[Triage Output]
-		D --> H[Action Items Output]
-		E --> I[Suggested Responses Output]
-		F --> J[Daily Briefing Output]
-		K[FastAPI Local API health triage briefing] --> L[React Command Center UI]
-		G --> K
-		J --> K
-```
-
----
-
-## Sample Output
-
-**Triage Record (JSON):**
-```json
-{
-	"id": "WI-001",
-	"urgency": "critical",
-	"urgency_reason": "Matched critical token 'sev1'",
-	"category": "incident",
-	"category_reason": "Matched incident token 'down'",
-	"sentiment": "negative",
-	"sentiment_reason": "Matched negative sentiment token 'escalat'"
-}
-```
-
-**Daily Briefing (text):**
-```
-OpsPilot AI Daily Executive Briefing - 2026-05-29
-
-Total Work Items: 6
-Urgency Mix: critical=1, high=1, medium=2, low=2
-Sentiment Mix: negative=2, neutral=3, positive=1
-
-Top Priorities:
-- WI-001: Production outage in checkout service
-- WI-004: Customer escalation on ticket #4032
-
-Due-Soon Action Items:
-- WI-004: Customer escalation on ticket #4032 (owner=unassigned, deadline=EOD)
-
----
-
-## Since Last Run
-_Compared to run-20260530-043052-422_
-
-| Priority | Previous | Current | Change |
-|----------|----------|---------|--------|
-| Critical | 1 | 2 | +1 |
-| High | 2 | 1 | -1 |
-| Medium | 0 | 0 | 0 |
-| Low | 1 | 1 | 0 |
-
-## Recent Trend (Last 7 Runs)
-High-Risk Items (critical + high):
-- run-20260530-043115-901: high_risk=3
-- run-20260530-043052-422: high_risk=2
-- run-20260530-042745-115: high_risk=4
-
-Net change across 3 runs: -1.
-```
-
-If no previous run exists, the briefing shows: `No previous run available for comparison.`
-
----
-
-## Design decisions and tradeoffs
-
-- **Rule-based first**: Deterministic, testable, and easy to reason about for portfolio/demo use. (No LLMs or paid APIs.)
-- **Local-only**: No secrets, no cloud dependencies, runs on any machine.
-- **Explicit validation**: Fails fast on bad input, with clear error messages.
-- **Explainability**: Every label is accompanied by a reason string for transparency.
-- **CLI + local API**: Operate via command line or local FastAPI endpoints, with no cloud dependency.
-- **Extensible**: Architecture is modular, with clear seams for future model or API adapters.
-
----
-
-## Future roadmap
-
-- **Milestone 2**: Add richer explainability traces and improved executive briefing quality.
-- **Milestone 3**: Introduce pluggable model adapters (LLM or API-backed components).
-- **Milestone 4**: Add mock connectors for future integrations (Gmail, Jira, etc.).
-- **Beyond**: Optional dashboard UI, real-time event pipeline, and production deployment patterns.
-
----
-
-## Setup
-
-From project root in PowerShell:
-
-1. `python -m venv .venv`
-2. `.venv\Scripts\Activate.ps1`
-3. `pip install -e .[dev]`
-
-
-## Run (CLI)
-
-```sh
-python -m opspilot.cli run --input data/raw/sample_input.json --output data/output --date 2026-05-29
-```
-
-## Run (API)
-
-Start the API server locally:
-
-```sh
-uvicorn opspilot.api.main:app --reload
-```
-
-Swagger/OpenAPI docs: [http://localhost:8000/docs](http://localhost:8000/docs)
-
-### API Endpoints
-
-- `GET /health` — Health check
-- `POST /run` — Run the pipeline (body: `{ "input_file": "sample_input.json", "date": "YYYY-MM-DD" }`)
-- `GET /briefing` — Get latest daily briefing
-- `GET /triage` — Get latest triage results
-- `GET /runs` — List run-history metadata (newest first)
-- `GET /runs/{run_id}` — Get metadata for a specific historical run
-- `GET /runs/{run_id}/triage` — Get triage results for a specific historical run
-- `GET /runs/{run_id}/briefing` — Get briefing text for a specific historical run
-
-### API CORS Policy
-
-- Allowed browser origins are local UI origins only:
-	- `http://localhost:5173`
-	- `http://127.0.0.1:5173`
-- Allowed methods are `GET` and `POST`.
-- Credentials are disabled.
-- This policy keeps local browser orchestration possible while preventing remote cross-origin usage patterns.
-
-## Run (UI)
-
-Start the API first in one terminal:
-
-```sh
-uvicorn opspilot.api.main:app --reload
-```
-
-In another terminal, run the frontend:
-
-```sh
+# Frontend (separate terminal)
 cd frontend
 npm install
 npm run dev
-```
 
-Frontend defaults to `http://127.0.0.1:8000` for API calls.
-To override, copy `frontend/.env.example` to `.env` and set `VITE_API_BASE_URL`.
-
-UI routes:
-
-- Dashboard
-- Triage Explorer
-- Executive Briefing
-
-Run context behavior:
-
-- Default mode is **Latest** (no query parameter).
-- Historical mode is selected with `?run_id=<run-id>`.
-- In historical mode, Dashboard, Triage Explorer, and Executive Briefing render a consistent snapshot for the selected run.
-- Selecting Latest removes the query parameter and returns all pages to latest endpoints.
-
-## Security & Reliability
-
-- Local-only architecture: no cloud services, no external APIs, no secrets.
-- `/run` uses strict input filename validation to block path traversal attempts.
-- `/run` uses a bounded subprocess timeout to prevent indefinite API hangs.
-- API error responses are intentionally safe and structured; internal command details are logged but not exposed to clients.
-- Run metadata responses are allow-listed and sanitize artifact names so path-like or unexpected metadata values are not exposed.
-- Frontend consumes only local API endpoints and uses no external network calls.
-
-### Local-First Security Checklist
-
-- No cloud dependency in runtime path.
-- No auth layer or identity provider.
-- No database dependency.
-- No external AI/LLM provider calls.
-- No secrets or API keys required.
-- Local file-path metadata is not exposed through API metadata endpoints.
-- Input filename validation blocks traversal-like values.
-- Generated runtime artifacts are git-ignored.
-
-## Test
-
-```sh
-pytest -q
-```
-
-Frontend validation:
-
-```sh
-cd frontend
-npm ci
-npm run lint
-npm run build
-npm run test -- --run
-```
-
-## Output files
-
-- `data/output/triage_results.json`
-- `data/output/action_items.json`
-- `data/output/suggested_responses.json`
-- `data/output/daily_briefing.txt`
-
-These latest files remain the backward-compatible snapshot used by existing flows.
-
-## Run history artifacts
-
-Each successful run also writes immutable artifacts under:
-
-- `data/history/runs/YYYY/MM/DD/run-YYYYMMDD-HHMMSS-sss/`
-
-Each run folder contains:
-
-- `run.json`
-- `triage_results.json`
-- `action_items.json`
-- `suggested_responses.json`
-- `daily_briefing.txt`
-
-Notes:
-
-- `data/history/` is generated local runtime data.
-- `data/history/` is intentionally ignored by git and should not be committed.
-- Frontend generated artifacts (`frontend/node_modules/`, `frontend/dist/`, `frontend/coverage/`) are local-only and should not be committed.
-
-## Scheduling status
-
-- Local scheduling is **design-only** right now (not yet implemented in application code).
-- See `docs/scheduling.md` for local scheduling guidance and scope-safe recommendations.
-
-## Automation roadmap (roadmap-only)
-
-The following items are future direction only and are not active features in this repository:
-
-- Optional AI/LLM adapter interfaces behind deterministic fallback contracts.
-- Optional email/connectivity adapters for external systems.
-- Optional notification sinks for local operator workflows.
-- Optional in-app scheduler once local operational needs justify it.
-
-## Submission checklist
-
-- `pytest -q` passes.
-- Frontend lint, build, and tests pass.
-- Demo flow works from local fixture to API/UI output.
-- Generated runtime files remain uncommitted.
-- Scope remains local-first with no cloud/auth/db/deployment dependencies.
-
-## Triage Output Fields
-
-Each triage record includes:
-
-- `id`
-- `urgency`
-- `urgency_reason`
-- `category`
-- `category_reason`
-- `sentiment`
-- `sentiment_reason`
+Open `http://localhost:5173`.
 
 ---
 
-## License
+## Status
 
-MIT (see `LICENSE`).
+OpsPilot is an active project under development. The current build is a working demo intended to showcase the product vision. Production deployment, authentication, and live integrations are on the roadmap.
+
+For investors and partners interested in early access or collaboration, contact the project owner.
