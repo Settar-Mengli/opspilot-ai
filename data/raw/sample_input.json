@@ -2,55 +2,118 @@
   {
     "id": "WI-001",
     "source_type": "email",
-    "subject_or_title": "Production outage in checkout service",
-    "body_or_description": "We have a Sev1 outage. Checkout is down for all customers. Please escalate immediately. owner: SRE Team",
-    "sender_or_requester": "oncall@company.local",
-    "received_at": "2026-05-29T08:05:00Z",
-    "tags": ["incident", "checkout"]
+    "subject_or_title": "Production checkout service intermittent 500 errors",
+    "body_or_description": "Production checkout service is experiencing intermittent 500 errors affecting the Acme Logistics customer segment. The SRE on-call has been paged and is investigating root cause. Customer impact is unconfirmed but error rate has been trending upward over the last 45 minutes. Immediate leadership visibility requested.",
+    "sender_or_requester": "sre-oncall@company.local",
+    "received_at": "2026-05-30T07:42:00Z",
+    "tags": ["incident", "production", "checkout"]
   },
   {
     "id": "WI-002",
-    "source_type": "support_request",
-    "subject_or_title": "Access request for analytics dashboard",
-    "body_or_description": "Please provision read access for the finance analyst by 2026-05-30. owner: IT Ops",
-    "sender_or_requester": "helpdesk@company.local",
-    "received_at": "2026-05-29T09:10:00Z",
-    "tags": ["access", "request"]
+    "source_type": "email",
+    "subject_or_title": "Stellar Coffee Co escalation — integration outage complaint",
+    "body_or_description": "Stellar Coffee Co, a top-10 account by revenue, has escalated their ongoing integration outage to a formal written complaint copying their CTO. They expect a same-day response from leadership confirming a remediation timeline. No internal owner has been assigned to coordinate the response yet.",
+    "sender_or_requester": "customer-success-lead@company.local",
+    "received_at": "2026-05-30T08:15:00Z",
+    "tags": ["escalation", "customer", "integration"]
   },
   {
     "id": "WI-003",
-    "source_type": "task",
-    "subject_or_title": "Expense policy reminder",
-    "body_or_description": "Reminder: submit Q2 expenses this week. Kindly follow up with your teams.",
-    "sender_or_requester": "finance-ops@company.local",
-    "received_at": "2026-05-29T10:15:00Z",
-    "tags": ["admin"]
+    "source_type": "email",
+    "subject_or_title": "Cloud infrastructure contract renewal — 22 percent price increase",
+    "body_or_description": "Our cloud infrastructure vendor has sent a contract renewal proposal with a 22 percent price increase effective in 14 days. The procurement team is asking for executive sign-off on a counter-offer or approval guidance by end of week. No negotiation has started yet.",
+    "sender_or_requester": "procurement@company.local",
+    "received_at": "2026-05-30T06:30:00Z",
+    "tags": ["vendor", "contract", "renewal"]
   },
   {
     "id": "WI-004",
-    "source_type": "email",
-    "subject_or_title": "Customer escalation on ticket #4032",
-    "body_or_description": "Customer is frustrated and blocked. Need you to provide an update by EOD.",
-    "sender_or_requester": "support-manager@company.local",
-    "received_at": "2026-05-29T11:05:00Z",
-    "tags": ["escalation", "support"]
+    "source_type": "support_request",
+    "subject_or_title": "Q3 expense reconciliation — unresolved variances",
+    "body_or_description": "The Q3 expense reconciliation has three unresolved variances flagged by the finance team totaling a meaningful amount. Leadership review is needed before the books can close. The deadline for final sign-off is this Friday.",
+    "sender_or_requester": "finance-team@company.local",
+    "received_at": "2026-05-30T05:50:00Z",
+    "tags": ["finance", "reconciliation", "deadline"]
   },
   {
     "id": "WI-005",
-    "source_type": "support_request",
-    "subject_or_title": "Follow up on pending invoice approval",
-    "body_or_description": "Checking in on invoice approval status. Can you confirm owner and next steps?",
-    "sender_or_requester": "ap@company.local",
-    "received_at": "2026-05-29T12:45:00Z",
-    "tags": ["follow-up", "invoice"]
+    "source_type": "email",
+    "subject_or_title": "Helix Manufacturing MSA — data handling clause conflict",
+    "body_or_description": "Outside counsel has flagged a clause in the Helix Manufacturing master services agreement that conflicts with our standard data handling policy. A decision is needed on whether to negotiate the clause or accept their terms. The contract signing is scheduled for next Tuesday.",
+    "sender_or_requester": "legal-ops@company.local",
+    "received_at": "2026-05-30T06:10:00Z",
+    "tags": ["legal", "contract", "compliance"]
   },
   {
     "id": "WI-006",
     "source_type": "task",
-    "subject_or_title": "Great feedback from pilot rollout",
-    "body_or_description": "Good news: pilot users shared great feedback. Please capture action items for next sprint.",
-    "sender_or_requester": "product@company.local",
-    "received_at": "2026-05-29T14:20:00Z",
-    "tags": ["feedback"]
+    "subject_or_title": "API deprecation approval — two paying customers affected",
+    "body_or_description": "Engineering has proposed deprecating an older API endpoint that two paying customers still depend on. They want approval to send a 30-day deprecation notice to affected accounts. The customer success team has not yet been consulted on the potential impact or migration path.",
+    "sender_or_requester": "engineering-lead@company.local",
+    "received_at": "2026-05-30T04:20:00Z",
+    "tags": ["product", "deprecation", "customer-impact"]
+  },
+  {
+    "id": "WI-007",
+    "source_type": "support_request",
+    "subject_or_title": "Engineering manager hiring stalled — salary band review needed",
+    "body_or_description": "The engineering manager role posting has been open for 47 days with two finalist candidates declining offers. The talent team is requesting a salary band review and a hiring strategy discussion before reposting the role.",
+    "sender_or_requester": "talent-team@company.local",
+    "received_at": "2026-05-29T22:30:00Z",
+    "tags": ["hr", "hiring", "compensation"]
+  },
+  {
+    "id": "WI-008",
+    "source_type": "task",
+    "subject_or_title": "Board deck — executive summary draft needed",
+    "body_or_description": "The board deck for the next quarterly meeting needs an executive summary draft. Operations has prepared the metrics section but is blocked on strategic narrative input from leadership. The board meeting is in two weeks.",
+    "sender_or_requester": "operations@company.local",
+    "received_at": "2026-05-29T20:15:00Z",
+    "tags": ["admin", "board", "deliverable"]
+  },
+  {
+    "id": "WI-009",
+    "source_type": "support_request",
+    "subject_or_title": "Northwind Analytics feature request — recurring pattern",
+    "body_or_description": "Northwind Analytics submitted a feature request that aligns with three other similar requests received this quarter. The product team wants to know whether to prioritize this for the next planning cycle or defer it to a future roadmap slot.",
+    "sender_or_requester": "product-ops@company.local",
+    "received_at": "2026-05-29T18:40:00Z",
+    "tags": ["customer", "feature-request", "product"]
+  },
+  {
+    "id": "WI-010",
+    "source_type": "email",
+    "subject_or_title": "Monitoring alert — secondary database replica elevated lag",
+    "body_or_description": "A monitoring alert fired three times overnight for the secondary database replica showing elevated replication lag. The SRE on-call acknowledged and classified it as non-customer-impacting. Worth confirming the root cause is understood and no action is needed from leadership.",
+    "sender_or_requester": "sre-oncall@company.local",
+    "received_at": "2026-05-30T03:10:00Z",
+    "tags": ["incident", "monitoring", "database"]
+  },
+  {
+    "id": "WI-011",
+    "source_type": "email",
+    "subject_or_title": "Professional liability insurance renewal — coverage tier decision",
+    "body_or_description": "The annual professional liability insurance renewal arrived from the broker with two coverage tier options. The finance team recommends the higher tier given recent company growth but needs executive endorsement before binding the policy.",
+    "sender_or_requester": "finance-team@company.local",
+    "received_at": "2026-05-29T16:00:00Z",
+    "tags": ["finance", "insurance", "renewal"]
+  },
+  {
+    "id": "WI-012",
+    "source_type": "task",
+    "subject_or_title": "Office lease renewal notice — 90 days to expiration",
+    "body_or_description": "The landlord sent an office lease renewal notice 90 days ahead of expiration. Standard renewal terms are unchanged from the current agreement. The operations team can handle this independently but flagged it for executive awareness.",
+    "sender_or_requester": "operations@company.local",
+    "received_at": "2026-05-29T14:30:00Z",
+    "tags": ["admin", "lease", "facilities"]
+  },
+  {
+    "id": "WI-013",
+    "source_type": "task",
+    "subject_or_title": "Quarterly employee engagement survey results ready",
+    "body_or_description": "Quarterly employee engagement survey results are ready for review. Overall sentiment is stable across most teams, with one team showing a notable dip in engagement scores. The talent team will prepare a detailed recommendation if leadership requests further analysis.",
+    "sender_or_requester": "talent-team@company.local",
+    "received_at": "2026-05-29T12:00:00Z",
+    "tags": ["hr", "engagement", "survey"]
   }
 ]
