@@ -10,6 +10,7 @@ from datetime import date
 from pathlib import Path
 
 from opspilot.adapters.conversation_adapter import answer_question
+from opspilot.adapters.evening_adapter import generate_evening_summary
 from opspilot.history.run_history import (
     list_run_metadata,
     read_run_json_artifact,
@@ -70,6 +71,10 @@ class RunPipelineRequest(BaseModel):
 
 class AskRequest(BaseModel):
     question: str
+    assistant_name: str = "OpsPilot"
+
+
+class EveningSummaryRequest(BaseModel):
     assistant_name: str = "OpsPilot"
 
 
@@ -299,6 +304,25 @@ def ask(payload: AskRequest) -> dict[str, str]:
         triage_records=records,
     )
     return {"answer": answer}
+
+
+@app.post("/evening-summary")
+def evening_summary(payload: EveningSummaryRequest) -> dict[str, str]:
+    """Generate an end-of-day summary based on today's triage records."""
+    triage_path = API_OUTPUT_DIR / "triage_results.json"
+    records: list = []
+    if triage_path.exists():
+        try:
+            with triage_path.open("r", encoding="utf-8") as f:
+                records = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            records = []
+
+    summary = generate_evening_summary(
+        assistant_name=payload.assistant_name,
+        triage_records=records,
+    )
+    return {"summary": summary}
 
 
 @app.get("/inputs", response_class=JSONResponse)
