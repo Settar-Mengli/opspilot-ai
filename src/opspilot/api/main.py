@@ -11,6 +11,7 @@ from pathlib import Path
 
 from opspilot.adapters.conversation_adapter import answer_question
 from opspilot.adapters.evening_adapter import generate_evening_summary
+from opspilot.adapters.insights_adapter import generate_insights
 from opspilot.history.run_history import (
     list_run_metadata,
     read_run_json_artifact,
@@ -75,6 +76,10 @@ class AskRequest(BaseModel):
 
 
 class EveningSummaryRequest(BaseModel):
+    assistant_name: str = "OpsPilot"
+
+
+class InsightsRequest(BaseModel):
     assistant_name: str = "OpsPilot"
 
 
@@ -323,6 +328,25 @@ def evening_summary(payload: EveningSummaryRequest) -> dict[str, str]:
         triage_records=records,
     )
     return {"summary": summary}
+
+
+@app.post("/insights")
+def insights(payload: InsightsRequest) -> dict[str, object]:
+    """Generate cross-cutting insights based on current triage records."""
+    triage_path = API_OUTPUT_DIR / "triage_results.json"
+    records: list = []
+    if triage_path.exists():
+        try:
+            with triage_path.open("r", encoding="utf-8") as f:
+                records = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            records = []
+
+    result = generate_insights(
+        assistant_name=payload.assistant_name,
+        triage_records=records,
+    )
+    return result
 
 
 @app.get("/inputs", response_class=JSONResponse)
