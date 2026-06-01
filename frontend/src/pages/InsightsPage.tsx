@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getInsights } from '../api/client'
 import type { InsightItem } from '../api/types'
 import { InsightCardSkeleton } from '../components/skeletons/InsightCardSkeleton'
 import { BulBulAvatar } from '../components/BulBulAvatar'
-import { TrendingUp, Clock, Eye, Lightbulb, MessageCircle } from 'lucide-react'
+import { TrendingUp, Clock, Eye, Lightbulb, MessageCircle, ArrowLeft } from 'lucide-react'
 
 function categoryChip(category: string): { cls: string; Icon: typeof TrendingUp } {
   const lower = category.toLowerCase()
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function InsightsPage({ assistantName, onAsk }: Props) {
+  const navigate = useNavigate()
   const [intro, setIntro] = useState('')
   const [insights, setInsights] = useState<InsightItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -58,6 +60,13 @@ export function InsightsPage({ assistantName, onAsk }: Props) {
 
   return (
     <>
+      <div className="page-header">
+        <button className="page-back" onClick={() => navigate('/dashboard')} aria-label="Back to dashboard">
+          <ArrowLeft size={20} strokeWidth={2} />
+        </button>
+        <h2 className="page-header-title">What I'm noticing</h2>
+      </div>
+
       {loading && (
         <div className="insights-list">
           <InsightCardSkeleton />

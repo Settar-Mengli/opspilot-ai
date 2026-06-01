@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getAiBriefing, getTriage } from '../api/client'
 import { BulBulAvatar } from '../components/BulBulAvatar'
 import { BriefingSkeleton } from '../components/skeletons/BriefingSkeleton'
+import { ArrowLeft } from 'lucide-react'
 
 function formatDate(): string {
   const d = new Date()
@@ -25,6 +27,7 @@ function renderPara(para: string, i: number) {
 }
 
 export function BriefingPage() {
+  const navigate = useNavigate()
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -73,6 +76,9 @@ export function BriefingPage() {
   return (
     <div className="br-page">
       <div className="br-header">
+        <button className="page-back" onClick={() => navigate('/dashboard')} aria-label="Back to dashboard">
+          <ArrowLeft size={20} strokeWidth={2} />
+        </button>
         <p className="br-title">Today's briefing</p>
         <span className="br-date">{formatDate()}</span>
       </div>

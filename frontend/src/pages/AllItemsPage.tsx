@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getTriage } from '../api/client'
 import type { TriageRecord, Category, Urgency } from '../api/types'
 import { LoopSkeleton } from '../components/skeletons/LoopSkeleton'
 import { BulBulAvatar } from '../components/BulBulAvatar'
-import { AlertTriangle, FileText, Users, Calendar, MessageCircle, ChevronRight } from 'lucide-react'
+import { AlertTriangle, FileText, Users, Calendar, MessageCircle, ChevronRight, ArrowLeft } from 'lucide-react'
 
 const categoryIcon: Record<Category, typeof AlertTriangle> = {
   incident: AlertTriangle,
@@ -28,6 +29,7 @@ const dotClass: Record<Urgency, string> = {
 }
 
 export function AllItemsPage() {
+  const navigate = useNavigate()
   const [records, setRecords] = useState<TriageRecord[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -47,6 +49,9 @@ export function AllItemsPage() {
   return (
     <>
       <div className="fp-header">
+        <button className="page-back" onClick={() => navigate('/dashboard')} aria-label="Back to dashboard">
+          <ArrowLeft size={20} strokeWidth={2} />
+        </button>
         <h2 className="fp-title">The full picture</h2>
         <span className="fp-count">{loading ? '…' : `${records.length} items`}</span>
       </div>

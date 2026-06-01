@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getCapabilities } from '../api/client'
 import type { Capability } from '../api/types'
-import { Mail, MessageSquare, Calendar, FileText, Building2, CreditCard, Circle, Zap } from 'lucide-react'
+import { Mail, MessageSquare, Calendar, FileText, Building2, CreditCard, Circle, Zap, ArrowLeft } from 'lucide-react'
 
 const CATEGORY_ICONS: Record<string, typeof Mail> = {
   email: Mail,
@@ -23,6 +24,7 @@ const FALLBACK_CAPS: Capability[] = [
 ]
 
 export function ConnectionsPage() {
+  const navigate = useNavigate()
   const [capabilities, setCapabilities] = useState<Capability[]>(FALLBACK_CAPS)
   const [modalCap, setModalCap] = useState<Capability | null>(null)
 
@@ -54,6 +56,13 @@ export function ConnectionsPage() {
 
   return (
     <div className="cn-page">
+      <div className="page-header">
+        <button className="page-back" onClick={() => navigate('/dashboard')} aria-label="Back to dashboard">
+          <ArrowLeft size={20} strokeWidth={2} />
+        </button>
+        <h2 className="page-header-title">Connections</h2>
+      </div>
+
       <p className="cn-intro">
         Right now I can think, write, and plan with you. Connect me to your tools and I'll start acting on your behalf — always with your say-so.
       </p>
