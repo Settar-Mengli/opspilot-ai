@@ -95,3 +95,13 @@ export interface InsightsResponse {
   intro: string
   insights: InsightItem[]
 }
+
+export interface Capability {
+  id: string
+  name: string
+  category: string
+  apps: string[]
+  status: 'connected' | 'available' | 'coming_soon'
+  featured: boolean
+  description: string
+}

@@ -1,4 +1,4 @@
-import type { RunMetadata, RunPipelineResult, RunSummary, TriageRecord, InsightsResponse } from './types'
+import type { Capability, RunMetadata, RunPipelineResult, RunSummary, TriageRecord, InsightsResponse } from './types'
 
 const FALLBACK_API_BASE_URL = 'http://127.0.0.1:8000'
 
@@ -236,4 +236,12 @@ export async function getInsights(assistantName: string): Promise<InsightsRespon
     intro: typeof data.intro === 'string' ? data.intro : '',
     insights: Array.isArray(data.insights) ? data.insights : [],
   }
+}
+
+export async function getCapabilities(): Promise<Capability[]> {
+  const payload = await requestJson<unknown>('/capabilities')
+  if (!Array.isArray(payload)) {
+    throw new Error('Unexpected capabilities response shape')
+  }
+  return payload as Capability[]
 }
