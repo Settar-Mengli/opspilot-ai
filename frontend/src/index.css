@@ -1812,6 +1812,122 @@ select option { background: #1c1c1a; color: var(--text-1); }
   margin: 0;
 }
 
+/* ─── Full Picture Page ─── */
+.fp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.fp-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: #FAF9F5;
+  margin: 0;
+}
+
+.fp-count {
+  font-size: 12px;
+  color: #888780;
+}
+
+.fp-body {
+  padding-bottom: 24px;
+}
+
+.fp-intro {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.fp-intro-txt {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 15px;
+  color: #EDEBE3;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.fp-group-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #888780;
+  margin: 18px 0 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fp-group-label:first-of-type {
+  margin-top: 0;
+}
+
+.fp-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fp-dot--crit { background: #d85a30; }
+.fp-dot--high { background: #ef9f27; }
+.fp-dot--med  { background: #9CAB7A; }
+.fp-dot--low  { background: #5f5e5a; }
+
+.fp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 13px;
+  background: rgba(250, 249, 245, 0.03);
+  border: 0.5px solid rgba(250, 249, 245, 0.08);
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.fp-row-ic {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(250, 249, 245, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #b0aea5;
+}
+
+.fp-row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fp-row-title {
+  font-size: 13.5px;
+  color: #FAF9F5;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.fp-row-cat {
+  font-size: 11.5px;
+  color: #888780;
+  margin: 2px 0 0;
+}
+
+.fp-row-arr {
+  color: #5f5e5a;
+  font-size: 16px;
+  margin-left: auto;
+  display: flex;
+  flex-shrink: 0;
+}
+
 /* ─── Nav Gear ─── */
 .nav-gear {
   display: flex;
