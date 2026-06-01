@@ -31,6 +31,21 @@ export function EveningPanel({ open, assistantName, onClose }: Props) {
     }
   }, [assistantName])
 
+  // Scroll-lock + Escape-to-close
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+    }
+  }, [open, onClose])
+
   // Render summary text with paragraph breaks
   const renderSummary = (raw: string) => {
     return raw.split(/\n\n+/).map((para, i) => (
