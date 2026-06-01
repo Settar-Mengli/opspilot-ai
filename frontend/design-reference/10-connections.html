@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpsPilot — Connections Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+<style>
+  body{margin:0;background:#0d0d0c;display:flex;justify-content:center;padding:40px 16px;font-family:'Poppins',-apple-system,sans-serif;}
+  .card{width:380px;max-width:100%;background:#141413;border-radius:20px;overflow:hidden;border:0.5px solid rgba(250,249,245,0.08);display:flex;flex-direction:column;height:680px;}
+  .chead{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:0.5px solid rgba(250,249,245,0.08);flex-shrink:0;}
+  .cback{background:none;border:none;color:#888780;font-size:20px;cursor:pointer;display:flex;padding:0;}
+  .ctitle{font-size:15px;font-weight:500;color:#FAF9F5;margin:0;}
+  .cbody{flex:1;overflow-y:auto;padding:20px 16px 24px;}
+  .cintro{font-family:'Lora',Georgia,serif;font-size:15px;color:#c4c2b8;line-height:1.55;margin:0 0 20px;}
+  .cfeature{background:rgba(128,128,0,0.08);border:2px solid rgba(128,128,0,0.4);border-radius:16px;padding:20px;margin-bottom:24px;}
+  .cfeat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .cfeat-ic{width:46px;height:46px;border-radius:12px;background:rgba(128,128,0,0.2);display:flex;align-items:center;justify-content:center;color:#cfcf5a;font-size:24px;}
+  .cbadge{font-size:10.5px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:#cfcf5a;background:rgba(128,128,0,0.18);padding:4px 10px;border-radius:999px;}
+  .cfeat-head{font-size:20px;font-weight:600;color:#FAF9F5;margin:0 0 6px;letter-spacing:-0.01em;}
+  .cfeat-sub{font-size:13.5px;color:#b0aea5;line-height:1.5;margin:0 0 16px;}
+  .cfeat-btn{width:100%;background:rgba(128,128,0,0.2);border:0.5px solid rgba(128,128,0,0.45);border-radius:10px;padding:11px;font-size:13.5px;font-weight:500;color:#cfcf5a;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;}
+  .cfeat-btn i{font-size:15px;}
+  .csec{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#888780;margin:0 0 12px;}
+  .ccat{display:flex;align-items:center;gap:13px;padding:14px 15px;background:rgba(250,249,245,0.03);border:0.5px solid rgba(250,249,245,0.08);border-radius:12px;margin-bottom:9px;cursor:pointer;transition:background .15s,border-color .15s;}
+  .ccat:active{background:rgba(250,249,245,0.06);}
+  .ccat-ic{width:38px;height:38px;border-radius:10px;background:rgba(250,249,245,0.05);display:flex;align-items:center;justify-content:center;color:#b0aea5;font-size:18px;flex-shrink:0;}
+  .ccat-name{font-size:14px;font-weight:500;color:#FAF9F5;margin:0;}
+  .ccat-apps{font-size:12px;color:#888780;margin:2px 0 0;}
+  .ccat-status{margin-left:auto;font-size:11px;color:#788C5D;display:flex;align-items:center;gap:5px;flex-shrink:0;}
+  .ccat-status i{font-size:13px;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="chead">
+    <button class="cback" aria-label="Back"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+    <p class="ctitle">Connections</p>
+  </div>
+
+  <div class="cbody">
+    <p class="cintro">Right now I can think, write, and plan with you. Connect me to your tools and I'll start acting on your behalf — always with your say-so.</p>
+
+    <div class="cfeature">
+      <div class="cfeat-top">
+        <span class="cfeat-ic"><i class="ti ti-plug-connected" aria-hidden="true"></i></span>
+        <span class="cbadge">Recommended</span>
+      </div>
+      <p class="cfeat-head">One connection. 250+ apps.</p>
+      <p class="cfeat-sub">Composio is the fastest path to giving me real-world reach. Connect once and unlock Gmail, Slack, Salesforce, Stripe, and more.</p>
+      <button class="cfeat-btn"><i class="ti ti-sparkles" aria-hidden="true"></i>Coming soon</button>
+    </div>
+
+    <p class="csec">Or connect by category</p>
+
+    <div class="ccat">
+      <span class="ccat-ic"><i class="ti ti-mail" aria-hidden="true"></i></span>
+      <span><p class="ccat-name">Email</p><p class="ccat-apps">Gmail · Outlook · Mailgun</p></span>
+      <span class="ccat-status"><i class="ti ti-circle" aria-hidden="true"></i>Soon</span>
+    </div>
+    <div class="ccat">
+      <span class="ccat-ic"><i class="ti ti-message-2" aria-hidden="true"></i></span>
+      <span><p class="ccat-name">Chat</p><p class="ccat-apps">Slack · Discord · Teams</p></span>
+      <span class="ccat-status"><i class="ti ti-circle" aria-hidden="true"></i>Soon</span>
+    </div>
+    <div class="ccat">
+      <span class="ccat-ic"><i class="ti ti-calendar" aria-hidden="true"></i></span>
+      <span><p class="ccat-name">Calendar</p><p class="ccat-apps">Google · Outlook</p></span>
+      <span class="ccat-status"><i class="ti ti-circle" aria-hidden="true"></i>Soon</span>
+    </div>
+    <div class="ccat">
+      <span class="ccat-ic"><i class="ti ti-file-text" aria-hidden="true"></i></span>
+      <span><p class="ccat-name">Documents</p><p class="ccat-apps">Docs · Notion · Dropbox</p></span>
+      <span class="ccat-status"><i class="ti ti-circle" aria-hidden="true"></i>Soon</span>
+    </div>
+    <div class="ccat">
+      <span class="ccat-ic"><i class="ti ti-building" aria-hidden="true"></i></span>
+      <span><p class="ccat-name">CRM</p><p class="ccat-apps">Salesforce · HubSpot</p></span>
+      <span class="ccat-status"><i class="ti ti-circle" aria-hidden="true"></i>Soon</span>
+    </div>
+    <div class="ccat">
+      <span class="ccat-ic"><i class="ti ti-credit-card" aria-hidden="true"></i></span>
+      <span><p class="ccat-name">Payments</p><p class="ccat-apps">Stripe · banking</p></span>
+      <span class="ccat-status"><i class="ti ti-circle" aria-hidden="true"></i>Soon</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

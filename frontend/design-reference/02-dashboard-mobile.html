@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpsPilot — Dashboard (Mobile) Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+<style>
+  body{margin:0;background:#0d0d0c;display:flex;justify-content:center;padding:40px 16px;font-family:'Poppins',-apple-system,sans-serif;}
+  .card{width:380px;max-width:100%;background:#141413;border-radius:20px;overflow:hidden;border:0.5px solid rgba(250,249,245,0.08);}
+  @keyframes mBreathe{0%,100%{transform:scale(1);fill:#9CAB7A;opacity:0.38;}50%{transform:scale(1.16);fill:#808000;opacity:0.22;}}
+  .mhalo{transform-box:fill-box;transform-origin:center;animation:mBreathe 5s ease-in-out infinite;}
+  @media (prefers-reduced-motion:reduce){.mhalo{animation:none;}}
+  .mhead{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:0.5px solid rgba(250,249,245,0.08);}
+  .mlogo{font-size:15px;font-weight:600;color:#FAF9F5;}
+  .mlogo span{color:#a8a832;}
+  .mhead-r{display:flex;align-items:center;gap:10px;}
+  .mpill{display:flex;align-items:center;gap:6px;background:rgba(250,249,245,0.05);border:0.5px solid rgba(250,249,245,0.12);border-radius:999px;padding:4px 10px 4px 5px;}
+  .mpill-name{font-size:12px;color:#FAF9F5;font-weight:500;}
+  .micon{color:#888780;font-size:18px;display:flex;}
+  .mbody{padding:24px 18px 22px;}
+  .mhl{font-family:'Lora',Georgia,serif;font-size:26px;font-weight:600;color:#FAF9F5;line-height:1.2;margin:0;letter-spacing:-0.01em;}
+  .mtxt{font-family:'Lora',Georgia,serif;font-size:16px;color:#EDEBE3;line-height:1.55;margin:14px 0 0;}
+  .mday{font-family:'Lora',Georgia,serif;font-style:italic;font-size:13.5px;color:#888780;margin:10px 0 0;line-height:1.45;}
+  .msec{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#888780;margin:26px 0 12px;}
+  .mhero{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:rgba(128,128,0,0.10);border:1px solid rgba(128,128,0,0.34);border-radius:14px;padding:18px;cursor:pointer;}
+  .mhero:active{background:rgba(128,128,0,0.18);}
+  .mhero-ic{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:11px;background:rgba(128,128,0,0.18);flex-shrink:0;}
+  .mhero-ic i{font-size:21px;color:#bcbb3e;}
+  .mhero-lab{font-size:15.5px;font-weight:500;color:#cfcf5a;margin:0;letter-spacing:0.2px;}
+  .mhero-sub{font-size:12.5px;color:#b0aea5;margin:3px 0 0;}
+  .mhero-arr{margin-left:auto;color:#a8a832;font-size:19px;display:flex;align-items:center;}
+  .mstack{display:flex;flex-direction:column;gap:10px;margin-top:10px;}
+  .mtile{display:flex;align-items:center;gap:14px;background:rgba(250,249,245,0.04);border:0.5px solid rgba(250,249,245,0.10);border-radius:12px;padding:15px 16px;cursor:pointer;text-align:left;}
+  .mtile:active{background:rgba(250,249,245,0.08);}
+  .mtile-ic{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;background:rgba(250,249,245,0.05);flex-shrink:0;}
+  .mtile-ic i{font-size:18px;color:#EDEBE3;}
+  .mtile-lab{font-size:14px;font-weight:500;color:#FAF9F5;margin:0;letter-spacing:0.2px;}
+  .mtile-sub{font-size:12px;color:#9b998f;margin:2px 0 0;}
+  .mghosts{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px;margin:24px 0 0;}
+  .mghost{background:none;border:none;font-family:inherit;font-size:12.5px;color:#888780;cursor:pointer;padding:5px 9px;display:inline-flex;align-items:center;gap:5px;border-radius:7px;}
+  .mdotsep{color:#5f5e5a;font-size:12px;}
+  .mcred{font-family:'Lora',Georgia,serif;font-style:italic;font-size:13px;color:#7e7d76;text-align:center;line-height:1.5;margin:22px auto 0;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="mhead">
+    <div class="mlogo">Ops<span>Pilot</span></div>
+    <div class="mhead-r">
+      <span class="micon"><i class="ti ti-bell" aria-hidden="true"></i></span>
+      <div class="mpill">
+        <svg width="22" height="22" viewBox="0 0 56 56" aria-hidden="true">
+          <defs><radialGradient id="mp1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.6"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+          <circle class="mhalo" cx="28" cy="28" r="24" fill="#9CAB7A"/>
+          <circle cx="28" cy="28" r="18" fill="url(#mp1)"/>
+          <circle cx="28" cy="28" r="12" fill="#9CAB7A"/>
+        </svg>
+        <span class="mpill-name">BulBulJan</span>
+      </div>
+      <span class="micon"><i class="ti ti-settings" aria-hidden="true"></i></span>
+    </div>
+  </div>
+
+  <div class="mbody">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <svg width="52" height="52" viewBox="0 0 56 56" role="img" aria-label="Assistant presence" style="flex-shrink:0;">
+        <defs><radialGradient id="mp2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.55"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+        <circle class="mhalo" cx="28" cy="28" r="24" fill="#9CAB7A"/>
+        <circle cx="28" cy="28" r="18" fill="url(#mp2)"/>
+        <circle cx="28" cy="28" r="11" fill="#9CAB7A"/>
+      </svg>
+      <h1 class="mhl">Good evening, Mest.</h1>
+    </div>
+    <p class="mtxt">It's good to see you. There are two things I'd like you to see when you're ready.</p>
+    <p class="mday">Today is light. Friday is where the week tightens — Q3 close lands.</p>
+
+    <p class="msec">Where would you like to start?</p>
+
+    <button class="mhero">
+      <span class="mhero-ic"><i class="ti ti-flame" aria-hidden="true"></i></span>
+      <span>
+        <p class="mhero-lab">The two things</p>
+        <p class="mhero-sub">I'll walk you through them</p>
+      </span>
+      <span class="mhero-arr"><i class="ti ti-arrow-right" aria-hidden="true"></i></span>
+    </button>
+
+    <div class="mstack">
+      <button class="mtile">
+        <span class="mtile-ic"><i class="ti ti-message-circle" aria-hidden="true"></i></span>
+        <span><p class="mtile-lab">Just ask me</p><p class="mtile-sub">Anything on your mind</p></span>
+      </button>
+      <button class="mtile">
+        <span class="mtile-ic"><i class="ti ti-eye" aria-hidden="true"></i></span>
+        <span><p class="mtile-lab">The full picture</p><p class="mtile-sub">All 13 items, nothing hidden</p></span>
+      </button>
+      <button class="mtile">
+        <span class="mtile-ic"><i class="ti ti-bulb" aria-hidden="true"></i></span>
+        <span><p class="mtile-lab">What I'm noticing</p><p class="mtile-sub">A few patterns worth your time</p></span>
+      </button>
+    </div>
+
+    <div class="mghosts">
+      <button class="mghost"><i class="ti ti-moon" aria-hidden="true"></i>Wrap up the day</button>
+      <span class="mdotsep">·</span>
+      <button class="mghost"><i class="ti ti-calendar" aria-hidden="true"></i>The whole week</button>
+      <span class="mdotsep">·</span>
+      <button class="mghost"><i class="ti ti-file-text" aria-hidden="true"></i>Today's briefing</button>
+    </div>
+
+    <p class="mcred">I held three small things off your queue this morning. I'll surface them only if they need you.</p>
+  </div>
+</div>
+</body>
+</html>

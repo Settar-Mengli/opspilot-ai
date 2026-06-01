@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpsPilot — Today's Briefing Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+<style>
+  body{margin:0;background:#0d0d0c;display:flex;justify-content:center;padding:40px 16px;font-family:'Poppins',-apple-system,sans-serif;}
+  .card{width:380px;max-width:100%;background:#141413;border-radius:20px;overflow:hidden;border:0.5px solid rgba(250,249,245,0.08);display:flex;flex-direction:column;height:680px;}
+  @keyframes bBreathe{0%,100%{transform:scale(1);fill:#9CAB7A;opacity:0.38;}50%{transform:scale(1.16);fill:#808000;opacity:0.22;}}
+  .bhalo{transform-box:fill-box;transform-origin:center;animation:bBreathe 5s ease-in-out infinite;}
+  @media (prefers-reduced-motion:reduce){.bhalo{animation:none;}}
+  .bhead{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:0.5px solid rgba(250,249,245,0.08);flex-shrink:0;}
+  .bback{background:none;border:none;color:#888780;font-size:20px;cursor:pointer;display:flex;padding:0;}
+  .btitle{font-size:15px;font-weight:500;color:#FAF9F5;margin:0;}
+  .bdate{font-size:12px;color:#888780;margin-left:auto;}
+  .bbody{flex:1;overflow-y:auto;padding:22px 18px 24px;}
+  .bsummary{display:flex;gap:12px;align-items:flex-start;margin-bottom:22px;}
+  .bsummary-txt{font-family:'Lora',Georgia,serif;font-size:16px;color:#EDEBE3;line-height:1.6;margin:0;}
+  .bmetrics{display:flex;gap:9px;margin-bottom:24px;}
+  .bmetric{flex:1;background:rgba(250,249,245,0.04);border:0.5px solid rgba(250,249,245,0.08);border-radius:11px;padding:13px 10px;text-align:center;}
+  .bmetric-num{font-size:21px;font-weight:500;margin:0;line-height:1;}
+  .bn-crit{color:#d85a30;}.bn-high{color:#ef9f27;}.bn-rest{color:#9CAB7A;}
+  .bmetric-lab{font-size:10.5px;color:#888780;margin:6px 0 0;letter-spacing:0.03em;}
+  .bsec{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#888780;margin:0 0 12px;display:flex;align-items:center;gap:7px;}
+  .bsec i{font-size:14px;}
+  .bsec-wrap{margin-bottom:22px;}
+  .bprio{display:flex;gap:10px;padding:9px 0;align-items:flex-start;}
+  .bprio-mark{font-size:13px;color:#888780;font-weight:500;flex-shrink:0;width:16px;}
+  .bprio-txt{font-size:13.5px;color:#c4c2b8;line-height:1.45;margin:0;}
+  .btake{background:rgba(106,155,204,0.07);border:0.5px solid rgba(106,155,204,0.2);border-radius:12px;padding:14px 16px;margin-bottom:22px;}
+  .btake-head{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#8eb1d8;margin:0 0 7px;}
+  .btake-txt{font-family:'Lora',Georgia,serif;font-size:14px;color:#cdd6e0;line-height:1.6;margin:0;}
+  .bfoot{display:flex;gap:12px;align-items:flex-start;}
+  .bfoot-txt{font-family:'Lora',Georgia,serif;font-style:italic;font-size:14px;color:#888780;line-height:1.5;margin:0;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="bhead">
+    <button class="bback" aria-label="Back"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+    <p class="btitle">Today's briefing</p>
+    <span class="bdate">Mon, Jun 2</span>
+  </div>
+
+  <div class="bbody">
+    <div class="bsummary">
+      <svg width="32" height="32" viewBox="0 0 56 56" aria-hidden="true" style="flex-shrink:0;margin-top:2px;">
+        <defs><radialGradient id="bp1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.6"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+        <circle class="bhalo" cx="28" cy="28" r="24" fill="#9CAB7A"/><circle cx="28" cy="28" r="18" fill="url(#bp1)"/><circle cx="28" cy="28" r="12" fill="#9CAB7A"/>
+      </svg>
+      <p class="bsummary-txt">Thirteen things came in. Two need you today, and one of those is a live incident.</p>
+    </div>
+
+    <div class="bmetrics">
+      <div class="bmetric"><p class="bmetric-num bn-crit">2</p><p class="bmetric-lab">Critical</p></div>
+      <div class="bmetric"><p class="bmetric-num bn-high">3</p><p class="bmetric-lab">High</p></div>
+      <div class="bmetric"><p class="bmetric-num bn-rest">8</p><p class="bmetric-lab">Can wait</p></div>
+    </div>
+
+    <div class="bsec-wrap">
+      <p class="bsec"><i class="ti ti-flame" aria-hidden="true"></i>Top priorities</p>
+      <div class="bprio"><span class="bprio-mark">1.</span><p class="bprio-txt">Checkout service throwing 500s in production — live, climbing</p></div>
+      <div class="bprio"><span class="bprio-mark">2.</span><p class="bprio-txt">Acme Logistics escalated an outage on their account</p></div>
+      <div class="bprio"><span class="bprio-mark">3.</span><p class="bprio-txt">Contract renewal needs your sign-off by Friday</p></div>
+    </div>
+
+    <div class="btake">
+      <p class="btake-head">My read</p>
+      <p class="btake-txt">Both critical items trace to infrastructure, not customers doing anything wrong. If the checkout fix holds, the Acme escalation likely eases with it. I'd treat them as one thread.</p>
+    </div>
+
+    <div class="bsec-wrap">
+      <p class="bsec"><i class="ti ti-clock" aria-hidden="true"></i>Worth knowing</p>
+      <div class="bprio"><span class="bprio-mark">·</span><p class="bprio-txt">Northwind has been quiet for twelve days</p></div>
+      <div class="bprio"><span class="bprio-mark">·</span><p class="bprio-txt">Your replies are clustering late — most go out after 6pm</p></div>
+    </div>
+
+    <div class="bfoot">
+      <svg width="26" height="26" viewBox="0 0 56 56" aria-hidden="true" style="flex-shrink:0;margin-top:2px;">
+        <defs><radialGradient id="bp2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.6"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+        <circle class="bhalo" cx="28" cy="28" r="24" fill="#9CAB7A"/><circle cx="28" cy="28" r="18" fill="url(#bp2)"/><circle cx="28" cy="28" r="12" fill="#9CAB7A"/>
+      </svg>
+      <p class="bfoot-txt">That's the whole read. Ask me about any of it.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

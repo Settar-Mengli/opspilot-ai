@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpsPilot — Dashboard (Desktop) Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+<style>
+  body { margin:0; background:#0d0d0c; display:flex; justify-content:center; padding:40px 16px; font-family:'Poppins',-apple-system,sans-serif; }
+  .frame { width:680px; max-width:100%; }
+  @keyframes opxBreathe { 0%,100%{transform:scale(1);fill:#9CAB7A;opacity:0.38;} 50%{transform:scale(1.16);fill:#808000;opacity:0.22;} }
+  @keyframes opxDot { 0%,100%{opacity:0.5;} 50%{opacity:1;} }
+  .ohalo{transform-box:fill-box;transform-origin:center;animation:opxBreathe 5s ease-in-out infinite;}
+  @media (prefers-reduced-motion:reduce){.ohalo{animation:none;}}
+  .ohead{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:0.5px solid rgba(250,249,245,0.08);}
+  .ologo{font-size:15px;font-weight:600;color:#FAF9F5;letter-spacing:-0.01em;}
+  .ologo span{color:#a8a832;}
+  .opill{display:flex;align-items:center;gap:8px;background:rgba(250,249,245,0.05);border:0.5px solid rgba(250,249,245,0.12);border-radius:999px;padding:5px 12px 5px 6px;}
+  .opill-name{font-size:13px;color:#FAF9F5;font-weight:500;}
+  .opill-status{font-size:11px;color:#788C5D;}
+  .obody-wrap{padding:32px 32px 28px;}
+  .ohl{font-family:'Lora',Georgia,serif;font-size:32px;font-weight:600;color:#FAF9F5;line-height:1.18;margin:0;letter-spacing:-0.01em;}
+  .otxt{font-family:'Lora',Georgia,serif;font-size:17px;color:#EDEBE3;line-height:1.55;margin:14px 0 0;max-width:600px;}
+  .oday{font-family:'Lora',Georgia,serif;font-style:italic;font-size:14px;color:#888780;margin:10px 0 0;}
+  .osec{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#888780;margin:30px 0 14px;}
+  .ohero{display:flex;align-items:center;gap:16px;width:100%;text-align:left;background:rgba(128,128,0,0.10);border:1px solid rgba(128,128,0,0.34);border-radius:14px;padding:20px 22px;cursor:pointer;transition:background .18s,border-color .18s,transform .18s;}
+  .ohero:hover{background:rgba(128,128,0,0.16);border-color:rgba(128,128,0,0.55);transform:translateY(-1px);}
+  .ohero-ic{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:11px;background:rgba(128,128,0,0.18);flex-shrink:0;}
+  .ohero-ic i{font-size:22px;color:#bcbb3e;}
+  .ohero-lab{font-size:16px;font-weight:500;color:#cfcf5a;margin:0;letter-spacing:0.2px;}
+  .ohero-sub{font-size:13px;color:#b0aea5;margin:3px 0 0;}
+  .ohero-arr{margin-left:auto;color:#a8a832;font-size:20px;display:flex;align-items:center;}
+  .ogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}
+  .otile{background:rgba(250,249,245,0.04);border:0.5px solid rgba(250,249,245,0.10);border-radius:12px;padding:16px;cursor:pointer;text-align:left;transition:background .18s,border-color .18s,transform .18s;}
+  .otile:hover{background:rgba(250,249,245,0.07);border-color:rgba(250,249,245,0.24);transform:translateY(-1px);}
+  .otile i{font-size:19px;color:#EDEBE3;}
+  .otile-lab{font-size:13.5px;font-weight:500;color:#FAF9F5;margin:11px 0 3px;letter-spacing:0.2px;}
+  .otile-sub{font-size:12px;color:#9b998f;margin:0;line-height:1.4;}
+  .oghosts{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px;margin:26px 0 0;}
+  .oghost{background:none;border:none;font-family:inherit;font-size:13px;color:#888780;cursor:pointer;padding:5px 10px;display:inline-flex;align-items:center;gap:6px;border-radius:7px;transition:color .15s,background .15s;}
+  .oghost:hover{color:#FAF9F5;background:rgba(250,249,245,0.05);}
+  .odotsep{color:#5f5e5a;font-size:13px;}
+  .ocred{font-family:'Lora',Georgia,serif;font-style:italic;font-size:14px;color:#7e7d76;text-align:center;line-height:1.5;margin:28px auto 0;max-width:500px;}
+  .card{background:#141413;border-radius:16px;overflow:hidden;border:0.5px solid rgba(250,249,245,0.08);}
+</style>
+</head>
+<body>
+<div class="frame">
+<div class="card">
+  <div class="ohead">
+    <div class="ologo">Ops<span>Pilot</span></div>
+    <div class="opill">
+      <svg width="24" height="24" viewBox="0 0 56 56" aria-hidden="true">
+        <defs><radialGradient id="op1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.6"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+        <circle class="ohalo" cx="28" cy="28" r="24" fill="#9CAB7A"/>
+        <circle cx="28" cy="28" r="18" fill="url(#op1)"/>
+        <circle cx="28" cy="28" r="12" fill="#9CAB7A"/>
+      </svg>
+      <span class="opill-name">BulBulJan</span>
+      <span class="opill-status">· on duty</span>
+    </div>
+  </div>
+
+  <div class="obody-wrap">
+    <div style="display:flex;align-items:center;gap:18px;">
+      <svg width="60" height="60" viewBox="0 0 56 56" role="img" aria-label="Assistant presence" style="flex-shrink:0;">
+        <defs><radialGradient id="op2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.55"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+        <circle class="ohalo" cx="28" cy="28" r="24" fill="#9CAB7A"/>
+        <circle cx="28" cy="28" r="18" fill="url(#op2)"/>
+        <circle cx="28" cy="28" r="11" fill="#9CAB7A"/>
+      </svg>
+      <h1 class="ohl">Good evening, Mest.</h1>
+    </div>
+    <p class="otxt">It's good to see you. There are two things I'd like you to see when you're ready.</p>
+    <p class="oday">Today is light. Friday is where the week tightens — Q3 close lands.</p>
+
+    <p class="osec">Where would you like to start?</p>
+
+    <button class="ohero">
+      <span class="ohero-ic"><i class="ti ti-flame" aria-hidden="true"></i></span>
+      <span>
+        <p class="ohero-lab">The two things</p>
+        <p class="ohero-sub">I'll walk you through them</p>
+      </span>
+      <span class="ohero-arr"><i class="ti ti-arrow-right" aria-hidden="true"></i></span>
+    </button>
+
+    <div class="ogrid">
+      <button class="otile">
+        <i class="ti ti-message-circle" aria-hidden="true"></i>
+        <p class="otile-lab">Just ask me</p>
+        <p class="otile-sub">Anything on your mind</p>
+      </button>
+      <button class="otile">
+        <i class="ti ti-eye" aria-hidden="true"></i>
+        <p class="otile-lab">The full picture</p>
+        <p class="otile-sub">All 13 items, nothing hidden</p>
+      </button>
+      <button class="otile">
+        <i class="ti ti-bulb" aria-hidden="true"></i>
+        <p class="otile-lab">What I'm noticing</p>
+        <p class="otile-sub">A few patterns worth your time</p>
+      </button>
+    </div>
+
+    <div class="oghosts">
+      <button class="oghost"><i class="ti ti-moon" aria-hidden="true"></i>Wrap up the day</button>
+      <span class="odotsep">·</span>
+      <button class="oghost"><i class="ti ti-calendar" aria-hidden="true"></i>The whole week</button>
+      <span class="odotsep">·</span>
+      <button class="oghost"><i class="ti ti-file-text" aria-hidden="true"></i>Today's briefing</button>
+    </div>
+
+    <p class="ocred">I held three small things off your queue this morning. I'll surface them only if they need you.</p>
+  </div>
+</div>
+</div>
+</body>
+</html>

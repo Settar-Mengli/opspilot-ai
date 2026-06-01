@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpsPilot — What I'm Noticing Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+<style>
+  body{margin:0;background:#0d0d0c;display:flex;justify-content:center;padding:40px 16px;font-family:'Poppins',-apple-system,sans-serif;}
+  .card{width:380px;max-width:100%;background:#141413;border-radius:20px;overflow:hidden;border:0.5px solid rgba(250,249,245,0.08);display:flex;flex-direction:column;height:680px;}
+  @keyframes nBreathe{0%,100%{transform:scale(1);fill:#9CAB7A;opacity:0.38;}50%{transform:scale(1.16);fill:#808000;opacity:0.22;}}
+  .nhalo{transform-box:fill-box;transform-origin:center;animation:nBreathe 5s ease-in-out infinite;}
+  @media (prefers-reduced-motion:reduce){.nhalo{animation:none;}}
+  .nhead{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:0.5px solid rgba(250,249,245,0.08);flex-shrink:0;}
+  .nback{background:none;border:none;color:#888780;font-size:20px;cursor:pointer;display:flex;padding:0;}
+  .ntitle{font-size:15px;font-weight:500;color:#FAF9F5;margin:0;}
+  .nbody{flex:1;overflow-y:auto;padding:20px 16px 24px;}
+  .nintro{display:flex;gap:11px;align-items:flex-start;margin-bottom:22px;}
+  .nintro-txt{font-family:'Lora',Georgia,serif;font-size:15.5px;color:#EDEBE3;line-height:1.55;margin:0;}
+  .ncard{background:rgba(250,249,245,0.04);border:0.5px solid rgba(250,249,245,0.10);border-radius:14px;padding:17px 18px;margin-bottom:13px;}
+  .ncard-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .ncard-ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px;}
+  .nic--trend{background:rgba(106,155,204,0.14);color:#8eb1d8;}
+  .nic--theme{background:rgba(120,140,93,0.16);color:#a8b88a;}
+  .nic--watch{background:rgba(239,159,39,0.14);color:#e0b066;}
+  .ncard-tag{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#888780;}
+  .ncard-head{font-size:14.5px;font-weight:500;color:#FAF9F5;margin:1px 0 0;line-height:1.35;}
+  .nnote{font-family:'Lora',Georgia,serif;font-size:14px;color:#c4c2b8;line-height:1.6;margin:0;}
+  .nask{display:inline-flex;align-items:center;gap:6px;margin-top:13px;background:none;border:0.5px solid rgba(250,249,245,0.14);border-radius:8px;padding:7px 12px;font-size:12.5px;color:#b0aea5;cursor:pointer;font-family:'Poppins',sans-serif;transition:border-color .15s,color .15s;}
+  .nask:active{border-color:rgba(128,128,0,0.4);color:#cfcf5a;}
+  .nask i{font-size:14px;}
+  .nfoot{display:flex;gap:11px;align-items:flex-start;margin-top:18px;}
+  .nfoot-txt{font-family:'Lora',Georgia,serif;font-style:italic;font-size:14px;color:#888780;line-height:1.5;margin:0;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="nhead">
+    <button class="nback" aria-label="Back"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+    <p class="ntitle">What I'm noticing</p>
+  </div>
+
+  <div class="nbody">
+    <div class="nintro">
+      <svg width="26" height="26" viewBox="0 0 56 56" aria-hidden="true" style="flex-shrink:0;margin-top:2px;">
+        <defs><radialGradient id="np1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.6"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+        <circle class="nhalo" cx="28" cy="28" r="24" fill="#9CAB7A"/><circle cx="28" cy="28" r="18" fill="url(#np1)"/><circle cx="28" cy="28" r="12" fill="#9CAB7A"/>
+      </svg>
+      <p class="nintro-txt">A few patterns I've been watching. Nothing urgent — just worth your eye.</p>
+    </div>
+
+    <div class="ncard">
+      <div class="ncard-top">
+        <span class="ncard-ic nic--trend"><i class="ti ti-trending-up" aria-hidden="true"></i></span>
+        <span><p class="ncard-tag">Trend</p><p class="ncard-head">Incidents are clustering around checkout</p></span>
+      </div>
+      <p class="nnote">Three of this week's items trace back to the same checkout service. It might be one root cause wearing different hats — worth a closer look before it becomes a pattern you can't ignore.</p>
+      <button class="nask"><i class="ti ti-message-circle" aria-hidden="true"></i>Ask me to dig in</button>
+    </div>
+
+    <div class="ncard">
+      <div class="ncard-top">
+        <span class="ncard-ic nic--theme"><i class="ti ti-clock" aria-hidden="true"></i></span>
+        <span><p class="ncard-tag">Theme</p><p class="ncard-head">Your replies cluster late in the day</p></span>
+      </div>
+      <p class="nnote">Most of your responses go out after 6pm. You're carrying the day, then catching up at night. If that's not by choice, I can help you front-load the morning.</p>
+      <button class="nask"><i class="ti ti-message-circle" aria-hidden="true"></i>Talk it through</button>
+    </div>
+
+    <div class="ncard">
+      <div class="ncard-top">
+        <span class="ncard-ic nic--watch"><i class="ti ti-eye" aria-hidden="true"></i></span>
+        <span><p class="ncard-tag">Worth watching</p><p class="ncard-head">Northwind has gone quiet</p></span>
+      </div>
+      <p class="nnote">It's been twelve days since you last heard from Northwind Analytics, and the last note was unresolved. Not a fire — but the kind of silence that's easier to break early.</p>
+      <button class="nask"><i class="ti ti-message-circle" aria-hidden="true"></i>Draft a check-in</button>
+    </div>
+
+    <div class="nfoot">
+      <svg width="26" height="26" viewBox="0 0 56 56" aria-hidden="true" style="flex-shrink:0;margin-top:2px;">
+        <defs><radialGradient id="np2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.6"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+        <circle class="nhalo" cx="28" cy="28" r="24" fill="#9CAB7A"/><circle cx="28" cy="28" r="18" fill="url(#np2)"/><circle cx="28" cy="28" r="12" fill="#9CAB7A"/>
+      </svg>
+      <p class="nfoot-txt">I'll keep watching. If any of these sharpen, I'll bring it to you.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

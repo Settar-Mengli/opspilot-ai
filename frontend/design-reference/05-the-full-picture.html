@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpsPilot — The Full Picture Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+<style>
+  body{margin:0;background:#0d0d0c;display:flex;justify-content:center;padding:40px 16px;font-family:'Poppins',-apple-system,sans-serif;}
+  .card{width:380px;max-width:100%;background:#141413;border-radius:20px;overflow:hidden;border:0.5px solid rgba(250,249,245,0.08);display:flex;flex-direction:column;height:680px;}
+  @keyframes fBreathe{0%,100%{transform:scale(1);fill:#9CAB7A;opacity:0.38;}50%{transform:scale(1.16);fill:#808000;opacity:0.22;}}
+  .fhalo{transform-box:fill-box;transform-origin:center;animation:fBreathe 5s ease-in-out infinite;}
+  @media (prefers-reduced-motion:reduce){.fhalo{animation:none;}}
+  .fhead{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:0.5px solid rgba(250,249,245,0.08);flex-shrink:0;}
+  .fback{background:none;border:none;color:#888780;font-size:20px;cursor:pointer;display:flex;padding:0;}
+  .ftitle{font-size:15px;font-weight:500;color:#FAF9F5;margin:0;}
+  .fcount{font-size:12px;color:#888780;margin-left:auto;}
+  .fbody{flex:1;overflow-y:auto;padding:18px 16px 24px;}
+  .fintro{display:flex;gap:11px;align-items:flex-start;margin-bottom:20px;}
+  .fintro-txt{font-family:'Lora',Georgia,serif;font-size:15px;color:#EDEBE3;line-height:1.55;margin:0;}
+  .fgroup-label{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#888780;margin:18px 0 9px;display:flex;align-items:center;gap:8px;}
+  .fgroup-label:first-of-type{margin-top:0;}
+  .fdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .fdot--crit{background:#d85a30;}
+  .fdot--high{background:#ef9f27;}
+  .fdot--med{background:#9CAB7A;}
+  .fdot--low{background:#5f5e5a;}
+  .frow{display:flex;align-items:center;gap:12px;padding:12px 13px;background:rgba(250,249,245,0.03);border:0.5px solid rgba(250,249,245,0.08);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:background .15s,border-color .15s;}
+  .frow:active{background:rgba(250,249,245,0.07);}
+  .frow-ic{width:32px;height:32px;border-radius:8px;background:rgba(250,249,245,0.05);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#b0aea5;font-size:16px;}
+  .frow-title{font-size:13.5px;color:#FAF9F5;margin:0;line-height:1.35;}
+  .frow-cat{font-size:11.5px;color:#888780;margin:2px 0 0;}
+  .frow-arr{color:#5f5e5a;font-size:16px;margin-left:auto;display:flex;flex-shrink:0;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="fhead">
+    <button class="fback" aria-label="Back"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+    <p class="ftitle">The full picture</p>
+    <span class="fcount">13 items</span>
+  </div>
+
+  <div class="fbody">
+    <div class="fintro">
+      <svg width="26" height="26" viewBox="0 0 56 56" aria-hidden="true" style="flex-shrink:0;margin-top:2px;">
+        <defs><radialGradient id="fp1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.6"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+        <circle class="fhalo" cx="28" cy="28" r="24" fill="#9CAB7A"/><circle cx="28" cy="28" r="18" fill="url(#fp1)"/><circle cx="28" cy="28" r="12" fill="#9CAB7A"/>
+      </svg>
+      <p class="fintro-txt">Everything, nothing hidden — grouped by what needs you most.</p>
+    </div>
+
+    <p class="fgroup-label"><span class="fdot fdot--crit"></span>Critical · 2</p>
+    <div class="frow"><span class="frow-ic"><i class="ti ti-alert-triangle" aria-hidden="true"></i></span><span><p class="frow-title">Checkout service intermittent 500s</p><p class="frow-cat">Incident</p></span><span class="frow-arr"><i class="ti ti-chevron-right" aria-hidden="true"></i></span></div>
+    <div class="frow"><span class="frow-ic"><i class="ti ti-alert-triangle" aria-hidden="true"></i></span><span><p class="frow-title">Acme Logistics escalated an outage</p><p class="frow-cat">Incident</p></span><span class="frow-arr"><i class="ti ti-chevron-right" aria-hidden="true"></i></span></div>
+
+    <p class="fgroup-label"><span class="fdot fdot--high"></span>High · 3</p>
+    <div class="frow"><span class="frow-ic"><i class="ti ti-file-text" aria-hidden="true"></i></span><span><p class="frow-title">Contract renewal needs sign-off</p><p class="frow-cat">Request</p></span><span class="frow-arr"><i class="ti ti-chevron-right" aria-hidden="true"></i></span></div>
+    <div class="frow"><span class="frow-ic"><i class="ti ti-users" aria-hidden="true"></i></span><span><p class="frow-title">Northwind Analytics wants a timeline</p><p class="frow-cat">Follow-up</p></span><span class="frow-arr"><i class="ti ti-chevron-right" aria-hidden="true"></i></span></div>
+    <div class="frow"><span class="frow-ic"><i class="ti ti-file-text" aria-hidden="true"></i></span><span><p class="frow-title">Stellar Coffee proposal review</p><p class="frow-cat">Request</p></span><span class="frow-arr"><i class="ti ti-chevron-right" aria-hidden="true"></i></span></div>
+
+    <p class="fgroup-label"><span class="fdot fdot--med"></span>Medium · 5</p>
+    <div class="frow"><span class="frow-ic"><i class="ti ti-mail" aria-hidden="true"></i></span><span><p class="frow-title">Helix Manufacturing intro request</p><p class="frow-cat">Follow-up</p></span><span class="frow-arr"><i class="ti ti-chevron-right" aria-hidden="true"></i></span></div>
+    <div class="frow"><span class="frow-ic"><i class="ti ti-calendar" aria-hidden="true"></i></span><span><p class="frow-title">Reschedule the Vega Health sync</p><p class="frow-cat">Admin</p></span><span class="frow-arr"><i class="ti ti-chevron-right" aria-hidden="true"></i></span></div>
+    <div class="frow"><span class="frow-ic"><i class="ti ti-file-text" aria-hidden="true"></i></span><span><p class="frow-title">Sable Insurance paperwork</p><p class="frow-cat">Admin</p></span><span class="frow-arr"><i class="ti ti-chevron-right" aria-hidden="true"></i></span></div>
+
+    <p class="fgroup-label"><span class="fdot fdot--low"></span>Low · 3</p>
+    <div class="frow"><span class="frow-ic"><i class="ti ti-message-circle" aria-hidden="true"></i></span><span><p class="frow-title">Atlas Realty newsletter reply</p><p class="frow-cat">Other</p></span><span class="frow-arr"><i class="ti ti-chevron-right" aria-hidden="true"></i></span></div>
+    <div class="frow"><span class="frow-ic"><i class="ti ti-message-circle" aria-hidden="true"></i></span><span><p class="frow-title">Lumen Education thank-you note</p><p class="frow-cat">Other</p></span><span class="frow-arr"><i class="ti ti-chevron-right" aria-hidden="true"></i></span></div>
+  </div>
+</div>
+</body>
+</html>

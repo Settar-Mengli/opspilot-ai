@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpsPilot — The Whole Week Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+<style>
+  body{margin:0;background:#0d0d0c;display:flex;justify-content:center;padding:40px 16px;font-family:'Poppins',-apple-system,sans-serif;}
+  .card{width:380px;max-width:100%;background:#141413;border-radius:20px;overflow:hidden;border:0.5px solid rgba(250,249,245,0.08);display:flex;flex-direction:column;height:680px;}
+  @keyframes wBreathe{0%,100%{transform:scale(1);fill:#9CAB7A;opacity:0.38;}50%{transform:scale(1.16);fill:#808000;opacity:0.22;}}
+  .whalo{transform-box:fill-box;transform-origin:center;animation:wBreathe 5s ease-in-out infinite;}
+  @media (prefers-reduced-motion:reduce){.whalo{animation:none;}}
+  .whead{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:0.5px solid rgba(250,249,245,0.08);flex-shrink:0;}
+  .wback{background:none;border:none;color:#888780;font-size:20px;cursor:pointer;display:flex;padding:0;}
+  .wtitle{font-size:15px;font-weight:500;color:#FAF9F5;margin:0;}
+  .wbody{flex:1;overflow-y:auto;padding:22px 18px 24px;}
+  .wintro{display:flex;gap:12px;align-items:flex-start;margin-bottom:24px;}
+  .wintro-txt{font-family:'Lora',Georgia,serif;font-size:16px;color:#EDEBE3;line-height:1.55;margin:0;}
+  .wday{display:flex;gap:14px;margin-bottom:4px;}
+  .wleft{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:44px;}
+  .wdate{font-size:11px;color:#888780;text-transform:uppercase;letter-spacing:0.05em;margin:0;}
+  .wdnum{font-size:17px;font-weight:500;color:#FAF9F5;margin:2px 0 0;}
+  .wline{width:2px;flex:1;background:rgba(250,249,245,0.08);margin:6px 0 0;border-radius:2px;}
+  .wcard{flex:1;background:rgba(250,249,245,0.03);border:0.5px solid rgba(250,249,245,0.08);border-radius:12px;padding:13px 15px;margin-bottom:12px;}
+  .wcard--tight{background:rgba(216,90,48,0.06);border-color:rgba(216,90,48,0.26);}
+  .wcard--today{border-color:rgba(128,128,0,0.4);background:rgba(128,128,0,0.07);}
+  .wcard-top{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+  .wbar{display:flex;gap:3px;}
+  .wseg{width:16px;height:4px;border-radius:2px;background:rgba(250,249,245,0.12);}
+  .wseg.on-low{background:#9CAB7A;}
+  .wseg.on-mid{background:#ef9f27;}
+  .wseg.on-high{background:#d85a30;}
+  .wmood{font-size:11px;color:#888780;margin-left:auto;font-weight:500;}
+  .wnote{font-size:13px;color:#c4c2b8;line-height:1.45;margin:0;}
+  .wnote-em{color:#FAF9F5;}
+  .wfoot{display:flex;gap:12px;align-items:flex-start;margin-top:14px;}
+  .wfoot-txt{font-family:'Lora',Georgia,serif;font-style:italic;font-size:14px;color:#888780;line-height:1.5;margin:0;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="whead">
+    <button class="wback" aria-label="Back"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+    <p class="wtitle">The whole week</p>
+  </div>
+
+  <div class="wbody">
+    <div class="wintro">
+      <svg width="32" height="32" viewBox="0 0 56 56" aria-hidden="true" style="flex-shrink:0;margin-top:2px;">
+        <defs><radialGradient id="wp1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.6"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+        <circle class="whalo" cx="28" cy="28" r="24" fill="#9CAB7A"/><circle cx="28" cy="28" r="18" fill="url(#wp1)"/><circle cx="28" cy="28" r="12" fill="#9CAB7A"/>
+      </svg>
+      <p class="wintro-txt">It starts gentle and tightens toward Friday. If you protect any day, protect Thursday.</p>
+    </div>
+
+    <div class="wday">
+      <div class="wleft"><p class="wdate">Mon</p><p class="wdnum">2</p><div class="wline"></div></div>
+      <div class="wcard wcard--today">
+        <div class="wcard-top"><div class="wbar"><span class="wseg on-low"></span><span class="wseg"></span><span class="wseg"></span></div><span class="wmood">Today · light</span></div>
+        <p class="wnote">Two things need you. Room to think.</p>
+      </div>
+    </div>
+
+    <div class="wday">
+      <div class="wleft"><p class="wdate">Tue</p><p class="wdnum">3</p><div class="wline"></div></div>
+      <div class="wcard">
+        <div class="wcard-top"><div class="wbar"><span class="wseg on-low"></span><span class="wseg"></span><span class="wseg"></span></div><span class="wmood">Light</span></div>
+        <p class="wnote">Quiet. A good day to get ahead of Friday.</p>
+      </div>
+    </div>
+
+    <div class="wday">
+      <div class="wleft"><p class="wdate">Wed</p><p class="wdnum">4</p><div class="wline"></div></div>
+      <div class="wcard">
+        <div class="wcard-top"><div class="wbar"><span class="wseg on-mid"></span><span class="wseg on-mid"></span><span class="wseg"></span></div><span class="wmood">Building</span></div>
+        <p class="wnote">The Northwind sync and two reviews land.</p>
+      </div>
+    </div>
+
+    <div class="wday">
+      <div class="wleft"><p class="wdate">Thu</p><p class="wdnum">5</p><div class="wline"></div></div>
+      <div class="wcard wcard--tight">
+        <div class="wcard-top"><div class="wbar"><span class="wseg on-high"></span><span class="wseg on-high"></span><span class="wseg on-high"></span></div><span class="wmood">Heavy</span></div>
+        <p class="wnote"><span class="wnote-em">The tight one.</span> Q3 prep, the contract decision, back-to-back.</p>
+      </div>
+    </div>
+
+    <div class="wday">
+      <div class="wleft"><p class="wdate">Fri</p><p class="wdnum">6</p></div>
+      <div class="wcard wcard--tight">
+        <div class="wcard-top"><div class="wbar"><span class="wseg on-high"></span><span class="wseg on-high"></span><span class="wseg"></span></div><span class="wmood">Q3 close</span></div>
+        <p class="wnote">Q3 close lands. Everything earlier feeds this.</p>
+      </div>
+    </div>
+
+    <div class="wfoot">
+      <svg width="26" height="26" viewBox="0 0 56 56" aria-hidden="true" style="flex-shrink:0;margin-top:2px;">
+        <defs><radialGradient id="wp2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.6"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+        <circle class="whalo" cx="28" cy="28" r="24" fill="#9CAB7A"/><circle cx="28" cy="28" r="18" fill="url(#wp2)"/><circle cx="28" cy="28" r="12" fill="#9CAB7A"/>
+      </svg>
+      <p class="wfoot-txt">I'll keep Friday in view all week so it doesn't sneak up.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

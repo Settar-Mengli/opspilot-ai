@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpsPilot — Just Ask Me Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+<style>
+  body{margin:0;background:#0d0d0c;display:flex;justify-content:center;padding:40px 16px;font-family:'Poppins',-apple-system,sans-serif;}
+  .card{width:380px;max-width:100%;background:#141413;border-radius:20px;overflow:hidden;border:0.5px solid rgba(250,249,245,0.08);display:flex;flex-direction:column;height:680px;}
+  @keyframes aBreathe{0%,100%{transform:scale(1);fill:#9CAB7A;opacity:0.38;}50%{transform:scale(1.16);fill:#808000;opacity:0.22;}}
+  .ahalo{transform-box:fill-box;transform-origin:center;animation:aBreathe 5s ease-in-out infinite;}
+  @media (prefers-reduced-motion:reduce){.ahalo{animation:none;}}
+  .achead{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:0.5px solid rgba(250,249,245,0.08);flex-shrink:0;}
+  .acback{background:none;border:none;color:#888780;font-size:20px;cursor:pointer;display:flex;padding:0;}
+  .acname{font-size:15px;font-weight:500;color:#FAF9F5;margin:0;}
+  .acstatus{font-size:11px;color:#788C5D;margin:1px 0 0;}
+  .acthread{flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:20px;}
+  .amsg-her{display:flex;gap:11px;align-items:flex-start;}
+  .aher-txt{font-family:'Lora',Georgia,serif;font-size:15.5px;color:#EDEBE3;line-height:1.55;margin:0;}
+  .aspeak{background:none;border:none;color:#5f5e5a;font-size:15px;cursor:pointer;padding:2px;margin-top:4px;display:flex;transition:color .15s;}
+  .aspeak:hover{color:#9CAB7A;}
+  .amsg-me{display:flex;justify-content:flex-end;}
+  .ame-bubble{background:rgba(128,128,0,0.14);border:0.5px solid rgba(128,128,0,0.28);border-radius:14px 14px 4px 14px;padding:11px 15px;font-size:14px;color:#FAF9F5;line-height:1.5;max-width:78%;}
+  .adraft{margin-top:12px;background:rgba(250,249,245,0.04);border:0.5px solid rgba(250,249,245,0.14);border-radius:12px;overflow:hidden;}
+  .adraft-head{display:flex;align-items:center;gap:7px;padding:9px 14px;border-bottom:0.5px solid rgba(250,249,245,0.08);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#888780;}
+  .adraft-head i{font-size:14px;}
+  .adraft-body{padding:13px 14px;font-size:13.5px;color:#d8d6cc;line-height:1.6;font-family:'Lora',Georgia,serif;}
+  .adraft-sub{font-size:12px;color:#9b998f;font-weight:500;margin-bottom:6px;font-family:'Poppins',sans-serif;}
+  .acopy{display:flex;align-items:center;gap:6px;margin:0 14px 12px;background:rgba(128,128,0,0.16);border:0.5px solid rgba(128,128,0,0.3);border-radius:8px;padding:7px 13px;font-size:12.5px;font-weight:500;color:#cfcf5a;cursor:pointer;font-family:'Poppins',sans-serif;transition:background .15s;}
+  .acopy:active{background:rgba(128,128,0,0.24);}
+  .acopy i{font-size:14px;}
+  .aclose{font-family:'Lora',Georgia,serif;font-size:15.5px;color:#EDEBE3;line-height:1.55;margin:0;}
+  .acomposer{flex-shrink:0;padding:12px 14px;border-top:0.5px solid rgba(250,249,245,0.08);display:flex;align-items:center;gap:10px;}
+  .ainput{flex:1;background:rgba(250,249,245,0.05);border:0.5px solid rgba(250,249,245,0.12);border-radius:999px;padding:11px 17px;font-size:14px;color:#888780;font-style:italic;font-family:'Lora',Georgia,serif;}
+  .amic{width:42px;height:42px;border-radius:50%;background:#808000;border:none;display:flex;align-items:center;justify-content:center;color:#141413;font-size:19px;cursor:pointer;flex-shrink:0;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="achead">
+    <button class="acback" aria-label="Back"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+    <svg width="34" height="34" viewBox="0 0 56 56" aria-hidden="true" style="flex-shrink:0;">
+      <defs><radialGradient id="ap1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.6"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+      <circle class="ahalo" cx="28" cy="28" r="24" fill="#9CAB7A"/>
+      <circle cx="28" cy="28" r="18" fill="url(#ap1)"/>
+      <circle cx="28" cy="28" r="12" fill="#9CAB7A"/>
+    </svg>
+    <div>
+      <p class="acname">BulBulJan</p>
+      <p class="acstatus">· here with you</p>
+    </div>
+  </div>
+
+  <div class="acthread">
+    <div class="amsg-her">
+      <svg width="26" height="26" viewBox="0 0 56 56" aria-hidden="true" style="flex-shrink:0;margin-top:2px;">
+        <defs><radialGradient id="ap2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.6"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+        <circle class="ahalo" cx="28" cy="28" r="24" fill="#9CAB7A"/>
+        <circle cx="28" cy="28" r="18" fill="url(#ap2)"/>
+        <circle cx="28" cy="28" r="12" fill="#9CAB7A"/>
+      </svg>
+      <p class="aher-txt">What's on your mind? I can think something through, draft a message, or just talk it over with you.</p>
+      <button class="aspeak" aria-label="Read aloud"><i class="ti ti-volume" aria-hidden="true"></i></button>
+    </div>
+
+    <div class="amsg-me">
+      <div class="ame-bubble">Draft a note to the finance team pushing the Q3 review to Thursday.</div>
+    </div>
+
+    <div class="amsg-her">
+      <svg width="26" height="26" viewBox="0 0 56 56" aria-hidden="true" style="flex-shrink:0;margin-top:2px;">
+        <defs><radialGradient id="ap3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.6"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+        <circle class="ahalo" cx="28" cy="28" r="24" fill="#9CAB7A"/>
+        <circle cx="28" cy="28" r="18" fill="url(#ap3)"/>
+        <circle cx="28" cy="28" r="12" fill="#9CAB7A"/>
+      </svg>
+      <div style="flex:1;">
+        <p class="aher-txt">Here's your draft.</p>
+        <div class="adraft">
+          <div class="adraft-head"><i class="ti ti-file-text" aria-hidden="true"></i>Draft</div>
+          <div class="adraft-body">
+            <div class="adraft-sub">Subject: Moving the Q3 review to Thursday</div>
+            Hi team — I'd like to shift this week's Q3 review to Thursday so we have final numbers in hand before we walk through them. Same time, same room. Shout if that creates a conflict.
+          </div>
+        </div>
+        <button class="acopy"><i class="ti ti-copy" aria-hidden="true"></i>Copy draft</button>
+        <p class="aclose">Copy it and send when you're ready — I can't send on your behalf yet.</p>
+      </div>
+      <button class="aspeak" aria-label="Read aloud"><i class="ti ti-volume" aria-hidden="true"></i></button>
+    </div>
+  </div>
+
+  <div class="acomposer">
+    <div class="ainput">Ask BulBulJan anything…</div>
+    <button class="amic" aria-label="Voice input"><i class="ti ti-microphone" aria-hidden="true"></i></button>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpsPilot — Wrap Up the Day Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+<style>
+  body{margin:0;background:#0d0d0c;display:flex;justify-content:center;padding:40px 16px;font-family:'Poppins',-apple-system,sans-serif;}
+  .card{width:380px;max-width:100%;background:#141413;border-radius:20px;overflow:hidden;border:0.5px solid rgba(250,249,245,0.08);display:flex;flex-direction:column;height:680px;}
+  @keyframes eBreathe{0%,100%{transform:scale(1);fill:#9CAB7A;opacity:0.38;}50%{transform:scale(1.16);fill:#808000;opacity:0.22;}}
+  .ehalo{transform-box:fill-box;transform-origin:center;animation:eBreathe 5s ease-in-out infinite;}
+  @media (prefers-reduced-motion:reduce){.ehalo{animation:none;}}
+  .ehead{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:0.5px solid rgba(250,249,245,0.08);flex-shrink:0;}
+  .eback{background:none;border:none;color:#888780;font-size:20px;cursor:pointer;display:flex;padding:0;}
+  .etitle{font-size:15px;font-weight:500;color:#FAF9F5;margin:0;}
+  .ebody{flex:1;overflow-y:auto;padding:22px 18px 24px;}
+  .eintro{display:flex;gap:13px;align-items:flex-start;margin-bottom:24px;}
+  .eintro-txt{font-family:'Lora',Georgia,serif;font-size:18px;color:#FAF9F5;line-height:1.4;margin:0;}
+  .estat-row{display:flex;gap:10px;margin-bottom:22px;}
+  .estat{flex:1;background:rgba(250,249,245,0.04);border:0.5px solid rgba(250,249,245,0.08);border-radius:12px;padding:14px;}
+  .estat-num{font-size:24px;font-weight:500;color:#9CAB7A;margin:0;line-height:1;}
+  .estat-lab{font-size:12px;color:#888780;margin:6px 0 0;line-height:1.3;}
+  .esec{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#888780;margin:0 0 11px;}
+  .ehandled{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:0.5px solid rgba(250,249,245,0.06);}
+  .ehandled:last-child{border-bottom:none;}
+  .echeck{color:#788C5D;font-size:16px;display:flex;flex-shrink:0;margin-top:1px;}
+  .ehandled-txt{font-size:13.5px;color:#c4c2b8;line-height:1.45;margin:0;}
+  .ecarry{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:0.5px solid rgba(250,249,245,0.06);}
+  .ecarry:last-child{border-bottom:none;}
+  .earrow{color:#888780;font-size:15px;display:flex;flex-shrink:0;margin-top:2px;}
+  .ecarry-txt{font-size:13.5px;color:#c4c2b8;line-height:1.45;margin:0;}
+  .eblock{background:rgba(250,249,245,0.03);border:0.5px solid rgba(250,249,245,0.08);border-radius:12px;padding:6px 16px;margin-bottom:22px;}
+  .eclose{display:flex;gap:13px;align-items:flex-start;margin-top:8px;}
+  .eclose-txt{font-family:'Lora',Georgia,serif;font-style:italic;font-size:15px;color:#a8a8a0;line-height:1.5;margin:0;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="ehead">
+    <button class="eback" aria-label="Back"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+    <p class="etitle">Wrap up the day</p>
+  </div>
+
+  <div class="ebody">
+    <div class="eintro">
+      <svg width="40" height="40" viewBox="0 0 56 56" aria-hidden="true" style="flex-shrink:0;margin-top:2px;">
+        <defs><radialGradient id="ep1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.55"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+        <circle class="ehalo" cx="28" cy="28" r="24" fill="#9CAB7A"/><circle cx="28" cy="28" r="18" fill="url(#ep1)"/><circle cx="28" cy="28" r="11" fill="#9CAB7A"/>
+      </svg>
+      <p class="eintro-txt">You moved a lot today. Here's how it landed.</p>
+    </div>
+
+    <div class="estat-row">
+      <div class="estat"><p class="estat-num">6</p><p class="estat-lab">handled</p></div>
+      <div class="estat"><p class="estat-num">2</p><p class="estat-lab">carrying over</p></div>
+      <div class="estat"><p class="estat-num">3</p><p class="estat-lab">I held back</p></div>
+    </div>
+
+    <p class="esec">What you closed</p>
+    <div class="eblock">
+      <div class="ehandled"><span class="echeck"><i class="ti ti-check" aria-hidden="true"></i></span><p class="ehandled-txt">Replied to the Stellar Coffee proposal</p></div>
+      <div class="ehandled"><span class="echeck"><i class="ti ti-check" aria-hidden="true"></i></span><p class="ehandled-txt">Approved the Vega Health reschedule</p></div>
+      <div class="ehandled"><span class="echeck"><i class="ti ti-check" aria-hidden="true"></i></span><p class="ehandled-txt">Cleared the Sable Insurance paperwork</p></div>
+    </div>
+
+    <p class="esec">Carrying into tomorrow</p>
+    <div class="eblock">
+      <div class="ecarry"><span class="earrow"><i class="ti ti-arrow-right" aria-hidden="true"></i></span><p class="ecarry-txt">The checkout incident — still watching it overnight</p></div>
+      <div class="ecarry"><span class="earrow"><i class="ti ti-arrow-right" aria-hidden="true"></i></span><p class="ecarry-txt">Contract sign-off, due Friday</p></div>
+    </div>
+
+    <div class="eclose">
+      <svg width="26" height="26" viewBox="0 0 56 56" aria-hidden="true" style="flex-shrink:0;margin-top:2px;">
+        <defs><radialGradient id="ep2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9CAB7A" stop-opacity="0.6"/><stop offset="100%" stop-color="#9CAB7A" stop-opacity="0"/></radialGradient></defs>
+        <circle class="ehalo" cx="28" cy="28" r="24" fill="#9CAB7A"/><circle cx="28" cy="28" r="18" fill="url(#ep2)"/><circle cx="28" cy="28" r="12" fill="#9CAB7A"/>
+      </svg>
+      <p class="eclose-txt">Nothing else needs you tonight. Rest — I'll have tomorrow ready when you are.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>
