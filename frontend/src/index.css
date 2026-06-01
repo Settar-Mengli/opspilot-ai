@@ -435,10 +435,16 @@ input { font-family: var(--font-ui); }
 /* MOBILE DOCK — sticky bottom bar with Ask + Mic */
 .mobile-dock {
   display: none;
-  position: fixed; bottom: 0; left: 0; right: 0;
-  background: var(--bg);
-  border-top: 1px solid var(--border);
-  padding: 14px 14px 18px; align-items: center; gap: 10px; z-index: 50;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #141413;
+  border-top: 1px solid rgba(250, 249, 245, 0.10);
+  padding: 14px 14px 18px;
+  align-items: center;
+  gap: 10px;
+  z-index: 50;
 }
 .mobile-ask-pill {
   flex: 1; background: var(--surface-3); border: 1px solid var(--border-2);
