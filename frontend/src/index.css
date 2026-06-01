@@ -722,9 +722,7 @@ select option { background: #1c1c1a; color: var(--text-1); }
   border-radius: 0;
   width: 100%;
   max-width: 720px;
-  height: 100vh;
-  height: 100dvh;
-  max-height: 100dvh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   animation: slideUp 0.2s ease-out;
@@ -1062,9 +1060,7 @@ select option { background: #1c1c1a; color: var(--text-1); }
 .evening-panel {
   width: 100%;
   max-width: 520px;
-  height: 100vh;
-  height: 100dvh;
-  max-height: 100dvh;
+  height: 100%;
   background: #1c1c1a;
   border: 1px solid var(--border-2);
   border-radius: 0;
@@ -1698,9 +1694,7 @@ select option { background: #1c1c1a; color: var(--text-1); }
   border-radius: 0;
   width: 100%;
   max-width: 560px;
-  height: 100vh;
-  height: 100dvh;
-  max-height: 100dvh;
+  height: 100%;
   overflow-y: auto;
   padding: 24px;
   animation: slideUp 0.2s ease-out;
