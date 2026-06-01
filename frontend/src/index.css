@@ -447,9 +447,14 @@ input { font-family: var(--font-ui); }
   z-index: 50;
 }
 .mobile-ask-pill {
-  flex: 1; background: var(--surface-3); border: 1px solid var(--border-2);
-  border-radius: 24px; padding: 10px 14px;
-  display: flex; align-items: center; gap: 10px;
+  flex: 1;
+  background-color: #232220;
+  border: 1px solid rgba(250, 249, 245, 0.12);
+  border-radius: 24px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .mobile-ask-pill input {
   flex: 1; background: transparent; border: none; color: var(--text-1);
