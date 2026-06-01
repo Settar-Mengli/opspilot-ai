@@ -81,6 +81,8 @@ export function AskPanel({ open, assistantName, initialQuestion, onClose }: Prop
     }
   }, [open, onClose])
 
+  if (!open) return null
+
   function handleSubmit() {
     if (loading) return
     sendQuestion(input)
@@ -94,7 +96,7 @@ export function AskPanel({ open, assistantName, initialQuestion, onClose }: Prop
   }
 
   return (
-    <div className={`ask-panel-overlay ${open ? 'open' : ''}`} onClick={onClose}>
+    <div className="ask-panel-overlay" onClick={onClose}>
       <div className="ask-panel" onClick={(e) => e.stopPropagation()}>
         <div className="ask-panel-header">
           <div className="ask-panel-title">

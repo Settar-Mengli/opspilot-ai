@@ -714,13 +714,7 @@ select option { background: #1c1c1a; color: var(--text-1); }
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.25s ease, visibility 0.25s ease;
-}
-.ask-panel-overlay.open {
-  opacity: 1;
-  visibility: visible;
+  animation: fadeIn 0.15s ease-out;
 }
 .ask-panel {
   background: #1c1c1a;
@@ -733,11 +727,7 @@ select option { background: #1c1c1a; color: var(--text-1); }
   max-height: 100dvh;
   display: flex;
   flex-direction: column;
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.ask-panel-overlay.open .ask-panel {
-  transform: translateY(0);
+  animation: slideUp 0.2s ease-out;
 }
 .ask-panel-header {
   display: flex;
