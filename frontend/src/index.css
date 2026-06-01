@@ -921,10 +921,6 @@ select option { background: #1c1c1a; color: var(--text-1); }
 }
 
 @media (max-width: 768px) {
-  .ask-panel {
-    height: 90vh;
-    max-height: none;
-  }
   .ask-panel-header {
     padding: 14px 16px 12px;
   }
