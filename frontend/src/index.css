@@ -1671,6 +1671,45 @@ select option { background: #1c1c1a; color: var(--text-1); }
   user-select: none;
 }
 
+/* ─── Dashboard Action Buttons ─── */
+.dash-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.dash-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 6px;
+  background: rgba(250, 249, 245, 0.04);
+  border: 0.5px solid rgba(250, 249, 245, 0.10);
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.dash-action:hover {
+  background: rgba(250, 249, 245, 0.07);
+  border-color: rgba(250, 249, 245, 0.24);
+}
+.dash-action:focus-visible {
+  outline: 2px solid #808000;
+  outline-offset: 2px;
+}
+.dash-action-icon {
+  color: #b0aea5;
+}
+.dash-action-label {
+  font-size: 13px;
+  color: #EDEBE3;
+  text-align: center;
+  line-height: 1.25;
+}
+
 /* ─── Slide Panels ─── */
 .slide-panel-backdrop {
   position: fixed;

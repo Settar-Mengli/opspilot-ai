@@ -137,13 +137,20 @@ export function DashboardPage({ userName, assistantName, onAsk, onEveningClick }
         </button>
       </section>
 
-      {/* Ghost links */}
-      <section className="dash-ghost-links">
-        <button className="dash-ghost-link" onClick={onEveningClick}><Moon size={14} strokeWidth={2} /> Wrap up the day</button>
-        <span className="dash-ghost-sep"> · </span>
-        <button className="dash-ghost-link" onClick={() => setWeekOpen(true)}><CalendarDays size={14} strokeWidth={2} /> The whole week</button>
-        <span className="dash-ghost-sep"> · </span>
-        <button className="dash-ghost-link" onClick={() => navigate('/briefing')}><FileText size={14} strokeWidth={2} /> Today's briefing</button>
+      {/* Action buttons */}
+      <section className="dash-actions">
+        <button className="dash-action" onClick={onEveningClick}>
+          <Moon className="dash-action-icon" size={18} />
+          <span className="dash-action-label">Wrap up the day</span>
+        </button>
+        <button className="dash-action" onClick={() => setWeekOpen(true)}>
+          <CalendarDays className="dash-action-icon" size={18} />
+          <span className="dash-action-label">The whole week</span>
+        </button>
+        <button className="dash-action" onClick={() => navigate('/briefing')}>
+          <FileText className="dash-action-icon" size={18} />
+          <span className="dash-action-label">Today's briefing</span>
+        </button>
       </section>
 
       {/* Slide-up panels */}
