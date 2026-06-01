@@ -7,7 +7,7 @@ interface Props {
 export function AssistantPill({ assistantName }: Props) {
   return (
     <div className="assistant-pill">
-      <BulBulAvatar size={24} />
+      <BulBulAvatar size={24} assistantName={assistantName} />
       <span className="av-name">{assistantName}</span>
       <span className="av-status">
         · <span className="av-live-dot"></span>on duty

@@ -6,6 +6,7 @@ import { GreetingBlock } from '../components/GreetingBlock'
 import { PrioritiesPanel } from '../components/PrioritiesPanel'
 import { WeekPanel } from '../components/WeekPanel'
 import { getTimeOfDay, getGreetingWord } from '../utils/greeting'
+import { Flame, MessageCircle, Eye, Lightbulb, Moon, CalendarDays, FileText } from 'lucide-react'
 
 function numberWord(n: number): string {
   const words = ['zero','one','two','three','four','five','six','seven','eight','nine','ten']
@@ -51,6 +52,8 @@ export function DashboardPage({ userName, assistantName, onAsk, onEveningClick }
         ? "There's one thing I'd like you to see when you're ready."
         : `There are ${numberWord(urgentCount)} things I'd like you to see when you're ready.`
 
+  const dayShapeLine = "Today is light. Friday is where the week tightens — Q3 close lands."
+
   const credibilityLine = loading
     ? undefined
     : heldCount === 0
@@ -80,6 +83,7 @@ export function DashboardPage({ userName, assistantName, onAsk, onEveningClick }
         salutation={salutation}
         warmth={warmth}
         urgencyLine={urgencyLine}
+        dayShapeLine={dayShapeLine}
         credibilityLine={credibilityLine}
       />
 
@@ -91,25 +95,25 @@ export function DashboardPage({ userName, assistantName, onAsk, onEveningClick }
           className={`dash-tile${urgentCount > 0 ? ' dash-tile--urgent' : ''}`}
           onClick={() => setPrioritiesOpen(true)}
         >
-          {urgentCount > 0 && <span className="dash-tile-icon">🔥</span>}
+          {urgentCount > 0 && <span className="dash-tile-icon dash-tile-icon--olive"><Flame size={20} strokeWidth={2} /></span>}
           <span className={`dash-tile-label${urgentCount > 0 ? ' dash-tile-label--olive' : ''}`}>{tile1Label}</span>
           <span className="dash-tile-subtitle">{tile1Subtitle}</span>
         </button>
 
         <button className="dash-tile" onClick={() => onAsk('')}>
-          <span className="dash-tile-icon">💬</span>
+          <span className="dash-tile-icon"><MessageCircle size={20} strokeWidth={2} /></span>
           <span className="dash-tile-label">Just ask me</span>
           <span className="dash-tile-subtitle">Anything on your mind</span>
         </button>
 
         <button className="dash-tile" onClick={() => navigate('/items')}>
-          <span className="dash-tile-icon">👁️</span>
+          <span className="dash-tile-icon"><Eye size={20} strokeWidth={2} /></span>
           <span className="dash-tile-label">The full picture</span>
           <span className="dash-tile-subtitle">{loading ? 'All items, nothing hidden' : `All ${records.length} items, nothing hidden`}</span>
         </button>
 
         <button className="dash-tile" onClick={() => navigate('/insights')}>
-          <span className="dash-tile-icon">💡</span>
+          <span className="dash-tile-icon"><Lightbulb size={20} strokeWidth={2} /></span>
           <span className="dash-tile-label">What I'm noticing</span>
           <span className="dash-tile-subtitle">A few patterns worth your time</span>
         </button>
@@ -117,11 +121,11 @@ export function DashboardPage({ userName, assistantName, onAsk, onEveningClick }
 
       {/* Ghost links */}
       <section className="dash-ghost-links">
-        <button className="dash-ghost-link" onClick={onEveningClick}>🌙 Wrap up the day</button>
+        <button className="dash-ghost-link" onClick={onEveningClick}><Moon size={14} strokeWidth={2} /> Wrap up the day</button>
         <span className="dash-ghost-sep"> · </span>
-        <button className="dash-ghost-link" onClick={() => setWeekOpen(true)}>📅 The whole week</button>
+        <button className="dash-ghost-link" onClick={() => setWeekOpen(true)}><CalendarDays size={14} strokeWidth={2} /> The whole week</button>
         <span className="dash-ghost-sep"> · </span>
-        <button className="dash-ghost-link" onClick={() => navigate('/briefing')}>📄 Today's briefing</button>
+        <button className="dash-ghost-link" onClick={() => navigate('/briefing')}><FileText size={14} strokeWidth={2} /> Today's briefing</button>
       </section>
 
       {/* Slide-up panels */}

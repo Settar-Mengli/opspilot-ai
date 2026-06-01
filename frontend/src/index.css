@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Lora:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -111,6 +111,24 @@ input { font-family: var(--font-ui); }
   background: var(--accent); animation: breathe 2.5s ease-in-out infinite;
 }
 @keyframes breathe { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.85)} }
+
+@keyframes presence-breathe {
+  0%, 100% { transform: scale(1); fill: #9CAB7A; opacity: 0.35; }
+  50%      { transform: scale(1.15); fill: #808000; opacity: 0.20; }
+}
+
+.bulbul-avatar__halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  fill: #9CAB7A;
+  opacity: 0.35;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bulbul-avatar__halo {
+    animation: presence-breathe 5s ease-in-out infinite;
+  }
+}
 
 /* Content shell */
 .content-shell {
@@ -1366,18 +1384,22 @@ select option { background: #1c1c1a; color: var(--text-1); }
 /* ─── Greeting Block ─── */
 .greeting-block {
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
+  flex-direction: column;
+  gap: 8px;
   margin-bottom: 32px;
 }
-.greeting-text { flex: 1; min-width: 0; }
+.greeting-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 .greeting-headline {
   font-family: var(--font-prose);
   font-size: 1.9rem;
   font-weight: 600;
   color: var(--text-1);
   line-height: 1.25;
-  margin: 0 0 8px;
+  margin: 0;
 }
 .greeting-body {
   font-family: var(--font-prose);
@@ -1385,7 +1407,7 @@ select option { background: #1c1c1a; color: var(--text-1); }
   font-weight: 400;
   color: var(--text-1);
   line-height: 1.5;
-  margin: 0 0 8px;
+  margin: 0;
 }
 .greeting-dayshape {
   font-family: var(--font-prose);
@@ -1400,7 +1422,7 @@ select option { background: #1c1c1a; color: var(--text-1); }
   font-size: 0.95rem;
   color: var(--text-3);
   text-align: left;
-  margin: 24px 0 0;
+  margin: 16px 0 0;
 }
 
 /* ─── Section Header ─── */
@@ -1457,7 +1479,13 @@ select option { background: #1c1c1a; color: var(--text-1); }
 }
 
 .dash-tile-icon {
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  color: var(--text-1);
+}
+
+.dash-tile-icon--olive {
+  color: var(--accent);
 }
 
 .dash-tile-label {
@@ -1494,6 +1522,9 @@ select option { background: #1c1c1a; color: var(--text-1); }
   padding: 0 8px;
   transition: color 0.15s;
   font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .dash-ghost-link:hover {

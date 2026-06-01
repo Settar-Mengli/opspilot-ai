@@ -2,11 +2,12 @@ import { useId } from 'react'
 
 interface BulBulAvatarProps {
   size?: number
+  assistantName?: string
 }
 
-export function BulBulAvatar({ size = 56 }: BulBulAvatarProps) {
+export function BulBulAvatar({ size = 56, assistantName }: BulBulAvatarProps) {
   const uid = useId()
-  const gradientId = `bbAvatar-${uid}`
+  const glowGradientId = `bbGlow-${uid}`
 
   return (
     <svg
@@ -14,27 +15,19 @@ export function BulBulAvatar({ size = 56 }: BulBulAvatarProps) {
       height={size}
       viewBox="0 0 56 56"
       xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
+      role="img"
+      aria-label={assistantName ? `${assistantName} presence` : 'Assistant presence'}
       className="bulbul-avatar"
     >
       <defs>
-        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#9CAB7A" />
-          <stop offset="100%" stopColor="#647349" />
-        </linearGradient>
+        <radialGradient id={glowGradientId}>
+          <stop offset="0%" stopColor="#9CAB7A" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#9CAB7A" stopOpacity="0" />
+        </radialGradient>
       </defs>
-      <circle cx="28" cy="28" r="28" fill={`url(#${gradientId})`} />
-      <circle cx="28" cy="26" r="11" fill="#FAF9F5" opacity="0.96" />
-      <ellipse cx="28" cy="44" rx="16" ry="11" fill="#FAF9F5" opacity="0.96" />
-      <circle cx="25" cy="25" r="1.6" fill="#141413" />
-      <circle cx="31" cy="25" r="1.6" fill="#141413" />
-      <path
-        d="M 24 30 Q 28 32.5 32 30"
-        stroke="#141413"
-        strokeWidth="1.5"
-        fill="none"
-        strokeLinecap="round"
-      />
+      <circle cx="28" cy="28" r="24" className="bulbul-avatar__halo" />
+      <circle cx="28" cy="28" r="18" fill={`url(#${glowGradientId})`} />
+      <circle cx="28" cy="28" r="11" fill="#9CAB7A" />
     </svg>
   )
 }

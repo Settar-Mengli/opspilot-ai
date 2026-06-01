@@ -13,6 +13,7 @@ interface GreetingBlockProps {
 
 export function GreetingBlock({
   userName,
+  assistantName,
   salutation,
   warmth,
   urgencyLine,
@@ -22,21 +23,21 @@ export function GreetingBlock({
 }: GreetingBlockProps) {
   return (
     <section className="greeting-block">
-      <BulBulAvatar size={56} />
-      <div className="greeting-text">
+      <div className="greeting-header">
+        <BulBulAvatar size={56} assistantName={assistantName} />
         <h1 className="greeting-headline">
           {salutation}{userName ? `, ${userName}` : ''}.
         </h1>
-        {(warmth || urgencyLine || timeWindowLine) && (
-          <p className="greeting-body">
-            {warmth ? <span>{warmth} </span> : null}
-            {urgencyLine ? <span>{urgencyLine} </span> : null}
-            {timeWindowLine ? <span>{timeWindowLine}</span> : null}
-          </p>
-        )}
-        {dayShapeLine ? <p className="greeting-dayshape">{dayShapeLine}</p> : null}
-        {credibilityLine ? <p className="greeting-credibility">{credibilityLine}</p> : null}
       </div>
+      {(warmth || urgencyLine || timeWindowLine) && (
+        <p className="greeting-body">
+          {warmth ? <span>{warmth} </span> : null}
+          {urgencyLine ? <span>{urgencyLine} </span> : null}
+          {timeWindowLine ? <span>{timeWindowLine}</span> : null}
+        </p>
+      )}
+      {dayShapeLine ? <p className="greeting-dayshape">{dayShapeLine}</p> : null}
+      {credibilityLine ? <p className="greeting-credibility">{credibilityLine}</p> : null}
     </section>
   )
 }
