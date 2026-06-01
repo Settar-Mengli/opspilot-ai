@@ -1696,34 +1696,120 @@ select option { background: #1c1c1a; color: var(--text-1); }
   font-size: 14px;
 }
 
-.priorities-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+/* ─── Priorities Panel Content ─── */
+.priorities-intro {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  gap: 11px;
+  align-items: flex-start;
+  margin-bottom: 22px;
 }
 
-.priorities-item {
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
+.priorities-intro-txt {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 15.5px;
+  color: #EDEBE3;
+  line-height: 1.55;
+  margin: 0;
 }
 
-.priorities-id {
-  display: block;
-  font-weight: 600;
+.pcard {
+  background: rgba(250, 249, 245, 0.04);
+  border: 0.5px solid rgba(250, 249, 245, 0.10);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 14px;
+}
+
+.pcard--lead {
+  border-color: rgba(216, 90, 48, 0.32);
+  background: rgba(216, 90, 48, 0.06);
+}
+
+.pcard-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.pnum {
+  font-size: 12px;
+  color: #888780;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.ppill {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.ppill--crit {
+  background: rgba(216, 90, 48, 0.16);
+  color: #e8a085;
+}
+
+.ppill--high {
+  background: rgba(239, 159, 39, 0.14);
+  color: #e0b066;
+}
+
+.ptitle2 {
+  font-size: 15px;
+  font-weight: 500;
+  color: #FAF9F5;
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+
+.pwhy {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 14px;
+  color: #c4c2b8;
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+
+.paction {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-top: 13px;
+  border-top: 0.5px solid rgba(250, 249, 245, 0.08);
+}
+
+.paction-ic {
+  color: #9CAB7A;
+  font-size: 16px;
+  display: flex;
+  flex-shrink: 0;
+}
+
+.paction-txt {
   font-size: 13px;
-  margin-bottom: 4px;
-  color: var(--accent);
+  color: #a8b88a;
+  line-height: 1.45;
+  margin: 0;
 }
 
-.priorities-reason {
-  font-size: 13px;
-  color: var(--fg-muted);
+.pfoot {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  margin-top: 18px;
+}
+
+.pfoot-txt {
+  font-family: 'Lora', Georgia, serif;
+  font-style: italic;
+  font-size: 14px;
+  color: #888780;
   line-height: 1.5;
+  margin: 0;
 }
 
 /* ─── Nav Gear ─── */
