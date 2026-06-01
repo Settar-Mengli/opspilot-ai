@@ -2,12 +2,23 @@ import { useEffect, useState, useCallback } from 'react'
 import { getInsights } from '../api/client'
 import type { InsightItem } from '../api/types'
 import { InsightCardSkeleton } from '../components/skeletons/InsightCardSkeleton'
+import { BulBulAvatar } from '../components/BulBulAvatar'
+import { TrendingUp, Clock, Eye, Lightbulb, MessageCircle } from 'lucide-react'
+
+function categoryChip(category: string): { cls: string; Icon: typeof TrendingUp } {
+  const lower = category.toLowerCase()
+  if (lower.includes('trend')) return { cls: 'nic--trend', Icon: TrendingUp }
+  if (lower.includes('theme') || lower.includes('pattern')) return { cls: 'nic--theme', Icon: Clock }
+  if (lower.includes('watch') || lower.includes('risk')) return { cls: 'nic--watch', Icon: Eye }
+  return { cls: 'nic--theme', Icon: Lightbulb }
+}
 
 interface Props {
   assistantName: string
+  onAsk?: (question: string) => void
 }
 
-export function InsightsPage({ assistantName }: Props) {
+export function InsightsPage({ assistantName, onAsk }: Props) {
   const [intro, setIntro] = useState('')
   const [insights, setInsights] = useState<InsightItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,36 +54,10 @@ export function InsightsPage({ assistantName }: Props) {
     }
   }, [assistantName, refreshTick])
 
-  function handleRefresh() {
-    if (loading) return
-    setLoading(true)
-    loadInsights()
-  }
+  const introText = intro || "A few patterns I've been watching. Nothing urgent — just worth your eye."
 
   return (
     <>
-      <div className="insights-header">
-        <div>
-          <h1 className="insights-title">Insights</h1>
-          <p className="insights-subtitle">
-            Cross-cutting patterns {assistantName} has noticed in your operational data.
-          </p>
-        </div>
-        <button
-          className="insights-refresh"
-          onClick={handleRefresh}
-          disabled={loading}
-          aria-label="Refresh insights"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <polyline points="1 20 1 14 7 14"></polyline>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-          </svg>
-          {loading ? 'Refreshing…' : 'Refresh'}
-        </button>
-      </div>
-
       {loading && (
         <div className="insights-list">
           <InsightCardSkeleton />
@@ -84,34 +69,53 @@ export function InsightsPage({ assistantName }: Props) {
       {!loading && error && (
         <div className="insights-error">
           {error}
+          <button className="ni-refresh" onClick={() => { if (!loading) { setLoading(true); loadInsights() } }}>
+            Try again
+          </button>
         </div>
       )}
 
-      {!loading && !error && intro && (
-        <div className="insights-intro fade-in d2">
-          {intro}
-        </div>
-      )}
-
-      {!loading && !error && insights.length === 0 && intro === '' && (
-        <div className="insights-empty">
-          No insights to show yet. Once your triage data has some history, {assistantName} will surface patterns here.
+      {!loading && !error && insights.length === 0 && (
+        <div className="ni-intro">
+          <BulBulAvatar size={26} />
+          <p className="ni-intro-txt">Nothing to surface yet. Once patterns form, I'll bring them here.</p>
         </div>
       )}
 
       {!loading && !error && insights.length > 0 && (
-        <div className="insights-list fade-in d3">
-          {insights.map((insight, i) => (
-            <article key={i} className="insight-card">
-              {insight.category && (
-                <span className={`insight-category insight-category-${insight.category}`}>
-                  {insight.category}
-                </span>
-              )}
-              <h2 className="insight-title">{insight.title}</h2>
-              <p className="insight-body">{insight.body}</p>
-            </article>
-          ))}
+        <div className="ni-body">
+          <div className="ni-intro">
+            <BulBulAvatar size={26} />
+            <p className="ni-intro-txt">{introText}</p>
+          </div>
+
+          {insights.map((insight, i) => {
+            const { cls, Icon } = categoryChip(insight.category)
+            return (
+              <div key={i} className="ni-card">
+                <div className="ni-card-top">
+                  <span className={`ni-card-ic ${cls}`}><Icon size={17} strokeWidth={2} /></span>
+                  <span>
+                    <p className="ni-card-tag">{insight.category.toUpperCase()}</p>
+                    <p className="ni-card-head">{insight.title}</p>
+                  </span>
+                </div>
+                <p className="ni-note">{insight.body}</p>
+                <button
+                  className="ni-ask"
+                  onClick={() => onAsk?.(`Tell me more about: ${insight.title}`)}
+                >
+                  <MessageCircle size={14} strokeWidth={2} />
+                  Talk it through
+                </button>
+              </div>
+            )
+          })}
+
+          <div className="ni-foot">
+            <BulBulAvatar size={26} />
+            <p className="ni-foot-txt">I'll keep watching. If any of these sharpen, I'll bring it to you.</p>
+          </div>
         </div>
       )}
     </>

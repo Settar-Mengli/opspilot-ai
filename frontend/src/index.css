@@ -1928,6 +1928,148 @@ select option { background: #1c1c1a; color: var(--text-1); }
   flex-shrink: 0;
 }
 
+/* ─── Noticing / Insights Page ─── */
+.ni-body {
+  padding-bottom: 24px;
+}
+
+.ni-intro {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  margin-bottom: 22px;
+}
+
+.ni-intro-txt {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 15.5px;
+  color: #EDEBE3;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.ni-card {
+  background: rgba(250, 249, 245, 0.04);
+  border: 0.5px solid rgba(250, 249, 245, 0.10);
+  border-radius: 14px;
+  padding: 17px 18px;
+  margin-bottom: 13px;
+}
+
+.ni-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ni-card-ic {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nic--trend {
+  background: rgba(106, 155, 204, 0.14);
+  color: #8eb1d8;
+}
+
+.nic--theme {
+  background: rgba(120, 140, 93, 0.16);
+  color: #a8b88a;
+}
+
+.nic--watch {
+  background: rgba(239, 159, 39, 0.14);
+  color: #e0b066;
+}
+
+.ni-card-tag {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #888780;
+  margin: 0;
+}
+
+.ni-card-head {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #FAF9F5;
+  margin: 1px 0 0;
+  line-height: 1.35;
+}
+
+.ni-note {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 14px;
+  color: #c4c2b8;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.ni-ask {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 13px;
+  background: none;
+  border: 0.5px solid rgba(250, 249, 245, 0.14);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  color: #b0aea5;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.ni-ask:hover {
+  border-color: rgba(128, 128, 0, 0.4);
+  color: #cfcf5a;
+}
+
+.ni-ask:focus-visible {
+  outline: 2px solid #808000;
+  outline-offset: 2px;
+}
+
+.ni-foot {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  margin-top: 18px;
+}
+
+.ni-foot-txt {
+  font-family: 'Lora', Georgia, serif;
+  font-style: italic;
+  font-size: 14px;
+  color: #888780;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.ni-refresh {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: #888780;
+  cursor: pointer;
+  margin-top: 8px;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.ni-refresh:hover {
+  color: #FAF9F5;
+}
+
 /* ─── Nav Gear ─── */
 .nav-gear {
   display: flex;

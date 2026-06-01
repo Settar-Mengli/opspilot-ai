@@ -110,7 +110,7 @@ function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardPage userName={userName} assistantName={assistantName} onAsk={handleAsk} onEveningClick={() => setEveningOpen(true)} />} />
             <Route path="/items" element={<AllItemsPage />} />
-            <Route path="/insights" element={<InsightsPage assistantName={assistantName} />} />
+            <Route path="/insights" element={<InsightsPage assistantName={assistantName} onAsk={handleAsk} />} />
             <Route path="/briefing" element={<BriefingPage />} />
             <Route path="/connections" element={<ConnectionsPage />} />
           </Routes>
