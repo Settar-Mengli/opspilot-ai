@@ -2070,6 +2070,54 @@ select option { background: #1c1c1a; color: var(--text-1); }
   color: #FAF9F5;
 }
 
+/* ─── Evening Panel Content ─── */
+.ev-intro {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.ev-intro-txt {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 18px;
+  color: #FAF9F5;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.ev-body {
+  margin-bottom: 22px;
+}
+
+.ev-body-para {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 14.5px;
+  color: #c4c2b8;
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+
+.ev-body-para:last-child {
+  margin-bottom: 0;
+}
+
+.ev-close {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  margin-top: 18px;
+}
+
+.ev-close-txt {
+  font-family: 'Lora', Georgia, serif;
+  font-style: italic;
+  font-size: 15px;
+  color: #a8a8a0;
+  line-height: 1.5;
+  margin: 0;
+}
+
 /* ─── Nav Gear ─── */
 .nav-gear {
   display: flex;
