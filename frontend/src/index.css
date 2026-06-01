@@ -2118,6 +2118,143 @@ select option { background: #1c1c1a; color: var(--text-1); }
   margin: 0;
 }
 
+/* ─── Week Panel Content ─── */
+.wk-intro {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.wk-intro-txt {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 16px;
+  color: #EDEBE3;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.wk-day {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+
+.wk-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 44px;
+}
+
+.wk-date {
+  font-size: 11px;
+  color: #888780;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.wk-dnum {
+  font-size: 17px;
+  font-weight: 500;
+  color: #FAF9F5;
+  margin: 2px 0 0;
+}
+
+.wk-line {
+  width: 2px;
+  flex: 1;
+  background: rgba(250, 249, 245, 0.08);
+  margin: 6px 0 0;
+  border-radius: 2px;
+}
+
+.wk-card {
+  flex: 1;
+  background: rgba(250, 249, 245, 0.03);
+  border: 0.5px solid rgba(250, 249, 245, 0.08);
+  border-radius: 12px;
+  padding: 13px 15px;
+  margin-bottom: 12px;
+}
+
+.wk-card--today {
+  border-color: rgba(128, 128, 0, 0.4);
+  background: rgba(128, 128, 0, 0.07);
+}
+
+.wk-card--tight {
+  background: rgba(216, 90, 48, 0.06);
+  border-color: rgba(216, 90, 48, 0.26);
+}
+
+.wk-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.wk-bar {
+  display: flex;
+  gap: 3px;
+}
+
+.wk-seg {
+  width: 16px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(250, 249, 245, 0.12);
+}
+
+.wk-seg.on-low {
+  background: #9CAB7A;
+}
+
+.wk-seg.on-mid {
+  background: #ef9f27;
+}
+
+.wk-seg.on-high {
+  background: #d85a30;
+}
+
+.wk-mood {
+  font-size: 11px;
+  color: #888780;
+  margin-left: auto;
+  font-weight: 500;
+}
+
+.wk-note {
+  font-size: 13px;
+  color: #c4c2b8;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.wk-note-em {
+  color: #FAF9F5;
+}
+
+.wk-foot {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 14px;
+}
+
+.wk-foot-txt {
+  font-family: 'Lora', Georgia, serif;
+  font-style: italic;
+  font-size: 14px;
+  color: #888780;
+  line-height: 1.5;
+  margin: 0;
+}
+
 /* ─── Nav Gear ─── */
 .nav-gear {
   display: flex;
