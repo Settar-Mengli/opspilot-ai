@@ -1435,11 +1435,91 @@ select option { background: #1c1c1a; color: var(--text-1); }
   margin: 0 0 12px;
 }
 
-/* ─── Tiles ─── */
+/* ─── Hero Tile ─── */
+.dash-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  text-align: left;
+  background: rgba(128, 128, 0, 0.10);
+  border: 1px solid rgba(128, 128, 0, 0.34);
+  border-radius: 14px;
+  padding: 20px 22px;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, transform 0.18s;
+  font-family: inherit;
+  color: var(--text-1);
+  margin-bottom: 10px;
+}
+
+.dash-hero:hover {
+  background: rgba(128, 128, 0, 0.16);
+  border-color: rgba(128, 128, 0, 0.55);
+  transform: translateY(-1px);
+}
+
+.dash-hero:focus-visible {
+  outline: 2px solid #808000;
+  outline-offset: 2px;
+}
+
+.dash-hero--neutral {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.dash-hero--neutral:hover {
+  background: rgba(250, 249, 245, 0.07);
+  border-color: rgba(250, 249, 245, 0.24);
+}
+
+.dash-hero-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  background: rgba(128, 128, 0, 0.18);
+  flex-shrink: 0;
+  color: #bcbb3e;
+}
+
+.dash-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dash-hero-label {
+  font-size: 16px;
+  font-weight: 500;
+  color: #cfcf5a;
+  letter-spacing: 0.2px;
+}
+
+.dash-hero--neutral .dash-hero-label {
+  color: var(--text-1);
+}
+
+.dash-hero-sub {
+  font-size: 13px;
+  color: #b0aea5;
+}
+
+.dash-hero-arrow {
+  margin-left: auto;
+  color: #a8a832;
+  display: flex;
+  align-items: center;
+}
+
+/* ─── Secondary Tiles (3-up) ─── */
 .dash-tiles {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
   margin-bottom: 28px;
 }
 
@@ -1447,21 +1527,22 @@ select option { background: #1c1c1a; color: var(--text-1); }
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
-  padding: 18px 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
+  gap: 0;
+  padding: 16px;
+  background: rgba(250, 249, 245, 0.04);
+  border: 0.5px solid rgba(250, 249, 245, 0.10);
+  border-radius: 12px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: background 0.18s, border-color 0.18s, transform 0.18s;
   text-align: left;
   font-family: inherit;
   color: var(--text-1);
 }
 
 .dash-tile:hover {
-  border-color: var(--accent);
-  background: rgba(128, 128, 0, 0.04);
+  background: rgba(250, 249, 245, 0.07);
+  border-color: rgba(250, 249, 245, 0.24);
+  transform: translateY(-1px);
 }
 
 .dash-tile:focus-visible {
@@ -1469,38 +1550,55 @@ select option { background: #1c1c1a; color: var(--text-1); }
   outline-offset: 2px;
 }
 
-.dash-tile--urgent {
-  background: rgba(128, 128, 0, 0.09);
-  border-color: rgba(128, 128, 0, 0.32);
-}
-
-.dash-tile--urgent:hover {
-  background: rgba(128, 128, 0, 0.13);
-}
-
-.dash-tile-icon {
+.dash-tile-chip {
   display: flex;
   align-items: center;
-  color: var(--text-1);
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(250, 249, 245, 0.05);
+  color: #EDEBE3;
+  margin-bottom: 11px;
 }
 
-.dash-tile-icon--olive {
-  color: var(--accent);
+.dash-tile-text {
+  display: flex;
+  flex-direction: column;
 }
 
 .dash-tile-label {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 500;
-  letter-spacing: 0.3px;
-}
-
-.dash-tile-label--olive {
-  color: #808000;
+  color: #FAF9F5;
+  letter-spacing: 0.2px;
 }
 
 .dash-tile-subtitle {
-  font-size: 14px;
-  color: var(--text-3);
+  font-size: 12px;
+  color: #9b998f;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+/* Mobile: tiles become horizontal rows */
+@media (max-width: 640px) {
+  .dash-tiles {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .dash-tile {
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 15px 16px;
+  }
+
+  .dash-tile-chip {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
 }
 
 /* ─── Ghost Links ─── */

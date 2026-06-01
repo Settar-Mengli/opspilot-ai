@@ -6,7 +6,7 @@ import { GreetingBlock } from '../components/GreetingBlock'
 import { PrioritiesPanel } from '../components/PrioritiesPanel'
 import { WeekPanel } from '../components/WeekPanel'
 import { getTimeOfDay, getGreetingWord } from '../utils/greeting'
-import { Flame, MessageCircle, Eye, Lightbulb, Moon, CalendarDays, FileText } from 'lucide-react'
+import { Flame, MessageCircle, Eye, Lightbulb, Moon, CalendarDays, FileText, ArrowRight } from 'lucide-react'
 
 function numberWord(n: number): string {
   const words = ['zero','one','two','three','four','five','six','seven','eight','nine','ten']
@@ -89,33 +89,51 @@ export function DashboardPage({ userName, assistantName, onAsk, onEveningClick }
 
       <p className="dash-section-header">Where would you like to start?</p>
 
-      {/* Choice tiles — 2×2 grid */}
-      <section className="dash-tiles">
-        <button
-          className={`dash-tile${urgentCount > 0 ? ' dash-tile--urgent' : ''}`}
-          onClick={() => setPrioritiesOpen(true)}
-        >
-          {urgentCount > 0 && <span className="dash-tile-icon dash-tile-icon--olive"><Flame size={20} strokeWidth={2} /></span>}
-          <span className={`dash-tile-label${urgentCount > 0 ? ' dash-tile-label--olive' : ''}`}>{tile1Label}</span>
-          <span className="dash-tile-subtitle">{tile1Subtitle}</span>
-        </button>
+      {/* Hero tile */}
+      <button
+        className={`dash-hero${urgentCount === 0 ? ' dash-hero--neutral' : ''}`}
+        onClick={() => setPrioritiesOpen(true)}
+      >
+        {urgentCount > 0 && (
+          <span className="dash-hero-icon">
+            <Flame size={22} strokeWidth={2} />
+          </span>
+        )}
+        <span className="dash-hero-text">
+          <span className="dash-hero-label">{tile1Label}</span>
+          <span className="dash-hero-sub">{tile1Subtitle}</span>
+        </span>
+        {urgentCount > 0 && (
+          <span className="dash-hero-arrow">
+            <ArrowRight size={20} strokeWidth={2} />
+          </span>
+        )}
+      </button>
 
+      {/* Secondary tiles — 3 across on desktop, stacked on mobile */}
+      <section className="dash-tiles">
         <button className="dash-tile" onClick={() => onAsk('')}>
-          <span className="dash-tile-icon"><MessageCircle size={20} strokeWidth={2} /></span>
-          <span className="dash-tile-label">Just ask me</span>
-          <span className="dash-tile-subtitle">Anything on your mind</span>
+          <span className="dash-tile-chip"><MessageCircle size={18} strokeWidth={2} /></span>
+          <span className="dash-tile-text">
+            <span className="dash-tile-label">Just ask me</span>
+            <span className="dash-tile-subtitle">Anything on your mind</span>
+          </span>
         </button>
 
         <button className="dash-tile" onClick={() => navigate('/items')}>
-          <span className="dash-tile-icon"><Eye size={20} strokeWidth={2} /></span>
-          <span className="dash-tile-label">The full picture</span>
-          <span className="dash-tile-subtitle">{loading ? 'All items, nothing hidden' : `All ${records.length} items, nothing hidden`}</span>
+          <span className="dash-tile-chip"><Eye size={18} strokeWidth={2} /></span>
+          <span className="dash-tile-text">
+            <span className="dash-tile-label">The full picture</span>
+            <span className="dash-tile-subtitle">{loading ? 'All items, nothing hidden' : `All ${records.length} items, nothing hidden`}</span>
+          </span>
         </button>
 
         <button className="dash-tile" onClick={() => navigate('/insights')}>
-          <span className="dash-tile-icon"><Lightbulb size={20} strokeWidth={2} /></span>
-          <span className="dash-tile-label">What I'm noticing</span>
-          <span className="dash-tile-subtitle">A few patterns worth your time</span>
+          <span className="dash-tile-chip"><Lightbulb size={18} strokeWidth={2} /></span>
+          <span className="dash-tile-text">
+            <span className="dash-tile-label">What I'm noticing</span>
+            <span className="dash-tile-subtitle">A few patterns worth your time</span>
+          </span>
         </button>
       </section>
 
