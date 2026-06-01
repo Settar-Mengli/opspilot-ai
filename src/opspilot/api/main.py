@@ -16,6 +16,7 @@ load_dotenv()
 from opspilot.adapters.conversation_adapter import answer_question
 from opspilot.adapters.evening_adapter import generate_evening_summary
 from opspilot.adapters.insights_adapter import generate_insights
+from opspilot.capabilities.registry import get_all_capabilities, get_capability
 from opspilot.history.run_history import (
     list_run_metadata,
     read_run_json_artifact,
@@ -375,3 +376,26 @@ def get_inputs():
         return {"files": []}
     files = sorted(f.name for f in RAW_INPUT_DIR.iterdir() if f.is_file() and f.suffix == ".json")
     return {"files": files}
+
+
+@app.get("/capabilities", response_class=JSONResponse)
+def list_capabilities():
+    """Return all registered capabilities."""
+    from dataclasses import asdict
+
+    caps = get_all_capabilities()
+    return [
+        {**asdict(cap), "status": cap.status.value}
+        for cap in caps
+    ]
+
+
+@app.get("/capabilities/{capability_id}", response_class=JSONResponse)
+def get_capability_by_id(capability_id: str):
+    """Return a single capability by ID."""
+    from dataclasses import asdict
+
+    cap = get_capability(capability_id)
+    if cap is None:
+        raise HTTPException(status_code=404, detail="Capability not found.")
+    return {**asdict(cap), "status": cap.status.value}
