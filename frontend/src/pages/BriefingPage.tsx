@@ -69,9 +69,17 @@ export function BriefingPage() {
     return <div className="page-state page-error"><p>{error}</p></div>
   }
 
-  const paragraphs = text ? text.split(/\n\n+/).map(p => p.trim()).filter(Boolean) : []
-  const summary = paragraphs.length > 0 ? paragraphs[0] : "Here's your read for today."
-  const body = paragraphs.slice(1)
+  const paragraphs = text
+    ? text.split(/\n\n+/).map(p => p.trim()).filter(Boolean).map(p => p.replace(/^#{1,6}\s+/, ''))
+    : []
+
+  // Skip a bare title/date first paragraph (short or contains "Briefing") — use next real prose line
+  let summaryIdx = 0
+  if (paragraphs.length > 1 && paragraphs[0].length < 60 && /briefing/i.test(paragraphs[0])) {
+    summaryIdx = 1
+  }
+  const summary = paragraphs.length > 0 ? paragraphs[summaryIdx] : "Here's your read for today."
+  const body = summaryIdx === 1 ? paragraphs.slice(2) : paragraphs.slice(1)
 
   return (
     <div className="br-page">
