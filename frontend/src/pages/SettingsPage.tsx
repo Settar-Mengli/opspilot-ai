@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
@@ -20,11 +20,7 @@ export function SettingsPage() {
   const [saveMessage, setSaveMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
 
-  const refreshSettings = useCallback(async (showLoader: boolean) => {
-    if (showLoader) {
-      setLoading(true)
-    }
-
+  async function refreshSettings(showLoader: boolean) {
     try {
       const latest = await getApiSettings()
       setStatus(latest)
@@ -38,11 +34,37 @@ export function SettingsPage() {
         setLoading(false)
       }
     }
-  }, [])
+  }
 
   useEffect(() => {
-    void refreshSettings(true)
-  }, [refreshSettings])
+    let cancelled = false
+
+    getApiSettings()
+      .then((latest) => {
+        if (cancelled) {
+          return
+        }
+        setStatus(latest)
+        setProvider(toKnownProvider(latest.provider))
+        setModel(latest.model)
+        setApiKey('')
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return
+        }
+        setErrorMessage(error instanceof Error ? error.message : 'Failed to load settings.')
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
