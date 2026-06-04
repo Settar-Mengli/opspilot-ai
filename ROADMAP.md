@@ -222,3 +222,44 @@ Decision recorded:
 6. Mobile pass.
 7. Panel standardization.
 8. Final audit.
+
+---
+
+## Session 3 Delivery Update — June 3, 2026
+
+### Completed this session
+
+1. Provider abstraction seam (commit e37370e)
+	- Created `src/opspilot/config/settings.py` with central `AISettings` singleton.
+	- Wired `conversation_adapter.py` to use settings instead of hardcoded env/model values.
+	- Added `GET /api/settings` and `PATCH /api/settings` endpoints.
+	- Implemented 3-tier key fallback: `OPSPILOT_AI_API_KEY` → `ANTHROPIC_API_KEY` → error.
+	- Verified with 51 tests passing.
+
+2. Frontend settings screen (commit 628bc17)
+	- Created `frontend/src/pages/SettingsPage.tsx` with provider/model/key form.
+	- Added `/settings` route in `App.tsx`.
+	- Added Settings entry button on dashboard.
+	- Added backend model-prefix validation guard (400 on invalid provider/model combos).
+	- Frontend build passes and live behavior verified.
+
+### Known open items
+
+- Settings overrides are in-memory only (reset on server restart).
+- Remaining adapters not yet migrated to `settings.py`: `evening_adapter.py`, `insights_adapter.py`, `briefing_adapter.py`, `claude_adapter.py`.
+- Top-right gear icon still routes to `/connections` (not `/settings`).
+
+### Next session options considered
+
+- A. Persist settings to a local config file (survive restarts).
+- B. Migrate remaining 4 adapters to `settings.py`.
+- C. Conversation Phase A (multi-turn history in AskPanel).
+
+### Next session selection (DECIDED)
+
+Option B — Migrate remaining 4 adapters to `settings.py`.
+
+Planned scope:
+- Move provider/model/api-key reads in `evening_adapter.py`, `insights_adapter.py`, `briefing_adapter.py`, and `claude_adapter.py` to centralized settings.
+- Preserve current behavior and fallback semantics while removing hardcoded model/env duplication.
+- Run full regression tests plus targeted adapter checks after migration.
