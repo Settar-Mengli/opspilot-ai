@@ -17,6 +17,7 @@ from opspilot.adapters.conversation_adapter import answer_question
 from opspilot.adapters.evening_adapter import generate_evening_summary
 from opspilot.adapters.insights_adapter import generate_insights
 from opspilot.capabilities.registry import get_all_capabilities, get_capability
+from opspilot.config.settings import ai_settings
 from opspilot.history.run_history import (
     list_run_metadata,
     read_run_json_artifact,
@@ -66,7 +67,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=LOCAL_UI_ORIGINS,
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PATCH"],
     allow_headers=["Content-Type"],
 )
 
@@ -101,6 +102,12 @@ class InsightsRequest(BaseModel):
         max_length=60,
         pattern=r"^[A-Za-z0-9 .'\-]+$",
     )
+
+
+class SettingsPatchRequest(BaseModel):
+    provider: str | None = None
+    model: str | None = None
+    api_key: str | None = None
 
 
 def _safe_error(status_code: int, code: str, message: str) -> HTTPException:
@@ -156,10 +163,43 @@ def _resolve_input_file(input_file: str) -> Path:
         raise HTTPException(status_code=400, detail="input_file must be a filename in data/raw")
     return RAW_INPUT_DIR / candidate.name
 
+
+def _preview_api_key(api_key: str | None) -> str | None:
+    if not api_key:
+        return None
+    suffix = api_key[-4:]
+    return f"sk-••••{suffix}"
+
+
+def _settings_payload() -> dict[str, object]:
+    return {
+        "provider": ai_settings.provider,
+        "model": ai_settings.model,
+        "api_key_set": bool(ai_settings.api_key),
+        "api_key_preview": _preview_api_key(ai_settings.api_key),
+    }
+
 @app.get("/health", response_class=PlainTextResponse)
 def health():
     """Health check endpoint."""
     return "ok"
+
+
+@app.get("/api/settings", response_class=JSONResponse)
+def get_settings() -> dict[str, object]:
+    """Return non-sensitive runtime AI settings."""
+    return _settings_payload()
+
+
+@app.patch("/api/settings", response_class=JSONResponse)
+def patch_settings(payload: SettingsPatchRequest) -> dict[str, object]:
+    """Update runtime AI settings without restarting the API."""
+    ai_settings.override(
+        provider=payload.provider,
+        model=payload.model,
+        api_key=payload.api_key,
+    )
+    return _settings_payload()
 
 @app.post("/run")
 def run_pipeline(req: RunPipelineRequest):

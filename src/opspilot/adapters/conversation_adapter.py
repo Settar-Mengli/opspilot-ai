@@ -7,14 +7,13 @@ and returns a natural-language answer in the voice of a chief of staff.
 from __future__ import annotations
 
 import logging
-import os
 from typing import Any
 
 from anthropic import Anthropic
+from opspilot.config.settings import ai_settings
 
 logger = logging.getLogger(__name__)
 
-MODEL = "claude-haiku-4-5-20251001"
 MAX_TOKENS = 800
 
 
@@ -58,7 +57,7 @@ def answer_question(
     Returns a natural-language answer. Falls back to a polite message
     if no API key is configured or the API call fails.
     """
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = ai_settings.api_key
     if not api_key:
         return (
             "I need an Anthropic API key to answer questions. "
@@ -71,10 +70,17 @@ def answer_question(
     records = triage_records or []
     system_prompt = _build_system_prompt(assistant_name, records)
 
+    if ai_settings.provider != "anthropic":
+        logger.warning("Unsupported conversation provider configured: %s", ai_settings.provider)
+        return (
+            "I ran into an issue answering that. The API may be unavailable. "
+            "Please try again in a moment."
+        )
+
     try:
         client = Anthropic(api_key=api_key)
         response = client.messages.create(
-            model=MODEL,
+            model=ai_settings.model,
             max_tokens=MAX_TOKENS,
             system=system_prompt,
             messages=[{"role": "user", "content": question.strip()}],

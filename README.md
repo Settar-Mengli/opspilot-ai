@@ -112,6 +112,18 @@ Open `http://localhost:5173`.
 
 ---
 
+## AI Provider Configuration
+
+OpsPilot now supports a unified runtime AI configuration for conversation responses:
+
+- `OPSPILOT_AI_PROVIDER` (default: `anthropic`)
+- `OPSPILOT_AI_MODEL` (default: `claude-haiku-4-5-20251001`)
+- `OPSPILOT_AI_API_KEY` (optional)
+
+If `OPSPILOT_AI_API_KEY` is unset, OpsPilot falls back to `ANTHROPIC_API_KEY` for backward compatibility.
+
+---
+
 ## Status
 
 OpsPilot is an active project under development. The current build is a working demo intended to showcase the product vision. Production deployment, authentication, and live integrations are on the roadmap.
