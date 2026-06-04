@@ -105,3 +105,18 @@ export interface Capability {
   featured: boolean
   description: string
 }
+
+export type AIProvider = 'anthropic' | 'openai'
+
+export interface ApiSettings {
+  provider: string
+  model: string
+  api_key_set: boolean
+  api_key_preview: string | null
+}
+
+export interface PatchApiSettingsRequest {
+  provider?: AIProvider
+  model?: string
+  api_key?: string
+}

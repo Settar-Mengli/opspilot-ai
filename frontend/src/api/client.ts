@@ -1,4 +1,13 @@
-import type { Capability, RunMetadata, RunPipelineResult, RunSummary, TriageRecord, InsightsResponse } from './types'
+import type {
+  ApiSettings,
+  Capability,
+  InsightsResponse,
+  PatchApiSettingsRequest,
+  RunMetadata,
+  RunPipelineResult,
+  RunSummary,
+  TriageRecord,
+} from './types'
 
 const FALLBACK_API_BASE_URL = 'http://127.0.0.1:8000'
 
@@ -61,8 +70,8 @@ async function requestText(path: string): Promise<string> {
   return response.text()
 }
 
-async function requestJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`)
+async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, init)
   if (!response.ok) {
     const detail = await getErrorDetail(response)
     throw toApiError(response.status, detail)
@@ -192,6 +201,18 @@ export async function getRunAiBriefing(runId: string): Promise<string> {
 export async function getInputFiles(): Promise<string[]> {
   const payload = await requestJson<{ files: string[] }>('/inputs')
   return payload.files
+}
+
+export async function getApiSettings(): Promise<ApiSettings> {
+  return requestJson<ApiSettings>('/api/settings')
+}
+
+export async function patchApiSettings(payload: PatchApiSettingsRequest): Promise<ApiSettings> {
+  return requestJson<ApiSettings>('/api/settings', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
 }
 
 export { API_BASE_URL }

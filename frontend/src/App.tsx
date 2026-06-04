@@ -16,6 +16,7 @@ import { AllItemsPage } from './pages/AllItemsPage'
 import { InsightsPage } from './pages/InsightsPage'
 import { BriefingPage } from './pages/BriefingPage'
 import { ConnectionsPage } from './pages/ConnectionsPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { useUserName } from './hooks/useUserName'
 import { useAssistantName } from './hooks/useAssistantName'
 import { useGlobalShortcut } from './hooks/useGlobalShortcut'
@@ -113,6 +114,7 @@ function App() {
             <Route path="/insights" element={<InsightsPage assistantName={assistantName} onAsk={handleAsk} />} />
             <Route path="/briefing" element={<BriefingPage />} />
             <Route path="/connections" element={<ConnectionsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </ErrorBoundary>
       </main>

@@ -6,7 +6,7 @@ import { GreetingBlock } from '../components/GreetingBlock'
 import { PrioritiesPanel } from '../components/PrioritiesPanel'
 import { WeekPanel } from '../components/WeekPanel'
 import { getTimeOfDay, getGreetingWord } from '../utils/greeting'
-import { Flame, MessageCircle, Eye, Lightbulb, Moon, CalendarDays, FileText, ArrowRight } from 'lucide-react'
+import { Flame, MessageCircle, Eye, Lightbulb, Moon, CalendarDays, FileText, ArrowRight, Settings } from 'lucide-react'
 
 function numberWord(n: number): string {
   const words = ['zero','one','two','three','four','five','six','seven','eight','nine','ten']
@@ -152,6 +152,11 @@ export function DashboardPage({ userName, assistantName, onAsk, onEveningClick }
           <span className="dash-action-label">Today's briefing</span>
         </button>
       </section>
+
+      <button className="dash-settings-link" onClick={() => navigate('/settings')}>
+        <Settings size={14} strokeWidth={2} />
+        <span>Settings</span>
+      </button>
 
       {/* Slide-up panels */}
       <PrioritiesPanel open={prioritiesOpen} records={records} onClose={() => setPrioritiesOpen(false)} />

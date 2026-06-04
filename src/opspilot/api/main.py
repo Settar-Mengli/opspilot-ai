@@ -17,7 +17,7 @@ from opspilot.adapters.conversation_adapter import answer_question
 from opspilot.adapters.evening_adapter import generate_evening_summary
 from opspilot.adapters.insights_adapter import generate_insights
 from opspilot.capabilities.registry import get_all_capabilities, get_capability
-from opspilot.config.settings import ai_settings
+from opspilot.config.settings import DEFAULT_MODEL, DEFAULT_PROVIDER, ai_settings
 from opspilot.history.run_history import (
     list_run_metadata,
     read_run_json_artifact,
@@ -179,6 +179,22 @@ def _settings_payload() -> dict[str, object]:
         "api_key_preview": _preview_api_key(ai_settings.api_key),
     }
 
+
+def _validate_provider_model(provider: str, model: str) -> None:
+    if provider == "openai" and not model.startswith("gpt-"):
+        raise _safe_error(
+            400,
+            "invalid_model",
+            "For provider 'openai', model must start with 'gpt-'.",
+        )
+
+    if provider == "anthropic" and not model.startswith("claude-"):
+        raise _safe_error(
+            400,
+            "invalid_model",
+            "For provider 'anthropic', model must start with 'claude-'.",
+        )
+
 @app.get("/health", response_class=PlainTextResponse)
 def health():
     """Health check endpoint."""
@@ -194,6 +210,18 @@ def get_settings() -> dict[str, object]:
 @app.patch("/api/settings", response_class=JSONResponse)
 def patch_settings(payload: SettingsPatchRequest) -> dict[str, object]:
     """Update runtime AI settings without restarting the API."""
+    next_provider = ai_settings.provider
+    if payload.provider is not None:
+        normalized_provider = payload.provider.strip().lower()
+        next_provider = normalized_provider or DEFAULT_PROVIDER
+
+    next_model = ai_settings.model
+    if payload.model is not None:
+        normalized_model = payload.model.strip()
+        next_model = normalized_model or DEFAULT_MODEL
+
+    _validate_provider_model(next_provider, next_model)
+
     ai_settings.override(
         provider=payload.provider,
         model=payload.model,
