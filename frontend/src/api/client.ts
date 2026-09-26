@@ -2,7 +2,6 @@ import type {
   ApiSettings,
   Capability,
   InsightsResponse,
-  PatchApiSettingsRequest,
   RunMetadata,
   RunPipelineResult,
   RunSummary,
@@ -10,6 +9,7 @@ import type {
 } from './types'
 
 const FALLBACK_API_BASE_URL = 'http://127.0.0.1:8000'
+export const API_PREFIX = '/api/v1'
 
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1'])
 
@@ -41,8 +41,17 @@ function toApiError(status: number, detail: unknown): Error {
     return new Error(`${status}: ${detail}`)
   }
 
-  if (detail && typeof detail === 'object' && 'message' in detail) {
-    return new Error(`${status}: ${String((detail as { message: unknown }).message)}`)
+  if (detail && typeof detail === 'object') {
+    const record = detail as Record<string, unknown>
+    if (record.error && typeof record.error === 'object') {
+      const nested = record.error as Record<string, unknown>
+      if (typeof nested.message === 'string') {
+        return new Error(`${status}: ${nested.message}`)
+      }
+    }
+    if (typeof record.message === 'string') {
+      return new Error(`${status}: ${record.message}`)
+    }
   }
 
   return new Error(`${status}: Request failed`)
@@ -51,6 +60,9 @@ function toApiError(status: number, detail: unknown): Error {
 async function getErrorDetail(response: Response): Promise<unknown> {
   try {
     const payload = await response.json()
+    if (payload && typeof payload === 'object' && 'error' in payload) {
+      return payload
+    }
     if (payload && typeof payload === 'object' && 'detail' in payload) {
       return (payload as { detail: unknown }).detail
     }
@@ -115,16 +127,16 @@ function toRunSummary(value: unknown): RunSummary {
 }
 
 export async function getHealth(): Promise<boolean> {
-  const text = await requestText('/health')
+  const text = await requestText('/api/v1/health')
   return text.trim().toLowerCase() === 'ok'
 }
 
 export async function getBriefing(): Promise<string> {
-  return requestText('/briefing')
+  return requestText('/api/v1/briefing')
 }
 
 export async function getTriage(): Promise<TriageRecord[]> {
-  const payload = await requestJson<unknown>('/triage')
+  const payload = await requestJson<unknown>('/api/v1/triage')
   if (!Array.isArray(payload)) {
     throw new Error('Unexpected triage response shape')
   }
@@ -132,7 +144,7 @@ export async function getTriage(): Promise<TriageRecord[]> {
   const records = payload.filter(isRecord)
   if (records.length !== payload.length) {
     console.warn(
-      `Dropped ${payload.length - records.length} invalid triage record(s) from response`
+      `Dropped ${payload.length - records.length} invalid triage record(s) from response`,
     )
   }
 
@@ -140,7 +152,7 @@ export async function getTriage(): Promise<TriageRecord[]> {
 }
 
 export async function getRuns(): Promise<RunSummary[]> {
-  const payload = await requestJson<unknown>('/runs')
+  const payload = await requestJson<unknown>('/api/v1/runs')
   if (!Array.isArray(payload)) {
     throw new Error('Unexpected runs response shape')
   }
@@ -150,13 +162,13 @@ export async function getRuns(): Promise<RunSummary[]> {
 
 export async function getRunMetadata(runId: string): Promise<RunMetadata> {
   const encodedRunId = encodeURIComponent(runId)
-  const payload = await requestJson<unknown>(`/runs/${encodedRunId}`)
+  const payload = await requestJson<unknown>(`/api/v1/runs/${encodedRunId}`)
   return toRunSummary(payload)
 }
 
 export async function getRunTriage(runId: string): Promise<TriageRecord[]> {
   const encodedRunId = encodeURIComponent(runId)
-  const payload = await requestJson<unknown>(`/runs/${encodedRunId}/triage`)
+  const payload = await requestJson<unknown>(`/api/v1/runs/${encodedRunId}/triage`)
   if (!Array.isArray(payload)) {
     throw new Error('Unexpected run triage response shape')
   }
@@ -164,7 +176,7 @@ export async function getRunTriage(runId: string): Promise<TriageRecord[]> {
   const records = payload.filter(isRecord)
   if (records.length !== payload.length) {
     console.warn(
-      `Dropped ${payload.length - records.length} invalid run triage record(s) from response`
+      `Dropped ${payload.length - records.length} invalid run triage record(s) from response`,
     )
   }
 
@@ -173,94 +185,69 @@ export async function getRunTriage(runId: string): Promise<TriageRecord[]> {
 
 export async function getRunBriefing(runId: string): Promise<string> {
   const encodedRunId = encodeURIComponent(runId)
-  return requestText(`/runs/${encodedRunId}/briefing`)
+  return requestText(`/api/v1/runs/${encodedRunId}/briefing`)
 }
 
 export async function runPipeline(inputFile: string, date: string): Promise<RunPipelineResult> {
-  const response = await fetch(`${API_BASE_URL}/run`, {
+  return requestJson<RunPipelineResult>('/api/v1/runs', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ input_file: inputFile, date }),
   })
-  if (!response.ok) {
-    const detail = await getErrorDetail(response)
-    throw toApiError(response.status, detail)
-  }
-  return response.json() as Promise<RunPipelineResult>
 }
 
 export async function getAiBriefing(): Promise<string> {
-  return requestText('/ai-briefing')
+  return requestText('/api/v1/ai-briefing')
 }
 
 export async function getRunAiBriefing(runId: string): Promise<string> {
   const encodedRunId = encodeURIComponent(runId)
-  return requestText(`/runs/${encodedRunId}/ai-briefing`)
+  return requestText(`/api/v1/runs/${encodedRunId}/ai-briefing`)
 }
 
 export async function getInputFiles(): Promise<string[]> {
-  const payload = await requestJson<{ files: string[] }>('/inputs')
+  const payload = await requestJson<{ files: string[] }>('/api/v1/inputs')
   return payload.files
 }
 
 export async function getApiSettings(): Promise<ApiSettings> {
-  return requestJson<ApiSettings>('/api/settings')
-}
-
-export async function patchApiSettings(payload: PatchApiSettingsRequest): Promise<ApiSettings> {
-  return requestJson<ApiSettings>('/api/settings', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
+  return requestJson<ApiSettings>('/api/v1/settings')
 }
 
 export { API_BASE_URL }
 
 export async function askOpsPilot(question: string, assistantName: string): Promise<string> {
-  const response = await fetch(`${API_BASE_URL}/ask`, {
+  const data = await requestJson<{ answer?: string }>('/api/v1/ask', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ question, assistant_name: assistantName }),
   })
-  if (!response.ok) {
-    throw new Error(`Ask failed: ${response.status} ${response.statusText}`)
-  }
-  const data = await response.json()
   return data.answer || ''
 }
 
 export async function getEveningSummary(assistantName: string): Promise<string> {
-  const response = await fetch(`${API_BASE_URL}/evening-summary`, {
+  const data = await requestJson<{ summary?: string }>('/api/v1/evening-summary', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ assistant_name: assistantName }),
   })
-  if (!response.ok) {
-    throw new Error(`Evening summary failed: ${response.status} ${response.statusText}`)
-  }
-  const data = await response.json()
   return data.summary || ''
 }
 
 export async function getInsights(assistantName: string): Promise<InsightsResponse> {
-  const response = await fetch(`${API_BASE_URL}/insights`, {
+  const data = await requestJson<Record<string, unknown>>('/api/v1/insights', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ assistant_name: assistantName }),
   })
-  if (!response.ok) {
-    throw new Error(`Insights failed: ${response.status} ${response.statusText}`)
-  }
-  const data = await response.json()
   return {
     intro: typeof data.intro === 'string' ? data.intro : '',
-    insights: Array.isArray(data.insights) ? data.insights : [],
+    insights: Array.isArray(data.insights) ? (data.insights as InsightsResponse['insights']) : [],
   }
 }
 
 export async function getCapabilities(): Promise<Capability[]> {
-  const payload = await requestJson<unknown>('/capabilities')
+  const payload = await requestJson<unknown>('/api/v1/capabilities')
   if (!Array.isArray(payload)) {
     throw new Error('Unexpected capabilities response shape')
   }

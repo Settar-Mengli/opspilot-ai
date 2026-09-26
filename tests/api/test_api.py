@@ -81,16 +81,13 @@ async def _seed_run(session: AsyncSession, tmp_path: Path, run_id: str, metadata
 
 
 def test_health():
-    resp = client.get("/health")
+    resp = client.get("/api/v1/health")
     assert resp.status_code == 200
     assert resp.text == "ok"
-    resp_v1 = client.get("/api/v1/health")
-    assert resp_v1.status_code == 200
-    assert resp_v1.text == "ok"
 
 
 def test_run_pipeline_success():
-    resp = client.post("/run", json={"input_file": "sample_input.json", "date": "2026-05-29"})
+    resp = client.post("/api/v1/runs", json={"input_file": "sample_input.json", "date": "2026-05-29"})
     assert resp.status_code == 200
     body = resp.json()
     assert body["status"] == "success"
@@ -98,7 +95,7 @@ def test_run_pipeline_success():
 
 
 def test_run_requires_date():
-    resp = client.post("/run", json={"input_file": "sample_input.json"})
+    resp = client.post("/api/v1/runs", json={"input_file": "sample_input.json"})
     assert resp.status_code == 422
     payload = resp.json()
     assert "error" in payload
@@ -106,12 +103,12 @@ def test_run_requires_date():
 
 
 def test_run_rejects_invalid_date_format():
-    resp = client.post("/run", json={"input_file": "sample_input.json", "date": "29-05-2026"})
+    resp = client.post("/api/v1/runs", json={"input_file": "sample_input.json", "date": "29-05-2026"})
     assert resp.status_code == 422
 
 
 def test_run_rejects_path_traversal():
-    resp = client.post("/run", json={"input_file": "../sample_input.json", "date": "2026-05-29"})
+    resp = client.post("/api/v1/runs", json={"input_file": "../sample_input.json", "date": "2026-05-29"})
     assert resp.status_code == 400
 
 
@@ -123,7 +120,7 @@ def test_run_timeout_returns_safe_error(monkeypatch: pytest.MonkeyPatch):
         "opspilot.api.services.pipeline.ThreadPoolExecutor",
         lambda *a, **k: _FakeExecutor(_timeout),
     )
-    resp = client.post("/run", json={"input_file": "sample_input.json", "date": "2026-05-29"})
+    resp = client.post("/api/v1/runs", json={"input_file": "sample_input.json", "date": "2026-05-29"})
     assert resp.status_code == 504
     payload = resp.json()
     assert payload["error"]["code"] == "pipeline_timeout"
@@ -137,7 +134,7 @@ def test_run_subprocess_failure_returns_safe_error(monkeypatch: pytest.MonkeyPat
         "opspilot.api.services.pipeline.ThreadPoolExecutor",
         lambda *a, **k: _FakeExecutor(_failed),
     )
-    resp = client.post("/run", json={"input_file": "sample_input.json", "date": "2026-05-29"})
+    resp = client.post("/api/v1/runs", json={"input_file": "sample_input.json", "date": "2026-05-29"})
     assert resp.status_code == 500
     payload = resp.json()
     assert payload["error"]["code"] == "pipeline_failed"
@@ -184,7 +181,7 @@ async def test_get_briefing(db_session: AsyncSession, tmp_path: Path):
     )
     await db_session.commit()
 
-    resp = client.get("/briefing")
+    resp = client.get("/api/v1/briefing")
     assert resp.status_code == 200
     assert "OpsPilot AI Daily Executive Briefing" in resp.text
 
@@ -219,7 +216,7 @@ async def test_get_triage(db_session: AsyncSession):
     )
     await db_session.commit()
 
-    resp = client.get("/triage")
+    resp = client.get("/api/v1/triage")
     assert resp.status_code == 200
     payload = resp.json()
     assert isinstance(payload, list)
@@ -231,7 +228,7 @@ async def test_get_triage(db_session: AsyncSession):
 
 
 def test_get_runs_returns_empty_list_when_history_missing():
-    resp = client.get("/runs")
+    resp = client.get("/api/v1/runs")
     assert resp.status_code == 200
     assert resp.json() == []
 
@@ -272,7 +269,7 @@ async def test_get_runs_returns_metadata_after_pipeline_run(db_session: AsyncSes
             },
         },
     )
-    resp = client.get("/runs")
+    resp = client.get("/api/v1/runs")
     assert resp.status_code == 200
     payload = resp.json()
     assert len(payload) == 1
@@ -297,7 +294,7 @@ async def test_get_runs_metadata_is_sanitized_and_safe(db_session: AsyncSession,
             "artifacts": {"triage_results": "triage_results.json"},
         },
     )
-    resp = client.get("/runs")
+    resp = client.get("/api/v1/runs")
     assert resp.status_code == 200
     item = resp.json()[0]
     assert "input_file" not in item
@@ -327,7 +324,7 @@ async def test_get_runs_metadata_allowlist_and_artifact_filtering(
             },
         },
     )
-    resp = client.get("/runs")
+    resp = client.get("/api/v1/runs")
     artifacts = resp.json()[0]["artifacts"]
     assert "triage_results" in artifacts
     assert "daily_briefing" not in artifacts  # space rejected
@@ -360,7 +357,7 @@ async def test_get_runs_sorted_newest_first(db_session: AsyncSession, tmp_path: 
             "artifacts": {},
         },
     )
-    resp = client.get("/runs")
+    resp = client.get("/api/v1/runs")
     ids = [item["run_id"] for item in resp.json()]
     assert ids[0] == "run-20260530-110000-001"
 
@@ -384,7 +381,7 @@ async def test_get_run_triage_returns_artifact_for_run(db_session: AsyncSession,
     await upsert_run_from_metadata(db_session, metadata, run_dir)
     await db_session.commit()
 
-    resp = client.get(f"/runs/{run_id}/triage")
+    resp = client.get(f"/api/v1/runs/{run_id}/triage")
     assert resp.status_code == 200
     assert resp.json()[0]["id"] == "WI-001"
 
@@ -408,7 +405,7 @@ async def test_get_run_briefing_returns_artifact_for_run(db_session: AsyncSessio
     await upsert_run_from_metadata(db_session, metadata, run_dir)
     await db_session.commit()
 
-    resp = client.get(f"/runs/{run_id}/briefing")
+    resp = client.get(f"/api/v1/runs/{run_id}/briefing")
     assert resp.status_code == 200
     assert "OpsPilot AI Daily Executive Briefing" in resp.text
 
@@ -429,7 +426,7 @@ async def test_get_run_metadata_for_specific_run(db_session: AsyncSession, tmp_p
             "artifacts": {},
         },
     )
-    resp = client.get(f"/runs/{run_id}")
+    resp = client.get(f"/api/v1/runs/{run_id}")
     assert resp.status_code == 200
     assert resp.json()["run_id"] == run_id
     assert resp.json()["item_count"] == 3
@@ -451,7 +448,7 @@ async def test_get_run_metadata_is_sanitized_and_safe(db_session: AsyncSession, 
             "artifacts": {},
         },
     )
-    resp = client.get(f"/runs/{run_id}")
+    resp = client.get(f"/api/v1/runs/{run_id}")
     assert "input_file" not in resp.json()
 
 
@@ -475,44 +472,44 @@ async def test_get_run_metadata_allowlist_and_artifact_filtering(
             },
         },
     )
-    artifacts = client.get(f"/runs/{run_id}").json()["artifacts"]
+    artifacts = client.get(f"/api/v1/runs/{run_id}").json()["artifacts"]
     assert "triage_results" in artifacts
     assert "daily_briefing" not in artifacts
 
 
 def test_get_run_unknown_id_returns_404():
-    resp = client.get("/runs/run-19990101-000000-000")
+    resp = client.get("/api/v1/runs/run-19990101-000000-000")
     assert resp.status_code == 404
 
 
 def test_get_run_metadata_rejects_path_traversal_like_id():
-    resp = client.get("/runs/..%2F..%2Fwindows%2Fsystem32")
+    resp = client.get("/api/v1/runs/..%2F..%2Fwindows%2Fsystem32")
     assert resp.status_code == 404
 
 
 def test_get_run_artifact_unknown_id_returns_404():
-    assert client.get("/runs/run-19990101-000000-000/triage").status_code == 404
-    assert client.get("/runs/run-19990101-000000-000/briefing").status_code == 404
+    assert client.get("/api/v1/runs/run-19990101-000000-000/triage").status_code == 404
+    assert client.get("/api/v1/runs/run-19990101-000000-000/briefing").status_code == 404
 
 
 def test_get_run_artifact_rejects_path_traversal_like_id():
-    assert client.get("/runs/..%2F..%2Fwindows%2Fsystem32/triage").status_code == 404
-    assert client.get("/runs/..%2F..%2Fwindows%2Fsystem32/briefing").status_code == 404
+    assert client.get("/api/v1/runs/..%2F..%2Fwindows%2Fsystem32/triage").status_code == 404
+    assert client.get("/api/v1/runs/..%2F..%2Fwindows%2Fsystem32/briefing").status_code == 404
 
 
 def test_settings_get_ok_patch_removed():
-    resp = client.get("/api/settings")
+    resp = client.get("/api/v1/settings")
     assert resp.status_code == 200
     body = resp.json()
     assert "provider" in body
     assert "api_key" not in body
-    patch = client.patch("/api/settings", json={"provider": "anthropic"})
+    patch = client.patch("/api/v1/settings", json={"provider": "anthropic"})
     assert patch.status_code in {404, 405, 422}
 
 
 def test_cors_preflight_allows_post_for_local_origin():
     resp = client.options(
-        "/run",
+        "/api/v1/runs",
         headers={
             "Origin": "http://127.0.0.1:5173",
             "Access-Control-Request-Method": "POST",
@@ -525,7 +522,7 @@ def test_cors_preflight_allows_post_for_local_origin():
 
 def test_cors_preflight_disallows_non_local_origin():
     resp = client.options(
-        "/run",
+        "/api/v1/runs",
         headers={
             "Origin": "https://evil.example",
             "Access-Control-Request-Method": "POST",
