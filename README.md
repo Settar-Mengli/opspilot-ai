@@ -7,7 +7,7 @@
 - [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history, baseline, locked plan
 - [ROADMAP.md](ROADMAP.md) — batches **B0–B7**
 - [docs/architecture.md](docs/architecture.md) — CURRENT vs TARGET
-- [docs/adr/](docs/adr/) — ADRs D-001–D-025
+- [docs/adr/](docs/adr/) — ADRs D-001–D-027
 
 Built with TypeScript, React, FastAPI, Postgres, and (today) Anthropic Claude with a rule-based fallback. **TARGET** default path moves to free-tier Gemini → Groq → Ollama → rules; Anthropic becomes prepaid-gated only.
 

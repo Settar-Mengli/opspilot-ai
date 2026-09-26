@@ -60,6 +60,13 @@ Every batch plan must show:
 - Validate relevant tests before closing a step.
 - **Before every commit:** run `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src/opspilot`, and `uv run pytest -q`. Never push a commit that fails them. Install hooks once with `uv run pre-commit install`.
 
+## UI safety net (D-026)
+
+- Visual baselines are **container-only** (`mcr.microsoft.com/playwright` pin; filenames end in `-linux`). Host visual runs are unsupported; host may run e2e/axe only. See [docs/runbooks/ui-tests.md](docs/runbooks/ui-tests.md).
+- Any **375** baseline change needs owner approval in the PR + visual sign-off.
+- Behavior-only FE changes must keep `maxDiffPixels: 0` at all viewports unless the commit names the U4/OD states being updated.
+- Contrast/focus-ring pixel fixes are separate ODs — do not auto-apply.
+
 ## Safe git
 
 - No destructive commands (`git reset --hard`, force-push to main) unless explicitly requested.

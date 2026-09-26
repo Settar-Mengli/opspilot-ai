@@ -284,3 +284,45 @@ In-place corrections to PART 3 on branch `b1/hermetic-foundation` before merge. 
 Owner rulings summary: **O1** sync-only DB (delete async ORM / `import_json_sync`); **O2** API runs persist Postgres only (no file writes; CLI `run --output` files only, no DB; X5 importer loads CLI output; D-025 revised); **O3** remove `api_key_preview`; **O4** gitleaks **v8.30.1** pinned binary + SHA256 `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` in CI (no third-party action) and pre-commit; **O5** setup-node on backend OpenAPI step; **O6** PEP 735 dependency-groups (Dependabot `uv` ecosystem retained — verified); **O7** pre-commit + AGENTS pre-push gates; **O8** Alembic `0002` index on `runs(finished_at)`; **O9** coverage from Linux CI TOTAL% then floor−2; **O10** `--randomly-seed=${{ github.run_id }}`; **O11** vitest envelope + Settings; **O12** FORCE_RULES warning + deploy must not set; **O13** UTF-8 mojibake purge; **O14** this note.
 
 **R7 process finding:** commit `6c7616a` failed CI on ruff **I001** (`persistence/db.py` import blank line). Mitigated going forward by **O7** (pre-commit + AGENTS: ruff/mypy/pytest before every commit; never push a red commit).
+## PART 4 — B1.5a UI safety net & hygiene — 2026-09-26
+
+Branch: `b1.5a/ui-safety-net` (Build complete; PR deferred to post-build audit). Base: `main@c5de149` (PR #2).
+
+### Correction (PART 3 status)
+
+PART 3 line stating “PR open” for B1 is **pre-merge**. B1 merged via PR #2 @ `c5de149` (2026-09-26). That status is superseded here; PART 3 body is not edited.
+
+### U1–U10 (D-026)
+
+| ID | Ruling recorded |
+|----|-----------------|
+| U1/U3/U6/U7 | ≥1280 three-pane in **B1.5b**; gear → Connections; Settings in rail; mobile footer Settings stays |
+| U2 | phone ≤768 locked except owner U4; tablet 769–1279 single column; wide = three-pane (B1.5b) |
+| U4/U5 | Mobile visual changes only with owner approval (U4 + Sample badges + C16 aliases) |
+| U8 | B1.5a = safety net + hygiene; B1.5b = desktop from `frontend/design-reference/` |
+| U9 | Baselines = pinned Playwright Linux image; `-linux` suffix; host visuals unsupported |
+| U10 | `index.css` split after safety net; proven 0-diff before overlay migrations |
+
+Fonts: committed Google WOFF2 + OFL under `frontend/e2e/fixtures/fonts/`; route interception in tests. Production `@import` unchanged. Screenshot settle forces monospace for Docker Desktop↔GHA determinism (runbook).
+
+### C13 skip
+
+Connections keyboard-activatable **skipped** — would change pixels; noted here per plan. Revisit in B1.5b if needed.
+
+### X8
+
+Panel lifecycle **started** in B1.5a (`useOverlay` / `PortalOverlay`; Notify→Ask migrated). Agent Ask chrome finishes on **B1.5b layout in B5**.
+
+### Backend (C21)
+
+- F-06: artifact path containment in `upsert_run_from_metadata`
+- D-04: `test_get_triage_includes_subject_or_title` keeps subject_or_title contract
+- B-04: `opspilot.api.main` deprecated; docs use `opspilot.api.app:app`
+
+### OD backlog (no OD-4)
+
+OD-4 folded into C16 (CSS token aliases). Remaining ODs (contrast/focus-ring pixel, self-host fonts OD-5, axe color-contrast waiver OD-6) stay out of B1.5a.
+
+### Docs
+
+D-026, D-027; ROADMAP B1.5a/b + order + X8; AGENTS UI gate; architecture CURRENT FE; CHANGELOG; adr/README (+ D-025 index).
