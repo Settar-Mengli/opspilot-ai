@@ -263,7 +263,7 @@ Branch: `b1/hermetic-foundation` (fix pass complete; PR open — operator merges
 | Q7 | OpenAPI-lite via `scripts/export_openapi.py` + `frontend/src/api/generated.ts` |
 | A7 | Node **24** (CI, `engines`, `.nvmrc`) |
 | A12 | **AI-05 lite:** `GET /api/v1/triage` returns `subject_or_title` from persisted WorkItem. Full confidence/evidence_refs stays B3 |
-| A3 | Coverage gate pending CI TOTAL% (O9); will set floor(CI%)−2 |
+| A3 | Coverage ratchet **fail-under = 72** (CI TOTAL 74.84% on run 36254640974; floor−2). Ratchet-only thereafter |
 
 ### Hermetic / X6
 

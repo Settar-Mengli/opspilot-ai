@@ -85,7 +85,7 @@ jobs:
       - name: Run backend test suite (random order + coverage)
         run: |
           echo "pytest-randomly seed=${{ github.run_id }}"
-          uv run pytest -q --randomly-seed=${{ github.run_id }} --cov=opspilot --cov-fail-under=67
+          uv run pytest -q --randomly-seed=${{ github.run_id }} --cov=opspilot --cov-fail-under=72
 
       - name: Set up Node.js (OpenAPI types)
         uses: actions/setup-node@v4
