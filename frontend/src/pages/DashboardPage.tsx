@@ -24,14 +24,21 @@ export function DashboardPage({ userName, assistantName, onAsk, onEveningClick }
   const navigate = useNavigate()
   const [records, setRecords] = useState<TriageRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [prioritiesOpen, setPrioritiesOpen] = useState(false)
   const [weekOpen, setWeekOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
+    setError(null)
     getTriage()
       .then(t => { if (!cancelled) setRecords(t) })
-      .catch(e => { if (!cancelled) console.error(e) })
+      .catch(e => {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : 'Something went wrong.')
+          setRecords([])
+        }
+      })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [])
@@ -86,6 +93,25 @@ export function DashboardPage({ userName, assistantName, onAsk, onEveningClick }
         dayShapeLine={dayShapeLine}
         credibilityLine={credibilityLine}
       />
+
+      {error && (
+        <div className="insights-error" role="alert">
+          {error}
+          <button
+            className="ni-refresh"
+            onClick={() => {
+              setLoading(true)
+              setError(null)
+              getTriage()
+                .then(setRecords)
+                .catch(e => setError(e instanceof Error ? e.message : 'Something went wrong.'))
+                .finally(() => setLoading(false))
+            }}
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
       <p className="dash-section-header">Where would you like to start?</p>
 
