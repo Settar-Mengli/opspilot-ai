@@ -1,3 +1,5 @@
+import { useOverlay } from '../hooks/useOverlay'
+
 interface Props {
   open: boolean
   listening: boolean
@@ -8,6 +10,7 @@ interface Props {
 }
 
 export function VoiceOverlay({ open, listening, transcript, interimTranscript, error, onClose }: Props) {
+  useOverlay({ open, onClose })
   const displayText = transcript + interimTranscript
   const showPlaceholder = !displayText.trim() && !error
 
