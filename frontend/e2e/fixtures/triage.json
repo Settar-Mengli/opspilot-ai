@@ -1,0 +1,32 @@
+[
+  {
+    "id": "WI-013",
+    "subject_or_title": "Checkout errors on payment confirm",
+    "urgency": "high",
+    "urgency_reason": "Customer-facing checkout failures.",
+    "category": "incident",
+    "category_reason": "Production error reports.",
+    "sentiment": "negative",
+    "sentiment_reason": "Frustrated customers."
+  },
+  {
+    "id": "WI-021",
+    "subject_or_title": "Q3 close schedule review",
+    "urgency": "medium",
+    "urgency_reason": "Due Friday.",
+    "category": "admin",
+    "category_reason": "Planning thread.",
+    "sentiment": "neutral",
+    "sentiment_reason": "Routine coordination."
+  },
+  {
+    "id": "WI-007",
+    "subject_or_title": "Vendor invoice follow-up",
+    "urgency": "low",
+    "urgency_reason": "Can wait until next week.",
+    "category": "follow_up",
+    "category_reason": "Pending reply.",
+    "sentiment": "neutral",
+    "sentiment_reason": "No urgency signal."
+  }
+]
