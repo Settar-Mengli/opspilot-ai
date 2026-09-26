@@ -58,7 +58,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B1 — Hermetic foundation, Postgres, SEC gate & /api/v1 reshape (M1)
 
-- **Status:** Build complete on `b1/hermetic-foundation` (2026-09-26). Awaiting Ask audit → fix-pass PR → operator merge.
+- **Status:** Fix pass complete on `b1/hermetic-foundation` (2026-09-26). PR open — operator merges after CI green.
 - **Goal:** Honest CI, Postgres persistence (local/CI Compose; Neon deferred), safe settings, versioned API with one error envelope.
 - **Workstream M1** — F1a + V1–V7 critical + D-008/D-009 + X5 + X6 + X7 + O3
   - **Scope:**

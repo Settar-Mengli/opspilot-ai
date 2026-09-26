@@ -19,7 +19,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs
 
 ## CURRENT (B1 — hermetic foundation)
 
-Verified on `b1/hermetic-foundation`: hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, `/api/v1` with envelope, in-process pipeline, Settings GET-only, FE on `/api/v1`, coverage fail-under 67, Node 24 / Python 3.13 / uv.
+Verified on `b1/hermetic-foundation`: hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, `/api/v1` with envelope, in-process API pipeline (Postgres-only persist), Settings GET-only (`provider`/`model`/`api_key_set` — no key preview), FE on `/api/v1`, coverage fail-under pending O9 ratchet, Node 24 / Python 3.13 / uv.
 
 ### Endpoints (CURRENT) — `/api/v1`
 
@@ -50,13 +50,15 @@ Notable: **no** `PATCH` settings. Pipeline runs **in-process** (no CLI subproces
 | `src/opspilot/pipeline/` | Daily ops orchestration (`run_daily_ops.py`) |
 | `src/opspilot/adapters/` | rule_based, claude, conversation, evening, insights, briefing, factory, base |
 | `frontend/src/api/` | `/api/v1` client only |
-| `data/raw/`, `data/output/`, `data/history/` | Sample + pipeline artifacts (DB is API SoT) |
+| `data/raw/` | Sample JSON inputs (API/CLI read) |
+| `data/output/`, `data/history/` | CLI `--output` export only (not API SoT) |
 
 ### Data flow (CURRENT)
 
 ```
-sample_input.json → in-process pipeline → data/output + data/history
-                                      ↘ Postgres (runs, artifacts, triage, work_items)
+API: sample_input.json → in-process pipeline → Postgres only (runs, artifacts, triage, work_items)
+CLI: run --output DIR → files under DIR only (no Postgres)
+X5:  import_json (sample / CLI export / history) → Postgres (idempotent)
 FE → /api/v1 → Postgres
 ```
 

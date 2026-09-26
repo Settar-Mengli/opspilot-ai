@@ -9,7 +9,7 @@ and this project follows Semantic Versioning principles for release tags.
 
 ### Added
 
-- **B1 hermetic foundation:** `OPSPILOT_FORCE_RULES` + pytest-socket; uv lock / Python 3.13; Compose+CI Postgres; SQLAlchemy/Alembic; X5 importer; `/api/v1` + error envelope; AI-05 lite `subject_or_title` on triage; FE `/api/v1` only + TS strict + vitest; gitleaks + Dependabot; coverage fail-under **67**; Node 24; PART 3; D-025.
+- **B1 hermetic foundation:** `OPSPILOT_FORCE_RULES` + pytest-socket; uv lock / Python 3.13 / PEP 735; Compose+CI Postgres; **sync** SQLAlchemy/Alembic (`0002` `runs.finished_at` index); X5 importer; `/api/v1` Postgres-only runs (CLI `--output` files only); error envelope; AI-05 lite `subject_or_title`; Settings without `api_key_preview`; FE `/api/v1` + TS strict + vitest; gitleaks **v8.30.1** + Dependabot; pre-commit; coverage fail-under pending O9 CI TOTAL%; Node 24; PART 3 + D-010/D-025 revised.
 - **B0 docs lock + fix pass:** session history, audit corpus, master record PART 0–2, ADRs D-001–D-024, architecture CURRENT/TARGET, ROADMAP B0–B7, AGENTS plan gate, runbooks (local-dev, zero-spend, free-tier, GHA morning, OAuth re-auth), glossary updates.
 - Session 3 (already on main): provider seam; frontend settings; SettingsPage lint fix.
 
