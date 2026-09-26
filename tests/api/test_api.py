@@ -77,12 +77,37 @@ def test_run_subprocess_failure_returns_safe_error(monkeypatch: pytest.MonkeyPat
     assert payload["detail"]["message"] == "Pipeline execution failed."
     assert "private detail" not in str(payload)
 
-def test_get_briefing():
+def test_get_briefing(isolated_run_dirs: Path):
+    output_dir = isolated_run_dirs / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "daily_briefing.txt").write_text(
+        "OpsPilot AI Daily Executive Briefing - 2026-05-29\n\nTotal Work Items: 1\n",
+        encoding="utf-8",
+    )
     resp = client.get("/briefing")
     assert resp.status_code == 200
     assert "OpsPilot AI Daily Executive Briefing" in resp.text
 
-def test_get_triage():
+
+def test_get_triage(isolated_run_dirs: Path):
+    output_dir = isolated_run_dirs / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "triage_results.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "WI-001",
+                    "urgency": "high",
+                    "urgency_reason": "fixture",
+                    "category": "incident",
+                    "category_reason": "fixture",
+                    "sentiment": "negative",
+                    "sentiment_reason": "fixture",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
     resp = client.get("/triage")
     assert resp.status_code == 200
     payload = resp.json()

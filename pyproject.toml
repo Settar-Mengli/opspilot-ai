@@ -19,7 +19,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
 	"pytest>=8.0",
-	"httpx"
+	"httpx",
+	"pytest-socket>=0.7.0",
 ]
 
 [tool.setuptools]
@@ -32,3 +33,4 @@ include = ["opspilot*"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+addopts = "--disable-socket --allow-hosts=127.0.0.1,localhost"
