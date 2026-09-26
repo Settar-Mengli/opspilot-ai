@@ -15,9 +15,7 @@ def configure_logging(level: int = logging.INFO) -> None:
 
 def log_event(logger: logging.Logger, event: str, **fields: Any) -> None:
     if fields:
-        serialized_fields = " ".join(
-            f"{key}={fields[key]}" for key in sorted(fields)
-        )
+        serialized_fields = " ".join(f"{key}={fields[key]}" for key in sorted(fields))
         logger.info("%s | %s", event, serialized_fields)
         return
 

@@ -9,6 +9,7 @@
 5. Quotas = VERIFY AT DECISION TIME (do not invent RPM/TPM).
 6. **Never print secrets** (`.env` values, tokens, keys).
 7. **X4:** Free tiers may train on prompts — minimize sensitive content; fictional data only.
+8. **`OPSPILOT_FORCE_RULES`:** tests/CI only. Never set in deploy; when set, factory logs a warning and forces the rule-based adapter.
 
 ## Operator checklist
 

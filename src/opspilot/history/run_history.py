@@ -1,22 +1,26 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from pathlib import Path
 import re
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
-from opspilot.utils.file_io import ensure_directory, read_json_file, write_json_file, write_text_file
-
+from opspilot.utils.file_io import (
+    ensure_directory,
+    read_json_file,
+    write_json_file,
+    write_text_file,
+)
 
 RUN_ID_PATTERN = re.compile(r"^run-\d{8}-\d{6}-\d{3}(?:-\d{2})?$")
 
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def to_iso_utc(value: datetime) -> str:
-    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 def generate_run_id(started_at: datetime) -> str:

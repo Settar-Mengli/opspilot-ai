@@ -1,7 +1,7 @@
 # OpsPilot Master Record
 
-**Locked:** 2026-09-26  
-**Baseline HEAD:** `41a867828c61815b50579114ec127cb80b33c3ff`  
+**Locked:** 2026-09-26
+**Baseline HEAD:** `41a867828c61815b50579114ec127cb80b33c3ff`
 **Batch IDs:** B0–B7 (former M0–M10 nested as workstreams)
 
 ---
@@ -144,8 +144,8 @@ Full tables live in the audit files. Critical/high IDs to track:
 
 ### Capability-fit summary
 
-**CORE / CORE-LITE:** model APIs + Ollama, metering/rate limits, hand-rolled gateway, structured outputs, SSE, injection-lite, tracing hooks, CI evals.  
-**SKIP near-term:** LangChain/LangGraph/CrewAI, vector DB, LoRA, LiteLLM, Celery, visitor BYOK.  
+**CORE / CORE-LITE:** model APIs + Ollama, metering/rate limits, hand-rolled gateway, structured outputs, SSE, injection-lite, tracing hooks, CI evals.
+**SKIP near-term:** LangChain/LangGraph/CrewAI, vector DB, LoRA, LiteLLM, Celery, visitor BYOK.
 **Default hosted path (TARGET):** Gemini → Groq → Ollama → rules. Anthropic = prepaid gated side channel only (see D-023).
 
 ---
@@ -245,3 +245,42 @@ Full scope/exit criteria: [`ROADMAP.md`](ROADMAP.md).
 ### Revision note (B0 fix pass)
 
 In-place corrections to PART 0–2 on branch `b0/docs-architecture-lock` before merge. Fix IDs applied: **F1–F19** (audit) as amended by owner rulings **O1–O7**. Owner overrode the principal review’s **P10 REJECT** with **DEFER**. D9 locked as one XL batch; D12 = MIT/Settar Mengli; Anthropic visitor rule under D2/D11; B6 morning job in-runner (D-011); package layout D-024.
+
+## PART 3 — B1 Hermetic Foundation — 2026-09-26
+
+Branch: `b1/hermetic-foundation` (fix pass complete; PR open — operator merges after CI green).
+
+### Owner decisions recorded this batch
+
+| ID | Decision |
+|----|----------|
+| Q1 | Local/CI Postgres = Docker Compose / GHA `postgres:16`; Neon hosted deferred (B4/B7) |
+| Q2 | Python **3.13** (`requires-python >=3.13,<3.14`) |
+| Q3 | Lockfile = **uv** (`uv.lock`) |
+| Q4 | SQLAlchemy 2 **sync** + `psycopg` (O1; no async ORM in-tree) |
+| Q5 | Truncate-managed `opspilot_test` + throwaway `opspilot_alembic_rt` for Alembic RT |
+| Q6 / D-025 | DB SoT; CLI `--output` files only (no DB); X5 importer loads files into DB; API runs persist Postgres only |
+| Q7 | OpenAPI-lite via `scripts/export_openapi.py` + `frontend/src/api/generated.ts` |
+| A7 | Node **24** (CI, `engines`, `.nvmrc`) |
+| A12 | **AI-05 lite:** `GET /api/v1/triage` returns `subject_or_title` from persisted WorkItem. Full confidence/evidence_refs stays B3 |
+| A3 | Coverage ratchet **fail-under = 72** (CI TOTAL 74.84% on run 36254640974; floor−2). Ratchet-only thereafter |
+
+### Hermetic / X6
+
+- `pytest-socket` + `OPSPILOT_FORCE_RULES` (default off; tests set it; factory honors it; warning when set).
+- CI permanently sets fake `ANTHROPIC_API_KEY` / `OPSPILOT_AI_API_KEY`.
+- Anthropic client construction guarded in tests.
+
+### Notes / deviations
+
+- Neon not provisioned in B1 (owner). D-008 addendum: B1 local/CI Compose/service; Neon = later hosted SoT.
+- mypy: listed adapter overrides + `ignore_errors` on remaining pre-B1 packages so new `api`/`persistence`/`jobs`/`domain` stay strict without blocking on legacy typing debt (budget for `# type: ignore` still =10).
+- **Windows live-smoke:** single sync SQLAlchemy `Session` path (D-010 revised); no event-loop policy hacks.
+
+### Revision note (B1 fix pass)
+
+In-place corrections to PART 3 on branch `b1/hermetic-foundation` before merge. Fix IDs applied: **F1–F14** as amended by owner rulings **O1–O14**.
+
+Owner rulings summary: **O1** sync-only DB (delete async ORM / `import_json_sync`); **O2** API runs persist Postgres only (no file writes; CLI `run --output` files only, no DB; X5 importer loads CLI output; D-025 revised); **O3** remove `api_key_preview`; **O4** gitleaks **v8.30.1** pinned binary + SHA256 `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` in CI (no third-party action) and pre-commit; **O5** setup-node on backend OpenAPI step; **O6** PEP 735 dependency-groups (Dependabot `uv` ecosystem retained — verified); **O7** pre-commit + AGENTS pre-push gates; **O8** Alembic `0002` index on `runs(finished_at)`; **O9** coverage from Linux CI TOTAL% then floor−2; **O10** `--randomly-seed=${{ github.run_id }}`; **O11** vitest envelope + Settings; **O12** FORCE_RULES warning + deploy must not set; **O13** UTF-8 mojibake purge; **O14** this note.
+
+**R7 process finding:** commit `6c7616a` failed CI on ruff **I001** (`persistence/db.py` import blank line). Mitigated going forward by **O7** (pre-commit + AGENTS: ruff/mypy/pytest before every commit; never push a red commit).

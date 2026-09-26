@@ -1,6 +1,5 @@
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from typing import Any
-
 
 REQUIRED_INPUT_FIELDS = [
     "id",
@@ -72,20 +71,14 @@ def validate_raw_item(item: dict[str, Any], idx: int) -> None:
     missing_fields = [key for key in REQUIRED_INPUT_FIELDS if key not in item]
     if missing_fields:
         missing = ", ".join(missing_fields)
-        raise InputValidationError(
-            f"Item {item.get('id', idx)} missing required fields: {missing}"
-        )
+        raise InputValidationError(f"Item {item.get('id', idx)} missing required fields: {missing}")
 
     for field in REQUIRED_INPUT_FIELDS:
         if not _is_non_empty_string(item.get(field)):
-            raise InputValidationError(
-                f"Item {item.get('id', idx)} field '{field}' must be a non-empty string"
-            )
+            raise InputValidationError(f"Item {item.get('id', idx)} field '{field}' must be a non-empty string")
 
     if "tags" in item and not isinstance(item["tags"], list):
-        raise InputValidationError(
-            f"Item {item.get('id', idx)} field 'tags' must be an array when provided"
-        )
+        raise InputValidationError(f"Item {item.get('id', idx)} field 'tags' must be an array when provided")
 
 
 def to_dict(item: Any) -> dict[str, Any]:

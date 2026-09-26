@@ -1,6 +1,5 @@
 from opspilot.models.schemas import WorkItem
 
-
 VALID_SOURCE_TYPES = {"email", "task", "support_request"}
 
 

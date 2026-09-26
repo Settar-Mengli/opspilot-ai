@@ -6,6 +6,7 @@ export type Sentiment = 'negative' | 'neutral' | 'positive'
 
 export interface TriageRecord {
   id: string
+  subject_or_title?: string
   urgency: Urgency
   urgency_reason: string
   category: Category
@@ -106,17 +107,10 @@ export interface Capability {
   description: string
 }
 
-export type AIProvider = 'anthropic' | 'openai'
+export type AIProvider = 'anthropic'
 
 export interface ApiSettings {
   provider: string
   model: string
   api_key_set: boolean
-  api_key_preview: string | null
-}
-
-export interface PatchApiSettingsRequest {
-  provider?: AIProvider
-  model?: string
-  api_key?: string
 }

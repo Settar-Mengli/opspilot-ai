@@ -1,0 +1,11 @@
+[
+  {
+    "id": "WI-001",
+    "urgency": "high",
+    "urgency_reason": "fixture",
+    "category": "incident",
+    "category_reason": "fixture",
+    "sentiment": "negative",
+    "sentiment_reason": "fixture"
+  }
+]

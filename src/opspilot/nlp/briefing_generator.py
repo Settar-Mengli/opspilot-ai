@@ -8,7 +8,6 @@ from opspilot.history.run_history import (
 )
 from opspilot.models.schemas import ActionItem, TriageRecord, WorkItem
 
-
 PRIORITY_ORDER: list[tuple[str, str]] = [
     ("critical", "Critical"),
     ("high", "High"),
@@ -103,9 +102,7 @@ def _render_since_last_run_section(
     for priority_key, label in PRIORITY_ORDER:
         previous = previous_counts.get(priority_key, 0)
         current = current_counts.get(priority_key, 0)
-        section.append(
-            f"| {label} | {previous} | {current} | {_format_priority_change(previous, current)} |"
-        )
+        section.append(f"| {label} | {previous} | {current} | {_format_priority_change(previous, current)} |")
 
     section.extend(["", "---"])
     return section
@@ -171,9 +168,7 @@ def _collect_recent_high_risk_series(
     if not current_run_id or runs_root is None:
         return []
 
-    series: list[tuple[str, int]] = [
-        (current_run_id, _high_risk_count_from_triage(current_triage_records))
-    ]
+    series: list[tuple[str, int]] = [(current_run_id, _high_risk_count_from_triage(current_triage_records))]
 
     metadata = list_run_metadata(runs_root)
     for item in metadata:

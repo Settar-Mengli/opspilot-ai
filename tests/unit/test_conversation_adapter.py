@@ -2,15 +2,10 @@ import importlib
 
 import pytest
 
-
 MISSING_KEY_MESSAGE = (
-    "I need an Anthropic API key to answer questions. "
-    "Set ANTHROPIC_API_KEY in your environment and I'll be ready."
+    "I need an Anthropic API key to answer questions. Set ANTHROPIC_API_KEY in your environment and I'll be ready."
 )
-UNAVAILABLE_MESSAGE = (
-    "I ran into an issue answering that. The API may be unavailable. "
-    "Please try again in a moment."
-)
+UNAVAILABLE_MESSAGE = "I ran into an issue answering that. The API may be unavailable. Please try again in a moment."
 
 
 def _reload_with_env(monkeypatch: pytest.MonkeyPatch, **env: str | None):
@@ -27,8 +22,8 @@ def _reload_with_env(monkeypatch: pytest.MonkeyPatch, **env: str | None):
             continue
         monkeypatch.setenv(key, value)
 
-    import opspilot.config.settings as settings_module
     import opspilot.adapters.conversation_adapter as conversation_module
+    import opspilot.config.settings as settings_module
 
     settings_module = importlib.reload(settings_module)
     conversation_module = importlib.reload(conversation_module)

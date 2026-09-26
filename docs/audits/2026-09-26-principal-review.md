@@ -1,8 +1,8 @@
 # OpsPilot AI — Principal Review: Target Architecture, Docs System & Roadmap
 
-**Review date:** 2026-09-26  
-**Mode:** Ask / read-only  
-**HEAD:** `41a867828c61815b50579114ec127cb80b33c3ff` · `main` · clean — VERIFIED  
+**Review date:** 2026-09-26
+**Mode:** Ask / read-only
+**HEAD:** `41a867828c61815b50579114ec127cb80b33c3ff` · `main` · clean — VERIFIED
 **Purpose:** Lock the plan that M0 will record. Challenge weak scope; prefer large batches a solo engineer can finish.
 
 ---
@@ -223,7 +223,7 @@ After A2 has stable teacher metrics. Free Kaggle/Colab only. Not in spine.
 
 #### F1. Engineering fixes — **AGREE**
 
-In-process pipeline; async where I/O-bound; persistence; env-only keys; hermetic tests; `__init__.py`; lockfile; CI (ruff, mypy, coverage, vitest, gitleaks, Dependabot); react-router; TS strict; fix V6.  
+In-process pipeline; async where I/O-bound; persistence; env-only keys; hermetic tests; `__init__.py`; lockfile; CI (ruff, mypy, coverage, vitest, gitleaks, Dependabot); react-router; TS strict; fix V6.
 **Effort:** **XL** as one mega-batch — consider split **F1a hermetic/security** then **F1b quality gates** if needed, still “large batches.”
 
 #### F2. Deploy — **AGREE (MODIFY)**
@@ -236,7 +236,7 @@ In-process pipeline; async where I/O-bound; persistence; env-only keys; hermetic
 
 #### F3. Records & docs — **AGREE** — **M0**
 
-Master record + ADRs + architecture + README metrics placeholder.  
+Master record + ADRs + architecture + README metrics placeholder.
 **Effort:** **M–L**.
 
 ---
@@ -608,7 +608,7 @@ PROGRESS.md                   # RETIRE → pointer to master record “Current�
 
 ### 4.2 Master record
 
-**File:** `OPSPILOT-MASTER-RECORD.md`  
+**File:** `OPSPILOT-MASTER-RECORD.md`
 **Rules:** append-only; one `## PART N — Title — YYYY-MM-DD` per session; never rewrite prior PARTs (add corrigenda PART instead).
 
 ### 4.3 ADR format & migration
@@ -643,35 +643,35 @@ Migrate `docs/decisions.md` D-001…D-007 → `docs/adr/D-001-*.md` (content cop
 
 ### 4.5 AGENTS.md rewrite outline
 
-1. Role & zero-spend / fictional-data / no-Anthropic-in-tests rules  
-2. Hermetic tests mandatory; fail if real network LLM detected in unit/api tests  
-3. Branching: one branch per milestone from updated `main`; agent commits & pushes; **never merges**  
-4. Cadence: Ask audit → plan → build → Ask audit → fix pass  
-5. Live smoke before PR  
-6. Docs update every milestone (master PART + ADR + roadmap checkboxes)  
-7. Security: env-only secrets; no key in PATCH; DEMO_MODE  
-8. Scope discipline: no items from CUT LIST without owner decision  
+1. Role & zero-spend / fictional-data / no-Anthropic-in-tests rules
+2. Hermetic tests mandatory; fail if real network LLM detected in unit/api tests
+3. Branching: one branch per milestone from updated `main`; agent commits & pushes; **never merges**
+4. Cadence: Ask audit → plan → build → Ask audit → fix pass
+5. Live smoke before PR
+6. Docs update every milestone (master PART + ADR + roadmap checkboxes)
+7. Security: env-only secrets; no key in PATCH; DEMO_MODE
+8. Scope discipline: no items from CUT LIST without owner decision
 
 ### 4.6 PART outlines (headings only)
 
-**PART 0 — Sessions 1–3 history**  
-- Provenance of claims  
-- Session 1 / 2 / 3 summaries  
-- Claim ledger CONFIRMED/REFUTED  
-- Open items at 41a8678  
+**PART 0 — Sessions 1–3 history**
+- Provenance of claims
+- Session 1 / 2 / 3 summaries
+- Claim ledger CONFIRMED/REFUTED
+- Open items at 41a8678
 
-**PART 1 — Baseline audit + verified findings**  
-- Executive verdict  
-- V1–V7 confirmation  
-- Finding ID index (SEC/AI/…)  
-- Capability-fit summary  
+**PART 1 — Baseline audit + verified findings**
+- Executive verdict
+- V1–V7 confirmation
+- Finding ID index (SEC/AI/…)
+- Capability-fit summary
 
-**PART 2 — Locked target architecture + roadmap**  
-- Cut list  
-- ADRs D-008+ accepted  
-- Package layout & domain model  
-- Milestone batches M0…Mn with exit criteria  
-- Owner decisions log  
+**PART 2 — Locked target architecture + roadmap**
+- Cut list
+- ADRs D-008+ accepted
+- Package layout & domain model
+- Milestone batches M0…Mn with exit criteria
+- Owner decisions log
 
 ---
 
@@ -686,77 +686,77 @@ Proposed: `F3 → F1 → A1 → A2 → P1 → P2 → A3 → P3 → P4 → A4 →
 **Locked order:**
 
 ### M0 — Documentation & architecture lock — **F3**
-- **Scope:** Master record PART 0–2, ADR stubs, architecture rewrite, AGENTS rewrite, roadmap file, doc retire/merge  
-- **Exit:** Owner accepts PART 2; CUT LIST frozen; no code required  
-- **Size:** M–L  
+- **Scope:** Master record PART 0–2, ADR stubs, architecture rewrite, AGENTS rewrite, roadmap file, doc retire/merge
+- **Exit:** Owner accepts PART 2; CUT LIST frozen; no code required
+- **Size:** M–L
 - **Metric:** “Architecture & roadmap locked in-repo”
 
 ### M1 — Hermetic foundation & SEC gate — **F1a + V1–V7 critical**
-- **Scope:** In-process pipeline; `__init__.py`; env-only settings (no key PATCH); hermetic tests (fake LLM, tmp dirs); Anthropic-guard in tests; fix V6; uv/pip lockfile; ruff+mypy+coverage gates started  
-- **Exit:** `pytest` alone green; `test_get_triage` isolated; **zero** real LLM calls in default suite; gitleaks; Dependabot  
-- **Size:** XL  
+- **Scope:** In-process pipeline; `__init__.py`; env-only settings (no key PATCH); hermetic tests (fake LLM, tmp dirs); Anthropic-guard in tests; fix V6; uv/pip lockfile; ruff+mypy+coverage gates started
+- **Exit:** `pytest` alone green; `test_get_triage` isolated; **zero** real LLM calls in default suite; gitleaks; Dependabot
+- **Size:** XL
 - **Metric:** “Hermetic CI; $0 test runs”
 
 ### M2 — LLM gateway + adapter migration — **A1 + A4 hooks**
-- **Scope:** Gateway; Gemini/Groq/Ollama; migrate 4 adapters; structured outputs; prompt versions; LlmCall traces  
-- **Exit:** Fake-provider unit tests; live smoke on Gemini **or** Ollama; Anthropic optional path untested in CI  
-- **Size:** XL  
+- **Scope:** Gateway; Gemini/Groq/Ollama; migrate 4 adapters; structured outputs; prompt versions; LlmCall traces
+- **Exit:** Fake-provider unit tests; live smoke on Gemini **or** Ollama; Anthropic optional path untested in CI
+- **Size:** XL
 - **Metric:** “Multi-provider gateway with failover”
 
 ### M3 — Eval platform — **A2 + P8 phase1 lite**
-- **Scope:** Labeled fictional corpus; F1/confusion; citation checks; CI secret-free lane; results doc  
-- **Exit:** CI gate fails on triage regression beyond threshold (set conservatively)  
-- **Size:** XL  
+- **Scope:** Labeled fictional corpus; F1/confusion; citation checks; CI secret-free lane; results doc
+- **Exit:** CI gate fails on triage regression beyond threshold (set conservatively)
+- **Size:** XL
 - **Metric:** “Triage F1 = X on golden set”
 
 ### M4 — Injection defense — **A3 lite**
-- **Scope:** Delimiters; red-team suite; ASR tracked in CI  
-- **Exit:** Known attack fixtures fail closed  
-- **Size:** L  
+- **Scope:** Delimiters; red-team suite; ASR tracked in CI
+- **Exit:** Known attack fixtures fail closed
+- **Size:** L
 - **Metric:** “Red-team ASR tracked in CI”
 
 ### M5 — Demo Google inbox/calendar — **P1 + X1 + D-016**
-- **Scope:** OAuth Testing mode; sync; replace JSON default; WeekPanel from calendar; DEMO_MODE  
-- **Exit:** Live smoke on demo account; visitors never OAuth mail  
-- **Size:** XL  
+- **Scope:** OAuth Testing mode; sync; replace JSON default; WeekPanel from calendar; DEMO_MODE
+- **Exit:** Live smoke on demo account; visitors never OAuth mail
+- **Size:** XL
 - **Metric:** “Live fictional inbox demo”
 
 ### M6 — Agentic Ask + SSE — **P2**
-- **Scope:** Tool loop; multi-turn caps; SSE; read-only tools  
-- **Exit:** Smoke: ask → tool → grounded answer; quota budget enforced  
-- **Size:** XL  
+- **Scope:** Tool loop; multi-turn caps; SSE; read-only tools
+- **Exit:** Smoke: ask → tool → grounded answer; quota budget enforced
+- **Size:** XL
 - **Metric:** “Tool-using Ask with streaming”
 
 ### M7 — Approve & send — **P3 + X3**
-- **Scope:** Draft UI; approval; send via Gmail; audit row  
-- **Exit:** Cannot send without approval; DEMO visitors blocked  
-- **Size:** L  
+- **Scope:** Draft UI; approval; send via Gmail; audit row
+- **Exit:** Cannot send without approval; DEMO visitors blocked
+- **Size:** L
 - **Metric:** “HITL send path”
 
 ### M8 — Morning run + Telegram — **P4 + P11-telegram + X2**
-- **Scope:** GHA cron; morning triage/brief; Telegram notify  
-- **Exit:** Cron smoke; HMAC required  
-- **Size:** L  
+- **Scope:** GHA cron; morning triage/brief; Telegram notify
+- **Exit:** Cron smoke; HMAC required
+- **Size:** L
 - **Metric:** “Scheduled morning brief”
 
 ### M9 — Preferences → evals — **P5 lite**
-- **Scope:** Correction UI; Preference store; promote to dataset  
-- **Exit:** One correction appears in eval dataset path  
-- **Size:** L  
+- **Scope:** Correction UI; Preference store; promote to dataset
+- **Exit:** One correction appears in eval dataset path
+- **Size:** L
 - **Metric:** “Human feedback → eval cases”
 
 ### M10 — Public deploy — **F2**
-- **Scope:** Docker; Pages+Render+Neon; rate limits; retention; README GIF/metrics  
-- **Exit:** Public URL; sleep-tolerant; no custom domain  
-- **Size:** XL  
+- **Scope:** Docker; Pages+Render+Neon; rate limits; retention; README GIF/metrics
+- **Exit:** Public URL; sleep-tolerant; no custom domain
+- **Size:** XL
 - **Metric:** “Public free-tier demo URL”
 
 ### Optional later (not locked)
-- M11: P9 FTS → semantic  
-- M12: P6 commitments  
-- M13: P7 meeting prep  
-- M14: Phoenix UI  
-- M15: A5 distill  
+- M11: P9 FTS → semantic
+- M12: P6 commitments
+- M13: P7 meeting prep
+- M14: Phoenix UI
+- M15: A5 distill
 
 **FE vitest + panel lifecycle + TS strict + react-router:** fold into **M1** (client sanitize/H-1 already exists) and **M6** (SSE AskPanel).
 
@@ -806,9 +806,9 @@ HEAD `41a867828c61815b50579114ec127cb80b33c3ff`, branch `main`, clean.
 
 ### 5. Warnings / concerns
 
-1. **npm audit** not re-run — accept V7 pending CI gate.  
-2. **Exact free-tier quotas** change — re-verify at M2/M10 decision time.  
-3. **Gmail restricted scopes + CASA**: staying in Testing with demo accounts is the correct zero-spend escape; publishing “anyone connects Gmail” would break the plan.  
-4. Files not fully re-read: all FE pages, full `test_api.py` tail, Alembic-not-present confirmed by absence.  
-5. Prompt claim “51 pytest pass” — trusted from owner Linux clone; not re-run here.  
+1. **npm audit** not re-run — accept V7 pending CI gate.
+2. **Exact free-tier quotas** change — re-verify at M2/M10 decision time.
+3. **Gmail restricted scopes + CASA**: staying in Testing with demo accounts is the correct zero-spend escape; publishing “anyone connects Gmail” would break the plan.
+4. Files not fully re-read: all FE pages, full `test_api.py` tail, Alembic-not-present confirmed by absence.
+5. Prompt claim “51 pytest pass” — trusted from owner Linux clone; not re-run here.
 6. **Weakest part of the plan before this review:** scheduling A3 after P2 and A4 after P4, and treating P6–P11 as if they fit one solo spine — addressed via CUT LIST + reordered milestones.

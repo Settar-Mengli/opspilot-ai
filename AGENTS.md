@@ -58,6 +58,7 @@ Every batch plan must show:
 - Behavior changes need tests or a written deferral reason.
 - Prefer deterministic tests over flaky heuristics.
 - Validate relevant tests before closing a step.
+- **Before every commit:** run `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src/opspilot`, and `uv run pytest -q`. Never push a commit that fails them. Install hooks once with `uv run pre-commit install`.
 
 ## Safe git
 

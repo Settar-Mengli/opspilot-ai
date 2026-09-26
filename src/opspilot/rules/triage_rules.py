@@ -1,6 +1,5 @@
 from opspilot.models.schemas import TriageRecord, WorkItem
 
-
 URGENCY_LABELS = {"low", "medium", "high", "critical"}
 CATEGORY_LABELS = {"incident", "request", "admin", "follow_up", "other"}
 SENTIMENT_LABELS = {"negative", "neutral", "positive"}

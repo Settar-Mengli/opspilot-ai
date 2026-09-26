@@ -1,9 +1,8 @@
 import json
-from pathlib import Path
 import re
+from pathlib import Path
 
 from opspilot.pipeline.run_daily_ops import run_daily_ops
-
 
 FIXTURE_PATH = Path("tests/fixtures/sample_input.json")
 

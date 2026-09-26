@@ -1,5 +1,5 @@
 """AI-generated executive briefing using Claude."""
-import json
+
 import logging
 import os
 
@@ -27,8 +27,16 @@ def generate_ai_briefing(
         sentiment_counts = {"negative": 0, "neutral": 0, "positive": 0}
 
         for record in triage_records:
-            urg = getattr(record, "urgency", None) or record.get("urgency", "low") if isinstance(record, dict) else record.urgency
-            sent = getattr(record, "sentiment", None) or record.get("sentiment", "neutral") if isinstance(record, dict) else record.sentiment
+            urg = (
+                getattr(record, "urgency", None) or record.get("urgency", "low")
+                if isinstance(record, dict)
+                else record.urgency
+            )
+            sent = (
+                getattr(record, "sentiment", None) or record.get("sentiment", "neutral")
+                if isinstance(record, dict)
+                else record.sentiment
+            )
             urgency_counts[urg] = urgency_counts.get(urg, 0) + 1
             sentiment_counts[sent] = sentiment_counts.get(sent, 0) + 1
 
@@ -38,7 +46,7 @@ def generate_ai_briefing(
             return URGENCY_ORDER.index(urg) if urg in URGENCY_ORDER else 99
 
         sorted_records = sorted(
-            zip(triage_records, normalized_items),
+            zip(triage_records, normalized_items, strict=False),
             key=lambda pair: urgency_rank(pair[0]),
         )
         top_3_lines = []
@@ -46,7 +54,10 @@ def generate_ai_briefing(
             rec_id = record.get("id", "") if isinstance(record, dict) else getattr(record, "id", "")
             urg = record.get("urgency", "") if isinstance(record, dict) else getattr(record, "urgency", "")
             cat = record.get("category", "") if isinstance(record, dict) else getattr(record, "category", "")
-            subject = getattr(item, "subject", None) or getattr(item, "title", "") or ""
+            if isinstance(item, dict):
+                subject = item.get("subject_or_title") or ""
+            else:
+                subject = getattr(item, "subject_or_title", None) or ""
             top_3_lines.append(f"- {rec_id}: {subject} (urgency={urg}, category={cat})")
 
         # Action items with deadlines
@@ -54,9 +65,15 @@ def generate_ai_briefing(
         for action in action_items:
             deadline = action.get("deadline", None) if isinstance(action, dict) else getattr(action, "deadline", None)
             if deadline:
-                aid = action.get("work_item_id", "") if isinstance(action, dict) else getattr(action, "work_item_id", "")
+                aid = (
+                    action.get("work_item_id", "") if isinstance(action, dict) else getattr(action, "work_item_id", "")
+                )
                 summary = action.get("summary", "") if isinstance(action, dict) else getattr(action, "summary", "")
-                owner = action.get("owner", "unassigned") if isinstance(action, dict) else getattr(action, "owner", "unassigned")
+                owner = (
+                    action.get("owner", "unassigned")
+                    if isinstance(action, dict)
+                    else getattr(action, "owner", "unassigned")
+                )
                 deadline_lines.append(f"- {aid}: {summary} (owner: {owner}, deadline: {deadline})")
 
         formatted_top = "\n".join(top_3_lines) if top_3_lines else "None"

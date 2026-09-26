@@ -1,0 +1,14 @@
+{
+  "run_id": "run-fixture-001",
+  "started_at": "2026-05-30T12:00:00Z",
+  "finished_at": "2026-05-30T12:00:01Z",
+  "duration_ms": 1000,
+  "status": "success",
+  "input_file": "sample_input.json",
+  "item_count": 1,
+  "triage_count": 1,
+  "artifacts": {
+    "triage_results": "triage_results.json",
+    "daily_briefing": "daily_briefing.txt"
+  }
+}
