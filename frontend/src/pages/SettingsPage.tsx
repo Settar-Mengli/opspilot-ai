@@ -72,10 +72,6 @@ export function SettingsPage() {
               <span className="settings-status-label">API key set</span>
               <span className="settings-status-value">{status?.api_key_set ? 'yes' : 'no'}</span>
             </p>
-            <p className="settings-status-row">
-              <span className="settings-status-label">API key preview</span>
-              <span className="settings-status-value">{status?.api_key_preview ?? 'not set'}</span>
-            </p>
           </>
         )}
         {errorMessage && <p className="settings-error">{errorMessage}</p>}

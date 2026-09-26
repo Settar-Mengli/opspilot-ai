@@ -33,18 +33,11 @@ from opspilot.persistence.models import RunArtifactRow, RunRow, TriageDecisionRo
 router = APIRouter(prefix="/api/v1")
 
 
-def _preview_api_key(api_key: str | None) -> str | None:
-    if not api_key:
-        return None
-    return f"sk-••••{api_key[-4:]}"
-
-
 def _settings_payload() -> dict[str, object]:
     return {
         "provider": ai_settings.provider,
         "model": ai_settings.model,
         "api_key_set": bool(ai_settings.api_key),
-        "api_key_preview": _preview_api_key(ai_settings.api_key),
     }
 
 

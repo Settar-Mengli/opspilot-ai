@@ -55,3 +55,12 @@ def test_envelope_unhandled_500_hides_internals(monkeypatch: pytest.MonkeyPatch)
     assert "secret stack" not in resp.text
     assert "Traceback" not in resp.text
     assert "RuntimeError" not in resp.text
+
+
+def test_settings_exact_key_set():
+    resp = client.get("/api/v1/settings")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert set(body.keys()) == {"provider", "model", "api_key_set"}
+    assert "api_key_preview" not in body
+    assert isinstance(body["api_key_set"], bool)

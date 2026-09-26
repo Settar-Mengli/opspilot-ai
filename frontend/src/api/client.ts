@@ -37,24 +37,53 @@ function sanitizeBaseUrl(url: string | undefined): string {
 const API_BASE_URL = sanitizeBaseUrl(import.meta.env.VITE_API_BASE_URL)
 
 function toApiError(status: number, detail: unknown): Error {
+  const envelopeMessage = messageFromErrorEnvelope(detail)
+  if (envelopeMessage) {
+    return new Error(`${status}: ${envelopeMessage}`)
+  }
+
   if (typeof detail === 'string') {
     return new Error(`${status}: ${detail}`)
   }
 
   if (detail && typeof detail === 'object') {
     const record = detail as Record<string, unknown>
-    if (record.error && typeof record.error === 'object') {
-      const nested = record.error as Record<string, unknown>
-      if (typeof nested.message === 'string') {
-        return new Error(`${status}: ${nested.message}`)
-      }
-    }
     if (typeof record.message === 'string') {
       return new Error(`${status}: ${record.message}`)
     }
   }
 
   return new Error(`${status}: Request failed`)
+}
+
+/** Parse `{ error: { code, message, details? } }` from API error payloads. */
+export function messageFromErrorEnvelope(detail: unknown): string | null {
+  if (!detail || typeof detail !== 'object') {
+    return null
+  }
+  const record = detail as Record<string, unknown>
+  if (!record.error || typeof record.error !== 'object') {
+    return null
+  }
+  const nested = record.error as Record<string, unknown>
+  if (typeof nested.message !== 'string') {
+    return null
+  }
+  return nested.message
+}
+
+export function isErrorEnvelope(detail: unknown): detail is {
+  error: { code: string; message: string; details?: unknown }
+} {
+  if (!detail || typeof detail !== 'object') {
+    return false
+  }
+  const record = detail as Record<string, unknown>
+  if (!record.error || typeof record.error !== 'object') {
+    return false
+  }
+  const nested = record.error as Record<string, unknown>
+  return typeof nested.code === 'string' && typeof nested.message === 'string'
 }
 
 async function getErrorDetail(response: Response): Promise<unknown> {

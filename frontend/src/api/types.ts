@@ -113,5 +113,4 @@ export interface ApiSettings {
   provider: string
   model: string
   api_key_set: boolean
-  api_key_preview: string | null
 }
