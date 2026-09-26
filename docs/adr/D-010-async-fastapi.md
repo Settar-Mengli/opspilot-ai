@@ -30,3 +30,5 @@ Stay fully sync; Starlette-only custom app.
 ## Consequences
 
 Migrate carefully from CURRENT sync handlers; B5 SSE depends on this.
+
+**B1 note:** FastAPI `/api/v1` DB handlers use sync `Session` so Windows uvicorn (Proactor) works with `psycopg`. Async SQLAlchemy remains for the CLI importer and truncate-managed pytest sessions. Treat the API sync path as the D-010 “sync bridge” until B5 SSE forces a Selector/async revisit.

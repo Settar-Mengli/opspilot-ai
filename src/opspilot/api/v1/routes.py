@@ -9,7 +9,7 @@ from typing import Any
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import desc, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from opspilot.adapters.conversation_adapter import answer_question
 from opspilot.adapters.evening_adapter import generate_evening_summary
@@ -59,14 +59,14 @@ def get_settings() -> dict[str, object]:
 
 
 @router.post("/runs")
-async def create_run(
+def create_run(
     req: RunPipelineRequest,
-    session: AsyncSession = Depends(get_db_session),
+    session: Session = Depends(get_db_session),
 ) -> dict[str, object]:
     outputs = execute_pipeline(req)
     run_dir = history_dir_from_outputs(outputs)
     sample = RAW_INPUT_DIR / Path(req.input_file).name
-    run_id = await persist_pipeline_outputs(session, run_dir=run_dir, sample_input=sample)
+    run_id = persist_pipeline_outputs(session, run_dir=run_dir, sample_input=sample)
     lines = ["OpsPilot AI run completed."]
     for name, path in outputs.items():
         if name in {"run_id", "history_dir"}:
@@ -76,24 +76,24 @@ async def create_run(
 
 
 @router.get("/runs", response_class=JSONResponse)
-async def list_runs(session: AsyncSession = Depends(get_db_session)) -> list[dict[str, Any]]:
-    result = await session.execute(select(RunRow).order_by(desc(RunRow.finished_at), desc(RunRow.run_id)))
+def list_runs(session: Session = Depends(get_db_session)) -> list[dict[str, Any]]:
+    result = session.execute(select(RunRow).order_by(desc(RunRow.finished_at), desc(RunRow.run_id)))
     rows = result.scalars().all()
     return [safe_history_metadata(dict(row.metadata_json or {"run_id": row.run_id})) for row in rows]
 
 
 @router.get("/runs/{run_id}", response_class=JSONResponse)
-async def get_run(run_id: str, session: AsyncSession = Depends(get_db_session)) -> dict[str, Any]:
-    row = await session.get(RunRow, run_id)
+def get_run(run_id: str, session: Session = Depends(get_db_session)) -> dict[str, Any]:
+    row = session.get(RunRow, run_id)
     if row is None:
         raise safe_error(404, "run_not_found", "Run not found.")
     return safe_history_metadata(dict(row.metadata_json or {"run_id": row.run_id}))
 
 
 @router.get("/triage", response_class=JSONResponse)
-async def get_triage(session: AsyncSession = Depends(get_db_session)) -> list[dict[str, Any]]:
+def get_triage(session: Session = Depends(get_db_session)) -> list[dict[str, Any]]:
     """Latest triage decisions with AI-05 lite subject_or_title from WorkItem."""
-    result = await session.execute(
+    result = session.execute(
         select(TriageDecisionRow, WorkItemRow)
         .join(WorkItemRow, TriageDecisionRow.work_item_id == WorkItemRow.id)
         .order_by(desc(TriageDecisionRow.id))
@@ -119,8 +119,8 @@ async def get_triage(session: AsyncSession = Depends(get_db_session)) -> list[di
     return payload
 
 
-async def _artifact_text(session: AsyncSession, run_id: str, logical_name: str) -> str | None:
-    result = await session.execute(
+def _artifact_text(session: Session, run_id: str, logical_name: str) -> str | None:
+    result = session.execute(
         select(RunArtifactRow).where(
             RunArtifactRow.run_id == run_id,
             RunArtifactRow.name == logical_name,
@@ -131,10 +131,10 @@ async def _artifact_text(session: AsyncSession, run_id: str, logical_name: str) 
 
 
 @router.get("/runs/{run_id}/triage", response_class=JSONResponse)
-async def get_run_triage(run_id: str, session: AsyncSession = Depends(get_db_session)) -> list[Any]:
-    if await session.get(RunRow, run_id) is None:
+def get_run_triage(run_id: str, session: Session = Depends(get_db_session)) -> list[Any]:
+    if session.get(RunRow, run_id) is None:
         raise safe_error(404, "run_not_found", "Run not found.")
-    content = await _artifact_text(session, run_id, "triage_results")
+    content = _artifact_text(session, run_id, "triage_results")
     if content is None:
         raise safe_error(404, "artifact_not_found", "Run triage artifact not found.")
     try:
@@ -147,8 +147,8 @@ async def get_run_triage(run_id: str, session: AsyncSession = Depends(get_db_ses
 
 
 @router.get("/briefing", response_class=PlainTextResponse)
-async def get_briefing(session: AsyncSession = Depends(get_db_session)) -> str:
-    result = await session.execute(
+def get_briefing(session: Session = Depends(get_db_session)) -> str:
+    result = session.execute(
         select(RunArtifactRow)
         .where(RunArtifactRow.name == "daily_briefing")
         .order_by(desc(RunArtifactRow.id))
@@ -164,10 +164,10 @@ async def get_briefing(session: AsyncSession = Depends(get_db_session)) -> str:
 
 
 @router.get("/runs/{run_id}/briefing", response_class=PlainTextResponse)
-async def get_run_briefing(run_id: str, session: AsyncSession = Depends(get_db_session)) -> str:
-    if await session.get(RunRow, run_id) is None:
+def get_run_briefing(run_id: str, session: Session = Depends(get_db_session)) -> str:
+    if session.get(RunRow, run_id) is None:
         raise safe_error(404, "run_not_found", "Run not found.")
-    content = await _artifact_text(session, run_id, "daily_briefing")
+    content = _artifact_text(session, run_id, "daily_briefing")
     if content is None:
         raise safe_error(404, "artifact_not_found", "Run briefing artifact not found.")
     return content
@@ -185,12 +185,12 @@ def get_ai_briefing() -> str:
 
 
 @router.get("/runs/{run_id}/ai-briefing", response_class=PlainTextResponse)
-async def get_run_ai_briefing(run_id: str, session: AsyncSession = Depends(get_db_session)) -> str:
-    if await session.get(RunRow, run_id) is None:
+def get_run_ai_briefing(run_id: str, session: Session = Depends(get_db_session)) -> str:
+    if session.get(RunRow, run_id) is None:
         raise safe_error(404, "run_not_found", "Run not found.")
-    content = await _artifact_text(session, run_id, "ai_briefing")
+    content = _artifact_text(session, run_id, "ai_briefing")
     if content is None:
-        content = await _artifact_text(session, run_id, "daily_briefing")
+        content = _artifact_text(session, run_id, "daily_briefing")
     if content is None:
         raise safe_error(404, "artifact_not_found", "Run AI briefing artifact not found.")
     return content

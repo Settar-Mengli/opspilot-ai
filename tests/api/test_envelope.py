@@ -41,12 +41,12 @@ def test_envelope_http_exception():
 
 
 def test_envelope_unhandled_500_hides_internals(monkeypatch: pytest.MonkeyPatch):
-    from sqlalchemy.ext.asyncio import AsyncSession
+    from sqlalchemy.orm import Session
 
-    async def _explode(self, *args, **kwargs):
+    def _explode(self, *args, **kwargs):
         raise RuntimeError("secret stack detail should not leak")
 
-    monkeypatch.setattr(AsyncSession, "execute", _explode)
+    monkeypatch.setattr(Session, "execute", _explode)
     resp = client.get("/api/v1/runs")
     assert resp.status_code == 500
     body = resp.json()
