@@ -1,4 +1,4 @@
-"""Import sample work items and history runs into Postgres (X5).
+"""Import sample work items and history runs into Postgres (X5, sync).
 
 Usage:
   uv run python -m opspilot.jobs.import_json data/raw/sample_input.json
@@ -8,7 +8,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import asyncio
 import json
 import sys
 from pathlib import Path
@@ -16,7 +15,7 @@ from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from opspilot.persistence.db import create_engine, create_session_factory, get_database_url
 from opspilot.persistence.models import RunArtifactRow, RunRow, TriageDecisionRow, WorkItemRow
@@ -26,22 +25,21 @@ DEFAULT_SAMPLE = PROJECT_ROOT / "data" / "raw" / "sample_input.json"
 DEFAULT_HISTORY = PROJECT_ROOT / "data" / "history" / "runs"
 
 
-async def upsert_work_items(session: AsyncSession, items: list[dict[str, Any]]) -> int:
+def upsert_work_items(session: Session, items: list[dict[str, Any]]) -> int:
     if not items:
         return 0
-    rows = []
-    for raw in items:
-        rows.append(
-            {
-                "id": str(raw["id"]),
-                "source_type": str(raw["source_type"]),
-                "subject_or_title": str(raw["subject_or_title"]),
-                "body_or_description": str(raw["body_or_description"]),
-                "sender_or_requester": str(raw["sender_or_requester"]),
-                "received_at": str(raw["received_at"]),
-                "tags": list(raw.get("tags") or []),
-            }
-        )
+    rows = [
+        {
+            "id": str(raw["id"]),
+            "source_type": str(raw["source_type"]),
+            "subject_or_title": str(raw["subject_or_title"]),
+            "body_or_description": str(raw["body_or_description"]),
+            "sender_or_requester": str(raw["sender_or_requester"]),
+            "received_at": str(raw["received_at"]),
+            "tags": list(raw.get("tags") or []),
+        }
+        for raw in items
+    ]
     stmt = pg_insert(WorkItemRow).values(rows)
     stmt = stmt.on_conflict_do_update(
         index_elements=[WorkItemRow.id],
@@ -54,11 +52,11 @@ async def upsert_work_items(session: AsyncSession, items: list[dict[str, Any]]) 
             "tags": stmt.excluded.tags,
         },
     )
-    await session.execute(stmt)
+    session.execute(stmt)
     return len(rows)
 
 
-async def upsert_run_from_metadata(session: AsyncSession, metadata: dict[str, Any], run_dir: Path) -> str:
+def upsert_run_from_metadata(session: Session, metadata: dict[str, Any], run_dir: Path) -> str:
     run_id = str(metadata["run_id"])
     stmt = pg_insert(RunRow).values(
         {
@@ -86,7 +84,7 @@ async def upsert_run_from_metadata(session: AsyncSession, metadata: dict[str, An
             "metadata_json": stmt.excluded.metadata_json,
         },
     )
-    await session.execute(stmt)
+    session.execute(stmt)
 
     artifacts = metadata.get("artifacts") or {}
     if isinstance(artifacts, dict):
@@ -113,24 +111,20 @@ async def upsert_run_from_metadata(session: AsyncSession, metadata: dict[str, An
                     "content": art.excluded.content,
                 },
             )
-            await session.execute(art)
-
+            session.execute(art)
             if logical_name == "triage_results" and content_type == "json":
-                await _upsert_triage_from_json(session, run_id, text)
-
+                _upsert_triage_from_json(session, run_id, text)
     return run_id
 
 
-async def _upsert_triage_from_json(session: AsyncSession, run_id: str, text: str) -> None:
+def _upsert_triage_from_json(session: Session, run_id: str, text: str) -> None:
     try:
         payload = json.loads(text)
     except json.JSONDecodeError:
         return
     if not isinstance(payload, list):
         return
-
-    existing_ids = set((await session.execute(select(WorkItemRow.id))).scalars().all())
-
+    existing_ids = set(session.execute(select(WorkItemRow.id)).scalars().all())
     for record in payload:
         if not isinstance(record, dict):
             continue
@@ -160,17 +154,17 @@ async def _upsert_triage_from_json(session: AsyncSession, run_id: str, text: str
                 "sentiment_reason": stmt.excluded.sentiment_reason,
             },
         )
-        await session.execute(stmt)
+        session.execute(stmt)
 
 
-async def import_sample_file(session: AsyncSession, path: Path) -> int:
+def import_sample_file(session: Session, path: Path) -> int:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, list):
         raise ValueError(f"Expected JSON array in {path}")
-    return await upsert_work_items(session, payload)
+    return upsert_work_items(session, payload)
 
 
-async def import_history_runs(session: AsyncSession, runs_root: Path) -> int:
+def import_history_runs(session: Session, runs_root: Path) -> int:
     if not runs_root.is_dir():
         return 0
     count = 0
@@ -181,20 +175,20 @@ async def import_history_runs(session: AsyncSession, runs_root: Path) -> int:
             continue
         if not isinstance(metadata, dict) or "run_id" not in metadata:
             continue
-        await upsert_run_from_metadata(session, metadata, metadata_file.parent)
+        upsert_run_from_metadata(session, metadata, metadata_file.parent)
         count += 1
     return count
 
 
-async def count_work_items(session: AsyncSession) -> int:
-    return int(await session.scalar(select(func.count()).select_from(WorkItemRow)) or 0)
+def count_work_items(session: Session) -> int:
+    return int(session.scalar(select(func.count()).select_from(WorkItemRow)) or 0)
 
 
-async def count_runs(session: AsyncSession) -> int:
-    return int(await session.scalar(select(func.count()).select_from(RunRow)) or 0)
+def count_runs(session: Session) -> int:
+    return int(session.scalar(select(func.count()).select_from(RunRow)) or 0)
 
 
-async def run_import(
+def run_import(
     *,
     sample_path: Path | None,
     history_root: Path | None,
@@ -202,16 +196,16 @@ async def run_import(
 ) -> dict[str, int]:
     engine = create_engine(database_url or get_database_url())
     factory = create_session_factory(engine)
-    result = {"work_items": 0, "runs": 0}
-    async with factory() as session:
+    result: dict[str, int] = {"work_items": 0, "runs": 0}
+    with factory() as session:
         if sample_path is not None:
-            result["work_items"] = await import_sample_file(session, sample_path)
+            result["work_items"] = import_sample_file(session, sample_path)
         if history_root is not None and history_root.is_dir():
-            result["runs"] = await import_history_runs(session, history_root)
-        await session.commit()
-        result["work_item_count"] = await count_work_items(session)
-        result["run_count"] = await count_runs(session)
-    await engine.dispose()
+            result["runs"] = import_history_runs(session, history_root)
+        session.commit()
+        result["work_item_count"] = count_work_items(session)
+        result["run_count"] = count_runs(session)
+    engine.dispose()
     return result
 
 
@@ -242,12 +236,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Error: sample file not found: {sample_path}", file=sys.stderr)
         return 1
 
-    if sys.platform == "win32":
-        import asyncio as _asyncio
-
-        _asyncio.set_event_loop_policy(_asyncio.WindowsSelectorEventLoopPolicy())
-
-    stats = asyncio.run(run_import(sample_path=sample_path, history_root=history_root))
+    stats = run_import(sample_path=sample_path, history_root=history_root)
     print(
         f"Imported work_items_upserted={stats['work_items']} "
         f"runs_upserted={stats['runs']} "

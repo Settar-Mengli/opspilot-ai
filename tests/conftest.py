@@ -2,23 +2,17 @@
 
 from __future__ import annotations
 
-import asyncio
 import os
-import sys
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import Iterator
 
 import pytest
-from sqlalchemy import create_engine as create_sync_engine
+from sqlalchemy import create_engine as create_admin_engine
 from sqlalchemy import text
 from sqlalchemy.engine import make_url
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from tests.db_support import alembic_upgrade as _alembic_upgrade
 
 from opspilot.persistence.db import create_engine, create_session_factory, to_sync_url
-
-# psycopg async requires SelectorEventLoop on Windows (not Proactor).
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 TEST_DB_NAME = "opspilot_test"
 ALEMBIC_RT_DB_NAME = "opspilot_alembic_rt"
@@ -62,7 +56,7 @@ def _db_url(database: str) -> str:
 
 
 def _ensure_database(database: str) -> None:
-    engine = create_sync_engine(_admin_sync_url(), isolation_level="AUTOCOMMIT")
+    engine = create_admin_engine(_admin_sync_url(), isolation_level="AUTOCOMMIT")
     try:
         with engine.connect() as conn:
             exists = conn.execute(
@@ -76,7 +70,7 @@ def _ensure_database(database: str) -> None:
 
 
 def _drop_database(database: str) -> None:
-    engine = create_sync_engine(_admin_sync_url(), isolation_level="AUTOCOMMIT")
+    engine = create_admin_engine(_admin_sync_url(), isolation_level="AUTOCOMMIT")
     try:
         with engine.connect() as conn:
             conn.execute(
@@ -109,20 +103,16 @@ def test_database_url() -> Iterator[str]:
 
 
 @pytest.fixture
-async def db_session(
-    test_database_url: str,
-) -> AsyncIterator[AsyncSession]:
+def db_session(test_database_url: str) -> Iterator[Session]:
     """Per-test session against truncate-managed opspilot_test."""
     engine = create_engine(test_database_url)
     factory = create_session_factory(engine)
-    async with engine.begin() as conn:
-        await conn.execute(
-            text("TRUNCATE TABLE triage_decisions, run_artifacts, runs, work_items RESTART IDENTITY CASCADE")
-        )
-    async with factory() as session:
+    with engine.begin() as conn:
+        conn.execute(text("TRUNCATE TABLE triage_decisions, run_artifacts, runs, work_items RESTART IDENTITY CASCADE"))
+    with factory() as session:
         yield session
-        await session.rollback()
-    await engine.dispose()
+        session.rollback()
+    engine.dispose()
 
 
 @pytest.fixture

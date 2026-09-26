@@ -8,7 +8,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from opspilot.jobs.import_json_sync import import_sample_file_sync, upsert_run_from_metadata_sync
+from opspilot.jobs.import_json import import_sample_file, upsert_run_from_metadata
 from opspilot.utils.file_io import read_json_file
 
 
@@ -18,7 +18,7 @@ def persist_run_directory(session: Session, run_dir: Path) -> str:
     metadata = read_json_file(metadata_path)
     if not isinstance(metadata, dict) or "run_id" not in metadata:
         raise ValueError(f"Invalid run metadata at {metadata_path}")
-    return upsert_run_from_metadata_sync(session, metadata, run_dir)
+    return upsert_run_from_metadata(session, metadata, run_dir)
 
 
 def persist_pipeline_outputs(
@@ -29,7 +29,7 @@ def persist_pipeline_outputs(
 ) -> str:
     """Ensure work items exist (from sample if provided), then persist the run."""
     if sample_input is not None and sample_input.is_file():
-        import_sample_file_sync(session, sample_input)
+        import_sample_file(session, sample_input)
     return persist_run_directory(session, run_dir)
 
 

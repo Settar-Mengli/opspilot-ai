@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src")))
 
@@ -41,7 +41,7 @@ class _FakeExecutor:
 
 
 @pytest.fixture(autouse=True)
-def _api_uses_test_db(test_database_url: str, db_session: AsyncSession):
+def _api_uses_test_db(test_database_url: str, db_session: Session):
     """Point API deps at truncate-managed test DB for every API test."""
     os.environ["DATABASE_URL"] = test_database_url
     reset_db_engine()
@@ -62,7 +62,7 @@ def isolated_run_dirs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
-async def _seed_run(session: AsyncSession, tmp_path: Path, run_id: str, metadata: dict) -> None:
+def _seed_run(session: Session, tmp_path: Path, run_id: str, metadata: dict) -> None:
     run_dir = tmp_path / "history" / "runs" / "2026" / "05" / "30" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     artifacts = metadata.get("artifacts") or {}
@@ -76,8 +76,8 @@ async def _seed_run(session: AsyncSession, tmp_path: Path, run_id: str, metadata
             else:
                 path.write_text("OpsPilot AI Daily Executive Briefing\n", encoding="utf-8")
     (run_dir / "run.json").write_text(json.dumps(metadata), encoding="utf-8")
-    await upsert_run_from_metadata(session, metadata, run_dir)
-    await session.commit()
+    upsert_run_from_metadata(session, metadata, run_dir)
+    session.commit()
 
 
 def test_health():
@@ -141,9 +141,8 @@ def test_run_subprocess_failure_returns_safe_error(monkeypatch: pytest.MonkeyPat
     assert "private detail" not in str(payload)
 
 
-@pytest.mark.asyncio
-async def test_get_briefing(db_session: AsyncSession, tmp_path: Path):
-    await upsert_work_items(
+def test_get_briefing(db_session: Session, tmp_path: Path):
+    upsert_work_items(
         db_session,
         [
             {
@@ -157,8 +156,8 @@ async def test_get_briefing(db_session: AsyncSession, tmp_path: Path):
             }
         ],
     )
-    await db_session.commit()
-    await _seed_run(
+    db_session.commit()
+    _seed_run(
         db_session,
         tmp_path,
         "run-20260529-000000-001",
@@ -172,21 +171,20 @@ async def test_get_briefing(db_session: AsyncSession, tmp_path: Path):
     )
     run_dir = tmp_path / "history" / "runs" / "2026" / "05" / "30" / "run-20260529-000000-001"
     (run_dir / "daily_briefing.txt").write_text("OpsPilot AI Daily Executive Briefing - fixture\n", encoding="utf-8")
-    await upsert_run_from_metadata(
+    upsert_run_from_metadata(
         db_session,
         json.loads((run_dir / "run.json").read_text(encoding="utf-8")),
         run_dir,
     )
-    await db_session.commit()
+    db_session.commit()
 
     resp = client.get("/api/v1/briefing")
     assert resp.status_code == 200
     assert "OpsPilot AI Daily Executive Briefing" in resp.text
 
 
-@pytest.mark.asyncio
-async def test_get_triage(db_session: AsyncSession):
-    await upsert_work_items(
+def test_get_triage(db_session: Session):
+    upsert_work_items(
         db_session,
         [
             {
@@ -212,7 +210,7 @@ async def test_get_triage(db_session: AsyncSession):
             sentiment_reason="fixture",
         )
     )
-    await db_session.commit()
+    db_session.commit()
 
     resp = client.get("/api/v1/triage")
     assert resp.status_code == 200
@@ -231,9 +229,8 @@ def test_get_runs_returns_empty_list_when_history_missing():
     assert resp.json() == []
 
 
-@pytest.mark.asyncio
-async def test_get_runs_returns_metadata_after_pipeline_run(db_session: AsyncSession, tmp_path: Path):
-    await upsert_work_items(
+def test_get_runs_returns_metadata_after_pipeline_run(db_session: Session, tmp_path: Path):
+    upsert_work_items(
         db_session,
         [
             {
@@ -247,9 +244,9 @@ async def test_get_runs_returns_metadata_after_pipeline_run(db_session: AsyncSes
             }
         ],
     )
-    await db_session.commit()
+    db_session.commit()
     run_id = "run-20260530-120000-001"
-    await _seed_run(
+    _seed_run(
         db_session,
         tmp_path,
         run_id,
@@ -274,10 +271,9 @@ async def test_get_runs_returns_metadata_after_pipeline_run(db_session: AsyncSes
     assert payload[0]["run_id"] == run_id
 
 
-@pytest.mark.asyncio
-async def test_get_runs_metadata_is_sanitized_and_safe(db_session: AsyncSession, tmp_path: Path):
+def test_get_runs_metadata_is_sanitized_and_safe(db_session: Session, tmp_path: Path):
     run_id = "run-20260530-120000-002"
-    await _seed_run(
+    _seed_run(
         db_session,
         tmp_path,
         run_id,
@@ -301,10 +297,9 @@ async def test_get_runs_metadata_is_sanitized_and_safe(db_session: AsyncSession,
     assert item["run_id"] == run_id
 
 
-@pytest.mark.asyncio
-async def test_get_runs_metadata_allowlist_and_artifact_filtering(db_session: AsyncSession, tmp_path: Path):
+def test_get_runs_metadata_allowlist_and_artifact_filtering(db_session: Session, tmp_path: Path):
     run_id = "run-20260530-120000-003"
-    await _seed_run(
+    _seed_run(
         db_session,
         tmp_path,
         run_id,
@@ -327,9 +322,8 @@ async def test_get_runs_metadata_allowlist_and_artifact_filtering(db_session: As
     assert "secret_notes" not in artifacts
 
 
-@pytest.mark.asyncio
-async def test_get_runs_sorted_newest_first(db_session: AsyncSession, tmp_path: Path):
-    await _seed_run(
+def test_get_runs_sorted_newest_first(db_session: Session, tmp_path: Path):
+    _seed_run(
         db_session,
         tmp_path,
         "run-20260530-100000-001",
@@ -341,7 +335,7 @@ async def test_get_runs_sorted_newest_first(db_session: AsyncSession, tmp_path: 
             "artifacts": {},
         },
     )
-    await _seed_run(
+    _seed_run(
         db_session,
         tmp_path,
         "run-20260530-110000-001",
@@ -358,8 +352,7 @@ async def test_get_runs_sorted_newest_first(db_session: AsyncSession, tmp_path: 
     assert ids[0] == "run-20260530-110000-001"
 
 
-@pytest.mark.asyncio
-async def test_get_run_triage_returns_artifact_for_run(db_session: AsyncSession, tmp_path: Path):
+def test_get_run_triage_returns_artifact_for_run(db_session: Session, tmp_path: Path):
     run_id = "run-20260530-120000-010"
     run_dir = tmp_path / "history" / "runs" / "2026" / "05" / "30" / run_id
     run_dir.mkdir(parents=True)
@@ -383,16 +376,15 @@ async def test_get_run_triage_returns_artifact_for_run(db_session: AsyncSession,
         "artifacts": {"triage_results": "triage_results.json"},
     }
     (run_dir / "run.json").write_text(json.dumps(metadata), encoding="utf-8")
-    await upsert_run_from_metadata(db_session, metadata, run_dir)
-    await db_session.commit()
+    upsert_run_from_metadata(db_session, metadata, run_dir)
+    db_session.commit()
 
     resp = client.get(f"/api/v1/runs/{run_id}/triage")
     assert resp.status_code == 200
     assert resp.json()[0]["id"] == "WI-001"
 
 
-@pytest.mark.asyncio
-async def test_get_run_briefing_returns_artifact_for_run(db_session: AsyncSession, tmp_path: Path):
+def test_get_run_briefing_returns_artifact_for_run(db_session: Session, tmp_path: Path):
     run_id = "run-20260530-120000-011"
     run_dir = tmp_path / "history" / "runs" / "2026" / "05" / "30" / run_id
     run_dir.mkdir(parents=True)
@@ -405,18 +397,17 @@ async def test_get_run_briefing_returns_artifact_for_run(db_session: AsyncSessio
         "artifacts": {"daily_briefing": "daily_briefing.txt"},
     }
     (run_dir / "run.json").write_text(json.dumps(metadata), encoding="utf-8")
-    await upsert_run_from_metadata(db_session, metadata, run_dir)
-    await db_session.commit()
+    upsert_run_from_metadata(db_session, metadata, run_dir)
+    db_session.commit()
 
     resp = client.get(f"/api/v1/runs/{run_id}/briefing")
     assert resp.status_code == 200
     assert "OpsPilot AI Daily Executive Briefing" in resp.text
 
 
-@pytest.mark.asyncio
-async def test_get_run_metadata_for_specific_run(db_session: AsyncSession, tmp_path: Path):
+def test_get_run_metadata_for_specific_run(db_session: Session, tmp_path: Path):
     run_id = "run-20260530-120000-012"
-    await _seed_run(
+    _seed_run(
         db_session,
         tmp_path,
         run_id,
@@ -435,10 +426,9 @@ async def test_get_run_metadata_for_specific_run(db_session: AsyncSession, tmp_p
     assert resp.json()["item_count"] == 3
 
 
-@pytest.mark.asyncio
-async def test_get_run_metadata_is_sanitized_and_safe(db_session: AsyncSession, tmp_path: Path):
+def test_get_run_metadata_is_sanitized_and_safe(db_session: Session, tmp_path: Path):
     run_id = "run-20260530-120000-013"
-    await _seed_run(
+    _seed_run(
         db_session,
         tmp_path,
         run_id,
@@ -455,10 +445,9 @@ async def test_get_run_metadata_is_sanitized_and_safe(db_session: AsyncSession, 
     assert "input_file" not in resp.json()
 
 
-@pytest.mark.asyncio
-async def test_get_run_metadata_allowlist_and_artifact_filtering(db_session: AsyncSession, tmp_path: Path):
+def test_get_run_metadata_allowlist_and_artifact_filtering(db_session: Session, tmp_path: Path):
     run_id = "run-20260530-120000-014"
-    await _seed_run(
+    _seed_run(
         db_session,
         tmp_path,
         run_id,

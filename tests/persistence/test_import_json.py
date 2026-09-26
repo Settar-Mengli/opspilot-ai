@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from opspilot.jobs.import_json import import_history_runs, import_sample_file, run_import
 from opspilot.persistence.models import RunRow, WorkItemRow
@@ -17,32 +17,28 @@ SAMPLE_PATH = PROJECT_ROOT / "data" / "raw" / "sample_input.json"
 HISTORY_ROOT = PROJECT_ROOT / "data" / "history" / "runs"
 
 
-@pytest.mark.asyncio
-async def test_sample_import_idempotent(db_session: AsyncSession, test_database_url: str) -> None:
+def test_sample_import_idempotent(db_session: Session, test_database_url: str) -> None:
     assert SAMPLE_PATH.is_file()
-    first = await import_sample_file(db_session, SAMPLE_PATH)
-    await db_session.commit()
-    count_after_first = await db_session.scalar(select(func.count()).select_from(WorkItemRow))
+    first = import_sample_file(db_session, SAMPLE_PATH)
+    db_session.commit()
+    count_after_first = db_session.scalar(select(func.count()).select_from(WorkItemRow))
     assert first > 0
     assert count_after_first == first
 
-    second = await import_sample_file(db_session, SAMPLE_PATH)
-    await db_session.commit()
-    count_after_second = await db_session.scalar(select(func.count()).select_from(WorkItemRow))
+    second = import_sample_file(db_session, SAMPLE_PATH)
+    db_session.commit()
+    count_after_second = db_session.scalar(select(func.count()).select_from(WorkItemRow))
     assert second == first
     assert count_after_second == count_after_first
 
 
-@pytest.mark.asyncio
-async def test_history_import_idempotent_synthetic(
-    db_session: AsyncSession, tmp_path: Path, test_database_url: str
-) -> None:
+def test_history_import_idempotent_synthetic(db_session: Session, tmp_path: Path, test_database_url: str) -> None:
     # Seed a work item so triage FK can attach.
-    await import_sample_file(
+    import_sample_file(
         db_session,
         SAMPLE_PATH,
     )
-    await db_session.commit()
+    db_session.commit()
 
     run_id = "run-20260530-120000-001"
     run_dir = tmp_path / "2026" / "05" / "30" / run_id
@@ -76,21 +72,20 @@ async def test_history_import_idempotent_synthetic(
     }
     (run_dir / "run.json").write_text(json.dumps(metadata), encoding="utf-8")
 
-    first = await import_history_runs(db_session, tmp_path)
-    await db_session.commit()
-    count1 = await db_session.scalar(select(func.count()).select_from(RunRow))
+    first = import_history_runs(db_session, tmp_path)
+    db_session.commit()
+    count1 = db_session.scalar(select(func.count()).select_from(RunRow))
     assert first == 1
     assert count1 == 1
 
-    second = await import_history_runs(db_session, tmp_path)
-    await db_session.commit()
-    count2 = await db_session.scalar(select(func.count()).select_from(RunRow))
+    second = import_history_runs(db_session, tmp_path)
+    db_session.commit()
+    count2 = db_session.scalar(select(func.count()).select_from(RunRow))
     assert second == 1
     assert count2 == count1
 
 
-@pytest.mark.asyncio
-async def test_history_import_real_when_present(db_session: AsyncSession, test_database_url: str) -> None:
+def test_history_import_real_when_present(db_session: Session, test_database_url: str) -> None:
     if not HISTORY_ROOT.is_dir():
         pytest.skip("data/history/runs not present")
     run_files = list(HISTORY_ROOT.rglob("run.json"))
@@ -99,30 +94,29 @@ async def test_history_import_real_when_present(db_session: AsyncSession, test_d
 
     # Sample first so triage FKs can resolve for known WI ids.
     if SAMPLE_PATH.is_file():
-        await import_sample_file(db_session, SAMPLE_PATH)
-        await db_session.commit()
+        import_sample_file(db_session, SAMPLE_PATH)
+        db_session.commit()
 
-    first = await import_history_runs(db_session, HISTORY_ROOT)
-    await db_session.commit()
-    count1 = await db_session.scalar(select(func.count()).select_from(RunRow))
+    first = import_history_runs(db_session, HISTORY_ROOT)
+    db_session.commit()
+    count1 = db_session.scalar(select(func.count()).select_from(RunRow))
     assert first > 0
     assert count1 == first
 
-    second = await import_history_runs(db_session, HISTORY_ROOT)
-    await db_session.commit()
-    count2 = await db_session.scalar(select(func.count()).select_from(RunRow))
+    second = import_history_runs(db_session, HISTORY_ROOT)
+    db_session.commit()
+    count2 = db_session.scalar(select(func.count()).select_from(RunRow))
     assert second == first
     assert count2 == count1
 
 
-@pytest.mark.asyncio
-async def test_run_import_cli_helper_round_trip(test_database_url: str) -> None:
-    stats1 = await run_import(
+def test_run_import_cli_helper_round_trip(test_database_url: str) -> None:
+    stats1 = run_import(
         sample_path=SAMPLE_PATH,
         history_root=None,
         database_url=test_database_url,
     )
-    stats2 = await run_import(
+    stats2 = run_import(
         sample_path=SAMPLE_PATH,
         history_root=None,
         database_url=test_database_url,

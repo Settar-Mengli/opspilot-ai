@@ -1,15 +1,9 @@
-"""Run the API with a Windows-compatible event loop for psycopg async."""
+"""Run the API locally."""
 
 from __future__ import annotations
 
-import asyncio
-import sys
-
 
 def main() -> None:
-    if sys.platform == "win32":
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
     import uvicorn
 
     uvicorn.run(
