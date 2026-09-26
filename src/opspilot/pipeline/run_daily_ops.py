@@ -139,9 +139,10 @@ def run_pipeline(input_path: str, run_date: str, *, runs_root: Path | None = Non
 def run_daily_ops(input_path: str, output_dir: str, run_date: str) -> dict[str, str]:
     """CLI export path: run pipeline and write artifacts under output_dir (no Postgres)."""
     output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
     runs_root = history_runs_root(output_path)
+    # Pipeline first: failed validation must not create output/history dirs (hermetic E1).
     result = run_pipeline(input_path, run_date, runs_root=runs_root)
+    output_path.mkdir(parents=True, exist_ok=True)
 
     triage_file = output_path / "triage_results.json"
     action_file = output_path / "action_items.json"
