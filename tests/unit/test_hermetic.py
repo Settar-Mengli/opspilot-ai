@@ -38,9 +38,7 @@ def test_force_rules_does_not_import_claude_adapter(
     real_import = builtins.__import__
 
     def _guarded_import(name, *args, **kwargs):  # type: ignore[no-untyped-def]
-        if name == "opspilot.adapters.claude_adapter" or name.endswith(
-            "claude_adapter"
-        ):
+        if name == "opspilot.adapters.claude_adapter" or name.endswith("claude_adapter"):
             raise AssertionError("claude_adapter must not be imported under FORCE_RULES")
         return real_import(name, *args, **kwargs)
 

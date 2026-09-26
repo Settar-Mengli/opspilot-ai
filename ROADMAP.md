@@ -175,7 +175,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 - **Goal:** Public demo URL without custom domain.
 - **Workstream M10** — F2 + X2
-  - **Scope:** Docker; Pages-class FE + Render-class BE + Neon; rate limits; retention; README metrics; `OPSPILOT_ANTHROPIC_ENABLED=false` unless capped operator demo; **optional HMAC** manual trigger (X2).
+  - **Scope:** Docker; Pages-class FE + Render-class BE + Neon; rate limits; retention; README metrics; `OPSPILOT_ANTHROPIC_ENABLED=false` unless capped operator demo; **optional HMAC** manual trigger (X2). Deploy env must **not** set `OPSPILOT_FORCE_RULES` (tests/CI only).
   - **Exit criteria:**
     - **Tests:** Deploy smoke script / health checks.
     - **Evals:** n/a.

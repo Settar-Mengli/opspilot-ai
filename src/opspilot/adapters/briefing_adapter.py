@@ -1,4 +1,5 @@
 """AI-generated executive briefing using Claude."""
+
 import logging
 import os
 
@@ -26,8 +27,16 @@ def generate_ai_briefing(
         sentiment_counts = {"negative": 0, "neutral": 0, "positive": 0}
 
         for record in triage_records:
-            urg = getattr(record, "urgency", None) or record.get("urgency", "low") if isinstance(record, dict) else record.urgency
-            sent = getattr(record, "sentiment", None) or record.get("sentiment", "neutral") if isinstance(record, dict) else record.sentiment
+            urg = (
+                getattr(record, "urgency", None) or record.get("urgency", "low")
+                if isinstance(record, dict)
+                else record.urgency
+            )
+            sent = (
+                getattr(record, "sentiment", None) or record.get("sentiment", "neutral")
+                if isinstance(record, dict)
+                else record.sentiment
+            )
             urgency_counts[urg] = urgency_counts.get(urg, 0) + 1
             sentiment_counts[sent] = sentiment_counts.get(sent, 0) + 1
 
@@ -56,9 +65,15 @@ def generate_ai_briefing(
         for action in action_items:
             deadline = action.get("deadline", None) if isinstance(action, dict) else getattr(action, "deadline", None)
             if deadline:
-                aid = action.get("work_item_id", "") if isinstance(action, dict) else getattr(action, "work_item_id", "")
+                aid = (
+                    action.get("work_item_id", "") if isinstance(action, dict) else getattr(action, "work_item_id", "")
+                )
                 summary = action.get("summary", "") if isinstance(action, dict) else getattr(action, "summary", "")
-                owner = action.get("owner", "unassigned") if isinstance(action, dict) else getattr(action, "owner", "unassigned")
+                owner = (
+                    action.get("owner", "unassigned")
+                    if isinstance(action, dict)
+                    else getattr(action, "owner", "unassigned")
+                )
                 deadline_lines.append(f"- {aid}: {summary} (owner: {owner}, deadline: {deadline})")
 
         formatted_top = "\n".join(top_3_lines) if top_3_lines else "None"

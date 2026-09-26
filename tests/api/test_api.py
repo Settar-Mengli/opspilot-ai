@@ -171,9 +171,7 @@ async def test_get_briefing(db_session: AsyncSession, tmp_path: Path):
         },
     )
     run_dir = tmp_path / "history" / "runs" / "2026" / "05" / "30" / "run-20260529-000000-001"
-    (run_dir / "daily_briefing.txt").write_text(
-        "OpsPilot AI Daily Executive Briefing - fixture\n", encoding="utf-8"
-    )
+    (run_dir / "daily_briefing.txt").write_text("OpsPilot AI Daily Executive Briefing - fixture\n", encoding="utf-8")
     await upsert_run_from_metadata(
         db_session,
         json.loads((run_dir / "run.json").read_text(encoding="utf-8")),
@@ -304,9 +302,7 @@ async def test_get_runs_metadata_is_sanitized_and_safe(db_session: AsyncSession,
 
 
 @pytest.mark.asyncio
-async def test_get_runs_metadata_allowlist_and_artifact_filtering(
-    db_session: AsyncSession, tmp_path: Path
-):
+async def test_get_runs_metadata_allowlist_and_artifact_filtering(db_session: AsyncSession, tmp_path: Path):
     run_id = "run-20260530-120000-003"
     await _seed_run(
         db_session,
@@ -367,8 +363,17 @@ async def test_get_run_triage_returns_artifact_for_run(db_session: AsyncSession,
     run_id = "run-20260530-120000-010"
     run_dir = tmp_path / "history" / "runs" / "2026" / "05" / "30" / run_id
     run_dir.mkdir(parents=True)
-    triage = [{"id": "WI-001", "urgency": "low", "urgency_reason": "x", "category": "other",
-               "category_reason": "x", "sentiment": "neutral", "sentiment_reason": "x"}]
+    triage = [
+        {
+            "id": "WI-001",
+            "urgency": "low",
+            "urgency_reason": "x",
+            "category": "other",
+            "category_reason": "x",
+            "sentiment": "neutral",
+            "sentiment_reason": "x",
+        }
+    ]
     (run_dir / "triage_results.json").write_text(json.dumps(triage), encoding="utf-8")
     metadata = {
         "run_id": run_id,
@@ -391,9 +396,7 @@ async def test_get_run_briefing_returns_artifact_for_run(db_session: AsyncSessio
     run_id = "run-20260530-120000-011"
     run_dir = tmp_path / "history" / "runs" / "2026" / "05" / "30" / run_id
     run_dir.mkdir(parents=True)
-    (run_dir / "daily_briefing.txt").write_text(
-        "OpsPilot AI Daily Executive Briefing\n", encoding="utf-8"
-    )
+    (run_dir / "daily_briefing.txt").write_text("OpsPilot AI Daily Executive Briefing\n", encoding="utf-8")
     metadata = {
         "run_id": run_id,
         "started_at": "2026-05-30T12:00:00Z",
@@ -453,9 +456,7 @@ async def test_get_run_metadata_is_sanitized_and_safe(db_session: AsyncSession, 
 
 
 @pytest.mark.asyncio
-async def test_get_run_metadata_allowlist_and_artifact_filtering(
-    db_session: AsyncSession, tmp_path: Path
-):
+async def test_get_run_metadata_allowlist_and_artifact_filtering(db_session: AsyncSession, tmp_path: Path):
     run_id = "run-20260530-120000-014"
     await _seed_run(
         db_session,

@@ -110,10 +110,6 @@ def safe_history_metadata(payload: dict[str, Any]) -> dict[str, Any]:
 
 def resolve_input_file(input_file: str) -> Path:
     candidate = Path(input_file)
-    if (
-        candidate.is_absolute()
-        or any(part in {".", ".."} for part in candidate.parts)
-        or len(candidate.parts) != 1
-    ):
+    if candidate.is_absolute() or any(part in {".", ".."} for part in candidate.parts) or len(candidate.parts) != 1:
         raise HTTPException(status_code=400, detail="input_file must be a filename in data/raw")
     return RAW_INPUT_DIR / candidate.name

@@ -58,9 +58,7 @@ async def upsert_work_items(session: AsyncSession, items: list[dict[str, Any]]) 
     return len(rows)
 
 
-async def upsert_run_from_metadata(
-    session: AsyncSession, metadata: dict[str, Any], run_dir: Path
-) -> str:
+async def upsert_run_from_metadata(session: AsyncSession, metadata: dict[str, Any], run_dir: Path) -> str:
     run_id = str(metadata["run_id"])
     stmt = pg_insert(RunRow).values(
         {
@@ -131,11 +129,7 @@ async def _upsert_triage_from_json(session: AsyncSession, run_id: str, text: str
     if not isinstance(payload, list):
         return
 
-    existing_ids = set(
-        (
-            await session.execute(select(WorkItemRow.id))
-        ).scalars().all()
-    )
+    existing_ids = set((await session.execute(select(WorkItemRow.id))).scalars().all())
 
     for record in payload:
         if not isinstance(record, dict):
@@ -253,9 +247,7 @@ def main(argv: list[str] | None = None) -> int:
 
         _asyncio.set_event_loop_policy(_asyncio.WindowsSelectorEventLoopPolicy())
 
-    stats = asyncio.run(
-        run_import(sample_path=sample_path, history_root=history_root)
-    )
+    stats = asyncio.run(run_import(sample_path=sample_path, history_root=history_root))
     print(
         f"Imported work_items_upserted={stats['work_items']} "
         f"runs_upserted={stats['runs']} "

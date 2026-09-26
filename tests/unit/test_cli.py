@@ -5,7 +5,9 @@ import pytest
 from opspilot.cli import main
 
 
-def test_cli_exits_with_code_1_on_validation_error(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_exits_with_code_1_on_validation_error(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     monkeypatch.setattr(
         sys,
         "argv",

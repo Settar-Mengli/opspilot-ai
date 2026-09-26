@@ -125,15 +125,11 @@ def generate_insights(
         )
 
         if not response.content or len(response.content) == 0:
-            return _fallback_response(
-                "I wasn't able to analyze the data this time. Please try again."
-            )
+            return _fallback_response("I wasn't able to analyze the data this time. Please try again.")
 
         text_block = response.content[0]
         if not hasattr(text_block, "text"):
-            return _fallback_response(
-                "I received an unexpected response shape. Please try again."
-            )
+            return _fallback_response("I received an unexpected response shape. Please try again.")
 
         raw_text = text_block.text.strip()
         cleaned = _strip_code_fences(raw_text)
@@ -142,9 +138,7 @@ def generate_insights(
             parsed = json.loads(cleaned)
         except json.JSONDecodeError as exc:
             logger.warning("Insights JSON parse failed: %s. Raw text: %s", exc, raw_text[:300])
-            return _fallback_response(
-                "I had trouble structuring my analysis. Please try refreshing."
-            )
+            return _fallback_response("I had trouble structuring my analysis. Please try refreshing.")
 
         # Validate the shape
         if not isinstance(parsed, dict):
@@ -165,11 +159,13 @@ def generate_insights(
             body = str(item.get("body", "")).strip()
             category = str(item.get("category", "")).strip().lower()
             if title and body:
-                clean_insights.append({
-                    "title": title,
-                    "body": body,
-                    "category": category or "general",
-                })
+                clean_insights.append(
+                    {
+                        "title": title,
+                        "body": body,
+                        "category": category or "general",
+                    }
+                )
 
         return {
             "intro": intro,
@@ -178,6 +174,5 @@ def generate_insights(
     except Exception as exc:
         logger.exception("Insights adapter error: %s", exc)
         return _fallback_response(
-            "I ran into an issue analyzing the data. The API may be unavailable. "
-            "Please try again in a moment."
+            "I ran into an issue analyzing the data. The API may be unavailable. Please try again in a moment."
         )

@@ -1,4 +1,5 @@
 """Capability registry for OpsPilot integrations."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

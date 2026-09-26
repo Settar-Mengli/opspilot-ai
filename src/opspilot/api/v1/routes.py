@@ -149,10 +149,7 @@ def get_run_triage(run_id: str, session: Session = Depends(get_db_session)) -> l
 @router.get("/briefing", response_class=PlainTextResponse)
 def get_briefing(session: Session = Depends(get_db_session)) -> str:
     result = session.execute(
-        select(RunArtifactRow)
-        .where(RunArtifactRow.name == "daily_briefing")
-        .order_by(desc(RunArtifactRow.id))
-        .limit(1)
+        select(RunArtifactRow).where(RunArtifactRow.name == "daily_briefing").order_by(desc(RunArtifactRow.id)).limit(1)
     )
     row = result.scalar_one_or_none()
     if row is not None:

@@ -46,9 +46,7 @@ class RunRow(Base):
         default=lambda: datetime.now(UTC),
     )
 
-    artifacts: Mapped[list[RunArtifactRow]] = relationship(
-        back_populates="run", cascade="all, delete-orphan"
-    )
+    artifacts: Mapped[list[RunArtifactRow]] = relationship(back_populates="run", cascade="all, delete-orphan")
     triage_decisions: Mapped[list[TriageDecisionRow]] = relationship(back_populates="run")
 
 
@@ -57,9 +55,7 @@ class RunArtifactRow(Base):
     __table_args__ = (UniqueConstraint("run_id", "name", name="uq_run_artifacts_run_name"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    run_id: Mapped[str] = mapped_column(
-        String(128), ForeignKey("runs.run_id", ondelete="CASCADE"), nullable=False
-    )
+    run_id: Mapped[str] = mapped_column(String(128), ForeignKey("runs.run_id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     content_type: Mapped[str] = mapped_column(String(32), nullable=False)  # json | text
     content: Mapped[str] = mapped_column(Text, nullable=False)
@@ -69,9 +65,7 @@ class RunArtifactRow(Base):
 
 class TriageDecisionRow(Base):
     __tablename__ = "triage_decisions"
-    __table_args__ = (
-        UniqueConstraint("work_item_id", "run_id", name="uq_triage_work_item_run"),
-    )
+    __table_args__ = (UniqueConstraint("work_item_id", "run_id", name="uq_triage_work_item_run"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     work_item_id: Mapped[str] = mapped_column(

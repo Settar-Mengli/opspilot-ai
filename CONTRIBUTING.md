@@ -46,14 +46,18 @@ Conventional Commits: `feat:` · `fix:` · `docs:` · `test:` · `chore:`
 
 ```powershell
 docker compose up -d db
-uv sync --extra dev
+uv sync
+uv run pre-commit install
 $env:DATABASE_URL='postgresql+psycopg://opspilot:opspilot@127.0.0.1:5432/opspilot'
 uv run alembic upgrade head
 uv run pytest -q --randomly-seed=1
 uv run ruff check .
+uv run ruff format --check .
 uv run mypy src/opspilot
 cd frontend; npm ci; npm run lint; npm test -- --run; npm run build
 ```
+
+Before every commit: ruff check, ruff format --check, mypy, pytest — never push a red commit.
 
 API entrypoint: `uv run uvicorn opspilot.api.app:app --app-dir src --reload`
 

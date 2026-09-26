@@ -16,9 +16,7 @@ def error_body(*, code: str, message: str, details: object | None = None) -> dic
 
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
-    async def validation_handler(
-        _request: Request, exc: RequestValidationError
-    ) -> JSONResponse:
+    async def validation_handler(_request: Request, exc: RequestValidationError) -> JSONResponse:
         return JSONResponse(
             status_code=422,
             content=error_body(

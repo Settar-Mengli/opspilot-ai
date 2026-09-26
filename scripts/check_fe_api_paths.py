@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """F2a proof: no legacy API paths in frontend/src/api."""
+
 import re
 import subprocess
 import sys

@@ -19,7 +19,8 @@ dependencies = [
 	"alembic>=1.20.0",
 ]
 
-[project.optional-dependencies]
+# PEP 735: plain `uv sync` installs the default dependency group (dev).
+[dependency-groups]
 dev = [
 	"pytest>=8.0",
 	"httpx",
@@ -29,7 +30,11 @@ dev = [
 	"pytest-asyncio>=1.4.0",
 	"ruff>=0.9",
 	"mypy>=1.14",
+	"pre-commit>=4.0",
 ]
+
+[tool.uv]
+default-groups = ["dev"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -41,7 +46,7 @@ include = ["opspilot*"]
 [tool.pytest.ini_options]
 pythonpath = ["src", "."]
 testpaths = ["tests"]
-addopts = "--disable-socket --allow-hosts=127.0.0.1,localhost,postgres"
+addopts = "--disable-socket --allow-hosts=127.0.0.1,localhost"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 markers = [

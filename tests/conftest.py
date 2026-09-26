@@ -38,8 +38,7 @@ def _block_real_anthropic_client(monkeypatch: pytest.MonkeyPatch) -> None:
 
     def _forbidden(*_args, **_kwargs):  # type: ignore[no-untyped-def]
         raise AssertionError(
-            "anthropic.Anthropic must not be constructed during tests "
-            "(OPSPILOT_FORCE_RULES / hermetic guard)"
+            "anthropic.Anthropic must not be constructed during tests (OPSPILOT_FORCE_RULES / hermetic guard)"
         )
 
     monkeypatch.setattr(anthropic, "Anthropic", _forbidden)
@@ -59,9 +58,7 @@ def _admin_sync_url() -> str:
 
 def _db_url(database: str) -> str:
     parsed = make_url(_base_url_from_env())
-    return parsed.set(drivername="postgresql+psycopg", database=database).render_as_string(
-        hide_password=False
-    )
+    return parsed.set(drivername="postgresql+psycopg", database=database).render_as_string(hide_password=False)
 
 
 def _ensure_database(database: str) -> None:
@@ -120,10 +117,7 @@ async def db_session(
     factory = create_session_factory(engine)
     async with engine.begin() as conn:
         await conn.execute(
-            text(
-                "TRUNCATE TABLE triage_decisions, run_artifacts, runs, work_items "
-                "RESTART IDENTITY CASCADE"
-            )
+            text("TRUNCATE TABLE triage_decisions, run_artifacts, runs, work_items RESTART IDENTITY CASCADE")
         )
     async with factory() as session:
         yield session

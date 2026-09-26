@@ -59,9 +59,7 @@ async def test_history_import_idempotent_synthetic(
         }
     ]
     (run_dir / "triage_results.json").write_text(json.dumps(triage), encoding="utf-8")
-    (run_dir / "daily_briefing.txt").write_text(
-        "OpsPilot AI Daily Executive Briefing\n", encoding="utf-8"
-    )
+    (run_dir / "daily_briefing.txt").write_text("OpsPilot AI Daily Executive Briefing\n", encoding="utf-8")
     metadata = {
         "run_id": run_id,
         "started_at": "2026-05-30T12:00:00Z",
@@ -92,9 +90,7 @@ async def test_history_import_idempotent_synthetic(
 
 
 @pytest.mark.asyncio
-async def test_history_import_real_when_present(
-    db_session: AsyncSession, test_database_url: str
-) -> None:
+async def test_history_import_real_when_present(db_session: AsyncSession, test_database_url: str) -> None:
     if not HISTORY_ROOT.is_dir():
         pytest.skip("data/history/runs not present")
     run_files = list(HISTORY_ROOT.rglob("run.json"))

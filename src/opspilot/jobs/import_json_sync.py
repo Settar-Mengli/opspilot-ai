@@ -51,9 +51,7 @@ def import_sample_file_sync(session: Session, path: Path) -> int:
     return upsert_work_items_sync(session, payload)
 
 
-def upsert_run_from_metadata_sync(
-    session: Session, metadata: dict[str, Any], run_dir: Path
-) -> str:
+def upsert_run_from_metadata_sync(session: Session, metadata: dict[str, Any], run_dir: Path) -> str:
     run_id = str(metadata["run_id"])
     stmt = pg_insert(RunRow).values(
         {

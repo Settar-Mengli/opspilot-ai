@@ -81,7 +81,7 @@ class ClaudeAdapter(TriageAdapter):
         if cleaned.startswith("```"):
             # Remove opening fence (with optional language tag)
             first_newline = cleaned.index("\n")
-            cleaned = cleaned[first_newline + 1:]
+            cleaned = cleaned[first_newline + 1 :]
         if cleaned.endswith("```"):
             cleaned = cleaned[:-3].strip()
         parsed = json.loads(cleaned)

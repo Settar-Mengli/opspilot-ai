@@ -29,7 +29,7 @@ def get_adapter() -> TriageAdapter:
     is missing or the SDK is unavailable.
     """
     if _force_rules_enabled():
-        logger.info("OPSPILOT_FORCE_RULES set; using rule-based adapter")
+        logger.warning("OPSPILOT_FORCE_RULES set; using rule-based adapter (tests/CI only — do not set in deploy)")
         return RuleBasedAdapter()
 
     try:

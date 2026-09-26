@@ -61,9 +61,7 @@ def run_daily_ops(input_path: str, output_dir: str, run_date: str) -> dict[str, 
 
             triage_records.append(triage)
             action_items.extend(actions)
-            suggested_responses.append(
-                SuggestedResponse(work_item_id=item.id, suggested_response=response_text)
-            )
+            suggested_responses.append(SuggestedResponse(work_item_id=item.id, suggested_response=response_text))
 
         output_path = Path(output_dir)
         run_id = generate_run_id(started_at)
@@ -91,9 +89,7 @@ def run_daily_ops(input_path: str, output_dir: str, run_date: str) -> dict[str, 
         write_json_file(response_file, response_payload)
         write_text_file(briefing_file, briefing)
 
-        ai_briefing = generate_ai_briefing(
-            run_date, triage_records, action_items, normalized_items, briefing
-        )
+        ai_briefing = generate_ai_briefing(run_date, triage_records, action_items, normalized_items, briefing)
         ai_briefing_file = output_path / "ai_briefing.txt"
         write_text_file(ai_briefing_file, ai_briefing)
 

@@ -139,9 +139,7 @@ def test_generate_daily_briefing_falls_back_when_no_previous_run(tmp_path: Path)
 
     briefing = generate_daily_briefing(
         run_date="2026-05-30",
-        triage_records=[
-            TriageRecord("WI-001", "medium", "", "request", "", "neutral", "")
-        ],
+        triage_records=[TriageRecord("WI-001", "medium", "", "request", "", "neutral", "")],
         action_items=_sample_action_items(),
         work_items=_sample_work_items(),
         current_run_id=current_run_id,
@@ -201,9 +199,7 @@ def test_generate_daily_briefing_handles_missing_previous_triage_artifact(tmp_pa
 
     briefing = generate_daily_briefing(
         run_date="2026-05-30",
-        triage_records=[
-            TriageRecord("WI-001", "high", "", "incident", "", "negative", "")
-        ],
+        triage_records=[TriageRecord("WI-001", "high", "", "incident", "", "negative", "")],
         action_items=_sample_action_items(),
         work_items=_sample_work_items(),
         current_run_id=current_run_id,
@@ -231,9 +227,7 @@ def test_generate_daily_briefing_trend_skips_malformed_historical_triage_artifac
 
     briefing = generate_daily_briefing(
         run_date="2026-05-30",
-        triage_records=[
-            TriageRecord("WI-001", "critical", "", "incident", "", "negative", "")
-        ],
+        triage_records=[TriageRecord("WI-001", "critical", "", "incident", "", "negative", "")],
         action_items=_sample_action_items(),
         work_items=_sample_work_items(),
         current_run_id=current_run_id,
