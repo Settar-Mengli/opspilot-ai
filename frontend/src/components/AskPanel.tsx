@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { askOpsPilot } from '../api/client'
 import type { AskMessage } from '../api/types'
+import { useOverlay } from '../hooks/useOverlay'
 
 interface Props {
   open: boolean
@@ -66,20 +67,7 @@ export function AskPanel({ open, assistantName, initialQuestion, onClose }: Prop
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  // Scroll-lock + Escape-to-close
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prevOverflow
-    }
-  }, [open, onClose])
+  const { onBackdropClick } = useOverlay({ open, onClose })
 
   if (!open) return null
 
@@ -96,7 +84,7 @@ export function AskPanel({ open, assistantName, initialQuestion, onClose }: Prop
   }
 
   return (
-    <div className="ask-panel-overlay" onClick={onClose}>
+    <div className="ask-panel-overlay" onClick={onBackdropClick}>
       <div className="ask-panel" onClick={(e) => e.stopPropagation()}>
         <div className="ask-panel-header">
           <div className="ask-panel-title">
