@@ -25,19 +25,46 @@ Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs
 |------|------|
 | `src/opspilot/api/main.py` | FastAPI app, CORS localhost, routes |
 | `src/opspilot/config/settings.py` | `AISettings` singleton (conversation only) |
-| `src/opspilot/adapters/` | rule_based, claude, conversation, evening, insights, briefing, factory |
-| `src/opspilot/pipeline/` | Daily ops orchestration |
-| `src/opspilot/cli/` | CLI entry (`python -m opspilot.cli`) |
-| `src/opspilot/schemas.py` | WorkItem / triage shapes |
+| `src/opspilot/adapters/` | rule_based, claude, conversation, evening, insights, briefing, factory, base |
+| `src/opspilot/pipeline/` | Daily ops orchestration (`run_daily_ops.py`) |
+| `src/opspilot/cli.py` | CLI entry (`python -m opspilot.cli`) |
+| `src/opspilot/models/schemas.py` | WorkItem / triage shapes |
+| `src/opspilot/ingest/` | loader, normalizer |
+| `src/opspilot/nlp/` | action_extractor, briefing_generator, response_drafter |
+| `src/opspilot/rules/` | triage_rules |
+| `src/opspilot/history/` | run_history |
+| `src/opspilot/utils/` | file_io, logging_utils |
+| `src/opspilot/capabilities/` | registry |
 | `frontend/src/` | React 19 + Vite UI |
 | `data/raw/`, `data/output/`, `data/history/` | JSON sample + artifacts |
 | **Missing** | `src/opspilot/__init__.py` |
 
-### Endpoints (CURRENT)
+### Endpoints (CURRENT) — 18 route operations
 
-Typical routes include: health, triage/run, briefing, ask, evening-summary, insights, runs, `GET`/`PATCH /api/settings`. Exact list is in `main.py`.
+Verified in `src/opspilot/api/main.py`:
 
-Notable: `PATCH /api/settings` can set provider/model/**API key** without auth (**SEC-01** — deploy gate). `/run` may spawn CLI **subprocess** (V3).
+| Method | Path |
+|--------|------|
+| GET | `/health` |
+| GET | `/api/settings` |
+| PATCH | `/api/settings` |
+| POST | `/run` |
+| GET | `/briefing` |
+| GET | `/runs` |
+| GET | `/runs/{run_id}` |
+| GET | `/triage` |
+| GET | `/runs/{run_id}/triage` |
+| GET | `/runs/{run_id}/briefing` |
+| GET | `/ai-briefing` |
+| GET | `/runs/{run_id}/ai-briefing` |
+| POST | `/ask` |
+| POST | `/evening-summary` |
+| POST | `/insights` |
+| GET | `/inputs` |
+| GET | `/capabilities` |
+| GET | `/capabilities/{capability_id}` |
+
+Notable: `PATCH /api/settings` can set provider/model/**API key** without auth (**SEC-01** — deploy gate). `POST /run` **spawns** a CLI subprocess (`subprocess.run` of `python -m opspilot.cli`) — V3.
 
 ### Adapters / settings
 
@@ -72,68 +99,196 @@ Full audit: [docs/audits/2026-09-25-baseline-audit.md](audits/2026-09-25-baselin
 
 ## TARGET
 
-### Package layout + dependency rules
+### Package layout + dependency rules (D-024)
 
-Keep `src/opspilot/` + `frontend/` (D-022). Evolve toward:
+Keep `src/opspilot/` + `frontend/` (D-022). TARGET tree (principal-review §2.1):
 
-- `domain/` — WorkItem, Run, Preference, LlmCall, …
-- `gateway/` — provider interface, routing, budget gate, structured outputs
-- `agent/` — bounded tool loop (B5)
-- `db/` — SQLAlchemy models + Alembic (B1)
-- `evals/` — pytest harness (B3)
-- Adapters become thin wrappers over the gateway — no direct SDK sprawl in feature modules.
+```
+src/opspilot/
+  __init__.py
+  api/
+    app.py
+    deps.py
+    errors.py                 # single error envelope
+    v1/
+      routes_health.py
+      routes_runs.py
+      routes_triage.py
+      routes_ask.py           # + SSE
+      routes_drafts.py
+      routes_prefs.py
+      routes_admin.py         # settings read-only
+  domain/
+    models.py
+    enums.py
+  services/
+    triage_service.py
+    briefing_service.py
+    ask_service.py
+    sync_service.py
+    draft_service.py
+    preference_service.py
+  llm/
+    gateway.py
+    types.py
+    routing.py
+    budgets.py
+    prompts/
+    providers/
+      gemini.py
+      groq.py
+      ollama.py
+      anthropic.py            # prepaid gated only
+  agent/
+    loop.py
+    tools/
+      search_items.py
+      get_message.py
+      get_calendar.py
+      draft_reply.py
+      send_reply.py
+    events.py
+  integrations/
+    google_oauth.py
+    gmail_client.py
+    calendar_client.py
+  persistence/
+    db.py
+    repositories/
+    migrations/               # Alembic
+  jobs/
+    morning_run.py
+    sync_mail.py
+  evals/
+    datasets/
+    metrics/
+    runners/
+  obs/
+    tracing.py
+    metrics.py
+  config/
+    settings.py               # env-only secrets
+  rules/
+    triage_rules.py
+```
 
-**Dependency rule:** Feature code → domain/gateway; never import provider SDKs outside gateway.
+**Dependency rules:**
+
+- `api` → `services` → (`domain`, `llm`, `agent`, `integrations`, `persistence`)
+- `agent` → `llm` + read services; never `integrations.send` without approval service
+- `evals` may use `rules` + LLM fakes; never load `.env` keys in CI lane
+- `integrations` must not import `api`
+- No upward imports from `llm` into `api`
+- Provider SDKs only inside `llm/providers/`
 
 ### Domain model (minimum)
 
-WorkItem, TriageRecord (with title/subject), Run, Preference, Approval, LlmCall (tokens/USD), SyncCursor (Gmail/Calendar), DemoMode flag.
+| Entity | Key fields | Relationships |
+|--------|------------|---------------|
+| **User** | id, email, google_sub, role=`demo_operator`\|`visitor` | 1:n runs, prefs |
+| **WorkItem** | id, source, subject, body, sender, received_at, thread_id, provider_id **unique**, raw_json | n:1 Thread |
+| **Thread** | id, subject, participants | 1:n WorkItems |
+| **TriageDecision** | urgency, category, sentiment, reasons, **confidence**, **evidence_refs**, model, prompt_version | n:1 WorkItem |
+| **Commitment** | text, due_at, status | DEFER table OK empty |
+| **Meeting** | calendar_event_id, start, end, title, attendees | |
+| **Draft** | work_item_id, body, status=`pending`\|`approved`\|`sent`\|`rejected` | |
+| **Approval** | draft_id, user_id, decided_at, decision | |
+| **Preference** | key, value, source=`user_correction` | |
+| **Feedback** | triage_decision_id, correct_label?, note, promoted_to_eval | |
+| **Run** | kind=`morning`\|`manual`\|`sync`, status, started_at, stats | |
+| **LlmCall** | task, provider, model, latency_ms, ttft_ms, tokens_in/out, USD fields, prompt_version, status | |
+| **DemoMailbox** | fictional account binding (operator-only) | |
+| **SyncCursor** | provider sync checkpoints (X1) | |
 
 ### API `/api/v1`
 
-Versioned REST under `/api/v1`. Env/operator settings — **no API-key PATCH from browsers**. SSE endpoint for Ask. Authenticated webhook for morning cron (B6).
+- Prefix: **`/api/v1`**
+- Error envelope: `{ "error": { "code": str, "message": str, "details": object|null } }`
+- Auth: session cookie (HTTP-only) after Google OAuth for operator; visitor = read-only demo, no Google link
+- Rate limit: per IP + per user on LLM routes
+- Streaming: `POST /api/v1/ask/stream` → `text/event-stream`
+- Settings: `GET /api/v1/settings` **read-only** (no keys); **no** key PATCH
+
+**Current → future map**
+
+| Current | Future |
+|---------|--------|
+| `GET /health` | `GET /api/v1/health` (+ `GET /api/v1/ready` checks DB) |
+| `GET/PATCH /api/settings` | `GET /api/v1/settings` read-only; **remove PATCH** |
+| `POST /run` | `POST /api/v1/runs` (in-process; no subprocess) |
+| `GET /briefing`, `/ai-briefing` | `GET /api/v1/briefings/latest` |
+| `GET /triage` | `GET /api/v1/triage` |
+| `GET /runs*` | `GET /api/v1/runs`, `.../{id}` |
+| `POST /ask` | `POST /api/v1/ask` + `/ask/stream` |
+| `POST /evening-summary` | `POST /api/v1/evening-summary` |
+| `POST /insights` | `POST /api/v1/insights` |
+| `GET /inputs` | remove or admin-only |
+| `GET /capabilities*` | keep as product roadmap UI or static |
 
 ### LLM gateway + Anthropic prepaid gate (D-012, D-023)
 
-**Default order:** `gemini → groq → ollama → rules` (task-dependent). Anthropic **never** in default list.
+```text
+complete(task, messages, schema=None) -> Result
+stream(task, messages) -> AsyncIterator[Event]
+```
 
-Anthropic side channel: enable flag + allowlisted tasks + hard **token and USD** remaining budget; debit via LlmCall; fail closed. Never tests/CI; never visitor Ask (D12).
+**Default order:** `gemini → groq → ollama → rules` (task-dependent). Anthropic **never** in the default list.
+
+- **Failover:** on 429/5xx/timeout; honor Retry-After; circuit open N minutes
+- **Budgets:** daily req/token caps per free provider from env; Anthropic hard **token and USD** remaining (D-023)
+- **Structured output:** native JSON schema/mode → Pydantic; retry once; fail closed
+- **Prompts:** `llm/prompts/{name}/v{N}.md` + sha256 in `LlmCall`
+- **Tracing:** `obs.tracing` + persist `LlmCall`
+- Anthropic: enable flag + allowlisted tasks only; never tests/CI; never visitor Ask (D2/D11)
 
 ### Agent loop + approval boundary (D-014)
 
-Bounded steps; read-only tools until B5 approve&send; human approval required before any send; DEMO visitors cannot send.
+- Tools as JSON schemas; allowlist in config: `search_items`, `get_message`, `get_calendar`, `draft_reply`, `send_reply`
+- Max steps (e.g. 5), max wall time, max tokens
+- Read-only tools until approve&send; `send_reply` requires approved `approval_id`
+- SSE events: `token`, `tool_start`, `tool_end`, `final`, `error`
+- DEMO_MODE visitors cannot send
 
-### Eval lanes (D-018)
+### Eval lanes (D-018) + amendment
 
 | Lane | When | Anthropic? |
 |------|------|------------|
-| Deterministic | CI | No |
-| Local model | Optional / nightly | No |
+| Deterministic | Always CI | No |
+| Local model | CI optional / nightly | No |
 | Hosted free | Manual / weekly | No |
 | Prepaid quality | Operator, budgeted | Yes, gated |
 | Judge calibration | Manual subset | Optional gated |
 
-Injection red-team shares the **same harness** as evals (B3).
+Datasets under `evals/datasets/` (fictional). Metrics: precision/recall/F1, confusion matrix, groundedness (ID citation), judge score. Injection red-team shares the **same harness** (B3). ASR tracked in CI.
 
 ### Security
 
-- Env-only secrets; remove key from PATCH.
-- Hermetic fakes in tests.
-- Cron HMAC (X2).
-- OAuth Testing forever; operator demo account only (D-016).
-- Rate limits before public (B7).
+- Secrets: env / host secret store only; FE never sees keys
+- Auth: Google OAuth operator; visitors anonymous read-only
+- Injection: system prompt policy + **untrusted-content delimiters** around email bodies + CI red-team ASR
+- PII: fictional policy; if detector fires → **Ollama-only** path
+- X2 HMAC `POST /api/v1/jobs/morning` — **B7 optional** only (D-011); B6 does not need public webhook
+- Rate limits before public (B7)
+- DEMO_MODE blocks send for visitors
 
 ### Frontend
 
-Fetch + hooks (D-020). Vitest minimal suite; TS `strict` trajectory; panel lifecycle consistency; SSE AskPanel in B5. Design system retained (calm Anthropic-inspired palette).
+- React Router; **standardize panels** to conditional mount + shared `useOverlay` (X8 in B5)
+- Fetch + React state (D-020); TanStack Query only if cache pain appears
+- SSE: EventSource or fetch stream reader in AskPanel
+- PWA out of spine; Telegram link in settings for operator
+- Types: OpenAPI-lite generated/checked in CI (X7 in B1)
+- B1 exits: TS `strict` on; minimal vitest in CI; react-router upgraded (`npm audit --omit=dev` 0 high)
 
 ### Jobs / scheduling
 
 **CURRENT:** Manual CLI/API only; no in-app scheduler. Local Windows Task Scheduler remains a valid **dev** path.
 
-**TARGET (B6):** GitHub Actions cron → authenticated backend webhook → morning triage/brief → Telegram notify (D-011, D-017). Tolerate free-tier cold starts. No Celery.
+**TARGET B6 (D-011):** GitHub Actions cron runs `morning_run` **inside the runner** (install package; GHA secrets for Gemini/Groq, Neon URL, Telegram token, token-encryption key; Google refresh token read encrypted from Neon). Writes Neon; notifies Telegram. **No public backend** before B7. Fail fast if Neon schema ≠ Alembic head; migrations are operator-applied, never by cron. Auth failure → skip sync, brief from existing data, Telegram re-auth alert.
 
-### Deployment topology (TARGET, B7)
+**TARGET B7:** Public deploy; optional HMAC webhook wake of deployed API (X2).
+
+### Deployment topology
 
 ```mermaid
 flowchart LR
@@ -143,24 +298,27 @@ flowchart LR
   Neon[(NeonPostgres)]
   Gemini[GeminiAPI]
   Groq[GroqAPI]
-  Ollama[OllamaLocal]
+  Gmail[DemoGmailCalendar]
   GHA[GitHubActionsCron]
   Tg[TelegramBot]
-  Gmail[DemoGmailCalendar]
+  Dev[Developer]
+  Ollama[OllamaLocal]
 
   Visitor --> FE
   FE --> BE
   BE --> Neon
   BE --> Gemini
   BE --> Groq
-  BE --> Ollama
-  GHA -->|"HMAC webhook"| BE
-  BE --> Tg
   BE --> Gmail
+  GHA -->|"B6 in-runner write"| Neon
+  GHA -->|"B6 notify"| Tg
+  GHA -->|"B7 optional HMAC"| BE
+  Dev --> Ollama
+  Dev --> BE
 ```
 
-No custom domain. Anthropic only via operator budgeted scripts, not visitor path.
+No custom domain. Anthropic only via operator budgeted scripts, not visitor path. Ollama is **local/CI only** — not wired from deployed BE.
 
 ### Deliberately simple
 
-No LangGraph, LiteLLM, Celery, Qdrant, visitor BYOK, multi-tenant, LoRA, or MCP client in the locked spine.
+No LangGraph, LiteLLM, Celery, Qdrant, visitor BYOK, multi-tenant beyond operator vs visitor, LoRA, MCP client, or custom domain in the locked spine.
