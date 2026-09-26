@@ -33,6 +33,12 @@
   --r-xl: 20px;
   --font-ui: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-prose: 'Lora', Georgia, serif;
+  /* Aliases for legacy selectors (C16 / OD-4 fold-in) */
+  --fg: var(--text-1);
+  --fg-muted: var(--text-3);
+  --text: var(--text-1);
+  --muted: var(--text-3);
+  --red: #c0392b;
 }
 
 html { font-size: 14px; }
