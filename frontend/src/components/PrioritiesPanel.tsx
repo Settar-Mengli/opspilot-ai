@@ -50,7 +50,7 @@ export function PrioritiesPanel({ open, records, onClose }: Props) {
                   {r.urgency === 'critical' ? 'Critical' : 'High'}
                 </span>
               </div>
-              <p className="ptitle2">{r.id}</p>
+              <p className="ptitle2">{r.subject_or_title ?? r.id}</p>
               <p className="pwhy">{r.urgency_reason}</p>
               <div className="paction">
                 <span className="paction-ic"><ArrowRight size={16} strokeWidth={2} /></span>
