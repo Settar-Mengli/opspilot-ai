@@ -18,7 +18,7 @@
   right: 0;
   background-color: #141413;
   border-top: 1px solid rgba(250, 249, 245, 0.10);
-  padding: 14px 14px 18px;
+  padding: 14px 14px calc(18px + env(safe-area-inset-bottom, 0px));
   align-items: center;
   gap: 10px;
   z-index: 50;
