@@ -40,6 +40,23 @@
   color: var(--text-4);
   margin: 0;
 }
+
+.sample-badge {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: var(--font-ui);
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  vertical-align: middle;
+}
 .greeting-credibility {
   font-family: var(--font-prose);
   font-style: italic;

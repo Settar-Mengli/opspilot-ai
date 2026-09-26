@@ -40,7 +40,10 @@ export function WeekPanel({ open, onClose }: Props) {
         <div className="slide-panel-body">
           <div className="wk-intro">
             <BulBulAvatar size={32} />
-            <p className="wk-intro-txt">It starts gentle and tightens toward Friday. If you protect any day, protect Thursday.</p>
+            <p className="wk-intro-txt">
+              <span className="sample-badge" aria-label="Sample data">Sample</span>
+              It starts gentle and tightens toward Friday. If you protect any day, protect Thursday.
+            </p>
           </div>
 
           {WEEK.map(day => (
