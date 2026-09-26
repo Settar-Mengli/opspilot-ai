@@ -6,25 +6,11 @@ test.describe('e2e flows', () => {
     await preparePage(page, { onboarded: false })
     await page.goto('/')
     await settle(page)
-    await page.locator('.onboarding-input, input').first().fill('Alex')
-    // assistant pick if present
-    const assistantBtn = page.getByRole('button', { name: /bulbul|continue|start/i }).first()
-    if (await assistantBtn.isVisible().catch(() => false)) {
-      await assistantBtn.click()
-    }
-    const submit = page.locator('.onboarding-submit, button[type="submit"]').first()
-    if (await submit.isVisible().catch(() => false)) {
-      await submit.click()
-    }
-    // If still onboarding, click through remaining steps
-    for (let i = 0; i < 3; i++) {
-      const next = page.locator('.onboarding-submit:not(:disabled), button:has-text("Continue"), button:has-text("Start")').first()
-      if (await next.isVisible().catch(() => false)) {
-        await next.click()
-        await page.waitForTimeout(100)
-      }
-    }
-    await expect(page.locator('.app-shell, .dash-hero').first()).toBeVisible({ timeout: 10_000 })
+    await page.locator('.onboarding-input').fill('Alex')
+    await page.locator('.onboarding-submit').click()
+    await page.getByRole('button', { name: 'Ops' }).click()
+    await page.locator('.onboarding-submit').click()
+    await expect(page.locator('.dash-hero')).toBeVisible({ timeout: 10_000 })
   })
 
   test('2 priorities open close Esc backdrop X', async ({ page }) => {
