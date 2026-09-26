@@ -2,43 +2,67 @@
 
 Thanks for contributing to OpsPilot AI.
 
-## Development Principles
+## Principles
 
 - Keep changes scoped and purposeful.
 - Prefer deterministic, testable behavior.
-- Update project documentation when behavior or process changes.
+- Distinguish CURRENT (verified) from TARGET (planned).
+- Update docs when behavior or process changes.
+- Follow [AGENTS.md](AGENTS.md) (zero-spend, hermetic tests, cut-list discipline).
 
-## Branch Naming Convention
+## Workflow (Ask → Plan → Build)
 
-Use one of these patterns:
+1. **Ask** — read-only analysis; no file writes.
+2. **Plan** — owner-approved plan before implementation.
+3. **Build** — implement only the approved step; report; stop for review.
 
-- `feat/<short-topic>`
-- `fix/<short-topic>`
-- `docs/<short-topic>`
-- `chore/<short-topic>`
-- `test/<short-topic>`
+Explain before edit. Small reviewable diffs. Implementation report after each step.
 
-Examples:
+## Branch naming
 
-- `feat/vertical-slice-cli`
-- `docs/milestone-1-scope`
+**Preferred for roadmap work:** one branch per batch:
 
-## Commit Message Convention
+- `b0/docs-architecture-lock`
+- `b1/...`, `b2/...`, …
 
-Use Conventional Commit style:
+Also acceptable for small fixes:
 
-- `feat: add rule-based triage classifier`
-- `fix: correct urgency scoring edge case`
-- `docs: define milestone acceptance criteria`
-- `test: add integration test for daily briefing`
-- `chore: add CI validation workflow`
+- `feat/<short-topic>` · `fix/<short-topic>` · `docs/<short-topic>` · `chore/<short-topic>` · `test/<short-topic>`
 
-## Pull Request Expectations
+## Commit messages
 
-- Keep PRs focused on one intent.
-- Include testing notes in PR description.
-- Include a brief implementation report summary:
-  - What changed
-  - How to run
-  - How to test
-  - Follow-up recommendations
+Conventional Commits:
+
+- `feat:` · `fix:` · `docs:` · `test:` · `chore:`
+
+## Pull requests
+
+- One intent per PR.
+- Include testing notes and a short implementation report (what / run / test / follow-ups).
+- Do not merge CUT-list or out-of-batch scope without an explicit decision.
+
+## Local validation (typical)
+
+```powershell
+.venv\Scripts\python -m pytest -q
+cd frontend; npm run lint; npm run build
+```
+
+Key check (True/False only — never print secrets):
+
+```powershell
+(Select-String -Path .env -Pattern '^\s*(ANTHROPIC_API_KEY|OPSPILOT_AI_API_KEY)\s*=\s*\S' -Quiet)
+```
+
+Expect **False** during zero-spend hermetic work unless running an explicit budgeted operator script.
+
+## Documentation sources of truth
+
+| Topic | File |
+|-------|------|
+| Locked plan | `OPSPILOT-MASTER-RECORD.md` |
+| Batches B0–B7 | `ROADMAP.md` |
+| CURRENT vs TARGET architecture | `docs/architecture.md` |
+| Decisions | `docs/adr/` |
+| Agent rules | `AGENTS.md` |
+| Runbooks | `docs/runbooks/` |

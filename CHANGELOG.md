@@ -7,72 +7,28 @@ and this project follows Semantic Versioning principles for release tags.
 
 ## [Unreleased]
 
-
 ### Added
 
-- Repository trust and governance foundation files.
-- Initial CI skeleton workflow for basic repository validation on push and pull requests.
-- Hardened input schema validation for loader-level JSON and field-shape checks.
-- Structured logging helpers and pipeline lifecycle logging events.
-- User-facing CLI error handling with deterministic exit code for recoverable failures.
-- Unit tests for loader validation and CLI failure behavior.
-- Deterministic `urgency_reason`, `category_reason`, and `sentiment_reason` fields in triage output.
-- Improved executive briefing Top Priorities formatting to include item ID and title.
-- Updated unit and integration tests for explainability output and briefing formatting.
-- FastAPI-based local API layer (`src/opspilot/api/main.py`)
-- Endpoints: `/health`, `/run`, `/briefing`, `/triage`
-- OpenAPI/Swagger docs
-- API tests (`tests/api/test_api.py`)
-- Updated README with API usage and endpoints
-- React + Vite + TypeScript frontend in `frontend/` for local command center experience
-- Command center routes: Dashboard, Triage Explorer, Executive Briefing
-- Header health indicator and global API unavailable banner based on `GET /health`
-- Explainability drawer in triage explorer showing urgency/category/sentiment reasons
-- Frontend env template `frontend/.env.example` for `VITE_API_BASE_URL`
-- Immutable local run-history artifacts under `data/history/runs/YYYY/MM/DD/run-YYYYMMDD-HHMMSS-sss/`
-- Run metadata artifact `run.json` per successful run
-- Run-history API endpoints:
-	- `GET /runs`
-	- `GET /runs/{run_id}`
-	- `GET /runs/{run_id}/triage`
-	- `GET /runs/{run_id}/briefing`
-- Frontend historical snapshot support via shared run selector and `?run_id=` query parameter
-- Dashboard run history panel and latest/historical status context badge
-- Executive Briefing "Since Last Run" delta section comparing priority counts (`critical`, `high`, `medium`, `low`) to the immediately previous run
-- Executive Briefing "Recent Trend (Last 7 Runs)" section summarizing deterministic high-risk (`critical + high`) counts and net change
-- Frontend unit/component test baseline with Vitest + Testing Library
-- Focused frontend tests for briefing parsing robustness, API unavailable banner behavior, and run selector latest/historical behavior
-- API tests for metadata allow-listing and artifact-name edge-case handling
-- API tests for local-origin CORS preflight behavior
+- **B0 docs lock:** session history (`docs/history/`), audit corpus (`docs/audits/`), `OPSPILOT-MASTER-RECORD.md`, ADR set D-001–D-023, rewritten architecture/roadmap (batches B0–B7), runbooks, glossary updates.
 
 ### Changed
 
-- Hardened API run contract in `src/opspilot/api/main.py`:
-	- `date` is validated by API request schema
-	- subprocess execution uses `sys.executable`
-	- `input_file` is restricted to filenames under `data/raw`
-	- subprocess execution now has a bounded timeout for reliability
-- `/triage` now returns parsed JSON payloads instead of raw JSON strings
-- `/run` now returns safe structured error payloads and avoids exposing raw stderr to clients
-- Strengthened API tests in `tests/api/test_api.py` for JSON shape, timeout handling, subprocess failure behavior, and invalid date input
-- Cleaned duplicated/stale sections in `README.md` and aligned wording to CLI + local API
-- Added a short Security & Reliability section to `README.md`
-- Added explicit restart handoff section to `PROGRESS.md`
-- Moved `fastapi` and `uvicorn[standard]` to runtime dependencies in `pyproject.toml`
-- Expanded README run instructions to include local frontend startup and API/UI flow
-- Updated architecture and demo docs to include command center UI walkthrough
-- Pipeline now writes immutable run artifacts while preserving latest-output compatibility in `data/output/`
-- Frontend pages now support both Latest and Historical run contexts without adding new routes
-- Briefing delta markers now use ASCII-only output for terminal compatibility:
-	- `0` for no change
-	- `+N` for increase
-	- `-N` for decrease
-- CI workflow now runs backend `pytest -q` and frontend `npm ci`, `npm run lint`, and `npm run build` on push and pull request
-- Run-history metadata API responses now sanitize `input_file`, `output_dir`, and `history_dir` for `GET /runs` and `GET /runs/{run_id}`
-- Expanded API metadata safety tests to assert sanitized fields are excluded and artifact names remain path-safe
-- Added API test coverage to reject traversal-like run IDs for `GET /runs/{run_id}` metadata endpoint
-- Run-history metadata responses now use explicit allow-listed key shaping at API boundary
-- Artifact names in metadata responses now drop invalid/path-like/empty/unexpected values defensively
-- CORS policy now explicitly allows `GET` and `POST` for local UI origins only, with credentials disabled
-- README and docs now include local-first security checklist, reproducible validation flow, scheduling status clarity, and roadmap-only integration notes
-- `.gitignore` now includes frontend generated artifacts and local runtime log hygiene
+- Roadmap IDs are **B0–B7** (former M0–M10 nested as workstreams).
+- Agent/contributor docs point at master record + ADRs (PROGRESS.md / decisions.md retired).
+
+### Fixed
+
+- Changelog no longer claims a frontend unit/component test suite as shipped. Vitest is installed; **zero** `*.test.*` / `*.spec.*` files exist under `frontend/src` as of HEAD `41a8678` (see baseline audit). Session 3 delivered provider seam + Settings UI + lint fix only.
+
+### Session 3 notes (historical, already on main)
+
+- `e37370e` — env-configurable conversation provider seam
+- `628bc17` — frontend settings screen and model guard
+- `5f19b77` — roadmap session 3 progress
+- `41a8678` — SettingsPage set-state-in-effect lint fix
+
+---
+
+## Earlier history
+
+Prior Unreleased bullets through the command-center / run-history era remain valid as cumulative project history except where corrected above regarding frontend tests. See git log for authoritative chronology.
