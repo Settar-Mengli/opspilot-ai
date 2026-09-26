@@ -53,7 +53,7 @@ npm ci
 npm run dev
 ```
 
-**CLI export (files only, no DB):** `uv run python -m opspilot.cli run --output <dir> ...`  
+**CLI export (files only, no DB):** `uv run python -m opspilot.cli run --output <dir> ...`
 **Load files into DB:** `uv run python -m opspilot.jobs.import_json <path>` (X5).
 
 Details: [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md) · Zero-spend: [docs/runbooks/zero-spend.md](docs/runbooks/zero-spend.md)

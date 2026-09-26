@@ -1,7 +1,7 @@
 # OpsPilot Master Record
 
-**Locked:** 2026-09-26  
-**Baseline HEAD:** `41a867828c61815b50579114ec127cb80b33c3ff`  
+**Locked:** 2026-09-26
+**Baseline HEAD:** `41a867828c61815b50579114ec127cb80b33c3ff`
 **Batch IDs:** B0–B7 (former M0–M10 nested as workstreams)
 
 ---
@@ -144,8 +144,8 @@ Full tables live in the audit files. Critical/high IDs to track:
 
 ### Capability-fit summary
 
-**CORE / CORE-LITE:** model APIs + Ollama, metering/rate limits, hand-rolled gateway, structured outputs, SSE, injection-lite, tracing hooks, CI evals.  
-**SKIP near-term:** LangChain/LangGraph/CrewAI, vector DB, LoRA, LiteLLM, Celery, visitor BYOK.  
+**CORE / CORE-LITE:** model APIs + Ollama, metering/rate limits, hand-rolled gateway, structured outputs, SSE, injection-lite, tracing hooks, CI evals.
+**SKIP near-term:** LangChain/LangGraph/CrewAI, vector DB, LoRA, LiteLLM, Celery, visitor BYOK.
 **Default hosted path (TARGET):** Gemini → Groq → Ollama → rules. Anthropic = prepaid gated side channel only (see D-023).
 
 ---

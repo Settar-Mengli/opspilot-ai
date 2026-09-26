@@ -1,9 +1,9 @@
 # OpsPilot AI — Capability-Fit Audit
 
-**Audit date:** 2026-09-25  
-**Mode:** Ask / read-only  
-**HEAD:** `41a867828c61815b50579114ec127cb80b33c3ff` on `main` (clean) — VERIFIED  
-**Baseline:** Prior audit in this chat (SEC-*, AI-*, ARCH-*, …; draft M0–M7)  
+**Audit date:** 2026-09-25
+**Mode:** Ask / read-only
+**HEAD:** `41a867828c61815b50579114ec127cb80b33c3ff` on `main` (clean) — VERIFIED
+**Baseline:** Prior audit in this chat (SEC-*, AI-*, ARCH-*, …; draft M0–M7)
 **Operator preflight:** Again not pasted; reconcile notes in §8.
 
 ---
@@ -390,12 +390,12 @@ api/main.py  -- rate-limit middleware --> adapters/* (thin)
 
 ### 4.2 What stays deliberately simple
 
-- No LangChain/LangGraph  
-- No vector DB  
-- No Redis until multi-instance needs it  
-- File/SQLite persistence only when deploying  
-- Client-side conversation history before server sessions  
-- Capabilities registry remains a catalog until real OAuth  
+- No LangChain/LangGraph
+- No vector DB
+- No Redis until multi-instance needs it
+- File/SQLite persistence only when deploying
+- Client-side conversation history before server sessions
+- Capabilities registry remains a catalog until real OAuth
 
 ### 4.3 Map to baseline findings
 
@@ -418,45 +418,45 @@ api/main.py  -- rate-limit middleware --> adapters/* (thin)
 ## 5. Revised milestone sequence
 
 ### M0 — Records / docs (unchanged first)
-- **Goal:** `RECORD.md` SoT; freeze decisions.  
-- **Exit:** PART 0–1 + capability verdicts logged.  
+- **Goal:** `RECORD.md` SoT; freeze decisions.
+- **Exit:** PART 0–1 + capability verdicts logged.
 - **Deps:** none.
 
 ### M1 — Security & free-tier policy
-- **Goal:** Fix SEC-01/02; declare Gemini/Groq/Ollama/Anthropic-optional.  
-- **Scope:** Disable API key from PATCH/UI or require auth that does not exist yet → **prefer delete key field**; provider allowlist; document data-use.  
-- **Exit:** Tests: unauthenticated cannot set key; settings tests exist.  
+- **Goal:** Fix SEC-01/02; declare Gemini/Groq/Ollama/Anthropic-optional.
+- **Scope:** Disable API key from PATCH/UI or require auth that does not exist yet → **prefer delete key field**; provider allowlist; document data-use.
+- **Exit:** Tests: unauthenticated cannot set key; settings tests exist.
 - **Deps:** M0 decisions.
 
 ### M2 — Gateway + provider adapters + metering (1.3, 3.2, 3.3, 5.1-lite)
-- **Goal:** All LLM traffic through gateway; migrate 4 leftover adapters.  
-- **Exit:** Unit tests with fake providers; 429 failover test; JSONL traces on one happy path; live smoke on Gemini **or** Ollama.  
+- **Goal:** All LLM traffic through gateway; migrate 4 leftover adapters.
+- **Exit:** Unit tests with fake providers; 429 failover test; JSONL traces on one happy path; live smoke on Gemini **or** Ollama.
 - **Deps:** M1.
 
 ### M3 — Structured outputs + injection lite + AI-05 titles (3.4, 4.3, data)
-- **Goal:** Schema-validated triage/insights; untrusted delimiters; titles in triage/FE.  
-- **Exit:** Malformed-output tests; adversarial indirect-injection tests; AllItems shows titles.  
+- **Goal:** Schema-validated triage/insights; untrusted delimiters; titles in triage/FE.
+- **Exit:** Malformed-output tests; adversarial indirect-injection tests; AllItems shows titles.
 - **Deps:** M2 helpful.
 
 ### M4 — Eval harness in CI (5.2)
-- **Goal:** Secret-free lane green on every PR.  
-- **Exit:** `pytest` golden triage + insights schema fixtures; CI job without API secrets.  
+- **Goal:** Secret-free lane green on every PR.
+- **Exit:** `pytest` golden triage + insights schema fixtures; CI job without API secrets.
 - **Deps:** M3.
 
 ### M5 — Ask streaming + multi-turn contract (3.5 + Session 2 Phase A)
-- **Goal:** SSE Ask; optional history with caps.  
-- **Exit:** FE streams tokens; history token-cap unit tests; no Redis.  
+- **Goal:** SSE Ask; optional history with caps.
+- **Exit:** FE streams tokens; history token-cap unit tests; no Redis.
 - **Deps:** M2.
 
 ### M6 — Public-demo harden
-- **Goal:** Per-client rate limits; CORS for real FE origin; exact-hash cache optional; health/ready.  
-- **Exit:** Abuse smoke (burst → 429); fictional data only.  
+- **Goal:** Per-client rate limits; CORS for real FE origin; exact-hash cache optional; health/ready.
+- **Exit:** Abuse smoke (burst → 429); fictional data only.
 - **Deps:** M1, M2, M4.
 
 ### M7 — Deploy persistence + minimal auth (former DEP)
-- **Goal:** SQLite + minimal auth; still free host.  
-- **Exit:** Multi-refresh settings survive; no LangGraph/RAG required.  
-- **Deps:** M6.  
+- **Goal:** SQLite + minimal auth; still free host.
+- **Exit:** Multi-refresh settings survive; no LangGraph/RAG required.
+- **Deps:** M6.
 - **Opens LATER:** 1.4 server memory, 2.4 tenants, 4.2 PII, 5.5 HITL when integrations land.
 
 ---
@@ -512,8 +512,8 @@ api/main.py  -- rate-limit middleware --> adapters/* (thin)
 
 ### 3. Git log/status
 
-- **HEAD:** `41a867828c61815b50579114ec127cb80b33c3ff`  
-- **Branch:** `main`, clean  
+- **HEAD:** `41a867828c61815b50579114ec127cb80b33c3ff`
+- **Branch:** `main`, clean
 
 ### 4. Push confirmation
 
@@ -521,11 +521,11 @@ api/main.py  -- rate-limit middleware --> adapters/* (thin)
 
 ### 5. Warnings / concerns
 
-1. **Exact free-tier RPM/RPD numbers drift** — always re-check consoles at decision time; third-party tables disagree (e.g. Gemini Flash RPD 250 vs 500).  
-2. **Cerebras requires a payment method** for trial — poor fit for strict zero-spend.  
-3. **GitHub Models is retired** — prompt candidate list is partly outdated.  
-4. **OpenRouter “free” at 1000 RPD needs $10 credits** — not zero-spend.  
-5. **Operator preflight still missing** — did not re-verify pytest pass count (51 functions counted earlier).  
-6. Files not re-opened in full this pass: most FE components, full test files, design-reference HTML. Relied on baseline + targeted re-reads of `settings.py`, `pyproject.toml`, adapters grep, `schemas.py`, `main.py` snippets.  
-7. Prompt assumption “about 13 fictional work items” — **CONFIRMED (13)**.  
+1. **Exact free-tier RPM/RPD numbers drift** — always re-check consoles at decision time; third-party tables disagree (e.g. Gemini Flash RPD 250 vs 500).
+2. **Cerebras requires a payment method** for trial — poor fit for strict zero-spend.
+3. **GitHub Models is retired** — prompt candidate list is partly outdated.
+4. **OpenRouter “free” at 1000 RPD needs $10 credits** — not zero-spend.
+5. **Operator preflight still missing** — did not re-verify pytest pass count (51 functions counted earlier).
+6. Files not re-opened in full this pass: most FE components, full test files, design-reference HTML. Relied on baseline + targeted re-reads of `settings.py`, `pyproject.toml`, adapters grep, `schemas.py`, `main.py` snippets.
+7. Prompt assumption “about 13 fictional work items” — **CONFIRMED (13)**.
 8. Nothing in the prompt appears factually wrong except **GitHub Models as a live free option** (retired) and treating **Anthropic as a durable free default** (product constraint already rejects that).
