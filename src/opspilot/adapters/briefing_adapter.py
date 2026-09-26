@@ -46,7 +46,10 @@ def generate_ai_briefing(
             rec_id = record.get("id", "") if isinstance(record, dict) else getattr(record, "id", "")
             urg = record.get("urgency", "") if isinstance(record, dict) else getattr(record, "urgency", "")
             cat = record.get("category", "") if isinstance(record, dict) else getattr(record, "category", "")
-            subject = getattr(item, "subject", None) or getattr(item, "title", "") or ""
+            if isinstance(item, dict):
+                subject = item.get("subject_or_title") or ""
+            else:
+                subject = getattr(item, "subject_or_title", None) or ""
             top_3_lines.append(f"- {rec_id}: {subject} (urgency={urg}, category={cat})")
 
         # Action items with deadlines
