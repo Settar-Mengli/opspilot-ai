@@ -1,34 +1,28 @@
-"""In-process pipeline runner shared by legacy and v1 routes."""
+"""In-process pipeline runner for /api/v1 (Postgres-only; no file writes)."""
 
 from __future__ import annotations
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FuturesTimeoutError
-from pathlib import Path
 
-from opspilot.api.paths import API_OUTPUT_DIR, RUN_TIMEOUT_SECONDS
+from opspilot.api.paths import RUN_TIMEOUT_SECONDS
 from opspilot.api.schemas import RunPipelineRequest, resolve_input_file, safe_error
 from opspilot.models.schemas import OpsPilotError
-from opspilot.pipeline.run_daily_ops import run_daily_ops
+from opspilot.pipeline.run_daily_ops import PipelineResult, run_pipeline
 
 logger = logging.getLogger("opspilot.api.pipeline")
 
 
-def execute_pipeline(req: RunPipelineRequest) -> dict[str, str]:
-    """Run the daily ops pipeline; returns output path map including run_id."""
+def execute_pipeline(req: RunPipelineRequest) -> PipelineResult:
+    """Run the daily ops pipeline in-memory (no filesystem artifacts)."""
     input_path = resolve_input_file(req.input_file)
     if not input_path.exists():
         raise safe_error(404, "input_not_found", f"Input file not found: {req.input_file}")
 
     try:
         with ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(
-                run_daily_ops,
-                str(input_path),
-                str(API_OUTPUT_DIR),
-                req.date.isoformat(),
-            )
+            future = pool.submit(run_pipeline, str(input_path), req.date.isoformat())
             return future.result(timeout=RUN_TIMEOUT_SECONDS)
     except FuturesTimeoutError:
         logger.error(
@@ -56,10 +50,3 @@ def execute_pipeline(req: RunPipelineRequest) -> dict[str, str]:
             },
         )
         raise safe_error(500, "pipeline_failed", "Pipeline execution failed.") from exc
-
-
-def history_dir_from_outputs(outputs: dict[str, str]) -> Path:
-    history = outputs.get("history_dir")
-    if history:
-        return Path(history)
-    raise safe_error(500, "pipeline_failed", "Pipeline execution failed.")

@@ -58,6 +58,40 @@ def upsert_work_items(session: Session, items: list[dict[str, Any]]) -> int:
 
 def upsert_run_from_metadata(session: Session, metadata: dict[str, Any], run_dir: Path) -> str:
     run_id = str(metadata["run_id"])
+    _upsert_run_row(session, metadata)
+    artifacts = metadata.get("artifacts") or {}
+    if isinstance(artifacts, dict):
+        for logical_name, filename in artifacts.items():
+            if not isinstance(filename, str):
+                continue
+            path = run_dir / filename
+            if not path.is_file():
+                continue
+            text = path.read_text(encoding="utf-8")
+            content_type = "json" if filename.endswith(".json") else "text"
+            _upsert_artifact(session, run_id, str(logical_name), content_type, text)
+            if logical_name == "triage_results" and content_type == "json":
+                _upsert_triage_from_json(session, run_id, text)
+    return run_id
+
+
+def upsert_run_from_contents(
+    session: Session,
+    metadata: dict[str, Any],
+    artifacts: dict[str, tuple[str, str]],
+) -> str:
+    """Persist a run from in-memory artifact contents (API path; no files)."""
+    run_id = str(metadata["run_id"])
+    _upsert_run_row(session, metadata)
+    for logical_name, (content_type, content) in artifacts.items():
+        _upsert_artifact(session, run_id, logical_name, content_type, content)
+        if logical_name == "triage_results" and content_type == "json":
+            _upsert_triage_from_json(session, run_id, content)
+    return run_id
+
+
+def _upsert_run_row(session: Session, metadata: dict[str, Any]) -> None:
+    run_id = str(metadata["run_id"])
     stmt = pg_insert(RunRow).values(
         {
             "run_id": run_id,
@@ -86,35 +120,24 @@ def upsert_run_from_metadata(session: Session, metadata: dict[str, Any], run_dir
     )
     session.execute(stmt)
 
-    artifacts = metadata.get("artifacts") or {}
-    if isinstance(artifacts, dict):
-        for logical_name, filename in artifacts.items():
-            if not isinstance(filename, str):
-                continue
-            path = run_dir / filename
-            if not path.is_file():
-                continue
-            text = path.read_text(encoding="utf-8")
-            content_type = "json" if filename.endswith(".json") else "text"
-            art = pg_insert(RunArtifactRow).values(
-                {
-                    "run_id": run_id,
-                    "name": str(logical_name),
-                    "content_type": content_type,
-                    "content": text,
-                }
-            )
-            art = art.on_conflict_do_update(
-                constraint="uq_run_artifacts_run_name",
-                set_={
-                    "content_type": art.excluded.content_type,
-                    "content": art.excluded.content,
-                },
-            )
-            session.execute(art)
-            if logical_name == "triage_results" and content_type == "json":
-                _upsert_triage_from_json(session, run_id, text)
-    return run_id
+
+def _upsert_artifact(session: Session, run_id: str, name: str, content_type: str, content: str) -> None:
+    art = pg_insert(RunArtifactRow).values(
+        {
+            "run_id": run_id,
+            "name": name,
+            "content_type": content_type,
+            "content": content,
+        }
+    )
+    art = art.on_conflict_do_update(
+        constraint="uq_run_artifacts_run_name",
+        set_={
+            "content_type": art.excluded.content_type,
+            "content": art.excluded.content,
+        },
+    )
+    session.execute(art)
 
 
 def _upsert_triage_from_json(session: Session, run_id: str, text: str) -> None:

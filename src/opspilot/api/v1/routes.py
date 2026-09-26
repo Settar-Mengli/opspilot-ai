@@ -15,7 +15,7 @@ from opspilot.adapters.conversation_adapter import answer_question
 from opspilot.adapters.evening_adapter import generate_evening_summary
 from opspilot.adapters.insights_adapter import generate_insights
 from opspilot.api.deps import get_db_session
-from opspilot.api.paths import API_OUTPUT_DIR, RAW_INPUT_DIR
+from opspilot.api.paths import RAW_INPUT_DIR
 from opspilot.api.schemas import (
     AskRequest,
     EveningSummaryRequest,
@@ -24,8 +24,8 @@ from opspilot.api.schemas import (
     safe_error,
     safe_history_metadata,
 )
-from opspilot.api.services.persist import load_triage_json, persist_pipeline_outputs
-from opspilot.api.services.pipeline import execute_pipeline, history_dir_from_outputs
+from opspilot.api.services.persist import persist_pipeline_result
+from opspilot.api.services.pipeline import execute_pipeline
 from opspilot.capabilities.registry import get_all_capabilities, get_capability
 from opspilot.config.settings import ai_settings
 from opspilot.persistence.models import RunArtifactRow, RunRow, TriageDecisionRow, WorkItemRow
@@ -41,51 +41,19 @@ def _settings_payload() -> dict[str, object]:
     }
 
 
-@router.get("/health", response_class=PlainTextResponse)
-def health() -> str:
-    return "ok"
+def _artifact_text(session: Session, run_id: str, logical_name: str) -> str | None:
+    result = session.execute(
+        select(RunArtifactRow).where(
+            RunArtifactRow.run_id == run_id,
+            RunArtifactRow.name == logical_name,
+        )
+    )
+    row = result.scalar_one_or_none()
+    return None if row is None else row.content
 
 
-@router.get("/settings", response_class=JSONResponse)
-def get_settings() -> dict[str, object]:
-    return _settings_payload()
-
-
-@router.post("/runs")
-def create_run(
-    req: RunPipelineRequest,
-    session: Session = Depends(get_db_session),
-) -> dict[str, object]:
-    outputs = execute_pipeline(req)
-    run_dir = history_dir_from_outputs(outputs)
-    sample = RAW_INPUT_DIR / Path(req.input_file).name
-    run_id = persist_pipeline_outputs(session, run_dir=run_dir, sample_input=sample)
-    lines = ["OpsPilot AI run completed."]
-    for name, path in outputs.items():
-        if name in {"run_id", "history_dir"}:
-            continue
-        lines.append(f"{name}: {path}")
-    return {"status": "success", "stdout": "\n".join(lines), "run_id": run_id}
-
-
-@router.get("/runs", response_class=JSONResponse)
-def list_runs(session: Session = Depends(get_db_session)) -> list[dict[str, Any]]:
-    result = session.execute(select(RunRow).order_by(desc(RunRow.finished_at), desc(RunRow.run_id)))
-    rows = result.scalars().all()
-    return [safe_history_metadata(dict(row.metadata_json or {"run_id": row.run_id})) for row in rows]
-
-
-@router.get("/runs/{run_id}", response_class=JSONResponse)
-def get_run(run_id: str, session: Session = Depends(get_db_session)) -> dict[str, Any]:
-    row = session.get(RunRow, run_id)
-    if row is None:
-        raise safe_error(404, "run_not_found", "Run not found.")
-    return safe_history_metadata(dict(row.metadata_json or {"run_id": row.run_id}))
-
-
-@router.get("/triage", response_class=JSONResponse)
-def get_triage(session: Session = Depends(get_db_session)) -> list[dict[str, Any]]:
-    """Latest triage decisions with AI-05 lite subject_or_title from WorkItem."""
+def _latest_triage_records(session: Session) -> list[dict[str, Any]]:
+    """Latest triage decisions joined to work items (same shape as GET /triage)."""
     result = session.execute(
         select(TriageDecisionRow, WorkItemRow)
         .join(WorkItemRow, TriageDecisionRow.work_item_id == WorkItemRow.id)
@@ -112,15 +80,50 @@ def get_triage(session: Session = Depends(get_db_session)) -> list[dict[str, Any
     return payload
 
 
-def _artifact_text(session: Session, run_id: str, logical_name: str) -> str | None:
-    result = session.execute(
-        select(RunArtifactRow).where(
-            RunArtifactRow.run_id == run_id,
-            RunArtifactRow.name == logical_name,
-        )
-    )
-    row = result.scalar_one_or_none()
-    return None if row is None else row.content
+@router.get("/health", response_class=PlainTextResponse)
+def health() -> str:
+    return "ok"
+
+
+@router.get("/settings", response_class=JSONResponse)
+def get_settings() -> dict[str, object]:
+    return _settings_payload()
+
+
+@router.post("/runs")
+def create_run(
+    req: RunPipelineRequest,
+    session: Session = Depends(get_db_session),
+) -> dict[str, object]:
+    result = execute_pipeline(req)
+    sample = RAW_INPUT_DIR / Path(req.input_file).name
+    run_id = persist_pipeline_result(session, result, sample_input=sample)
+    return {
+        "status": "success",
+        "stdout": f"OpsPilot AI run completed.\nrun_id: {run_id}",
+        "run_id": run_id,
+    }
+
+
+@router.get("/runs", response_class=JSONResponse)
+def list_runs(session: Session = Depends(get_db_session)) -> list[dict[str, Any]]:
+    result = session.execute(select(RunRow).order_by(desc(RunRow.finished_at), desc(RunRow.run_id)))
+    rows = result.scalars().all()
+    return [safe_history_metadata(dict(row.metadata_json or {"run_id": row.run_id})) for row in rows]
+
+
+@router.get("/runs/{run_id}", response_class=JSONResponse)
+def get_run(run_id: str, session: Session = Depends(get_db_session)) -> dict[str, Any]:
+    row = session.get(RunRow, run_id)
+    if row is None:
+        raise safe_error(404, "run_not_found", "Run not found.")
+    return safe_history_metadata(dict(row.metadata_json or {"run_id": row.run_id}))
+
+
+@router.get("/triage", response_class=JSONResponse)
+def get_triage(session: Session = Depends(get_db_session)) -> list[dict[str, Any]]:
+    """Latest triage decisions with AI-05 lite subject_or_title from WorkItem."""
+    return _latest_triage_records(session)
 
 
 @router.get("/runs/{run_id}/triage", response_class=JSONResponse)
@@ -145,12 +148,9 @@ def get_briefing(session: Session = Depends(get_db_session)) -> str:
         select(RunArtifactRow).where(RunArtifactRow.name == "daily_briefing").order_by(desc(RunArtifactRow.id)).limit(1)
     )
     row = result.scalar_one_or_none()
-    if row is not None:
-        return row.content
-    path = API_OUTPUT_DIR / "daily_briefing.txt"
-    if path.is_file():
-        return path.read_text(encoding="utf-8")
-    raise safe_error(404, "briefing_not_found", "Briefing not found.")
+    if row is None:
+        raise safe_error(404, "briefing_not_found", "Briefing not found.")
+    return row.content
 
 
 @router.get("/runs/{run_id}/briefing", response_class=PlainTextResponse)
@@ -164,14 +164,19 @@ def get_run_briefing(run_id: str, session: Session = Depends(get_db_session)) ->
 
 
 @router.get("/ai-briefing", response_class=PlainTextResponse)
-def get_ai_briefing() -> str:
-    ai_path = API_OUTPUT_DIR / "ai_briefing.txt"
-    if ai_path.is_file():
-        return ai_path.read_text(encoding="utf-8")
-    fallback = API_OUTPUT_DIR / "daily_briefing.txt"
-    if fallback.is_file():
-        return fallback.read_text(encoding="utf-8")
-    raise safe_error(404, "briefing_not_found", "No briefing available.")
+def get_ai_briefing(session: Session = Depends(get_db_session)) -> str:
+    result = session.execute(
+        select(RunArtifactRow).where(RunArtifactRow.name == "ai_briefing").order_by(desc(RunArtifactRow.id)).limit(1)
+    )
+    row = result.scalar_one_or_none()
+    if row is not None:
+        return row.content
+    fallback = session.execute(
+        select(RunArtifactRow).where(RunArtifactRow.name == "daily_briefing").order_by(desc(RunArtifactRow.id)).limit(1)
+    ).scalar_one_or_none()
+    if fallback is None:
+        raise safe_error(404, "briefing_not_found", "No briefing available.")
+    return fallback.content
 
 
 @router.get("/runs/{run_id}/ai-briefing", response_class=PlainTextResponse)
@@ -187,8 +192,8 @@ def get_run_ai_briefing(run_id: str, session: Session = Depends(get_db_session))
 
 
 @router.post("/ask")
-def ask(payload: AskRequest) -> dict[str, str]:
-    records = load_triage_json(API_OUTPUT_DIR / "triage_results.json")
+def ask(payload: AskRequest, session: Session = Depends(get_db_session)) -> dict[str, str]:
+    records = _latest_triage_records(session)
     answer = answer_question(
         question=payload.question,
         assistant_name=payload.assistant_name,
@@ -198,8 +203,8 @@ def ask(payload: AskRequest) -> dict[str, str]:
 
 
 @router.post("/evening-summary")
-def evening_summary(payload: EveningSummaryRequest) -> dict[str, str]:
-    records = load_triage_json(API_OUTPUT_DIR / "triage_results.json")
+def evening_summary(payload: EveningSummaryRequest, session: Session = Depends(get_db_session)) -> dict[str, str]:
+    records = _latest_triage_records(session)
     summary = generate_evening_summary(
         assistant_name=payload.assistant_name,
         triage_records=records,
@@ -208,8 +213,8 @@ def evening_summary(payload: EveningSummaryRequest) -> dict[str, str]:
 
 
 @router.post("/insights")
-def insights(payload: InsightsRequest) -> dict[str, object]:
-    records = load_triage_json(API_OUTPUT_DIR / "triage_results.json")
+def insights(payload: InsightsRequest, session: Session = Depends(get_db_session)) -> dict[str, object]:
+    records = _latest_triage_records(session)
     return generate_insights(
         assistant_name=payload.assistant_name,
         triage_records=records,

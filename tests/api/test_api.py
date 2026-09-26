@@ -51,14 +51,9 @@ def _api_uses_test_db(test_database_url: str, db_session: Session):
 
 @pytest.fixture
 def isolated_run_dirs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """CLI/file tests only — API path must not write under repo data/."""
     output_dir = tmp_path / "output"
-    history_dir = tmp_path / "history" / "runs"
     output_dir.mkdir(parents=True, exist_ok=True)
-    history_dir.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr("opspilot.api.paths.API_OUTPUT_DIR", output_dir)
-    monkeypatch.setattr("opspilot.api.paths.HISTORY_RUNS_DIR", history_dir)
-    monkeypatch.setattr("opspilot.api.services.pipeline.API_OUTPUT_DIR", output_dir)
-    monkeypatch.setattr("opspilot.api.v1.routes.API_OUTPUT_DIR", output_dir)
     return tmp_path
 
 

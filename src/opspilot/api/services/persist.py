@@ -1,14 +1,18 @@
-"""Persist a completed file-based run into Postgres (sync)."""
+"""Persist pipeline results into Postgres (sync)."""
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import Any
 
 from sqlalchemy.orm import Session
 
-from opspilot.jobs.import_json import import_sample_file, upsert_run_from_metadata
+from opspilot.jobs.import_json import (
+    import_sample_file,
+    upsert_run_from_contents,
+    upsert_run_from_metadata,
+    upsert_work_items,
+)
+from opspilot.pipeline.run_daily_ops import PipelineResult
 from opspilot.utils.file_io import read_json_file
 
 
@@ -21,23 +25,15 @@ def persist_run_directory(session: Session, run_dir: Path) -> str:
     return upsert_run_from_metadata(session, metadata, run_dir)
 
 
-def persist_pipeline_outputs(
+def persist_pipeline_result(
     session: Session,
+    result: PipelineResult,
     *,
-    run_dir: Path,
     sample_input: Path | None = None,
 ) -> str:
-    """Ensure work items exist (from sample if provided), then persist the run."""
+    """Persist an in-memory pipeline result (API path; no files written)."""
     if sample_input is not None and sample_input.is_file():
         import_sample_file(session, sample_input)
-    return persist_run_directory(session, run_dir)
-
-
-def load_triage_json(path: Path) -> list[Any]:
-    if not path.is_file():
-        return []
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return []
-    return payload if isinstance(payload, list) else []
+    elif result.work_items:
+        upsert_work_items(session, result.work_items)
+    return upsert_run_from_contents(session, result.metadata, result.artifacts)
