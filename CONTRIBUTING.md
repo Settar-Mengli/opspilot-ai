@@ -8,38 +8,39 @@ Thanks for contributing to OpsPilot AI.
 - Prefer deterministic, testable behavior.
 - Distinguish CURRENT (verified) from TARGET (planned).
 - Update docs when behavior or process changes.
-- Follow [AGENTS.md](AGENTS.md) (zero-spend, hermetic tests, cut-list discipline).
+- Follow [AGENTS.md](AGENTS.md) (zero-spend, hermetic tests, cut-list discipline, plan gate).
 
 ## Workflow (Ask → Plan → Build)
 
 1. **Ask** — read-only analysis; no file writes.
-2. **Plan** — owner-approved plan before implementation.
-3. **Build** — implement only the approved step; report; stop for review.
+2. **Plan** — one large batch plan; must satisfy AGENTS **Plan requirements** (10 items); Build only after owner confirmation.
+3. **Build** — implement only the approved batch; small commits inside the batch; each leaves tests green.
+4. After Build — **Ask audit** → one **fix pass** (commit, push, open PR). Agent **never merges**; operator merges after CI green.
+5. **Live smoke** before PR.
 
-Explain before edit. Small reviewable diffs. Implementation report after each step.
+Explain before edit. Implementation report after each coding step.
 
 ## Branch naming
 
-**Preferred for roadmap work:** one branch per batch:
+**Required for roadmap batches:** one branch per batch from updated `main`:
 
 - `b0/docs-architecture-lock`
 - `b1/...`, `b2/...`, …
 
-Also acceptable for small fixes:
+Also acceptable for tiny out-of-band fixes (still no merge by agent):
 
 - `feat/<short-topic>` · `fix/<short-topic>` · `docs/<short-topic>` · `chore/<short-topic>` · `test/<short-topic>`
 
 ## Commit messages
 
-Conventional Commits:
-
-- `feat:` · `fix:` · `docs:` · `test:` · `chore:`
+Conventional Commits: `feat:` · `fix:` · `docs:` · `test:` · `chore:`
 
 ## Pull requests
 
-- One intent per PR.
-- Include testing notes and a short implementation report (what / run / test / follow-ups).
+- One intent per PR (usually one batch).
+- Include testing notes, live-smoke commands, and a short implementation report.
 - Do not merge CUT-list or out-of-batch scope without an explicit decision.
+- Agent opens PR; operator merges.
 
 ## Local validation (typical)
 
@@ -48,7 +49,13 @@ Conventional Commits:
 cd frontend; npm run lint; npm run build
 ```
 
-Key check (True/False only — never print secrets):
+Guarded env template (never overwrite an existing `.env`):
+
+```powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env } else { Write-Host 'skip: .env exists' }
+```
+
+Key check (True/False only — **never print** `.env` contents):
 
 ```powershell
 (Select-String -Path .env -Pattern '^\s*(ANTHROPIC_API_KEY|OPSPILOT_AI_API_KEY)\s*=\s*\S' -Quiet)
@@ -64,5 +71,5 @@ Expect **False** during zero-spend hermetic work unless running an explicit budg
 | Batches B0–B7 | `ROADMAP.md` |
 | CURRENT vs TARGET architecture | `docs/architecture.md` |
 | Decisions | `docs/adr/` |
-| Agent rules | `AGENTS.md` |
+| Agent rules + plan gate | `AGENTS.md` |
 | Runbooks | `docs/runbooks/` |
