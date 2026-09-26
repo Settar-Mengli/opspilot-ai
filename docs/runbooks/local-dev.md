@@ -13,7 +13,7 @@ cd c:\Dev\opspilot-ai
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
-copy .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env } else { Write-Host 'skip: .env exists' }
 ```
 
 **Do not uncomment API keys until B1 hermetic guards land** (and even then, keep Anthropic commented for default work). Key check:

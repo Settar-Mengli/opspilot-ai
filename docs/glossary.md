@@ -12,7 +12,7 @@
 - Category: Work type grouping used for routing and response style.
 - Sentiment: Tone signal inferred from item content.
 
-## Approved Label Sets (Milestone 1)
+## Approved Label Sets (Batch B1 / Milestone 1 heritage)
 
 - Urgency: low, medium, high, critical
 - Category: incident, request, admin, follow_up, other
@@ -48,3 +48,11 @@
 - Neon: Hosted Postgres provider chosen for TARGET persistence (D-008).
 - Prepaid Anthropic gate: Opt-in allowlist + token/USD budget; never default/tests/CI (D-023).
 - LlmCall: Persisted metering row for tokens/latency/cost accounting.
+- X1: Sync idempotency (B4).
+- X2: Optional HMAC cron/manual trigger (B7 only).
+- X3: DEMO_MODE (introduced B4; enforce on send in B5).
+- X4: Prompt/data minimization — free tiers may train on prompts (AGENTS + B2 gateway).
+- X5: JSON→DB importer (B1).
+- X6: Anthropic guard in tests / network-block fixture (B1).
+- X7: OpenAPI-lite + checked FE types with `/api/v1` (B1).
+- X8: Panel lifecycle standardization (B5).

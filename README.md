@@ -31,7 +31,7 @@ Built with TypeScript, React, FastAPI, and (today) Anthropic Claude with a rule-
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
-copy .env.example .env   # leave API keys commented for hermetic work
+if (-not (Test-Path .env)) { Copy-Item .env.example .env } else { Write-Host 'skip: .env exists' }
 
 .venv\Scripts\python -m pytest -q
 
