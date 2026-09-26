@@ -16,6 +16,17 @@ Prefer provider-native JSON schema/mode where available; always validate with Py
 
 Free-form prose parsing; instructor/library wrappers only.
 
+## Options
+
+| Option | Tradeoffs |
+|--------|-----------|
+| (a) Native JSON schema/mode + Pydantic | Provider-native; validated |
+| (b) Free-form parse | Fragile |
+
+## Acceptance criteria
+
+- B2/B3: unvalidated model JSON never becomes domain state; schema failures retry once then fail closed.
+
 ## Consequences
 
 Eval cases can assert schemas; adapter code shrinks around shared validation.

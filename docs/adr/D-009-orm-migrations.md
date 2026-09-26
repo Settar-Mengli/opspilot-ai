@@ -6,16 +6,30 @@
 
 ## Context
 
-Need typed models and reproducible schema for Neon.
+Need typed models and reproducible schema for Neon (D-008).
+
+## Options
+
+| Option | Tradeoffs |
+|--------|-----------|
+| (a) SQLAlchemy 2 + Alembic on Postgres everywhere | One dialect; slightly heavier CI |
+| (b) Raw SQL only | Faster start; weaker models/migrations |
+| (c) SQLite for unit tests | Split dialect; false greens |
 
 ## Decision
 
-SQLAlchemy 2.x + Alembic migrations. Tests run against Postgres (service container or equivalent), not a separate SQLite dialect.
+**(a)** SQLAlchemy 2.x + Alembic. Tests run against Postgres (service container or equivalent).
 
-## Alternatives considered
+## Acceptance criteria
 
-Raw SQL only; Django ORM; SQLite for unit tests.
+- B1 exit: Alembic upgrade → downgrade → upgrade round-trip on CI Postgres.
+- Domain models live under TARGET persistence/ / domain/ (D-024).
+- Cron never runs migrations (D-011).
 
 ## Consequences
 
-Slightly heavier local/CI setup; one schema truth. Aligns with D-008.
+CI must provision Postgres. Local-dev runbook documents connection setup.
+
+## Blocks
+
+B1.

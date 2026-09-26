@@ -6,16 +6,29 @@
 
 ## Context
 
-Need multi-provider routing, retries, metering, structured outputs, and Anthropic budget gate without another heavy dependency.
+Need multi-provider routing, retries, metering, structured outputs, and Anthropic budget gate without another heavy dependency or LangChain overlap.
+
+## Options
+
+| Option | Tradeoffs |
+|--------|-----------|
+| (a) Hand-rolled gateway in llm/ | More code ownership; clear portfolio signal; exact policy control |
+| (b) LiteLLM | Faster multi-provider; less control; extra dep |
+| (c) Keep per-adapter SDK calls | CURRENT pain (AI-01); non-hermetic risk |
 
 ## Decision
 
-Hand-roll a thin gateway (provider interface + factory + policy). **Must** implement Anthropic prepaid gate (D-023). Do not adopt LiteLLM unless provider count explodes later.
+**(a)** Hand-roll thin gateway (complete / stream / complete_json). **Must** implement Anthropic prepaid gate (D-023). No LiteLLM unless provider count explodes later.
 
-## Alternatives considered
+## Acceptance criteria
 
-LiteLLM; LangChain; direct per-adapter SDK calls (CURRENT).
+- B2: fake-provider unit tests; 429/Retry-After failover tested; LlmCall persisted; Anthropic disabled/budget=0 never constructs client in CI.
+- Default route excludes Anthropic; X4 minimization applied to logged prompt bodies on free tiers.
 
 ## Consequences
 
-More code ownership; clearer portfolio signal; single choke point for zero-spend enforcement.
+More ownership code; single choke point for zero-spend enforcement.
+
+## Blocks
+
+B2.

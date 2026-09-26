@@ -16,6 +16,17 @@ Keep fetch + React hooks. Introduce TanStack Query only if caching/invalidation 
 
 TanStack now; tRPC; GraphQL.
 
+## Options
+
+| Option | Tradeoffs |
+|--------|-----------|
+| (a) Fetch + hooks | Minimal |
+| (b) TanStack now | Premature cache complexity |
+
+## Acceptance criteria
+
+- B5 SSE works with fetch/hooks; TanStack only if invalidation pain appears.
+
 ## Consequences
 
 Less FE churn in B0–B5; revisit post-SSE.

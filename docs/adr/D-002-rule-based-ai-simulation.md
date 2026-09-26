@@ -16,6 +16,17 @@ Implement deterministic rule-based triage before model-backed approaches.
 
 Immediate LLM integration; hybrid model from day one.
 
+## Options
+
+| Option | Tradeoffs |
+|--------|-----------|
+| (a) Rules first | Deterministic CI; lower early flexibility |
+| (b) LLM from day one | Spend risk; flaky tests |
+
+## Acceptance criteria
+
+- Rule-based triage remains a CI/default fallback under the TARGET gateway.
+
 ## Consequences
 
 Higher determinism and easier testing; lower semantic flexibility early. Remains the CI/default fallback under the TARGET gateway.

@@ -16,6 +16,18 @@ Use a Python-first project structure with local CLI execution.
 
 JavaScript-first stack; notebook-only workflow.
 
+## Options
+
+| Option | Tradeoffs |
+|--------|-----------|
+| (a) Python-first local | Fast onboarding; strong test tooling |
+| (b) JS-first | Unifies FE/BE; weaker early CLI story |
+| (c) Notebook-only | Poor packaging |
+
+## Acceptance criteria
+
+- Repo remains installable as a Python package under \src/opspilot/\.
+
 ## Consequences
 
 Faster local onboarding, clear packaging path, easier test tooling.

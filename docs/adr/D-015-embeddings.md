@@ -16,6 +16,17 @@ No embeddings/vector DB in the locked spine. If a later **P9-semantic** trigger 
 
 Qdrant/Pinecone now; OpenAI embeddings by default.
 
+## Options
+
+| Option | Tradeoffs |
+|--------|-----------|
+| (a) No embeddings until P9 trigger | Avoids padding |
+| (b) Vector DB now | Overkill for ~13 items |
+
+## Acceptance criteria
+
+- No vector DB in B0–B7 spine; if P9 triggers, local embeddings first.
+
 ## Consequences
 
 Keeps B0–B7 thin; backlog only.

@@ -16,6 +16,17 @@ Add explicit input schema validation, structured pipeline logging, and user-faci
 
 Keep raw exceptions and rely only on test coverage.
 
+## Options
+
+| Option | Tradeoffs |
+|--------|-----------|
+| (a) Explicit validation + boundaries | Cleaner UX; more code |
+| (b) Raw exceptions only | Less code; worse CLI UX |
+
+## Acceptance criteria
+
+- Invalid inputs fail with structured user-facing errors (TARGET: API error envelope in B1).
+
 ## Consequences
 
 Better debuggability and cleaner failures for local runs.

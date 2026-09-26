@@ -16,6 +16,18 @@ Hand-rolled loop with hard step cap (e.g. 4–6), read-only tools until approve&
 
 LangGraph; crew frameworks; single-shot Ask only.
 
+## Options
+
+| Option | Tradeoffs |
+|--------|-----------|
+| (a) Hand-rolled bounded loop | Complementary portfolio; full control |
+| (b) LangGraph | Overlap with other repo |
+| (c) Single-shot Ask only | No tools |
+
+## Acceptance criteria
+
+- B5: step/time/token caps enforced; send requires approval; SSE events \	oken|tool_start|tool_end|final|error\.
+
 ## Consequences
 
 Complementary portfolio story; quota burn risk — gate with metering and evals (B3 before/with tools on real bodies).

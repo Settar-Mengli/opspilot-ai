@@ -16,6 +16,17 @@ Keep src/opspilot/ backend package and rontend/ Vite app. Add packages under th
 
 apps/ packages monorepo reshuffle; backend rewrite in Node.
 
+## Options
+
+| Option | Tradeoffs |
+|--------|-----------|
+| (a) Keep \src/opspilot\ + \rontend/\ | Stable history |
+| (b) Monorepo reshuffle | Burn for no gain |
+
+## Acceptance criteria
+
+- Top-level layout unchanged; internal TARGET packages per D-024.
+
 ## Consequences
 
 Stable imports; B1 adds __init__.py and package hygiene without move.

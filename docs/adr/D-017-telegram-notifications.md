@@ -16,6 +16,17 @@ Telegram bot notifications for B6 morning run. Web push / full PWA deferred to b
 
 Web push only; email only; no notifications.
 
+## Options
+
+| Option | Tradeoffs |
+|--------|-----------|
+| (a) Telegram bot | Simple; free; operator-friendly |
+| (b) Web push / PWA | VAPID/ops cost; deferred |
+
+## Acceptance criteria
+
+- B6 morning job can send Telegram notify; bot token only in secrets.
+
 ## Consequences
 
 Bot token secrets in operator env; never in client bundle.

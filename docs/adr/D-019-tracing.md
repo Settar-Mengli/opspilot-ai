@@ -16,6 +16,17 @@ Ship **LlmCall** persistence + JSONL/OTel-compatible hooks in B2 with the gatewa
 
 LangSmith; Phoenix from day one; logs only.
 
+## Options
+
+| Option | Tradeoffs |
+|--------|-----------|
+| (a) LlmCall + JSONL/OTel hooks first | Enough for budgets |
+| (b) Phoenix UI day one | Extra ops |
+
+## Acceptance criteria
+
+- B2: every gateway call can persist LlmCall; Phoenix UI deferred.
+
 ## Consequences
 
 Budget gate and leaderboard can debit real usage; CI asserts no live Anthropic.

@@ -16,6 +16,17 @@ Custom pytest-based eval CORE: golden/synthetic cases, schema asserts, red-team 
 
 Promptfoo/LangSmith paid; defer evals until after agentic Ask.
 
+## Options
+
+| Option | Tradeoffs |
+|--------|-----------|
+| (a) Custom pytest CORE | Free; hermetic CI lane |
+| (b) Paid eval SaaS | Cost; less control |
+
+## Acceptance criteria
+
+- B3: deterministic CI lane + red-team on same harness; optional prepaid Anthropic column.
+
 ## Consequences
 
 B3 is a hard gate before trusting tool-using Ask on email bodies.
