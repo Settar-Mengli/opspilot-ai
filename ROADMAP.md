@@ -1,265 +1,207 @@
 # OpsPilot Roadmap
 
-This document tracks the phased evolution of OpsPilot from working demo to enterprise platform.
+**Status:** Locked spine **B0–B7** (2026-09-26). Former M0–M10 are workstreams **inside** batches — scope and exit criteria preserved.
+
+**Principles:** Zero further spend · fictional demo data · CURRENT vs TARGET grounding · one branch per batch (`bN/...`) · Ask→Plan→Build · Plan requirements in [AGENTS.md](AGENTS.md).
+
+Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Architecture: [docs/architecture.md](docs/architecture.md) · ADRs: [docs/adr/](docs/adr/)
+
+**Global exit rule (every batch):** **Tests** · **Evals** (if any) · **Live smoke** · **Docs** (master-record PART appended after merge rule; ROADMAP / ADRs / CHANGELOG updated).
 
 ---
 
-## Phase A — Working Demo *(current)*
+## Batch map (B0–B7 ↔ former M0–M10)
 
-**Goal:** Demonstrate the product vision with real AI working on sample data, ready to show to selected investors and partners.
+| Batch | Contains | Goal |
+|-------|----------|------|
+| **B0** | M0 | Docs & architecture lock |
+| **B1** | M1 | Hermetic foundation + Postgres + SEC + `/api/v1` |
+| **B2** | M2 | LLM gateway + trace hooks (+ Anthropic prepaid gate) |
+| **B3** | M3 + M4 | Eval platform + injection red-team on **one harness** |
+| **B4** | M5 | Demo Google inbox/calendar |
+| **B5** | M6 + M7 | Agentic Ask + SSE + approve & send |
+| **B6** | M8 + M9 | Morning run (in-runner) + Telegram + preferences → evals |
+| **B7** | M10 | Public free-tier deploy |
 
-**Status:** ✓ Largely complete
+**Order:** B0 → B1 → B2 → B3 → B4 → B5 → B6 → B7.
 
-**Capabilities:**
-- Mobile-first chief-of-staff dashboard
-- Two-step onboarding (user name + assistant naming)
-- Claude-powered work item triage
-- Claude-generated executive briefing
-- Today / Tomorrow / Week views
-- Open loops with urgency classification
-- Quiet states for low-activity days
-- Memory chip and notification UI scaffolding
-- Voice input UI (interaction layer; recording deferred)
-- Keyboard shortcut (Ctrl+K / Cmd+K) for Ask input
+**X-item placement (one batch each):**
 
-**Tech stack:** TypeScript, React, Vite, FastAPI, Python, Anthropic Claude (Haiku), Tailwind-free CSS design system.
+| X | Placement |
+|---|-----------|
+| X1 sync idempotency | **B4** |
+| X2 optional HMAC manual trigger | **B7** |
+| X3 DEMO_MODE introduced | **B4** (B5 exit must enforce DEMO_MODE on send) |
+| X4 prompt/data minimization | **B0** AGENTS + **B2** gateway |
+| X5 JSON→DB importer | **B1** |
+| X6 Anthropic guard in tests | **B1** |
+| X7 OpenAPI-lite + FE types with `/api/v1` | **B1** |
+| X8 panel lifecycle | **B5** |
 
----
-
-## Phase B — Deployed Demo with First Integration
-
-**Goal:** Move from localhost to a public URL with one real integration so investors can sign in with their own Google account and see OpsPilot working on their real inbox.
-
-**Scope:**
-- Deploy frontend to Vercel (`opspilot.vercel.app` or custom domain)
-- Deploy backend to Railway, Render, or Fly.io
-- Add Google OAuth flow
-- Gmail integration: read inbox, classify emails, surface escalations, draft replies in user's voice
-- Per-user data isolation
-- Basic authentication (Google sign-in)
-
-**Out of scope (deferred to later phases):**
-- Multiple integrations
-- Team features
-- Billing
+**Anthropic amendment:** gate in **B2**; optional leaderboard column in **B3**; prod disabled-by-default at **B7**.
 
 ---
 
-## Phase C — Operational Platform
+## Locked spine B0–B7
 
-**Goal:** Become a real chief-of-staff tool for individual operators, not just a demo.
+### B0 — Documentation & architecture lock (M0 / F3)
 
-**Scope:**
-- Google Calendar integration (week-ahead intelligence, meeting prep, conflict resolution)
-- Slack integration (channel monitoring, mention summarization, draft replies)
-- Notion integration (document context, decision memory)
-- Real preference learning (the "Pilot remembers" chip becomes truthful)
-- End-of-day summary (real, not mocked)
-- Ask Pilot becomes a live Claude conversation
+- **Goal:** Lock plan in-repo before code rebuild.
+- **Workstream M0**
+  - **Scope:** Master record PART 0–2, ADRs, architecture rewrite, AGENTS/CONTRIBUTING/README, roadmap, runbooks, doc retire/merge, LICENSE holder; B0 fix pass.
+  - **Exit criteria:**
+    - **Tests:** n/a (docs only); pytest/lint/build still green as regression.
+    - **Evals:** n/a.
+    - **Live smoke:** n/a for docs; key check False.
+    - **Docs:** PART 2 accepted; CUT/DEFER frozen; docs+LICENSE only on branch; PR open.
+- **Deps:** none · **Size:** M–L · **Metric:** Architecture & roadmap locked in-repo
 
----
+### B1 — Hermetic foundation, Postgres, SEC gate & /api/v1 reshape (M1)
 
-## Phase D — Enterprise Platform
+- **Goal:** Honest CI, Neon/Postgres persistence, safe settings, versioned API with one error envelope (D9: one XL batch; internal commit sequence OK).
+- **Workstream M1** — F1a + V1–V7 critical + D-008/D-009 + X5 + X6 + X7 + O3
+  - **Scope:**
+    - Package hygiene: `src/opspilot/__init__.py`; in-process pipeline (no subprocess CLI for `/run`).
+    - Neon Postgres + SQLAlchemy 2 + Alembic; CI Postgres service (no SQLite); local Postgres strategy chosen in B1 plan (Docker vs Neon branch).
+    - X5 JSON→DB importer for sample/history data.
+    - `/api/v1` reshape with single error envelope `{ "error": { "code", "message", "details" } }`; current→future route map from architecture; OpenAPI-lite + generated/checked frontend types (X7).
+    - Env-only secrets; Settings **read-only** (no API-key PATCH); remove non-functional OpenAI option (SEC-01 / AI-02).
+    - Hermetic tests (fake LLM, tmp dirs); Anthropic client never constructed in tests (X6); fix V6 briefing attrs.
+    - Lockfile; ruff + mypy + coverage gates with numeric thresholds set in B1 plan.
+    - Align CI Python to a single supported version (document 3.11 vs 3.13 choice in B1 plan; exit = CI and local both green on that choice).
+    - FE: upgrade react-router (clear npm audit H/M); enable TS `strict`; minimal vitest suite in CI (≥1 smoke test file).
+    - gitleaks + Dependabot enabled as CI/repo gates.
+    - Begin reshaping toward D-024 package layout as needed for `/api/v1` + persistence.
+  - **Exit criteria:**
+    - **Tests:**
+      - `pytest -q` green, including when run alone and in random order (`test_get_triage` isolated).
+      - A network-blocking test fixture makes any outbound HTTP fail the suite; the suite stays green with an Anthropic key present in `.env` (X6).
+      - ruff, mypy, and coverage pass in CI at the thresholds fixed in the B1 plan.
+      - Alembic upgrade → downgrade → upgrade round-trip passes on CI Postgres.
+      - The X5 importer is idempotent: running it twice yields identical row counts.
+      - `npm run lint`, `npm run build` (TS strict), and vitest pass in CI.
+      - `npm audit --omit=dev` shows 0 high.
+      - gitleaks is clean on the PR; Dependabot config is present.
+    - **Security:**
+      - `PATCH /api/settings` is removed (405/404); `GET` is read-only with no key material.
+      - The Settings UI has no API-key input and no `openai` option.
+    - **API:**
+      - The frontend calls `/api/v1` exclusively; legacy routes are removed or listed as deprecated in the route map.
+      - An invalid request returns the error envelope `{error:{code,message,details}}`.
+      - OpenAPI-lite frontend types are generated or checked in CI.
+    - **Evals:** n/a (B3).
+    - **Live smoke:**
+      - Boot the API against local Postgres; import sample data.
+      - `GET /api/v1/health` → 200; `GET /api/v1/triage` returns the imported items from Postgres; one invalid request returns the envelope.
+      - The frontend dashboard renders from `/api/v1`.
+    - **Docs:** master-record PART appended; ROADMAP, ADRs, and CHANGELOG updated.
+- **Deps:** B0 · **Size:** XL · **Metric:** Hermetic CI; $0 test runs; `/api/v1` + Postgres live
 
-**Goal:** Make OpsPilot adoptable by companies, not just individuals.
+### B2 — LLM gateway + traces (M2)
 
-**Scope:**
-- Multi-tenant architecture
-- Team workspaces with shared context
-- BYOK (Bring Your Own Key) — users plug in their own Anthropic, OpenAI, or Gemini API key
-- BYOA (Bring Your Own Agent) — enterprises plug in their internal LLM or company-approved agent via Model Context Protocol (MCP)
-- Multi-model abstraction — route tasks to the optimal provider per call (cost, capability, latency)
-- Microsoft 365 stack (Outlook, Teams, OneDrive)
-- Audit logs and SOC 2 readiness
-- Admin controls for IT departments
+- **Goal:** Multi-provider free path + metering hooks.
+- **Workstream M2** — A1 + A4 hooks + X4 in gateway
+  - **Scope:** Hand-rolled gateway under `llm/` (D-012/D-024); Gemini/Groq/Ollama; migrate remaining adapters; structured outputs; prompt versions; LlmCall traces; **Anthropic prepaid gate** (D-023); daily free-tier quotas; 429/Retry-After failover; prompt/data minimization (X4).
+  - **Exit criteria:**
+    - **Tests:** Fake-provider unit tests; budget=0 or disabled → no Anthropic HTTP; allowlisted+budget mocked path allowed; CI never constructs Anthropic client; 429/Retry-After failover covered; LlmCall rows written in tests with fakes.
+    - **Evals:** n/a (B3) except smoke hooks if any.
+    - **Live smoke:** Gemini **or** Ollama happy path; optional separate Anthropic budgeted script (not CI).
+    - **Docs:** PART appended; ROADMAP/ADRs/CHANGELOG updated; free-tier quotas VERIFY AT DECISION TIME noted.
+- **Deps:** B1 · **Size:** XL · **Metric:** Multi-provider gateway with failover
 
----
+### B3 — Eval platform + injection red-team (M3 + M4) — one harness
 
-## Phase E — Beyond *(speculative)*
+- **Goal:** Regression + jailbreak/injection defense on a single eval harness.
+- **Workstream M3** — A2 + P8 phase1 lite
+  - **Scope:** Labeled fictional corpus; F1/confusion; item-ID grounding + confidence on triage; CI secret-free lane; optional Anthropic prepaid leaderboard column.
+  - **Exit criteria (M3):** CI gate fails on triage regression beyond conservative threshold set in B3 plan.
+- **Workstream M4** — A3 lite
+  - **Scope:** Delimiters; red-team suite on **same harness**; ASR tracked in CI.
+  - **Exit criteria (M4):** Known attack fixtures fail closed; ASR metric published in CI artifact/docs.
+- **Batch exit criteria:**
+  - **Tests:** Both M3 and M4 automated gates green.
+  - **Evals:** Golden F1 + red-team ASR as above.
+  - **Live smoke:** Optional hosted free leaderboard run documented.
+  - **Docs:** PART appended; ROADMAP/ADRs/CHANGELOG updated.
+- **Deps:** B2 · **Size:** XL · **Metric:** Triage F1 on golden set; red-team ASR tracked
 
-**Possible directions:**
-- Mobile native apps (iOS, Android)
-- Voice-first interface (real voice input + speech output)
-- Multi-agent orchestration (specialized sub-agents per domain)
-- Public API for third-party builders
-- Marketplace for OpsPilot skills and integrations
+### B4 — Demo Google inbox/calendar (M5)
 
----
+- **Goal:** Live fictional inbox/calendar for operator demo.
+- **Workstream M5** — P1 + X1 + X3 + D-016
+  - **Scope:** OAuth Testing forever; sync + idempotency (X1); replace JSON default path; WeekPanel from calendar; **DEMO_MODE** introduced (X3); encrypted refresh token in Neon; weekly re-auth runbook.
+  - **Exit criteria:**
+    - **Tests:** Sync idempotency tests; DEMO_MODE flag tests; no visitor OAuth path.
+    - **Evals:** n/a or reuse B3 corpus on synced fictional items.
+    - **Live smoke:** Live smoke on demo account; visitors never OAuth mail; re-auth runbook exercised once.
+    - **Docs:** PART appended; ROADMAP/ADRs/CHANGELOG; D-016 constraints recorded.
+- **Deps:** B1 persistence, B2 gateway, B3 before agent reads bodies · **Size:** XL · **Metric:** Live fictional inbox demo
 
-## Integration Backlog
+### B5 — Agentic Ask + approve & send (M6 + M7)
 
-Beyond the Phase B–D integrations, the following are under consideration based on user demand:
+- **Goal:** Tool-using Ask with HITL send.
+- **Workstream M6** — P2 + X8
+  - **Scope:** Bounded tool loop; multi-turn caps; SSE; **read-only tools first**; panel lifecycle (X8).
+  - **Exit criteria (M6):** Smoke ask → tool → grounded answer; quota budget enforced.
+- **Workstream M7** — P3 + X3 enforce
+  - **Scope:** Draft UI; approval; Gmail send; audit row; **DEMO_MODE blocks send** for visitors.
+  - **Exit criteria (M7):** Cannot send without approval; DEMO visitors blocked from send.
+- **Commit sequence inside batch:** read-only tools → then approval boundary + send.
+- **Batch exit criteria:**
+  - **Tests:** Tool loop + approval + DEMO_MODE send denial.
+  - **Evals:** Regression suite still green.
+  - **Live smoke:** Tool-using Ask with streaming; HITL send on operator account only.
+  - **Docs:** PART appended; ROADMAP/ADRs/CHANGELOG updated.
+- **Deps:** B2–B4 · **Size:** XL · **Metric:** Tool-using Ask with streaming; HITL send path
 
-**Project & Engineering:** Jira, Linear, Asana, ClickUp, Monday, Trello, GitHub, GitLab, PagerDuty, Opsgenie, Sentry, Datadog
+### B6 — Morning run + preferences (M8 + M9)
 
-**Customer & Sales:** HubSpot, Salesforce, Pipedrive, Zendesk, Intercom, Freshdesk
+- **Goal:** Scheduled brief + human feedback into evals — **in-runner**, no public backend (D-011).
+- **Workstream M8** — P4 + P11-telegram
+  - **Scope:** GHA cron in-runner; morning triage/brief; Telegram notify; schema-head check; fail-closed auth (D-016).
+  - **Exit criteria (M8):** Cron smoke writes Neon + Telegram; no public BE required; auth-fail path alerts re-auth.
+- **Workstream M9** — P5 lite
+  - **Scope:** Correction UI; Preference store; promote to eval dataset.
+  - **Exit criteria (M9):** One correction appears in eval dataset path.
+- **Batch exit criteria:**
+  - **Tests:** Job unit tests with fakes; preference→eval path tested.
+  - **Evals:** Promoted case appears in harness path.
+  - **Live smoke:** Manual workflow_dispatch or scheduled run succeeds; Telegram received.
+  - **Docs:** PART appended; ROADMAP/ADRs/CHANGELOG; [gha-morning-job.md](docs/runbooks/gha-morning-job.md) current.
+- **Deps:** B3, B4/B5 as needed for data · **Size:** L–XL · **Metric:** Scheduled morning brief; feedback → eval cases
 
-**Finance & Ops:** QuickBooks, Xero, Stripe, DocuSign
+### B7 — Public free-tier deploy (M10)
 
-**Comms & Meetings:** Zoom, Google Meet, Granola, Otter, Fireflies, LinkedIn
-
----
-
-## Versioning Principle
-
-OpsPilot will not chase feature count. Each phase ships only when the existing experience meets a high bar of polish, reliability, and clarity. Quality of attention > breadth of features.
-
----
-
-## Planning Session - June 3, 2026 - Conversation Feature, Provider Abstraction & Monetization
-
-### A. Near-term build target (DECIDED)
-
-Provider abstraction seam.
-
-Extend the existing adapter pattern (factory.py, base.py, claude_adapter.py, decision D-004) so provider selection is environment-driven instead of hardcoded.
-
-Provider + model settings to move to env-driven config:
-- provider name
-- model string
-- API key
-- optional base URL
-
-Hardcoded provider/model usage currently appears in five places:
-- conversation_adapter.py
-- evening_adapter.py
-- insights_adapter.py
-- briefing_adapter.py
-- claude_adapter.py
-
-Current hardcoded values include the model string "claude-haiku-4-5-20251001" and ANTHROPIC_API_KEY usage.
-
-Implementation approach:
-- Introduce a thin text-generation provider interface plus factory selected by env.
-- Migrate the conversation path first.
-- Migrate evening/insights/briefing in follow-up passes.
-
-Timing decision:
-- Do this before the conversation feature so conversation work is provider-agnostic from the start.
-
-### B. Conversation feature (DECIDED direction, sequenced)
-
-Target: multi-turn conversation in AskPanel with client-side history.
-
-Storage direction:
-- Client sends recent turns on each /ask request.
-- Backend remains stateless.
-- localStorage persistence lands in Phase B.
-- Server-side session store is deferred.
-
-Phase A (in-session multi-turn):
-- A1: Contract extension with optional history field (backward compatible).
-- A2: Adapter assembles multi-turn message list with turn/character caps.
-- A3: Frontend sends bounded recent turns and preserves thread continuity.
-
-Phase B (drafts + persistence):
-- Optional typed draft payload with plain-answer fallback.
-- [[DRAFT]] card UI + Copy button.
-- localStorage thread persistence.
-
-Phase C (voice):
-- Voice output (read-aloud via Web Speech Synthesis).
-- Voice input (mic to transcript into AskPanel).
-
-Cold-resume current state (as of this planning session):
-- /ask accepts only {question, assistant_name} and returns {answer}.
-- answer_question handles a single question turn today.
-- AskPanel already renders messages as a thread.
-- AskPanel is conditionally rendered.
-
-### C. Monetization & model-choice (FUTURE / UNDER REVIEW - not building soon)
-
-Staged plan (future/under-review):
-
-Stage 1:
-- Flat $4.99/month subscription.
-- OpsPilot provides the built-in default hosted model.
-- Fair-use cap (for example, message-count limit) to bound costs.
-- Default brain remains a hosted frontier API (Claude is current default, swappable via abstraction).
-- Local models (for example Ollama) are ruled out as the default to preserve a simple user experience.
-- Local models remain acceptable for personal developer use and possible advanced mode later.
-
-Stage 2:
-- Model picker by plan tier.
-- Users choose among models mapped to subscription tiers.
-- Keep flat pricing; no per-token rebilling at this stage.
-
-Stage 3:
-- Full metered billing (token usage + cost meter + user spending caps + threshold notifications).
-- Highest complexity and financial risk because OpsPilot becomes a payment intermediary that fronts token costs and must enforce real-time caps.
-- Do this last, only if revenue and demand justify the infrastructure.
-
-Decision recorded:
-- Bring your own key was considered and ruled out for this monetization direction.
-- OpsPilot provides the key/access path instead.
-- Do not train a model from scratch (not viable for solo development).
-- "OpsPilot's own agent" means the existing adapter + prompts + triage context + persona on top of a hosted base model.
-
-### D. Other backlog (carry forward)
-
-- Backend data-shape uplift:
-	- TriageRecord lacks real title/subject (AllItemsPage currently shows id as title).
-	- No per-item suggested_action.
-	- Briefing/evening responses are prose, not structured payloads.
-	- WeekPanel uses static data.
-	- Dashboard dayShapeLine is static placeholder text.
-	- Consider doing this early because conversation quality depends on this data.
-- Mobile viewport optimization pass:
-	- Prerequisite: locate nine mobile reference HTML files named opspilot_*_mobile.html.
-	- Confirmed not present in the repository right now.
-- Panel lifecycle standardization:
-	- Some panels are conditionally rendered.
-	- Some panels use class-toggle visibility.
-- Final full repo audit.
-
-### E. Recommended next-session order
-
-1. Provider seam (conversation path first).
-2. Conversation Phase A.
-3. Backend data-shape uplift.
-4. Phase B drafts/copy.
-5. Phase C voice.
-6. Mobile pass.
-7. Panel standardization.
-8. Final audit.
+- **Goal:** Public demo URL without custom domain.
+- **Workstream M10** — F2 + X2
+  - **Scope:** Docker; Pages-class FE + Render-class BE + Neon; rate limits; retention; README metrics; `OPSPILOT_ANTHROPIC_ENABLED=false` unless capped operator demo; **optional HMAC** manual trigger (X2).
+  - **Exit criteria:**
+    - **Tests:** Deploy smoke script / health checks.
+    - **Evals:** n/a.
+    - **Live smoke:** Public URL; sleep-tolerant; visitors cannot select Anthropic; DEMO_MODE enforced.
+    - **Docs:** PART appended; ROADMAP/ADRs/CHANGELOG updated.
+- **Deps:** B1–B6 spine quality bar · **Size:** XL · **Metric:** Public free-tier demo URL
 
 ---
 
-## Session 3 Delivery Update — June 3, 2026
+## Post-B7 optional (former M11–M15) + backlog
 
-### Completed this session
+| Former | Item | Trigger |
+|--------|------|---------|
+| M11 | P9 FTS → semantic | Real corpus size |
+| M12 | P6 commitments | After HITL send proven |
+| M13 | P7 meeting prep | After calendar sync quality |
+| M14 | Phoenix UI | After LlmCall hooks prove value |
+| M15 | A5 distill / LoRA | After evals + teacher quality |
 
-1. Provider abstraction seam (commit e37370e)
-	- Created `src/opspilot/config/settings.py` with central `AISettings` singleton.
-	- Wired `conversation_adapter.py` to use settings instead of hardcoded env/model values.
-	- Added `GET /api/settings` and `PATCH /api/settings` endpoints.
-	- Implemented 3-tier key fallback: `OPSPILOT_AI_API_KEY` → `ANTHROPIC_API_KEY` → error.
-	- Verified with 51 tests passing.
+Also deferred: MCP client, attachments/vision, full PWA+push, **P10 multilingual (DEFER)**, LiteLLM/LangGraph/Celery/Qdrant, visitor BYOK, custom domain.
 
-2. Frontend settings screen (commit 628bc17)
-	- Created `frontend/src/pages/SettingsPage.tsx` with provider/model/key form.
-	- Added `/settings` route in `App.tsx`.
-	- Added Settings entry button on dashboard.
-	- Added backend model-prefix validation guard (400 on invalid provider/model combos).
-	- Frontend build passes and live behavior verified.
+---
 
-### Known open items
+## Out of scope / rejected near-term
 
-- Settings overrides are in-memory only (reset on server restart).
-- Remaining adapters not yet migrated to `settings.py`: `evening_adapter.py`, `insights_adapter.py`, `briefing_adapter.py`, `claude_adapter.py`.
-- Top-right gear icon still routes to `/connections` (not `/settings`).
-
-### Next session options considered
-
-- A. Persist settings to a local config file (survive restarts).
-- B. Migrate remaining 4 adapters to `settings.py`.
-- C. Conversation Phase A (multi-turn history in AskPanel).
-
-### Next session selection (DECIDED)
-
-Option B — Migrate remaining 4 adapters to `settings.py`.
-
-Planned scope:
-- Move provider/model/api-key reads in `evening_adapter.py`, `insights_adapter.py`, `briefing_adapter.py`, and `claude_adapter.py` to centralized settings.
-- Preserve current behavior and fallback semantics while removing hardcoded model/env duplication.
-- Run full regression tests plus targeted adapter checks after migration.
+- Paid API spend beyond existing Anthropic prepaid
+- Publishing Google OAuth beyond Testing / visitor Gmail connect
+- Training a model from scratch
+- Cloning the other portfolio repo’s LangGraph/RAG/Celery stack
+- Public backend before B7

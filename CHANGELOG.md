@@ -7,6 +7,22 @@ and this project follows Semantic Versioning principles for release tags.
 
 ## [Unreleased]
 
+### Added
+
+- **B0 docs lock + fix pass:** session history, audit corpus, master record PART 0–2, ADRs D-001–D-024, architecture CURRENT/TARGET, ROADMAP B0–B7, AGENTS plan gate, runbooks (local-dev, zero-spend, free-tier, GHA morning, OAuth re-auth), glossary updates.
+- Session 3 (already on main): provider seam \e37370e\; frontend settings 28bc17\; roadmap note f19b77\; SettingsPage lint fix !a8678\.
+
+### Changed
+
+- Roadmap IDs are **B0–B7**; owner decisions D1–D12 corrected in master record; B6 morning job in-runner (D-011); package layout D-024.
+
+### Fixed
+
+- Changelog no longer claims a shipped frontend unit/component test suite (Vitest present; zero FE test files at !a8678\).
+
+---
+
+## Prior Unreleased (restored from main)
 
 ### Added
 
@@ -40,8 +56,7 @@ and this project follows Semantic Versioning principles for release tags.
 - Dashboard run history panel and latest/historical status context badge
 - Executive Briefing "Since Last Run" delta section comparing priority counts (`critical`, `high`, `medium`, `low`) to the immediately previous run
 - Executive Briefing "Recent Trend (Last 7 Runs)" section summarizing deterministic high-risk (`critical + high`) counts and net change
-- Frontend unit/component test baseline with Vitest + Testing Library
-- Focused frontend tests for briefing parsing robustness, API unavailable banner behavior, and run selector latest/historical behavior
+- Vitest + Testing Library installed as FE tooling baseline (no \*.test.*\ / \*.spec.*\ under \rontend/src\ as of HEAD !a8678\ — prior changelog overstated a shipped FE test suite)
 - API tests for metadata allow-listing and artifact-name edge-case handling
 - API tests for local-origin CORS preflight behavior
 

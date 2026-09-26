@@ -1,141 +1,324 @@
 # OpsPilot Architecture
 
-This document describes the technical architecture of OpsPilot and the design principles that guide it.
+**Dualism:** Sections labeled **CURRENT** describe HEAD `41a8678` as verified. Sections labeled **TARGET** describe the locked rebuild (B0–B7). Do not present TARGET as shipped.
+
+Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
 ---
 
-## Design Principles
+## Design principles
 
-1. **The AI is a commodity layer.** The product's value is the chief-of-staff workflow, design quality, trust, and integrations. The AI provider is replaceable.
-
-2. **Adapter-first.** Every external dependency — AI providers, integrations, data sources — is accessed through a thin adapter interface. This makes the system testable, swappable, and future-proof.
-
-3. **Local-first development.** OpsPilot runs entirely on a developer's machine with sample data. No cloud dependency for development or demo.
-
-4. **Calm by default.** No alarms, no red urgency bars, no notification spam. The system speaks like a trusted advisor, not a notification engine.
-
----
-
-## High-Level Architecture
-
-Frontend (TypeScript + React + Vite)
-  - Mobile-first responsive UI
-  - Anthropic-inspired design language
-  - State management via React hooks
-        |
-        | REST API (localhost:8000)
-        v
-Backend (FastAPI + Python)
-  - /triage    - returns classified work items
-  - /briefing  - returns natural-language briefing
-  - /health    - liveness check
-  - /runs/*    - run history endpoints
-        |
-   -----+-----+-----
-   |          |
-   v          v
-Adapter    Pipeline    Rules
-Layer      (orches-    (keyword
-(AI)       trator)     fallback)
-   |
-   v
-Anthropic Claude
-(claude-haiku-4-5)
+1. Ground CURRENT vs TARGET honestly.
+2. Adapter / gateway first — providers are commodities.
+3. Zero further spend; free tiers + Ollama; Anthropic prepaid-gated only (D-023).
+4. Hermetic tests — no live LLM in default suite/CI.
+5. Calm UX — chief-of-staff voice, not alert spam.
+6. Complementary portfolio — hand-rolled gateway/agent; no LangGraph/Celery clone.
 
 ---
 
-## The Adapter Pattern
+## CURRENT (HEAD 41a8678)
 
-The single most important architectural decision in OpsPilot.
+### Modules (path map)
 
-Located in `src/opspilot/adapters/`:
+| Path | Role |
+|------|------|
+| `src/opspilot/api/main.py` | FastAPI app, CORS localhost, routes |
+| `src/opspilot/config/settings.py` | `AISettings` singleton (conversation only) |
+| `src/opspilot/adapters/` | rule_based, claude, conversation, evening, insights, briefing, factory, base |
+| `src/opspilot/pipeline/` | Daily ops orchestration (`run_daily_ops.py`) |
+| `src/opspilot/cli.py` | CLI entry (`python -m opspilot.cli`) |
+| `src/opspilot/models/schemas.py` | WorkItem / triage shapes |
+| `src/opspilot/ingest/` | loader, normalizer |
+| `src/opspilot/nlp/` | action_extractor, briefing_generator, response_drafter |
+| `src/opspilot/rules/` | triage_rules |
+| `src/opspilot/history/` | run_history |
+| `src/opspilot/utils/` | file_io, logging_utils |
+| `src/opspilot/capabilities/` | registry |
+| `frontend/src/` | React 19 + Vite UI |
+| `data/raw/`, `data/output/`, `data/history/` | JSON sample + artifacts |
+| **Missing** | `src/opspilot/__init__.py` |
 
-- `base.py` — defines `TriageAdapter` abstract base class
-- `rule_based.py` — wraps the keyword classifier (no API needed)
-- `claude_adapter.py` — calls Anthropic Claude
-- `factory.py` — selects which adapter to use based on environment
-- `briefing_adapter.py` — generates natural-language briefings
+### Endpoints (CURRENT) — 18 route operations
 
-**Why this matters:** Adding a new AI provider (OpenAI, Gemini, local Llama) is a single new file in this directory. The pipeline code never changes.
+Verified in `src/opspilot/api/main.py`:
 
----
+| Method | Path |
+|--------|------|
+| GET | `/health` |
+| GET | `/api/settings` |
+| PATCH | `/api/settings` |
+| POST | `/run` |
+| GET | `/briefing` |
+| GET | `/runs` |
+| GET | `/runs/{run_id}` |
+| GET | `/triage` |
+| GET | `/runs/{run_id}/triage` |
+| GET | `/runs/{run_id}/briefing` |
+| GET | `/ai-briefing` |
+| GET | `/runs/{run_id}/ai-briefing` |
+| POST | `/ask` |
+| POST | `/evening-summary` |
+| POST | `/insights` |
+| GET | `/inputs` |
+| GET | `/capabilities` |
+| GET | `/capabilities/{capability_id}` |
 
-## Frontend Architecture
+Notable: `PATCH /api/settings` can set provider/model/**API key** without auth (**SEC-01** — deploy gate). `POST /run` **spawns** a CLI subprocess (`subprocess.run` of `python -m opspilot.cli`) — V3.
 
-`frontend/src/`:
+### Adapters / settings
 
-- `components/` — Pure UI components, no API calls
-- `pages/` — Top-level views (Dashboard, AllItems, Briefing). These own the data fetching.
-- `hooks/` — `useUserName`, `useGlobalShortcut`. localStorage-backed.
-- `api/` — Thin API client (`client.ts`) and shared types (`types.ts`)
-- `index.css` — Design system tokens (Anthropic palette + olive accent, Poppins/Lora fonts, spacing, radii)
+- Conversation path uses `AISettings` (`OPSPILOT_AI_*` with `ANTHROPIC_API_KEY` fallback).
+- Evening / insights / briefing / claude adapters still read env / hardcode model.
+- Factory prefers Claude when a key is present → **non-hermetic tests** if `.env` has a key (V1).
 
-**State management:** No Redux or Zustand. React hooks plus localStorage cover everything OpsPilot needs today.
+### Data flow (files)
 
-**Routing:** React Router DOM, three routes: `/dashboard`, `/items`, `/briefing`.
+```
+sample_input.json → pipeline → data/output (latest) + data/history/runs/...
+Frontend fetch → FastAPI → adapters / file reads
+```
 
----
+No database. Settings overrides are in-memory only.
 
-## Backend Architecture
+### Known defects (selected)
 
-`src/opspilot/`:
+| ID | Issue |
+|----|-------|
+| V1–V3 | Non-hermetic / order-dependent tests; subprocess + missing package init |
+| V4 / SEC-01 | Unauthenticated settings key mutation (deploy gate) |
+| V5 | Vitest installed; zero FE tests |
+| V6 | briefing_adapter wrong attribute names |
+| V7 | npm audit / no TS `strict` |
+| AI-01… | Duplicated LLM plumbing; no gateway resilience/evals |
+| AI-05 | TriageRecord lacks real title/subject |
 
-- `api/` — FastAPI routes
-- `pipeline/` — `run_daily_ops.py` orchestrates a full triage run
-- `adapters/` — AI provider abstraction (see above)
-- `rules/` — keyword-based fallback (`triage_rules.py`)
-- `models/` — Pydantic schemas for triage records, briefings
-
-**Data flow for a triage request:**
-1. API endpoint receives a request
-2. Pipeline reads work items from `data/raw/sample_input.json`
-3. For each item, the active adapter's `classify(item)` is called
-4. Results are written to `data/output/triage_results.json`
-5. AI briefing is generated by `briefing_adapter.py`
-6. Both files are served to the frontend
-
----
-
-## Evolution Path
-
-The current architecture is intentionally simple. As OpsPilot grows, the following evolutions are anticipated:
-
-**Phase B (deployment):**
-- Add user authentication (Google OAuth)
-- Add per-user data isolation
-- Move from JSON files to PostgreSQL
-- Add a job queue for long-running triage operations
-
-**Phase C (integrations):**
-- New adapter category: `integrations/` — Gmail, Calendar, Slack
-- Each integration is a separate adapter with its own OAuth flow
-- Integration data feeds into the same triage pipeline
-
-**Phase D (enterprise):**
-- Multi-model routing layer in front of the AI adapters
-- BYOK support — adapters accept user-provided API keys
-- MCP server support for BYOA — adapters can be remote
-- Per-tenant isolation, audit logging, role-based access
-
----
-
-## Key Files Quick Reference
-
-| Purpose | Location |
-|---------|----------|
-| Claude integration | `src/opspilot/adapters/claude_adapter.py` |
-| Briefing generation | `src/opspilot/adapters/briefing_adapter.py` |
-| API entrypoint | `src/opspilot/api/main.py` |
-| Frontend entrypoint | `frontend/src/App.tsx` |
-| Dashboard logic | `frontend/src/pages/DashboardPage.tsx` |
-| Design tokens | `frontend/src/index.css` |
-| Sample data | `data/raw/sample_input.json` |
-| Environment config | `.env.example` |
+Full audit: [docs/audits/2026-09-25-baseline-audit.md](audits/2026-09-25-baseline-audit.md).
 
 ---
 
-## Contributing to the Architecture
+## TARGET
 
-Architectural changes should be discussed before implementation. If you're considering a change that touches the adapter pattern, the pipeline orchestration, or the integration boundary, open a discussion first.
+### Package layout + dependency rules (D-024)
 
-The bar for new dependencies is high. Adding an npm or pip package should be justified by capability we cannot reasonably build ourselves.
+Keep `src/opspilot/` + `frontend/` (D-022). TARGET tree (principal-review §2.1):
+
+```
+src/opspilot/
+  __init__.py
+  api/
+    app.py
+    deps.py
+    errors.py                 # single error envelope
+    v1/
+      routes_health.py
+      routes_runs.py
+      routes_triage.py
+      routes_ask.py           # + SSE
+      routes_drafts.py
+      routes_prefs.py
+      routes_admin.py         # settings read-only
+  domain/
+    models.py
+    enums.py
+  services/
+    triage_service.py
+    briefing_service.py
+    ask_service.py
+    sync_service.py
+    draft_service.py
+    preference_service.py
+  llm/
+    gateway.py
+    types.py
+    routing.py
+    budgets.py
+    prompts/
+    providers/
+      gemini.py
+      groq.py
+      ollama.py
+      anthropic.py            # prepaid gated only
+  agent/
+    loop.py
+    tools/
+      search_items.py
+      get_message.py
+      get_calendar.py
+      draft_reply.py
+      send_reply.py
+    events.py
+  integrations/
+    google_oauth.py
+    gmail_client.py
+    calendar_client.py
+  persistence/
+    db.py
+    repositories/
+    migrations/               # Alembic
+  jobs/
+    morning_run.py
+    sync_mail.py
+  evals/
+    datasets/
+    metrics/
+    runners/
+  obs/
+    tracing.py
+    metrics.py
+  config/
+    settings.py               # env-only secrets
+  rules/
+    triage_rules.py
+```
+
+**Dependency rules:**
+
+- `api` → `services` → (`domain`, `llm`, `agent`, `integrations`, `persistence`)
+- `agent` → `llm` + read services; never `integrations.send` without approval service
+- `evals` may use `rules` + LLM fakes; never load `.env` keys in CI lane
+- `integrations` must not import `api`
+- No upward imports from `llm` into `api`
+- Provider SDKs only inside `llm/providers/`
+
+### Domain model (minimum)
+
+| Entity | Key fields | Relationships |
+|--------|------------|---------------|
+| **User** | id, email, google_sub, role=`demo_operator`\|`visitor` | 1:n runs, prefs |
+| **WorkItem** | id, source, subject, body, sender, received_at, thread_id, provider_id **unique**, raw_json | n:1 Thread |
+| **Thread** | id, subject, participants | 1:n WorkItems |
+| **TriageDecision** | urgency, category, sentiment, reasons, **confidence**, **evidence_refs**, model, prompt_version | n:1 WorkItem |
+| **Commitment** | text, due_at, status | DEFER table OK empty |
+| **Meeting** | calendar_event_id, start, end, title, attendees | |
+| **Draft** | work_item_id, body, status=`pending`\|`approved`\|`sent`\|`rejected` | |
+| **Approval** | draft_id, user_id, decided_at, decision | |
+| **Preference** | key, value, source=`user_correction` | |
+| **Feedback** | triage_decision_id, correct_label?, note, promoted_to_eval | |
+| **Run** | kind=`morning`\|`manual`\|`sync`, status, started_at, stats | |
+| **LlmCall** | task, provider, model, latency_ms, ttft_ms, tokens_in/out, USD fields, prompt_version, status | |
+| **DemoMailbox** | fictional account binding (operator-only) | |
+| **SyncCursor** | provider sync checkpoints (X1) | |
+
+### API `/api/v1`
+
+- Prefix: **`/api/v1`**
+- Error envelope: `{ "error": { "code": str, "message": str, "details": object|null } }`
+- Auth: session cookie (HTTP-only) after Google OAuth for operator; visitor = read-only demo, no Google link
+- Rate limit: per IP + per user on LLM routes
+- Streaming: `POST /api/v1/ask/stream` → `text/event-stream`
+- Settings: `GET /api/v1/settings` **read-only** (no keys); **no** key PATCH
+
+**Current → future map**
+
+| Current | Future |
+|---------|--------|
+| `GET /health` | `GET /api/v1/health` (+ `GET /api/v1/ready` checks DB) |
+| `GET/PATCH /api/settings` | `GET /api/v1/settings` read-only; **remove PATCH** |
+| `POST /run` | `POST /api/v1/runs` (in-process; no subprocess) |
+| `GET /briefing`, `/ai-briefing` | `GET /api/v1/briefings/latest` |
+| `GET /triage` | `GET /api/v1/triage` |
+| `GET /runs*` | `GET /api/v1/runs`, `.../{id}` |
+| `POST /ask` | `POST /api/v1/ask` + `/ask/stream` |
+| `POST /evening-summary` | `POST /api/v1/evening-summary` |
+| `POST /insights` | `POST /api/v1/insights` |
+| `GET /inputs` | remove or admin-only |
+| `GET /capabilities*` | keep as product roadmap UI or static |
+
+### LLM gateway + Anthropic prepaid gate (D-012, D-023)
+
+```text
+complete(task, messages, schema=None) -> Result
+stream(task, messages) -> AsyncIterator[Event]
+```
+
+**Default order:** `gemini → groq → ollama → rules` (task-dependent). Anthropic **never** in the default list.
+
+- **Failover:** on 429/5xx/timeout; honor Retry-After; circuit open N minutes
+- **Budgets:** daily req/token caps per free provider from env; Anthropic hard **token and USD** remaining (D-023)
+- **Structured output:** native JSON schema/mode → Pydantic; retry once; fail closed
+- **Prompts:** `llm/prompts/{name}/v{N}.md` + sha256 in `LlmCall`
+- **Tracing:** `obs.tracing` + persist `LlmCall`
+- Anthropic: enable flag + allowlisted tasks only; never tests/CI; never visitor Ask (D2/D11)
+
+### Agent loop + approval boundary (D-014)
+
+- Tools as JSON schemas; allowlist in config: `search_items`, `get_message`, `get_calendar`, `draft_reply`, `send_reply`
+- Max steps (e.g. 5), max wall time, max tokens
+- Read-only tools until approve&send; `send_reply` requires approved `approval_id`
+- SSE events: `token`, `tool_start`, `tool_end`, `final`, `error`
+- DEMO_MODE visitors cannot send
+
+### Eval lanes (D-018) + amendment
+
+| Lane | When | Anthropic? |
+|------|------|------------|
+| Deterministic | Always CI | No |
+| Local model | CI optional / nightly | No |
+| Hosted free | Manual / weekly | No |
+| Prepaid quality | Operator, budgeted | Yes, gated |
+| Judge calibration | Manual subset | Optional gated |
+
+Datasets under `evals/datasets/` (fictional). Metrics: precision/recall/F1, confusion matrix, groundedness (ID citation), judge score. Injection red-team shares the **same harness** (B3). ASR tracked in CI.
+
+### Security
+
+- Secrets: env / host secret store only; FE never sees keys
+- Auth: Google OAuth operator; visitors anonymous read-only
+- Injection: system prompt policy + **untrusted-content delimiters** around email bodies + CI red-team ASR
+- PII: fictional policy; if detector fires → **Ollama-only** path
+- X2 HMAC `POST /api/v1/jobs/morning` — **B7 optional** only (D-011); B6 does not need public webhook
+- Rate limits before public (B7)
+- DEMO_MODE blocks send for visitors
+
+### Frontend
+
+- React Router; **standardize panels** to conditional mount + shared `useOverlay` (X8 in B5)
+- Fetch + React state (D-020); TanStack Query only if cache pain appears
+- SSE: EventSource or fetch stream reader in AskPanel
+- PWA out of spine; Telegram link in settings for operator
+- Types: OpenAPI-lite generated/checked in CI (X7 in B1)
+- B1 exits: TS `strict` on; minimal vitest in CI; react-router upgraded (`npm audit --omit=dev` 0 high)
+
+### Jobs / scheduling
+
+**CURRENT:** Manual CLI/API only; no in-app scheduler. Local Windows Task Scheduler remains a valid **dev** path.
+
+**TARGET B6 (D-011):** GitHub Actions cron runs `morning_run` **inside the runner** (install package; GHA secrets for Gemini/Groq, Neon URL, Telegram token, token-encryption key; Google refresh token read encrypted from Neon). Writes Neon; notifies Telegram. **No public backend** before B7. Fail fast if Neon schema ≠ Alembic head; migrations are operator-applied, never by cron. Auth failure → skip sync, brief from existing data, Telegram re-auth alert.
+
+**TARGET B7:** Public deploy; optional HMAC webhook wake of deployed API (X2).
+
+### Deployment topology
+
+```mermaid
+flowchart LR
+  Visitor[VisitorBrowser]
+  FE[PagesClassFE]
+  BE[RenderClassBE]
+  Neon[(NeonPostgres)]
+  Gemini[GeminiAPI]
+  Groq[GroqAPI]
+  Gmail[DemoGmailCalendar]
+  GHA[GitHubActionsCron]
+  Tg[TelegramBot]
+  Dev[Developer]
+  Ollama[OllamaLocal]
+
+  Visitor --> FE
+  FE --> BE
+  BE --> Neon
+  BE --> Gemini
+  BE --> Groq
+  BE --> Gmail
+  GHA -->|"B6 in-runner write"| Neon
+  GHA -->|"B6 notify"| Tg
+  GHA -->|"B7 optional HMAC"| BE
+  Dev --> Ollama
+  Dev --> BE
+```
+
+No custom domain. Anthropic only via operator budgeted scripts, not visitor path. Ollama is **local/CI only** — not wired from deployed BE.
+
+### Deliberately simple
+
+No LangGraph, LiteLLM, Celery, Qdrant, visitor BYOK, multi-tenant beyond operator vs visitor, LoRA, MCP client, or custom domain in the locked spine.

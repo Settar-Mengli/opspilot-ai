@@ -1,131 +1,82 @@
 # OpsPilot AI
 
-**Your AI chief of staff.** OpsPilot transforms operational chaos into clarity — surfacing the 2–3 things that need you today, handling the rest, and briefing you like a trusted advisor.
+**Your AI chief of staff.** OpsPilot surfaces what needs attention, drafts the rest, and briefs you like a trusted advisor — calm UI, fictional demo data, local-first development.
 
-Built with TypeScript, React, FastAPI, and Anthropic Claude.
+**Rebuild in progress:** documentation and architecture are locked as **B0**. Runtime code at HEAD is still the pre-rebuild demo. See:
 
----
+- [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history, baseline, locked plan
+- [ROADMAP.md](ROADMAP.md) — batches **B0–B7**
+- [docs/architecture.md](docs/architecture.md) — CURRENT vs TARGET
+- [docs/adr/](docs/adr/) — ADRs D-001–D-023
 
-## What It Does Today
-
-OpsPilot ingests operational work items and uses Claude to:
-
-- **Triage** each item by urgency and category
-- **Surface "open loops"** that need executive attention
-- **Generate a morning briefing** in natural language
-- **Present a calm, focused dashboard** that translates hundreds of signals into 2–3 priorities
-
-Mobile-first design. Warm aesthetic. Reads like a memo, not a control panel.
+Built with TypeScript, React, FastAPI, and (today) Anthropic Claude with a rule-based fallback. **TARGET** default path moves to free-tier Gemini → Groq → Ollama → rules; Anthropic becomes prepaid-gated only.
 
 ---
 
-## What Makes It Different
+## What it does today (CURRENT)
 
-Most ops tools show you everything. OpsPilot shows you what matters. The design language is borrowed from Anthropic's own brand — minimalist, warm, high-readability. The voice is borrowed from the world's best chiefs of staff: calm, trustworthy, generous when things are quiet.
+- Ingests fictional operational work items (JSON)
+- Triages via Claude **or** deterministic rules when no key
+- Briefing / ask / evening / insights endpoints
+- Mobile-first React dashboard
+- Provider settings UI (conversation path); other adapters not fully migrated
 
----
-
-## Roadmap
-
-OpsPilot is on a path from demo → real product → enterprise platform.
-
-### Phase A — Working Demo *(current)*
-- Mobile-first dashboard with onboarding personalization
-- Claude-powered triage and briefing
-- Beautiful, deployable interface
-
-### Phase B — Deployed Demo with Real Integrations
-- Public deployment with authentication
-- Gmail integration (read inbox, surface escalations, draft replies)
-
-### Phase C — Operational Platform
-- Google Calendar integration (week-ahead intelligence)
-- Slack integration (team signal monitoring)
-- Notion integration (decision memory, document context)
-
-### Phase D — Enterprise Platform
-- Multi-tenant architecture
-- Bring Your Own Key (BYOK) for cost control
-- Bring Your Own Agent (BYOA) via MCP for compliance
+**Not yet:** public deploy, Neon DB, multi-provider gateway, eval harness, Gmail sync, agentic tools, Telegram morning run.
 
 ---
 
-## Integration Vision
+## Quick start (local)
 
-OpsPilot is designed to wire into the places work actually happens:
-
-**Essential (Phase B–C)** — Gmail, Outlook, Google Calendar, Slack, Microsoft Teams, Notion, Linear
-
-**Expanded (Phase D)** — Jira, Asana, HubSpot, Salesforce, Zendesk, Intercom, GitHub, PagerDuty, Granola, Otter
-
-The integration philosophy: meet users where their work lives. Never make them switch tools to get value.
-
----
-
-## AI Architecture
-
-OpsPilot uses Anthropic Claude today via a clean adapter pattern (`src/opspilot/adapters/`). The architecture is designed to evolve:
-
-- **Today:** Claude Haiku for classification, briefings, and insights. Rule-based fallback when no API key is configured.
-- **Near future:** Multi-model abstraction — route tasks to the optimal model (cost, capability, latency). OpenAI and Gemini adapters will slot in alongside Claude.
-- **Enterprise:** BYOK (users bring their own API key) and BYOA (users plug in their own agents via Model Context Protocol).
-
-The principle: **the AI is a commodity layer. The product value is the chief-of-staff workflow, design, trust, and integrations.**
-
----
-
-## Architecture Overview
-
-opspilot-ai/
-├── src/opspilot/         # Python backend (FastAPI)
-│   ├── adapters/         # AI provider abstraction
-│   ├── pipeline/         # Triage orchestration
-│   ├── api/              # REST endpoints
-│   └── rules/            # Keyword-based fallback classifier
-├── frontend/             # TypeScript + React + Vite
-│   ├── src/components/   # UI components
-│   ├── src/pages/        # Dashboard, All Items, Briefing
-│   └── src/hooks/        # User name, keyboard shortcuts
-└── data/                 # Sample inputs and run history
-
-See `docs/ARCHITECTURE.md` for technical detail and `ROADMAP.md` for phase-by-phase plans.
-
----
-
-## Getting Started
-
-**Prerequisites:** Python 3.10+, Node.js 18+, an Anthropic API key (optional — falls back to rule-based triage)
-
-# Backend
+```powershell
 python -m venv .venv
-.venv\Scripts\activate   # Windows
-pip install -e .
-cp .env.example .env     # add ANTHROPIC_API_KEY
-python -m uvicorn opspilot.api.main:app --reload
+.\.venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
+if (-not (Test-Path .env)) { Copy-Item .env.example .env } else { Write-Host 'skip: .env exists' }
 
-# Frontend (separate terminal)
+.venv\Scripts\python -m pytest -q
+
 cd frontend
-npm install
+npm ci
 npm run dev
+```
 
-Open `http://localhost:5173`.
+Backend (separate terminal):
 
----
+```powershell
+.\.venv\Scripts\Activate.ps1
+uvicorn opspilot.api.main:app --reload --app-dir src
+```
 
-## AI Provider Configuration
-
-OpsPilot now supports a unified runtime AI configuration for conversation responses:
-
-- `OPSPILOT_AI_PROVIDER` (default: `anthropic`)
-- `OPSPILOT_AI_MODEL` (default: `claude-haiku-4-5-20251001`)
-- `OPSPILOT_AI_API_KEY` (optional)
-
-If `OPSPILOT_AI_API_KEY` is unset, OpsPilot falls back to `ANTHROPIC_API_KEY` for backward compatibility.
+Details: [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md) · Zero-spend: [docs/runbooks/zero-spend.md](docs/runbooks/zero-spend.md)
 
 ---
 
-## Status
+## Roadmap (locked)
 
-OpsPilot is an active project under development. The current build is a working demo intended to showcase the product vision. Production deployment, authentication, and live integrations are on the roadmap.
+| Batch | Goal |
+|-------|------|
+| B0 | Docs & architecture lock |
+| B1 | Hermetic foundation + SEC gate |
+| B2 | LLM gateway + traces |
+| B3 | Evals + injection red-team |
+| B4 | Demo Google inbox/calendar |
+| B5 | Agentic Ask + approve & send |
+| B6 | Morning run + Telegram + preferences |
+| B7 | Public free-tier deploy |
 
-For investors and partners interested in early access or collaboration, contact the project owner.
+Full exits: [ROADMAP.md](ROADMAP.md).
+
+---
+
+## Design principles
+
+1. The AI provider is a commodity; the product is the chief-of-staff workflow.
+2. Adapter / gateway seams — no provider SDK sprawl in features.
+3. Zero further spend; hermetic CI.
+4. Calm by default — advisor voice, not alert spam.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).

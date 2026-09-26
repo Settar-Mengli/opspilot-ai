@@ -2,43 +2,74 @@
 
 Thanks for contributing to OpsPilot AI.
 
-## Development Principles
+## Principles
 
 - Keep changes scoped and purposeful.
 - Prefer deterministic, testable behavior.
-- Update project documentation when behavior or process changes.
+- Distinguish CURRENT (verified) from TARGET (planned).
+- Update docs when behavior or process changes.
+- Follow [AGENTS.md](AGENTS.md) (zero-spend, hermetic tests, cut-list discipline, plan gate).
 
-## Branch Naming Convention
+## Workflow (Ask → Plan → Build)
 
-Use one of these patterns:
+1. **Ask** — read-only analysis; no file writes.
+2. **Plan** — one large batch plan; must satisfy AGENTS **Plan requirements** (10 items); Build only after owner confirmation.
+3. **Build** — implement only the approved batch; small commits inside the batch; each leaves tests green.
+4. After Build — **Ask audit** → one **fix pass** (commit, push, open PR). Agent **never merges**; operator merges after CI green.
+5. **Live smoke** before PR.
 
-- `feat/<short-topic>`
-- `fix/<short-topic>`
-- `docs/<short-topic>`
-- `chore/<short-topic>`
-- `test/<short-topic>`
+Explain before edit. Implementation report after each coding step.
 
-Examples:
+## Branch naming
 
-- `feat/vertical-slice-cli`
-- `docs/milestone-1-scope`
+**Required for roadmap batches:** one branch per batch from updated `main`:
 
-## Commit Message Convention
+- `b0/docs-architecture-lock`
+- `b1/...`, `b2/...`, …
 
-Use Conventional Commit style:
+Also acceptable for tiny out-of-band fixes (still no merge by agent):
 
-- `feat: add rule-based triage classifier`
-- `fix: correct urgency scoring edge case`
-- `docs: define milestone acceptance criteria`
-- `test: add integration test for daily briefing`
-- `chore: add CI validation workflow`
+- `feat/<short-topic>` · `fix/<short-topic>` · `docs/<short-topic>` · `chore/<short-topic>` · `test/<short-topic>`
 
-## Pull Request Expectations
+## Commit messages
 
-- Keep PRs focused on one intent.
-- Include testing notes in PR description.
-- Include a brief implementation report summary:
-  - What changed
-  - How to run
-  - How to test
-  - Follow-up recommendations
+Conventional Commits: `feat:` · `fix:` · `docs:` · `test:` · `chore:`
+
+## Pull requests
+
+- One intent per PR (usually one batch).
+- Include testing notes, live-smoke commands, and a short implementation report.
+- Do not merge CUT-list or out-of-batch scope without an explicit decision.
+- Agent opens PR; operator merges.
+
+## Local validation (typical)
+
+```powershell
+.venv\Scripts\python -m pytest -q
+cd frontend; npm run lint; npm run build
+```
+
+Guarded env template (never overwrite an existing `.env`):
+
+```powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env } else { Write-Host 'skip: .env exists' }
+```
+
+Key check (True/False only — **never print** `.env` contents):
+
+```powershell
+(Select-String -Path .env -Pattern '^\s*(ANTHROPIC_API_KEY|OPSPILOT_AI_API_KEY)\s*=\s*\S' -Quiet)
+```
+
+Expect **False** during zero-spend hermetic work unless running an explicit budgeted operator script.
+
+## Documentation sources of truth
+
+| Topic | File |
+|-------|------|
+| Locked plan | `OPSPILOT-MASTER-RECORD.md` |
+| Batches B0–B7 | `ROADMAP.md` |
+| CURRENT vs TARGET architecture | `docs/architecture.md` |
+| Decisions | `docs/adr/` |
+| Agent rules + plan gate | `AGENTS.md` |
+| Runbooks | `docs/runbooks/` |
