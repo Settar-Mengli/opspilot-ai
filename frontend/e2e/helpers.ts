@@ -168,6 +168,8 @@ export async function seedOnboarded(page: Page): Promise<void> {
   await page.addInitScript(() => {
     window.localStorage.setItem('opspilot.userName', 'Alex')
     window.localStorage.setItem('opspilot.assistantName', 'Bulbul')
+    const fixed = Date.parse('2026-09-26T15:00:00.000Z')
+    Date.now = () => fixed
   })
 }
 
@@ -175,6 +177,8 @@ export async function seedFresh(page: Page): Promise<void> {
   await page.addInitScript(() => {
     window.localStorage.removeItem('opspilot.userName')
     window.localStorage.removeItem('opspilot.assistantName')
+    const fixed = Date.parse('2026-09-26T15:00:00.000Z')
+    Date.now = () => fixed
   })
 }
 

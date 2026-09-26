@@ -96,7 +96,7 @@ function App() {
         </div>
       </header>
 
-      <NotifyPanel open={notifyOpen} notifications={observations} assistantName={assistantName} />
+      <NotifyPanel open={notifyOpen} notifications={observations} assistantName={assistantName} onClose={() => setNotifyOpen(false)} />
 
       {!healthy && (
         <div className="api-banner">

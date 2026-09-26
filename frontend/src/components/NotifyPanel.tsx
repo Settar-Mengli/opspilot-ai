@@ -1,3 +1,5 @@
+import { useOverlay } from '../hooks/useOverlay'
+
 interface Notification {
   id: string
   text: string
@@ -8,9 +10,12 @@ interface Props {
   open: boolean
   notifications: Notification[]
   assistantName: string
+  onClose: () => void
 }
 
-export function NotifyPanel({ open, notifications, assistantName }: Props) {
+export function NotifyPanel({ open, notifications, assistantName, onClose }: Props) {
+  useOverlay({ open, onClose, lockScroll: false })
+
   return (
     <div className={`notify-panel ${open ? 'open' : ''}`}>
       <div className="notify-head">
