@@ -44,6 +44,7 @@ Tests intercept Google Fonts and serve committed WOFF2 files under `frontend/e2e
 - Frozen clock
 - Animations disabled; focus blurred before screenshots
 - Visual screenshots force **monospace** via `settle()` so Docker Desktop (Windows) and GHA Linux share `-linux` baselines (production Google Fonts `@import` unchanged)
+- If a state still AA-differs (seen on **briefing** prose), **adopt CI `*-actual.png`** as the `-linux` baseline — GHA is authority (D-026)
 - localStorage seeded per test
 - `deviceScaleFactor: 1`
 - `reuseExistingServer: false` (always rebuild preview for screenshots)
