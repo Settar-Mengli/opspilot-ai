@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getEveningSummary } from '../api/client'
+import { useOverlay } from '../hooks/useOverlay'
 import { BulBulAvatar } from './BulBulAvatar'
 
 interface Props {
@@ -30,27 +31,15 @@ export function EveningPanel({ open, assistantName, onClose }: Props) {
     }
   }, [assistantName])
 
-  // Scroll-lock + Escape-to-close
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prevOverflow
-    }
-  }, [open, onClose])
+  // Scroll-lock + Escape-to-close via shared overlay hook
+  const { onBackdropClick } = useOverlay({ open, onClose })
 
   const paragraphs = summary
     ? summary.split(/\n\n+/).map(p => p.trim()).filter(Boolean)
     : []
 
   return (
-    <div className={`evening-panel-overlay ${open ? 'open' : ''}`} onClick={onClose}>
+    <div className={`evening-panel-overlay ${open ? 'open' : ''}`} onClick={onBackdropClick}>
       <div className="evening-panel" onClick={(e) => e.stopPropagation()}>
         <div className="evening-panel-header">
           <div className="evening-panel-title">
