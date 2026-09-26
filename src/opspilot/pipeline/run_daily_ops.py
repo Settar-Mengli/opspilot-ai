@@ -143,6 +143,8 @@ def run_daily_ops(input_path: str, output_dir: str, run_date: str) -> dict[str, 
             "action_items": str(action_file),
             "suggested_responses": str(response_file),
             "daily_briefing": str(briefing_file),
+            "run_id": run_dir.name,
+            "history_dir": str(run_dir),
         }
     except InputValidationError:
         log_event(logger, "pipeline_validation_failed", input_path=input_path)
