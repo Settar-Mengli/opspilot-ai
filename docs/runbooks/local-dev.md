@@ -31,7 +31,7 @@ If pytest shows mysterious import/CLI failures after package layout changes, **r
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
-uvicorn opspilot.api.main:app --reload --app-dir src
+uvicorn opspilot.api.app:app --reload --app-dir src
 ```
 
 ## Run frontend
@@ -45,7 +45,7 @@ npm run dev
 ## Test / lint
 
 ```powershell
-.venv\Scripts\python -m pytest -q
+uv run pytest -q
 cd frontend; npm run lint; npm run build
 ```
 

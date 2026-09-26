@@ -245,3 +245,33 @@ Full scope/exit criteria: [`ROADMAP.md`](ROADMAP.md).
 ### Revision note (B0 fix pass)
 
 In-place corrections to PART 0â€“2 on branch `b0/docs-architecture-lock` before merge. Fix IDs applied: **F1â€“F19** (audit) as amended by owner rulings **O1â€“O7**. Owner overrode the principal reviewâ€™s **P10 REJECT** with **DEFER**. D9 locked as one XL batch; D12 = MIT/Settar Mengli; Anthropic visitor rule under D2/D11; B6 morning job in-runner (D-011); package layout D-024.
+
+## PART 3 — B1 Hermetic Foundation — 2026-09-26
+
+Branch: `b1/hermetic-foundation` (Build complete; PR deferred to post-audit fix pass).
+
+### Owner decisions recorded this batch
+
+| ID | Decision |
+|----|----------|
+| Q1 | Local/CI Postgres = Docker Compose / GHA `postgres:16`; Neon hosted deferred (B4/B7) |
+| Q2 | Python **3.13** (`requires-python >=3.13,<3.14`) |
+| Q3 | Lockfile = **uv** (`uv.lock`) |
+| Q4 | SQLAlchemy 2 async + `psycopg[binary]` |
+| Q5 | Truncate-managed `opspilot_test` + throwaway `opspilot_alembic_rt` for Alembic RT |
+| Q6 / D-025 | Postgres is SoT for runs/triage after B1; files remain pipeline artifacts |
+| Q7 | OpenAPI-lite via `scripts/export_openapi.py` + `frontend/src/api/generated.ts` |
+| A7 | Node **24** (CI, `engines`, `.nvmrc`) |
+| A12 | **AI-05 lite:** `GET /api/v1/triage` returns `subject_or_title` from persisted WorkItem. Full confidence/evidence_refs stays B3 |
+| A3 | Coverage ratchet **fail-under = 67** (measured end-of-B1 ˜ 69%; floor-2). Ratchet-only thereafter |
+
+### Hermetic / X6
+
+- `pytest-socket` + `OPSPILOT_FORCE_RULES` (default off; tests set it; factory honors it).
+- CI permanently sets fake `ANTHROPIC_API_KEY` / `OPSPILOT_AI_API_KEY`.
+- Anthropic client construction guarded in tests.
+
+### Notes / deviations
+
+- Neon not provisioned in B1 (owner). D-008 addendum: B1 local/CI Compose/service; Neon = later hosted SoT.
+- mypy: listed adapter overrides + `ignore_errors` on remaining pre-B1 packages so new `api`/`persistence`/`jobs`/`domain` stay strict without blocking on legacy typing debt (budget for `# type: ignore` still =10).

@@ -1,6 +1,6 @@
 # OpsPilot Architecture
 
-**Dualism:** Sections labeled **CURRENT** describe HEAD `41a8678` as verified. Sections labeled **TARGET** describe the locked rebuild (B0–B7). Do not present TARGET as shipped.
+**Dualism:** Sections labeled **CURRENT** describe post-B1 behavior on branch `b1/hermetic-foundation` (pending merge). Sections labeled **TARGET** describe the remaining locked rebuild (B2–B7). Do not present TARGET as shipped.
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
@@ -17,62 +17,69 @@ Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs
 
 ---
 
-## CURRENT (HEAD 41a8678)
+## CURRENT (B1 — hermetic foundation)
+
+Verified on `b1/hermetic-foundation`: hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, `/api/v1` with envelope, in-process pipeline, Settings GET-only, FE on `/api/v1`, coverage fail-under 67, Node 24 / Python 3.13 / uv.
+
+### Endpoints (CURRENT) — `/api/v1`
+
+Primary surface is **`/api/v1/*`**. Legacy unversioned routes were removed in B1 commit 9.
+
+| Method | Path |
+|--------|------|
+| GET | `/api/v1/health` |
+| GET | `/api/v1/settings` (read-only; no key material) |
+| POST | `/api/v1/runs` (in-process pipeline + Postgres persist) |
+| GET | `/api/v1/runs`, `/api/v1/runs/{run_id}` |
+| GET | `/api/v1/triage` (includes AI-05 lite `subject_or_title`) |
+| GET | `/api/v1/briefing`, `/api/v1/ai-briefing` |
+| GET | `/api/v1/runs/{run_id}/triage`, `.../briefing`, `.../ai-briefing` |
+| POST | `/api/v1/ask`, `/api/v1/evening-summary`, `/api/v1/insights` |
+| GET | `/api/v1/inputs`, `/api/v1/capabilities` |
+
+Notable: **no** `PATCH` settings. Pipeline runs **in-process** (no CLI subprocess).
 
 ### Modules (path map)
 
 | Path | Role |
 |------|------|
-| `src/opspilot/api/main.py` | FastAPI app, CORS localhost, routes |
-| `src/opspilot/config/settings.py` | `AISettings` singleton (conversation only) |
-| `src/opspilot/adapters/` | rule_based, claude, conversation, evening, insights, briefing, factory, base |
+| `src/opspilot/api/app.py` | FastAPI app + `/api/v1` |
+| `src/opspilot/api/v1/` | Versioned routes |
+| `src/opspilot/persistence/` | SQLAlchemy models + engine |
+| `src/opspilot/jobs/import_json.py` | X5 importer |
 | `src/opspilot/pipeline/` | Daily ops orchestration (`run_daily_ops.py`) |
-| `src/opspilot/cli.py` | CLI entry (`python -m opspilot.cli`) |
-| `src/opspilot/models/schemas.py` | WorkItem / triage shapes |
-| `src/opspilot/ingest/` | loader, normalizer |
-| `src/opspilot/nlp/` | action_extractor, briefing_generator, response_drafter |
-| `src/opspilot/rules/` | triage_rules |
-| `src/opspilot/history/` | run_history |
-| `src/opspilot/utils/` | file_io, logging_utils |
-| `src/opspilot/capabilities/` | registry |
-| `frontend/src/` | React 19 + Vite UI |
-| `data/raw/`, `data/output/`, `data/history/` | JSON sample + artifacts |
-| **Missing** | `src/opspilot/__init__.py` |
+| `src/opspilot/adapters/` | rule_based, claude, conversation, evening, insights, briefing, factory, base |
+| `frontend/src/api/` | `/api/v1` client only |
+| `data/raw/`, `data/output/`, `data/history/` | Sample + pipeline artifacts (DB is API SoT) |
 
-### Endpoints (CURRENT) — 18 route operations
+### Data flow (CURRENT)
 
-Verified in `src/opspilot/api/main.py`:
+```
+sample_input.json → in-process pipeline → data/output + data/history
+                                      ↘ Postgres (runs, artifacts, triage, work_items)
+FE → /api/v1 → Postgres
+```
 
-| Method | Path |
-|--------|------|
-| GET | `/health` |
-| GET | `/api/settings` |
-| PATCH | `/api/settings` |
-| POST | `/run` |
-| GET | `/briefing` |
-| GET | `/runs` |
-| GET | `/runs/{run_id}` |
-| GET | `/triage` |
-| GET | `/runs/{run_id}/triage` |
-| GET | `/runs/{run_id}/briefing` |
-| GET | `/ai-briefing` |
-| GET | `/runs/{run_id}/ai-briefing` |
-| POST | `/ask` |
-| POST | `/evening-summary` |
-| POST | `/insights` |
-| GET | `/inputs` |
-| GET | `/capabilities` |
-| GET | `/capabilities/{capability_id}` |
+---
 
-Notable: `PATCH /api/settings` can set provider/model/**API key** without auth (**SEC-01** — deploy gate). `POST /run` **spawns** a CLI subprocess (`subprocess.run` of `python -m opspilot.cli`) — V3.
+## Historical CURRENT notes (pre-B1) — archived context
 
-### Adapters / settings
+The following bullets described HEAD before B1 and are retained only as audit trail. They are **not** CURRENT after B1.
+
+<details>
+<summary>Pre-B1 endpoint table (removed)</summary>
+
+Legacy unversioned routes and subprocess `/run` — deleted in B1.
+
+</details>
+
+### Adapters / settings (still partially CURRENT)
 
 - Conversation path uses `AISettings` (`OPSPILOT_AI_*` with `ANTHROPIC_API_KEY` fallback).
-- Evening / insights / briefing / claude adapters still read env / hardcode model.
-- Factory prefers Claude when a key is present → **non-hermetic tests** if `.env` has a key (V1).
+- Evening / insights / briefing / claude adapters still read env / hardcode model (gateway is B2).
+- Factory honors `OPSPILOT_FORCE_RULES` so tests never construct Anthropic.
 
-### Data flow (files)
+### Data flow (files + DB)
 
 ```
 sample_input.json → pipeline → data/output (latest) + data/history/runs/...

@@ -45,9 +45,17 @@ Conventional Commits: `feat:` · `fix:` · `docs:` · `test:` · `chore:`
 ## Local validation (typical)
 
 ```powershell
-.venv\Scripts\python -m pytest -q
-cd frontend; npm run lint; npm run build
+docker compose up -d db
+uv sync --extra dev
+$env:DATABASE_URL='postgresql+psycopg://opspilot:opspilot@127.0.0.1:5432/opspilot'
+uv run alembic upgrade head
+uv run pytest -q --randomly-seed=1
+uv run ruff check .
+uv run mypy src/opspilot
+cd frontend; npm ci; npm run lint; npm test -- --run; npm run build
 ```
+
+API entrypoint: `uv run uvicorn opspilot.api.app:app --app-dir src --reload`
 
 Guarded env template (never overwrite an existing `.env`):
 

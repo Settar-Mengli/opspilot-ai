@@ -19,13 +19,17 @@ File JSON persistence cannot support sync idempotency, preferences, LlmCall mete
 
 ## Decision
 
-**(a)** Neon Postgres as system of record. CI uses a **real Postgres service** (no SQLite split brain). Local Postgres strategy (Docker Desktop vs Neon branch) is chosen in the **B1 plan**.
+**(a)** Neon Postgres as **hosted** system of record (B4/B7).
+
+### B1 addendum (2026-09-26)
+
+B1 uses **Docker Compose `postgres:16` locally** and a **GitHub Actions Postgres service** in CI. Neon is **not** provisioned in B1. This does not change the long-term SoT decision; it sequences local/CI before hosted Neon.
 
 ## Acceptance criteria
 
 - B1: Alembic migrations apply on CI Postgres; app reads/writes WorkItems/Runs from Postgres in smoke.
 - No production path uses SQLite.
-- Free-tier Neon quotas labeled VERIFY AT DECISION TIME in B1/B7 plans.
+- Free-tier Neon quotas labeled VERIFY AT DECISION TIME in B4/B7 plans.
 
 ## Consequences
 
