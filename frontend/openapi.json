@@ -479,10 +479,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "additionalProperties": true,
-                    "type": "object"
-                  },
+                  "items": {},
                   "type": "array",
                   "title": "Response List Capabilities Api V1 Capabilities Get"
                 }
@@ -513,8 +510,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
                   "title": "Response Get Capability By Id Api V1 Capabilities  Capability Id  Get"
                 }
               }

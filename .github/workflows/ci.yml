@@ -68,6 +68,14 @@ jobs:
       - name: Run backend test suite (random order + coverage)
         run: uv run pytest -q --cov=opspilot --cov-fail-under=67
 
+      - name: OpenAPI schema + generated types drift
+        run: |
+          uv run python scripts/export_openapi.py
+          cd frontend
+          npx --yes openapi-typescript@7 ./openapi.json -o src/api/generated.ts
+          cd ..
+          git diff --exit-code -- frontend/openapi.json frontend/src/api/generated.ts
+
   frontend-checks:
     name: Frontend Checks
     runs-on: ubuntu-latest
