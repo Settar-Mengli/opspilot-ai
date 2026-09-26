@@ -41,7 +41,9 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
         try:
             with engine.connect() as conn:
                 version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            assert version == "0001_initial"
+            assert version == "0002_runs_finished_at_idx"
+            indexes = {idx["name"] for idx in inspect(engine).get_indexes("runs")}
+            assert "ix_runs_finished_at" in indexes
         finally:
             engine.dispose()
     finally:
