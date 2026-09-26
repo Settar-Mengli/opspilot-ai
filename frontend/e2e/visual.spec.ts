@@ -153,4 +153,24 @@ test.describe('visual baselines', () => {
     await expect(page.locator('.insights-error')).toBeVisible()
     await expect(page).toHaveScreenshot('insights-error.png')
   })
+
+  test('dashboard-error', async ({ page }) => {
+    await preparePage(page, { mode: 'triage-error' })
+    await page.goto('/dashboard')
+    await settle(page)
+    await expect(page.locator('.insights-error')).toBeVisible()
+    await expect(page).toHaveScreenshot('dashboard-error.png')
+  })
+
+  test('evening-error', async ({ page }) => {
+    await preparePage(page, { mode: 'evening-error' })
+    await page.goto('/dashboard')
+    await settle(page)
+    await page.getByRole('button', { name: /wrap up the day/i }).click()
+    await expect(page.getByText(/Evening fixture error|Something went wrong/i).first()).toBeVisible({
+      timeout: 10_000,
+    })
+    await settle(page)
+    await expect(page).toHaveScreenshot('evening-error.png')
+  })
 })

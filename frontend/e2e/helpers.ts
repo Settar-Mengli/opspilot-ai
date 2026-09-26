@@ -9,7 +9,13 @@ const FONTS = path.join(FIXTURES, 'fonts')
 
 const FROZEN_ISO = '2026-09-26T15:00:00.000Z'
 
-export type ApiMode = 'ok' | 'down' | 'ask-error' | 'insights-error' | 'evening-error'
+export type ApiMode =
+  | 'ok'
+  | 'down'
+  | 'ask-error'
+  | 'insights-error'
+  | 'evening-error'
+  | 'triage-error'
 
 function readJson(name: string): unknown {
   return JSON.parse(fs.readFileSync(path.join(FIXTURES, name), 'utf-8'))
@@ -92,6 +98,14 @@ export async function mockApi(page: Page, mode: ApiMode = 'ok'): Promise<void> {
       return
     }
     if (pathname.endsWith('/triage') && method === 'GET') {
+      if (mode === 'triage-error') {
+        await fulfillJson(
+          route,
+          { error: { code: 'triage_failed', message: 'Triage fixture error', details: {} } },
+          500,
+        )
+        return
+      }
       await fulfillJson(route, triage)
       return
     }
