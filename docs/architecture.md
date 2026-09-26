@@ -1,6 +1,6 @@
 # OpsPilot Architecture
 
-**Dualism:** Sections labeled **CURRENT** describe post-B1 behavior on branch `b1/hermetic-foundation` (pending merge). Sections labeled **TARGET** describe the remaining locked rebuild (B2–B7). Do not present TARGET as shipped.
+**Dualism:** Sections labeled **CURRENT** describe post-B1 behavior on `main` (B0 and B1 merged). Sections labeled **TARGET** describe the remaining locked rebuild (B2–B7). Do not present TARGET as shipped.
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
@@ -19,7 +19,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs
 
 ## CURRENT (B1 — hermetic foundation)
 
-Verified on `b1/hermetic-foundation`: hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, `/api/v1` with envelope, in-process API pipeline (Postgres-only persist), Settings GET-only (`provider`/`model`/`api_key_set` — no key preview), FE on `/api/v1`, coverage fail-under **72**, Node 24 / Python 3.13 / uv.
+Verified on `main` (B1 merge `c5de149`): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, `/api/v1` with envelope, in-process API pipeline (Postgres-only persist), Settings GET-only (`provider`/`model`/`api_key_set` — no key preview), FE on `/api/v1`, coverage fail-under **72**, Node 24 / Python 3.13 / uv.
 
 ### Endpoints (CURRENT) — `/api/v1`
 
@@ -79,7 +79,7 @@ Legacy unversioned routes and subprocess `/run` — deleted in B1.
 
 - Conversation path uses `AISettings` (`OPSPILOT_AI_*` with `ANTHROPIC_API_KEY` fallback).
 - Evening / insights / briefing / claude adapters still read env / hardcode model (gateway is B2).
-- Factory honors `OPSPILOT_FORCE_RULES` so tests never construct Anthropic.
+- Factory honors `OPSPILOT_FORCE_RULES` so tests never construct Anthropic for **triage**. Until B2 gateway, FORCE_RULES is **triage-factory-only** — evening/insights/briefing/conversation paths do not yet honor it (see runbooks).
 
 ### Data flow (files + DB)
 

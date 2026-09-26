@@ -12,7 +12,7 @@
 2. **PART 1** — Baseline audits at HEAD `41a8678`. Audit sources: [`docs/audits/`](docs/audits/). Facts labeled CURRENT only when verified in code or audit evidence.
 3. **PART 2** — Locked rebuild plan (TARGET). Roadmap IDs are **B0–B7**. ADRs live in [`docs/adr/`](docs/adr/). Architecture dualism in [`docs/architecture.md`](docs/architecture.md). Roadmap single source of truth: [`ROADMAP.md`](ROADMAP.md).
 
-**Append-only after merge:** While B0 is unmerged, PART 0–2 may be corrected in place (see Revision note). **Once this record is merged to `main`, PARTs are append-only** — later corrections go in a new PART (never silently rewrite prior PARTs).
+**Append-only after merge:** B0 and B1 are merged on `main`. PARTs are **append-only** — later corrections go in a new PART (never silently rewrite prior PARTs). Historical in-place revision notes inside PART 0–3 record pre-merge fix passes only.
 
 Grounding rule (verbatim):
 

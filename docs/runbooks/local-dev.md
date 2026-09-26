@@ -27,7 +27,7 @@ uv run alembic upgrade head
 # Expect False
 ```
 
-`OPSPILOT_FORCE_RULES` is **tests/CI only**. Leave it commented in `.env.example`; never set it for normal demo or deploy.
+`OPSPILOT_FORCE_RULES` is **tests/CI only**, and until B2 it is **triage-factory-only** (the triage adapter factory honors it; evening/insights/briefing/conversation do not yet). Leave it commented in `.env.example`; never set it for normal demo or deploy.
 
 ## Seed / X5 importer
 

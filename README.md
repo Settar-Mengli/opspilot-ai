@@ -2,7 +2,7 @@
 
 **Your AI chief of staff.** OpsPilot surfaces what needs attention, drafts the rest, and briefs you like a trusted advisor — calm UI, fictional demo data, local-first development.
 
-**Rebuild in progress:** B0 docs lock is on `main`; B1 hermetic foundation is on branch `b1/hermetic-foundation`. See:
+**Rebuild in progress:** B0 and B1 are merged on `main`. Next: B1.5 UI safety net, then B2 gateway. See:
 
 - [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history, baseline, locked plan
 - [ROADMAP.md](ROADMAP.md) — batches **B0–B7**
@@ -16,7 +16,7 @@ Built with TypeScript, React, FastAPI, Postgres, and (today) Anthropic Claude wi
 ## What it does today (CURRENT)
 
 - Ingests fictional operational work items (JSON)
-- Triages via Claude **or** deterministic rules when no key / `OPSPILOT_FORCE_RULES`
+- Triages via Claude **or** deterministic rules when no key / `OPSPILOT_FORCE_RULES` (FORCE_RULES is triage-factory-only until B2)
 - `/api/v1` briefing / ask / evening / insights from **Postgres** (D-025)
 - Mobile-first React dashboard on `/api/v1`
 - Settings GET-only (`provider`, `model`, `api_key_set`)
