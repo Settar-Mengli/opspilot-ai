@@ -37,7 +37,7 @@ include = ["opspilot*"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-addopts = "--disable-socket --allow-hosts=127.0.0.1,localhost"
+addopts = "--disable-socket --allow-hosts=127.0.0.1,localhost,postgres"
 
 [tool.coverage.run]
 source = ["opspilot"]
