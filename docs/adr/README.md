@@ -14,12 +14,12 @@ Index of ADRs for OpsPilot. Status values: Accepted | Superseded | Proposed.
 | [D-008](D-008-database.md) | Database = Neon Postgres | Accepted | B1, B4, B7 |
 | [D-009](D-009-orm-migrations.md) | SQLAlchemy 2 + Alembic; Postgres in tests | Accepted | B1 |
 | [D-010](D-010-async-fastapi.md) | Async FastAPI | Accepted | B1, B5 |
-| [D-011](D-011-background-jobs.md) | In-process + GHA cron (no Celery) | Accepted | B6 |
+| [D-011](D-011-background-jobs.md) | In-process + GHA in-runner cron (no Celery) | Accepted | B6, B7 |
 | [D-012](D-012-hand-rolled-gateway.md) | Hand-rolled LLM gateway (no LiteLLM) | Accepted | B2 |
 | [D-013](D-013-structured-outputs.md) | Native JSON schema/mode + Pydantic | Accepted | B2, B3 |
 | [D-014](D-014-hand-rolled-agent-loop.md) | Hand-rolled bounded agent loop | Accepted | B5 |
 | [D-015](D-015-embeddings.md) | No embeddings until P9-semantic trigger | Accepted | — |
-| [D-016](D-016-google-oauth-testing.md) | Google OAuth Testing forever | Accepted | B4, B7 |
+| [D-016](D-016-google-oauth-testing.md) | Google OAuth Testing forever; encrypted refresh in Neon | Accepted | B4, B6, B7 |
 | [D-017](D-017-telegram-notifications.md) | Telegram notifications; web push deferred | Accepted | B6 |
 | [D-018](D-018-pytest-evals.md) | Custom pytest evals CORE | Accepted | B3 |
 | [D-019](D-019-tracing.md) | OTel-compatible + LlmCall/JSONL; Phoenix deferred | Accepted | B2 |
@@ -27,5 +27,6 @@ Index of ADRs for OpsPilot. Status values: Accepted | Superseded | Proposed.
 | [D-021](D-021-hosts.md) | FE Pages-class + BE Render-class + Neon | Accepted | B7 |
 | [D-022](D-022-repo-layout.md) | Keep src/opspilot + frontend/ | Accepted | B0 |
 | [D-023](D-023-anthropic-prepaid-gate.md) | Anthropic prepaid budget gate | Accepted | B2, B3, B7 |
+| [D-024](D-024-target-package-layout.md) | Target package layout (§2.1) | Accepted | B1–B7 |
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../../OPSPILOT-MASTER-RECORD.md).
