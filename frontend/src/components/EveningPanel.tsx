@@ -59,7 +59,7 @@ export function EveningPanel({ open, assistantName, onClose }: Props) {
           {!loading && error && (
             <div className="ev-intro">
               <BulBulAvatar size={40} />
-              <p className="ev-intro-txt">Something went wrong pulling your summary. Try again later.</p>
+              <p className="ev-intro-txt">{error}</p>
             </div>
           )}
 
