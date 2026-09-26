@@ -5,7 +5,6 @@ Exposes endpoints for health, running the pipeline, and retrieving outputs.
 import json
 import logging
 import re
-import sys
 from datetime import date
 from pathlib import Path
 
@@ -28,7 +27,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, JSONResponse
 from pydantic import BaseModel, Field
-import subprocess
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+
+from opspilot.models.schemas import OpsPilotError
+from opspilot.pipeline.run_daily_ops import run_daily_ops
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 API_OUTPUT_DIR = PROJECT_ROOT / "data" / "output"
@@ -231,43 +233,48 @@ def patch_settings(payload: SettingsPatchRequest) -> dict[str, object]:
 
 @app.post("/run")
 def run_pipeline(req: RunPipelineRequest):
-    """Run the OpsPilot pipeline with the given input file and date."""
+    """Run the OpsPilot pipeline with the given input file and date (in-process)."""
     input_path = _resolve_input_file(req.input_file)
     if not input_path.exists():
         raise HTTPException(status_code=404, detail=f"Input file not found: {req.input_file}")
 
-    cmd = [
-        sys.executable,
-        "-m",
-        "opspilot.cli",
-        "run",
-        "--input",
-        str(input_path),
-        "--output",
-        str(API_OUTPUT_DIR),
-        "--date",
-        req.date.isoformat(),
-    ]
-
     try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=RUN_TIMEOUT_SECONDS,
-        )
-        return {"status": "success", "stdout": result.stdout}
-    except subprocess.TimeoutExpired as exc:
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(
+                run_daily_ops,
+                str(input_path),
+                str(API_OUTPUT_DIR),
+                req.date.isoformat(),
+            )
+            outputs = future.result(timeout=RUN_TIMEOUT_SECONDS)
+        lines = ["OpsPilot AI run completed."]
+        for name, path in outputs.items():
+            lines.append(f"{name}: {path}")
+        return {"status": "success", "stdout": "\n".join(lines)}
+    except FuturesTimeoutError:
         logger.error(
             "pipeline_run_timeout",
-            extra={"timeout_seconds": RUN_TIMEOUT_SECONDS, "cmd": cmd, "error": str(exc)},
+            extra={"timeout_seconds": RUN_TIMEOUT_SECONDS, "input_file": req.input_file},
         )
         raise _safe_error(504, "pipeline_timeout", "Pipeline run timed out.")
-    except subprocess.CalledProcessError as e:
+    except OpsPilotError as exc:
         logger.error(
             "pipeline_run_failed",
-            extra={"cmd": cmd, "returncode": e.returncode, "stderr": (e.stderr or "")[:1000]},
+            extra={
+                "input_file": req.input_file,
+                "error_type": type(exc).__name__,
+                "error_message": str(exc),
+            },
+        )
+        raise _safe_error(500, "pipeline_failed", "Pipeline execution failed.")
+    except Exception as exc:
+        logger.error(
+            "pipeline_run_failed",
+            extra={
+                "input_file": req.input_file,
+                "error_type": type(exc).__name__,
+                "error_message": str(exc)[:1000],
+            },
         )
         raise _safe_error(500, "pipeline_failed", "Pipeline execution failed.")
 

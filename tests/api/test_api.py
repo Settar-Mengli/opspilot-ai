@@ -1,7 +1,7 @@
 import os
 import json
-import subprocess
 import sys
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from pathlib import Path
 from fastapi.testclient import TestClient
 import pytest
@@ -10,6 +10,25 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from opspilot.api.main import app
 
 client = TestClient(app)
+
+
+class _FakeExecutor:
+    """Minimal stand-in for ThreadPoolExecutor used by timeout/failure tests."""
+
+    def __init__(self, submit_impl):
+        self._submit_impl = submit_impl
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+    def submit(self, fn, *args, **kwargs):
+        return self
+
+    def result(self, timeout=None):
+        return self._submit_impl()
 
 
 @pytest.fixture
@@ -50,9 +69,12 @@ def test_run_rejects_path_traversal():
 
 def test_run_timeout_returns_safe_error(monkeypatch: pytest.MonkeyPatch):
     def _timeout(*args, **kwargs):
-        raise subprocess.TimeoutExpired(cmd=kwargs.get("args", "opspilot"), timeout=30)
+        raise FuturesTimeoutError()
 
-    monkeypatch.setattr("opspilot.api.main.subprocess.run", _timeout)
+    monkeypatch.setattr(
+        "opspilot.api.main.ThreadPoolExecutor",
+        lambda *a, **k: _FakeExecutor(_timeout),
+    )
     resp = client.post("/run", json={"input_file": "sample_input.json", "date": "2026-05-29"})
 
     assert resp.status_code == 504
@@ -62,11 +84,17 @@ def test_run_timeout_returns_safe_error(monkeypatch: pytest.MonkeyPatch):
     assert payload["detail"]["error"] == "pipeline_timeout"
     assert payload["detail"]["message"] == "Pipeline run timed out."
 
+
 def test_run_subprocess_failure_returns_safe_error(monkeypatch: pytest.MonkeyPatch):
     def _failed(*args, **kwargs):
-        raise subprocess.CalledProcessError(returncode=2, cmd="opspilot", stderr="traceback: private detail")
+        from opspilot.models.schemas import PipelineExecutionError
 
-    monkeypatch.setattr("opspilot.api.main.subprocess.run", _failed)
+        raise PipelineExecutionError("traceback: private detail")
+
+    monkeypatch.setattr(
+        "opspilot.api.main.ThreadPoolExecutor",
+        lambda *a, **k: _FakeExecutor(_failed),
+    )
     resp = client.post("/run", json={"input_file": "sample_input.json", "date": "2026-05-29"})
 
     assert resp.status_code == 500
