@@ -6,17 +6,15 @@ import asyncio
 import os
 import sys
 from collections.abc import AsyncIterator, Iterator
-from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine as create_sync_engine
 from sqlalchemy import text
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.db_support import alembic_upgrade as _alembic_upgrade
 
 from opspilot.persistence.db import create_engine, create_session_factory, to_sync_url
-from tests.db_support import alembic_downgrade as _alembic_downgrade
-from tests.db_support import alembic_upgrade as _alembic_upgrade
 
 # psycopg async requires SelectorEventLoop on Windows (not Proactor).
 if sys.platform == "win32":
@@ -94,29 +92,6 @@ def _drop_database(database: str) -> None:
             conn.execute(text(f'DROP DATABASE IF EXISTS "{database}"'))
     finally:
         engine.dispose()
-
-
-def _alembic_upgrade(database_url: str) -> None:
-    from alembic import command
-    from alembic.config import Config
-
-    root = Path(__file__).resolve().parents[1]
-    cfg = Config(str(root / "alembic.ini"))
-    cfg.set_main_option("script_location", str(root / "alembic"))
-    # env.py reads DATABASE_URL
-    os.environ["DATABASE_URL"] = database_url
-    command.upgrade(cfg, "head")
-
-
-def _alembic_downgrade(database_url: str) -> None:
-    from alembic import command
-    from alembic.config import Config
-
-    root = Path(__file__).resolve().parents[1]
-    cfg = Config(str(root / "alembic.ini"))
-    cfg.set_main_option("script_location", str(root / "alembic"))
-    os.environ["DATABASE_URL"] = database_url
-    command.downgrade(cfg, "base")
 
 
 @pytest.fixture(scope="session")

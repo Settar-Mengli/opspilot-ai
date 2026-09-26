@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -75,14 +76,14 @@ async def create_run(
 
 
 @router.get("/runs", response_class=JSONResponse)
-async def list_runs(session: AsyncSession = Depends(get_db_session)) -> list[dict]:
+async def list_runs(session: AsyncSession = Depends(get_db_session)) -> list[dict[str, Any]]:
     result = await session.execute(select(RunRow).order_by(desc(RunRow.finished_at), desc(RunRow.run_id)))
     rows = result.scalars().all()
     return [safe_history_metadata(dict(row.metadata_json or {"run_id": row.run_id})) for row in rows]
 
 
 @router.get("/runs/{run_id}", response_class=JSONResponse)
-async def get_run(run_id: str, session: AsyncSession = Depends(get_db_session)) -> dict:
+async def get_run(run_id: str, session: AsyncSession = Depends(get_db_session)) -> dict[str, Any]:
     row = await session.get(RunRow, run_id)
     if row is None:
         raise safe_error(404, "run_not_found", "Run not found.")
@@ -90,7 +91,7 @@ async def get_run(run_id: str, session: AsyncSession = Depends(get_db_session)) 
 
 
 @router.get("/triage", response_class=JSONResponse)
-async def get_triage(session: AsyncSession = Depends(get_db_session)) -> list[dict]:
+async def get_triage(session: AsyncSession = Depends(get_db_session)) -> list[dict[str, Any]]:
     """Latest triage decisions with AI-05 lite subject_or_title from WorkItem."""
     result = await session.execute(
         select(TriageDecisionRow, WorkItemRow)
@@ -98,7 +99,7 @@ async def get_triage(session: AsyncSession = Depends(get_db_session)) -> list[di
         .order_by(desc(TriageDecisionRow.id))
     )
     seen: set[str] = set()
-    payload: list[dict] = []
+    payload: list[dict[str, Any]] = []
     for decision, work_item in result.all():
         if decision.work_item_id in seen:
             continue
@@ -130,7 +131,7 @@ async def _artifact_text(session: AsyncSession, run_id: str, logical_name: str) 
 
 
 @router.get("/runs/{run_id}/triage", response_class=JSONResponse)
-async def get_run_triage(run_id: str, session: AsyncSession = Depends(get_db_session)) -> list:
+async def get_run_triage(run_id: str, session: AsyncSession = Depends(get_db_session)) -> list[Any]:
     if await session.get(RunRow, run_id) is None:
         raise safe_error(404, "run_not_found", "Run not found.")
     content = await _artifact_text(session, run_id, "triage_results")
@@ -234,12 +235,12 @@ def get_inputs() -> dict[str, object]:
 
 
 @router.get("/capabilities")
-def list_capabilities() -> list[dict]:
+def list_capabilities() -> list[Any]:
     return get_all_capabilities()
 
 
 @router.get("/capabilities/{capability_id}")
-def get_capability_by_id(capability_id: str) -> dict:
+def get_capability_by_id(capability_id: str) -> Any:
     capability = get_capability(capability_id)
     if capability is None:
         raise safe_error(404, "capability_not_found", "Capability not found.")

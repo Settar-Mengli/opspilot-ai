@@ -1,5 +1,4 @@
 """AI-generated executive briefing using Claude."""
-import json
 import logging
 import os
 
@@ -38,7 +37,7 @@ def generate_ai_briefing(
             return URGENCY_ORDER.index(urg) if urg in URGENCY_ORDER else 99
 
         sorted_records = sorted(
-            zip(triage_records, normalized_items),
+            zip(triage_records, normalized_items, strict=False),
             key=lambda pair: urgency_rank(pair[0]),
         )
         top_3_lines = []

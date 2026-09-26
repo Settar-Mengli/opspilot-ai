@@ -66,7 +66,7 @@ async def _seed_run(session: AsyncSession, tmp_path: Path, run_id: str, metadata
     run_dir = tmp_path / "history" / "runs" / "2026" / "05" / "30" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     artifacts = metadata.get("artifacts") or {}
-    for logical, filename in artifacts.items():
+    for _logical, filename in artifacts.items():
         if not isinstance(filename, str):
             continue
         path = run_dir / filename

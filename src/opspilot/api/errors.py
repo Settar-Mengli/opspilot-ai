@@ -8,10 +8,10 @@ from fastapi.responses import JSONResponse
 
 
 def error_body(*, code: str, message: str, details: object | None = None) -> dict[str, object]:
-    body: dict[str, object] = {"error": {"code": code, "message": message}}
+    err: dict[str, object] = {"code": code, "message": message}
     if details is not None:
-        body["error"] = {**body["error"], "details": details}  # type: ignore[arg-type]
-    return body
+        err["details"] = details
+    return {"error": err}
 
 
 def register_exception_handlers(app: FastAPI) -> None:

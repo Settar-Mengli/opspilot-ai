@@ -6,7 +6,6 @@ import os
 
 import pytest
 from sqlalchemy import create_engine, inspect, text
-
 from tests.db_support import alembic_downgrade, alembic_upgrade
 
 

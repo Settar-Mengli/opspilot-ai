@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
@@ -86,8 +87,8 @@ def safe_artifact_name(raw_name: object) -> str | None:
     return candidate
 
 
-def safe_history_metadata(payload: dict) -> dict:
-    safe_payload: dict = {}
+def safe_history_metadata(payload: dict[str, Any]) -> dict[str, Any]:
+    safe_payload: dict[str, Any] = {}
     for key in SAFE_RUN_METADATA_KEYS:
         if key == "artifacts":
             continue

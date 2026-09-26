@@ -2,7 +2,6 @@ import re
 
 from opspilot.models.schemas import ActionItem, WorkItem
 
-
 OWNER_PATTERN = re.compile(r"owner:\s*([A-Za-z][A-Za-z0-9 _-]{1,40})", re.IGNORECASE)
 DATE_PATTERN = re.compile(r"\b(\d{4}-\d{2}-\d{2})\b")
 ASK_PATTERN = re.compile(

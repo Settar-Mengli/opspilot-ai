@@ -5,14 +5,13 @@ from __future__ import annotations
 import os
 from collections.abc import AsyncIterator
 
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.engine import make_url
-
 
 DEFAULT_DATABASE_URL = "postgresql+psycopg://opspilot:opspilot@127.0.0.1:5432/opspilot"
 

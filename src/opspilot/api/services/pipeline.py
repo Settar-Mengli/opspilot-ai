@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from pathlib import Path
 
 from opspilot.api.paths import API_OUTPUT_DIR, RUN_TIMEOUT_SECONDS

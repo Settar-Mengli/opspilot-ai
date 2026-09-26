@@ -10,7 +10,6 @@ from opspilot.adapters.base import TriageAdapter
 from opspilot.adapters.rule_based import RuleBasedAdapter
 from opspilot.models.schemas import TriageRecord, WorkItem
 
-
 logger = logging.getLogger("opspilot.adapters.claude")
 
 SYSTEM_PROMPT = """\

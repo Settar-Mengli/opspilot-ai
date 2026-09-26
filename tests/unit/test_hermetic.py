@@ -52,5 +52,7 @@ def test_force_rules_does_not_import_claude_adapter(
 def test_public_network_is_blocked_by_pytest_socket() -> None:
     import urllib.request
 
-    with pytest.raises(Exception):
+    from pytest_socket import SocketBlockedError, SocketConnectBlockedError
+
+    with pytest.raises((SocketBlockedError, SocketConnectBlockedError)):
         urllib.request.urlopen("https://example.com", timeout=2)

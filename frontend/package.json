@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
-    "gen:api": "openapi-typescript ../openapi.json -o src/api/generated.ts"
+    "gen:api": "npx --yes openapi-typescript@7 ../openapi.json -o src/api/generated.ts"
   },
   "engines": {
     "node": ">=24 <25"
@@ -33,7 +33,6 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "jsdom": "^27.2.0",
-    "openapi-typescript": "^7.4.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12",

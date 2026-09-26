@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,7 +33,7 @@ async def persist_pipeline_outputs(
     return await persist_run_directory(session, run_dir)
 
 
-def load_triage_json(path: Path) -> list:
+def load_triage_json(path: Path) -> list[Any]:
     if not path.is_file():
         return []
     try:

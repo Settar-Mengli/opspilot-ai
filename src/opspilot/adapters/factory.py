@@ -6,7 +6,6 @@ import os
 from opspilot.adapters.base import TriageAdapter
 from opspilot.adapters.rule_based import RuleBasedAdapter
 
-
 logger = logging.getLogger("opspilot.adapters.factory")
 
 _FORCE_RULES_TRUTHY = frozenset({"1", "true", "yes", "on"})

@@ -8,7 +8,6 @@ from opspilot.history.run_history import (
 )
 from opspilot.models.schemas import ActionItem, TriageRecord, WorkItem
 
-
 PRIORITY_ORDER: list[tuple[str, str]] = [
     ("critical", "Critical"),
     ("high", "High"),
