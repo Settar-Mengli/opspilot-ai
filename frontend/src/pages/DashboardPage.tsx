@@ -30,9 +30,13 @@ export function DashboardPage({ userName, assistantName, onAsk, onEveningClick }
 
   useEffect(() => {
     let cancelled = false
-    setError(null)
     getTriage()
-      .then(t => { if (!cancelled) setRecords(t) })
+      .then(t => {
+        if (!cancelled) {
+          setError(null)
+          setRecords(t)
+        }
+      })
       .catch(e => {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : 'Something went wrong.')

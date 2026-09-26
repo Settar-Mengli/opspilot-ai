@@ -42,6 +42,8 @@ Tests intercept Google Fonts and serve committed WOFF2 files under `frontend/e2e
 
 - `/api/v1/**` mocked via Playwright route fixtures
 - Frozen clock
-- Animations disabled
+- Animations disabled; focus blurred before screenshots
+- Visual screenshots force **monospace** via `settle()` so Docker Desktop (Windows) and GHA Linux share `-linux` baselines (production Google Fonts `@import` unchanged)
 - localStorage seeded per test
 - `deviceScaleFactor: 1`
+- `reuseExistingServer: false` (always rebuild preview for screenshots)

@@ -214,12 +214,33 @@ export async function preparePage(
 export async function settle(page: Page): Promise<void> {
   await page.addStyleTag({
     content: `
+      /* Monospace + geometric AA: Docker Desktop (Windows) vs GHA Linux share baselines. */
+      html, body, body * {
+        font-family: "Courier New", Courier, monospace !important;
+        font-style: normal !important;
+        letter-spacing: 0 !important;
+        -webkit-font-smoothing: none !important;
+        -moz-osx-font-smoothing: unset !important;
+        text-rendering: geometricPrecision !important;
+      }
       *, *::before, *::after {
         animation: none !important;
         transition: none !important;
         caret-color: transparent !important;
       }
+      *:focus, *:focus-visible {
+        outline: none !important;
+        box-shadow: none !important;
+      }
     `,
+  })
+  // Beat AskPanel's 200ms autofocus so focus rings don't flake screenshots.
+  await page.waitForTimeout(250)
+  await page.evaluate(() => {
+    const active = document.activeElement
+    if (active && active instanceof HTMLElement) {
+      active.blur()
+    }
   })
   await page.waitForLoadState('networkidle')
   await page.waitForTimeout(150)
