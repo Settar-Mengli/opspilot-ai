@@ -47,7 +47,7 @@ From repository root:
 
 ```powershell
 python -m opspilot.cli run --input data/raw/sample_input.json --output data/output --date 2026-05-30
-uvicorn opspilot.api.main:app --reload
+uv run uvicorn opspilot.api.app:app --app-dir src --reload --host 127.0.0.1 --port 8000
 ```
 
 In another terminal:

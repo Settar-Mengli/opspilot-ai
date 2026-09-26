@@ -60,11 +60,16 @@ def upsert_run_from_metadata(session: Session, metadata: dict[str, Any], run_dir
     run_id = str(metadata["run_id"])
     _upsert_run_row(session, metadata)
     artifacts = metadata.get("artifacts") or {}
+    run_root = run_dir.resolve()
     if isinstance(artifacts, dict):
         for logical_name, filename in artifacts.items():
             if not isinstance(filename, str):
                 continue
-            path = run_dir / filename
+            path = (run_dir / filename).resolve()
+            try:
+                path.relative_to(run_root)
+            except ValueError:
+                continue
             if not path.is_file():
                 continue
             text = path.read_text(encoding="utf-8")
