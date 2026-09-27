@@ -216,6 +216,36 @@ jobs:
           npx playwright test e2e/visual.spec.ts --config=playwright.baselines.config.ts "${EXTRA[@]}"
           ls -la ../pw-report.json
 
+      - name: E0 in-job double update (same runner)
+        if: steps.cfg.outputs.artifact_name == 'determinism-e0' && steps.cfg.outputs.mode == 'update'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # First tree from the Playwright step above
+          rm -rf /tmp/det-a /tmp/det-b
+          mkdir -p /tmp/det-a /tmp/det-b
+          cp -a frontend/e2e/visual.spec.ts-snapshots/. /tmp/det-a/
+          # Second update on the same runner / chromium
+          cd frontend
+          npx playwright test e2e/visual.spec.ts --config=playwright.baselines.config.ts --update-snapshots \
+            --reporter=line
+          cd ..
+          cp -a frontend/e2e/visual.spec.ts-snapshots/. /tmp/det-b/
+          node scripts/visual_gallery.mjs compare-trees /tmp/det-a /tmp/det-b
+          # Stage both trees for upload
+          mkdir -p artifacts-e0/determinism-a/snapshots artifacts-e0/determinism-b/snapshots
+          cp -a /tmp/det-a/. artifacts-e0/determinism-a/snapshots/
+          cp -a /tmp/det-b/. artifacts-e0/determinism-b/snapshots/
+          echo "E0 in-job byte-identical PASS"
+
+      - name: Upload E0 pair artifacts
+        if: steps.cfg.outputs.artifact_name == 'determinism-e0' && steps.cfg.outputs.mode == 'update'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: determinism-e0-pair
+          path: artifacts-e0/
+          retention-days: 14
+
       - name: Gallery index + render gate
         shell: bash
         run: |
