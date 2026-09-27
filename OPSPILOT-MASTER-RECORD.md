@@ -286,7 +286,7 @@ Owner rulings summary: **O1** sync-only DB (delete async ORM / `import_json_sync
 **R7 process finding:** commit `6c7616a` failed CI on ruff **I001** (`persistence/db.py` import blank line). Mitigated going forward by **O7** (pre-commit + AGENTS: ruff/mypy/pytest before every commit; never push a red commit).
 ## PART 4 — B1.5a UI safety net & hygiene — 2026-09-26
 
-Branch: `b1.5a/ui-safety-net` (Build complete; PR deferred to post-build audit). Base: `main@c5de149` (PR #2).
+Branch: `b1.5a/ui-safety-net` (delivered via PR #18). Base: `main@c5de149` (PR #2).
 
 ### Correction (PART 3 status)
 
@@ -311,7 +311,7 @@ Connections keyboard-activatable **skipped** — would change pixels; noted here
 
 ### X8
 
-Panel lifecycle **started** in B1.5a (`useOverlay` / `PortalOverlay`; Notify→Ask migrated). Agent Ask chrome finishes on **B1.5b layout in B5**.
+Panel lifecycle **started** in B1.5a (`useOverlay`; Notify→Ask migrated). `PortalOverlay` was introduced then removed in `32fc6e1` (unused). Agent Ask chrome finishes on **B1.5b layout in B5**.
 
 ### Backend (C21)
 

@@ -38,7 +38,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | X5 JSON→DB importer | **B1** |
 | X6 Anthropic guard in tests | **B1** |
 | X7 OpenAPI-lite + FE types with `/api/v1` | **B1** |
-| X8 panel lifecycle | **Started B1.5a** (`useOverlay` / `PortalOverlay`); agent Ask surfaces finish on **B1.5b layout in B5** |
+| X8 panel lifecycle | **Started B1.5a** (`useOverlay`; `PortalOverlay` introduced then removed in `32fc6e1` unused); agent Ask surfaces finish on **B1.5b layout in B5** |
 
 **Anthropic amendment:** gate in **B2**; optional leaderboard column in **B3**; prod disabled-by-default at **B7**.
 
@@ -102,7 +102,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B1.5a — UI safety net & hygiene
 
-- **Status:** Build complete on `b1.5a/ui-safety-net` (C-BASE + owner approval 2026-09-27; PR next).
+- **Status:** Delivered via PR #18 (`b1.5a/ui-safety-net`; C-BASE + owner approval 2026-09-27).
 - **Goal:** Playwright visual/e2e/axe safety net; CSS split; shared overlay primitive; U4 bug fixes; D-026/D-027.
 - **Scope:** Container-only `-linux` baselines; migrate Notify→Ask onto `useOverlay`; U4 (subject_or_title, gear label, CSS token aliases, triage/evening errors, safe-area, Sample badges); F-06 importer path jail; deprecate `api.main`.
 - **Exit:** UI Tests green in pinned Playwright image; docs PART 4 + ADRs; live smoke per plan.

@@ -21,7 +21,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs
 
 Verified on `main` (B1 merge `c5de149`): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, `/api/v1` with envelope, in-process API pipeline (Postgres-only persist), Settings GET-only (`provider`/`model`/`api_key_set` — no key preview), FE on `/api/v1`, coverage fail-under **72**, Node 24 / Python 3.13 / uv.
 
-**B1.5a (branch):** Playwright visual/e2e/axe safety net with container-only `-linux` baselines; CSS partials under `frontend/src/styles/`; shared `useOverlay` / `PortalOverlay`; U4 hygiene fixes; D-026/D-027. Desktop three-pane remains **TARGET B1.5b**.
+**B1.5a (branch):** Playwright visual/e2e/axe safety net with container-only `-linux` baselines; CSS partials under `frontend/src/styles/`; shared `useOverlay` overlay lifecycle; U4 hygiene fixes; D-026/D-027. Desktop three-pane remains **TARGET B1.5b**.
 
 ### Endpoints (CURRENT) — `/api/v1`
 
@@ -54,7 +54,6 @@ Notable: **no** `PATCH` settings. Pipeline runs **in-process** (no CLI subproces
 | `frontend/src/api/` | `/api/v1` client only |
 | `frontend/src/styles/` | CSS partials (`tokens`, `shell`, `mobile`, `overlays`, `dashboard`, `pages`) |
 | `frontend/src/hooks/useOverlay.ts` | Shared overlay lifecycle (X8 start) |
-| `frontend/src/components/PortalOverlay.tsx` | Portal wrapper for overlays |
 | `frontend/e2e/` | Playwright visual/e2e/axe + font fixtures |
 | `data/raw/` | Sample JSON inputs (API/CLI read) |
 | `data/output/`, `data/history/` | CLI `--output` export only (not API SoT) |
@@ -288,7 +287,7 @@ Datasets under `evals/datasets/` (fictional). Metrics: precision/recall/F1, conf
 
 ### Frontend
 
-- React Router; panels on shared `useOverlay` / `PortalOverlay` (**X8 started in B1.5a**; agent Ask chrome finishes on **B1.5b layout in B5**)
+- React Router; panels on shared `useOverlay` (**X8 started in B1.5a**; agent Ask chrome finishes on **B1.5b layout in B5**)
 - Fetch + React state (D-020); TanStack Query only if cache pain appears
 - SSE: EventSource or fetch stream reader in AskPanel
 - PWA out of spine; Telegram link in settings for operator
