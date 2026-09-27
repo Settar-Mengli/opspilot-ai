@@ -192,8 +192,6 @@ jobs:
         id: pw
         working-directory: frontend
         continue-on-error: true
-        env:
-          PLAYWRIGHT_JSON_OUTPUT_FILE: /tmp/pw-report.json
         shell: bash
         run: |
           set -euo pipefail
@@ -202,25 +200,35 @@ jobs:
           if [ "${{ steps.cfg.outputs.mode }}" = "update" ]; then
             EXTRA+=(--update-snapshots)
           fi
-          # Pixel failures must not fail the job; continue-on-error handles non-zero exit.
-          # Built-in reporters do not accept path-after-colon; use PLAYWRIGHT_JSON_OUTPUT_FILE.
-          npx playwright test e2e/visual.spec.ts "${EXTRA[@]}" \
-            --reporter=line \
-            --reporter=json \
-            --reporter=html
+          # Dedicated config so JSON lands at repo-root pw-report.json (CLI path:reporter is unsupported).
+          cat > playwright.baselines.config.ts <<'EOF'
+          import { defineConfig } from '@playwright/test'
+          import base from './playwright.config'
+          export default defineConfig({
+            ...base,
+            reporter: [
+              ['line'],
+              ['json', { outputFile: '../pw-report.json' }],
+              ['html', { open: 'never', outputFolder: 'playwright-report' }],
+            ],
+          })
+          EOF
+          npx playwright test e2e/visual.spec.ts --config=playwright.baselines.config.ts "${EXTRA[@]}"
+          ls -la ../pw-report.json
 
       - name: Gallery index + render gate
         shell: bash
         run: |
           set -euo pipefail
           MODE="${{ steps.cfg.outputs.mode }}"
-          REPORT=/tmp/pw-report.json
+          REPORT="${{ github.workspace }}/pw-report.json"
           if [ ! -f "$REPORT" ]; then
-            # fallback search
-            REPORT=$(find frontend -name 'report.json' -o -name 'pw-report.json' 2>/dev/null | head -n1 || true)
+            REPORT=$(find . -name 'pw-report.json' 2>/dev/null | head -n1 || true)
           fi
           if [ ! -f "$REPORT" ]; then
             echo "No Playwright JSON report found" >&2
+            ls -la "${{ github.workspace }}" | head -n 40 || true
+            find frontend -name '*.json' | head -n 40 || true
             exit 1
           fi
           node scripts/visual_gallery.mjs index "$REPORT" gallery.md --new-states=dashboard-error,evening-error
@@ -247,7 +255,7 @@ jobs:
           if [ -d frontend/playwright-report ]; then cp -a frontend/playwright-report/. artifacts/playwright-report/; fi
           if [ -d frontend/test-results ]; then cp -a frontend/test-results/. artifacts/test-results/; fi
           if [ -f gallery.md ]; then cp gallery.md artifacts/gallery.md; fi
-          if [ -f /tmp/pw-report.json ]; then cp /tmp/pw-report.json artifacts/pw-report.json; fi
+          if [ -f "${{ github.workspace }}/pw-report.json" ]; then cp "${{ github.workspace }}/pw-report.json" artifacts/pw-report.json; fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
