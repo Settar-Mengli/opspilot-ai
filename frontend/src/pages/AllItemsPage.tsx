@@ -84,7 +84,7 @@ export function AllItemsPage() {
                     <div key={r.id} className="fp-row">
                       <span className="fp-row-ic"><Icon size={16} strokeWidth={2} /></span>
                       <span className="fp-row-text">
-                        <p className="fp-row-title">{r.id}</p>
+                        <p className="fp-row-title">{r.subject_or_title ?? r.id}</p>
                         <p className="fp-row-cat">{categoryLabel(r.category)}</p>
                       </span>
                       <span className="fp-row-arr"><ChevronRight size={16} strokeWidth={2} /></span>

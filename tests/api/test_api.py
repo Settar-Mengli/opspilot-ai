@@ -178,7 +178,8 @@ def test_get_briefing(db_session: Session, tmp_path: Path):
     assert "OpsPilot AI Daily Executive Briefing" in resp.text
 
 
-def test_get_triage(db_session: Session):
+def test_get_triage_includes_subject_or_title(db_session: Session):
+    """D-04: triage contract exposes subject_or_title for FE All Items / Priorities."""
     upsert_work_items(
         db_session,
         [

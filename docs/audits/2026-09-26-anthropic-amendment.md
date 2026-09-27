@@ -18,7 +18,7 @@ Below: revised sections only, then an exact change log.
 
 ### §2.4 LLM gateway design (revised)
 
-**Default provider order (unchanged intent):**
+**Default provider order (unchanged intent):**  
 `gemini → groq → ollama → rules` (task-dependent). **Anthropic is never in the default ordered list.**
 
 **Add Anthropic as a named, gated profile:**
@@ -32,7 +32,7 @@ Below: revised sections only, then an exact change log.
 | **Post-call** | Debit budget from usage; if provider returns usage, prefer that over estimates |
 | **Tests/CI** | Gateway test double asserts Anthropic client **never constructed**; CI env must omit Anthropic key **or** set `ENABLED=false` and budget `0` |
 
-**Routing policy (revised one-liner):**
+**Routing policy (revised one-liner):**  
 Default path = free tiers + Ollama. Anthropic = **side channel** for measured comparisons and curated demos, behind budget gate.
 
 ---
@@ -69,20 +69,20 @@ Default path = free tiers + Ollama. Anthropic = **side channel** for measured co
 
 ### §5 Roadmap — affected milestones
 
-**M2 — LLM gateway (add exit criteria)**
-- Anthropic provider module exists but **disabled by default**.
-- Tests: budget=0 or disabled → no HTTP to Anthropic; allowlisted task + budget → call allowed (mocked).
+**M2 — LLM gateway (add exit criteria)**  
+- Anthropic provider module exists but **disabled by default**.  
+- Tests: budget=0 or disabled → no HTTP to Anthropic; allowlisted task + budget → call allowed (mocked).  
 - Live smoke default = Gemini **or** Ollama; **optional** separate smoke `scripts/smoke_anthropic_budgeted.py` (not CI).
 
-**M3 — Eval platform (add)**
-- Leaderboard supports optional Anthropic row from manual prepaid run.
+**M3 — Eval platform (add)**  
+- Leaderboard supports optional Anthropic row from manual prepaid run.  
 - Judge calibration: document Ollama-first; Anthropic calibration run runbook under `docs/runbooks/`.
 
-**M10 — Deploy**
-- Production `.env`: `OPSPILOT_ANTHROPIC_ENABLED=false` unless operator enables for a capped demo window; budget env required if enabled.
+**M10 — Deploy**  
+- Production `.env`: `OPSPILOT_ANTHROPIC_ENABLED=false` unless operator enables for a capped demo window; budget env required if enabled.  
 - Public `/ask` must **not** select Anthropic even if enabled (operator-only / eval scripts only) — **INFERRED product preference; confirm with owner**.
 
-**AGENTS.md standing rule (M0 text to lock)**
+**AGENTS.md standing rule (M0 text to lock)**  
 - “Never add Anthropic to default routing. Never use Anthropic in tests/CI. Prepaid budget runs only via allowlisted tasks and gateway budget.”
 
 ---
@@ -99,14 +99,14 @@ Default path = free tiers + Ollama. Anthropic = **side channel** for measured co
 
 ## Exact change log (what changed vs prior report)
 
-1. **Hard constraint §1** — From “optional, never required, never tests” → **prepaid-only, budget-gated, never default, never tests/CI**.
-2. **Cut list / zero-spend narrative** — Anthropic is no longer “effectively banned”; it is **rationed prepaid**. Zero *further* spend still holds.
-3. **§2.4 Gateway** — Added enable flag, hard budget, task allowlist, pre/post debit, CI never-construct rule; Anthropic **removed from default failover chain**.
-4. **§2.6 Evals** — Split “hosted” into **free hosted** vs **prepaid quality**; judge calibration Ollama-first with optional Anthropic.
-5. **§3 ADRs** — Added **D-023**; D-012 addendum for budget gate.
-6. **§5 M2/M3/M10 + AGENTS** — New exit criteria, optional smoke script, deploy defaults, Ask policy clarification.
-7. **§6 Owner decisions** — Anthropic decision reframed as **prepaid gated**, plus public-Ask and budget-unit questions.
-8. **Interview / portfolio wording** — Product default brain remains free-tier; Anthropic = **measured teacher/demo under a hard cap** (not “we run on Claude”).
+1. **Hard constraint §1** — From “optional, never required, never tests” → **prepaid-only, budget-gated, never default, never tests/CI**.  
+2. **Cut list / zero-spend narrative** — Anthropic is no longer “effectively banned”; it is **rationed prepaid**. Zero *further* spend still holds.  
+3. **§2.4 Gateway** — Added enable flag, hard budget, task allowlist, pre/post debit, CI never-construct rule; Anthropic **removed from default failover chain**.  
+4. **§2.6 Evals** — Split “hosted” into **free hosted** vs **prepaid quality**; judge calibration Ollama-first with optional Anthropic.  
+5. **§3 ADRs** — Added **D-023**; D-012 addendum for budget gate.  
+6. **§5 M2/M3/M10 + AGENTS** — New exit criteria, optional smoke script, deploy defaults, Ask policy clarification.  
+7. **§6 Owner decisions** — Anthropic decision reframed as **prepaid gated**, plus public-Ask and budget-unit questions.  
+8. **Interview / portfolio wording** — Product default brain remains free-tier; Anthropic = **measured teacher/demo under a hard cap** (not “we run on Claude”).  
 9. **Unchanged on purpose** — V1 hermetic fix still mandatory (prepaid credits can still be burned by non-hermetic pytest); F1 Anthropic-guard in tests still required; Gemini/Groq/Ollama still primary path; CUT LIST for P6/P7/P10/A5/MCP unchanged; SEC-01/env-only keys unchanged (Anthropic key still server-only).
 
 **One line for PART 2 lock:** *Default inference = Gemini→Groq→Ollama; Anthropic = opt-in, allowlisted, hard-budgeted prepaid only; never tests/CI.*

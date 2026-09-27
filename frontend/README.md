@@ -16,7 +16,7 @@ The UI supports two contexts:
 1. Start API from repository root:
 
 ```sh
-uvicorn opspilot.api.main:app --reload
+uv run uvicorn opspilot.api.app:app --app-dir src --reload --host 127.0.0.1 --port 8000
 ```
 
 2. In a new terminal, start UI:

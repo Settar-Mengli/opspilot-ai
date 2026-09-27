@@ -1,8 +1,8 @@
 # OpsPilot AI — Baseline Audit (Read-Only)
 
-**Audit date:** 2026-09-25
-**Mode:** Ask / read-only (no file writes; no pytest/lint/build/npm-audit runs)
-**Repo:** `c:\Dev\opspilot-ai` · remote claim: `Settar-Mengli/opspilot-ai` · branch `main`
+**Audit date:** 2026-09-25  
+**Mode:** Ask / read-only (no file writes; no pytest/lint/build/npm-audit runs)  
+**Repo:** `c:\Dev\opspilot-ai` · remote claim: `Settar-Mengli/opspilot-ai` · branch `main`  
 **Preflight status:** The prompt says “OPERATOR PREFLIGHT OUTPUT (pasted below)” but **no preflight block was present**. Git/runtime facts below were gathered with **read-only** commands in this session. Anything that would have come only from a full preflight (pytest result, npm audit, lint/build) is tagged **UNVERIFIED-AT-RUNTIME**.
 
 ---
@@ -175,7 +175,7 @@ a58896f feat: replace dashboard ghost-links with three action buttons
 | `utils/` | file_io, logging | many |
 | `capabilities/` | Static integration catalog | `/capabilities` |
 
-**Dependency direction (intended):** API → adapters/history; CLI → pipeline → adapters/ingest/nlp/rules → models/utils.
+**Dependency direction (intended):** API → adapters/history; CLI → pipeline → adapters/ingest/nlp/rules → models/utils.  
 **Issues found:**
 
 - **Dead import:** `classify_work_item` imported in `run_daily_ops.py:26` but unused (adapter used instead) — MEDIUM dead code.
@@ -345,7 +345,7 @@ Pipeline `/run` has 120s subprocess timeout — VERIFIED; LLM calls inside pipel
 
 ### 3f. Observability & cost
 
-Logged: exception messages / warnings on failure.
+Logged: exception messages / warnings on failure.  
 **Missing:** tokens, latency, cost, request IDs, tracing, prompt/version IDs — VERIFIED by grep (only `max_tokens` params, no usage logging).
 
 ### 3g. Evaluation

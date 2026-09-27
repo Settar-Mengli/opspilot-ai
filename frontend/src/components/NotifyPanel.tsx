@@ -1,3 +1,6 @@
+import { useId, useRef } from 'react'
+import { useOverlay } from '../hooks/useOverlay'
+
 interface Notification {
   id: string
   text: string
@@ -8,12 +11,24 @@ interface Props {
   open: boolean
   notifications: Notification[]
   assistantName: string
+  onClose: () => void
 }
 
-export function NotifyPanel({ open, notifications, assistantName }: Props) {
+export function NotifyPanel({ open, notifications, assistantName, onClose }: Props) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  const titleId = useId()
+  useOverlay({ open, onClose, lockScroll: false, containerRef: panelRef })
+
   return (
-    <div className={`notify-panel ${open ? 'open' : ''}`}>
-      <div className="notify-head">
+    <div
+      ref={panelRef}
+      className={`notify-panel ${open ? 'open' : ''}`}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      hidden={!open}
+    >
+      <div className="notify-head" id={titleId}>
         {assistantName}'s observations <span>{notifications.length} new</span>
       </div>
       {notifications.length === 0 ? (

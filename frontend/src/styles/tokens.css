@@ -1,0 +1,128 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #141413;
+  --surface: rgba(232,230,220,0.04);
+  --surface-2: rgba(232,230,220,0.06);
+  --surface-3: rgba(232,230,220,0.08);
+  --border: rgba(232,230,220,0.08);
+  --border-2: rgba(232,230,220,0.12);
+  --text-1: #faf9f5;
+  --text-2: #e8e6dc;
+  --text-3: #b0aea5;
+  --text-4: #6a6760;
+  --accent: #808000;
+  --accent-bright: #a8a832;
+  --accent-bg: rgba(128,128,0,0.14);
+  --accent-bg-2: rgba(128,128,0,0.18);
+  --accent-soft: rgba(128,128,0,0.06);
+  --accent-border: rgba(128,128,0,0.4);
+  --green: #9eb37e;
+  --green-bg: rgba(120,140,93,0.18);
+  --green-soft: rgba(120,140,93,0.06);
+  --green-border: rgba(120,140,93,0.2);
+  --blue: #8eb1d8;
+  --blue-bg: rgba(142,177,216,0.15);
+  --blue-soft: rgba(142,177,216,0.06);
+  --blue-border: rgba(142,177,216,0.15);
+  --r-sm: 7px;
+  --r: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --font-ui: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-prose: 'Lora', Georgia, serif;
+  /* Aliases for legacy selectors (C16 / OD-4 fold-in) */
+  --fg: var(--text-1);
+  --fg-muted: var(--text-3);
+  --text: var(--text-1);
+  --muted: var(--text-3);
+  --red: #c0392b;
+}
+
+html { font-size: 14px; }
+
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font-ui);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: var(--font-ui); cursor: pointer; }
+input { font-family: var(--font-ui); }
+
+/* App shell */
+.app-shell { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* Top navigation (desktop) */
+.top-nav {
+  height: 56px; background: var(--bg); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 22px; gap: 0;
+  position: sticky; top: 0; z-index: 100;
+}
+.brand {
+  display: flex; align-items: center; gap: 9px;
+  padding-right: 22px; border-right: 1px solid var(--border);
+  margin-right: 20px; flex-shrink: 0;
+  text-decoration: none; color: inherit; cursor: pointer;
+}
+.brand-name { font-size: 14px; font-weight: 600; color: var(--text-1); letter-spacing: -0.3px; }
+.brand-name em { font-style: normal; color: var(--accent); }
+.brand-tag {
+  font-size: 9px; font-weight: 600; color: var(--text-3);
+  background: var(--surface-3); border-radius: 4px;
+  padding: 2px 6px; letter-spacing: 0.4px;
+}
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.bell-btn {
+  position: relative; width: 32px; height: 32px; border-radius: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s;
+}
+.bell-btn:hover { background: var(--surface-2); border-color: var(--accent-border); }
+.bell-btn svg, .bell-btn i { font-size: 14px; color: var(--text-3); }
+.bell-dot {
+  position: absolute; top: 6px; right: 6px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--bg);
+}
+.assistant-pill {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 11px; background: var(--surface-2);
+  border: 1px solid var(--border-2); border-radius: 20px;
+}
+.av-mark {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; color: var(--text-1);
+}
+.av-name { font-size: 11px; font-weight: 500; color: var(--text-1); }
+.av-status { font-size: 10px; color: var(--text-3); font-weight: 500; display: flex; align-items: center; gap: 4px; }
+.av-live-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); animation: breathe 2.5s ease-in-out infinite;
+}
+@keyframes breathe { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.85)} }
+
+@keyframes presence-breathe {
+  0%, 100% { transform: scale(1); fill: #9CAB7A; opacity: 0.35; }
+  50%      { transform: scale(1.15); fill: #808000; opacity: 0.20; }
+}
+
+.bulbul-avatar__halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  fill: #9CAB7A;
+  opacity: 0.35;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bulbul-avatar__halo {
+    animation: presence-breathe 5s ease-in-out infinite;
+  }
+}

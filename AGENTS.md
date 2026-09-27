@@ -37,6 +37,7 @@ Free tiers (e.g. Gemini unpaid) **may train on prompts**. Minimize sensitive con
 5. **Live smoke** with exact commands before opening/updating the PR.
 6. **Docs every batch:** append a master-record PART (after main merge rule applies); update ROADMAP / ADRs / CHANGELOG / docs.
 7. Do not pull CUT-list items without an explicit owner decision; DEFER items need a trigger.
+8. **One commit per push:** never batch multiple commits into one push. Push each commit alone, wait for full CI green (including UI Tests) on that SHA, then make the next commit. No force-push to rewrite a red SHA — fix forward.
 
 ## Plan requirements
 
@@ -59,6 +60,13 @@ Every batch plan must show:
 - Prefer deterministic tests over flaky heuristics.
 - Validate relevant tests before closing a step.
 - **Before every commit:** run `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src/opspilot`, and `uv run pytest -q`. Never push a commit that fails them. Install hooks once with `uv run pre-commit install`.
+
+## UI safety net (D-026)
+
+- Visual baselines are **container-only** (`mcr.microsoft.com/playwright` pin; filenames end in `-linux`). Host visual runs are unsupported; host may run e2e/axe only. See [docs/runbooks/ui-tests.md](docs/runbooks/ui-tests.md).
+- Any **375** baseline change needs owner approval in the PR + visual sign-off.
+- Behavior-only FE changes must keep `maxDiffPixels: 0` at all viewports unless the commit names the U4/OD states being updated, or updates an owner-approved per-state entry in `frontend/e2e/visual.spec.ts` (`MAX_DIFF_PIXELS`; changing any entry requires owner approval).
+- Contrast/focus-ring pixel fixes are separate ODs — do not auto-apply.
 
 ## Safe git
 

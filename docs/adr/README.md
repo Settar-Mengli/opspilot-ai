@@ -28,5 +28,8 @@ Index of ADRs for OpsPilot. Status values: Accepted | Superseded | Proposed.
 | [D-022](D-022-repo-layout.md) | Keep src/opspilot + frontend/ | Accepted | B0 |
 | [D-023](D-023-anthropic-prepaid-gate.md) | Anthropic prepaid budget gate | Accepted | B2, B3, B7 |
 | [D-024](D-024-target-package-layout.md) | Target package layout (§2.1) | Accepted | B1–B7 |
+| [D-025](D-025-run-history-postgres.md) | Run history SoT = Postgres (supersedes D-006) | Accepted | B1+ |
+| [D-026](D-026-responsive-layout-policy.md) | Responsive layout policy (U1–U10) | Accepted | B1.5a, B1.5b, B5+ |
+| [D-027](D-027-schema-conventions.md) | Schema conventions (timestamptz, IDs, money) | Accepted | B2+ |
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../../OPSPILOT-MASTER-RECORD.md).

@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useId, useRef } from 'react'
+import { useOverlay } from '../hooks/useOverlay'
 import { BulBulAvatar } from './BulBulAvatar'
 
 interface DayData {
@@ -26,34 +27,33 @@ interface Props {
 }
 
 export function WeekPanel({ open, onClose }: Props) {
-  // Scroll-lock + Escape-to-close
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prevOverflow
-    }
-  }, [open, onClose])
+  const panelRef = useRef<HTMLDivElement>(null)
+  const titleId = useId()
+  const { onBackdropClick } = useOverlay({ open, onClose, containerRef: panelRef })
 
   if (!open) return null
 
   return (
-    <div className="slide-panel-backdrop" onClick={onClose}>
-      <div className="slide-panel" onClick={e => e.stopPropagation()}>
+    <div className="slide-panel-backdrop" onClick={onBackdropClick}>
+      <div
+        ref={panelRef}
+        className="slide-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={e => e.stopPropagation()}
+      >
         <div className="slide-panel-header">
-          <h2 className="slide-panel-title">The whole week</h2>
+          <h2 className="slide-panel-title" id={titleId}>The whole week</h2>
           <button className="slide-panel-close" onClick={onClose} aria-label="Close panel">✕</button>
         </div>
         <div className="slide-panel-body">
           <div className="wk-intro">
             <BulBulAvatar size={32} />
-            <p className="wk-intro-txt">It starts gentle and tightens toward Friday. If you protect any day, protect Thursday.</p>
+            <p className="wk-intro-txt">
+              <span className="sample-badge" aria-label="Sample data">Sample</span>
+              It starts gentle and tightens toward Friday. If you protect any day, protect Thursday.
+            </p>
           </div>
 
           {WEEK.map(day => (

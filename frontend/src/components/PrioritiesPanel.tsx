@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useId, useRef } from 'react'
+import { useOverlay } from '../hooks/useOverlay'
 import type { TriageRecord } from '../api/types'
 import { BulBulAvatar } from './BulBulAvatar'
 import { ArrowRight } from 'lucide-react'
@@ -17,20 +18,9 @@ interface Props {
 }
 
 export function PrioritiesPanel({ open, records, onClose }: Props) {
-  // Scroll-lock + Escape-to-close
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prevOverflow
-    }
-  }, [open, onClose])
+  const panelRef = useRef<HTMLDivElement>(null)
+  const titleId = useId()
+  const { onBackdropClick } = useOverlay({ open, onClose, containerRef: panelRef })
 
   if (!open) return null
 
@@ -43,10 +33,17 @@ export function PrioritiesPanel({ open, records, onClose }: Props) {
       : `Here are the ${numberWord(urgent.length)} I'd want you to see. I'd start with the first.`
 
   return (
-    <div className="slide-panel-backdrop" onClick={onClose}>
-      <div className="slide-panel" onClick={e => e.stopPropagation()}>
+    <div className="slide-panel-backdrop" onClick={onBackdropClick}>
+      <div
+        ref={panelRef}
+        className="slide-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={e => e.stopPropagation()}
+      >
         <div className="slide-panel-header">
-          <h2 className="slide-panel-title">The {urgent.length === 1 ? 'one thing' : `${numberWord(urgent.length)} things`}</h2>
+          <h2 className="slide-panel-title" id={titleId}>The {urgent.length === 1 ? 'one thing' : `${numberWord(urgent.length)} things`}</h2>
           <button className="slide-panel-close" onClick={onClose} aria-label="Close panel">✕</button>
         </div>
         <div className="slide-panel-body">
@@ -63,7 +60,7 @@ export function PrioritiesPanel({ open, records, onClose }: Props) {
                   {r.urgency === 'critical' ? 'Critical' : 'High'}
                 </span>
               </div>
-              <p className="ptitle2">{r.id}</p>
+              <p className="ptitle2">{r.subject_or_title ?? r.id}</p>
               <p className="pwhy">{r.urgency_reason}</p>
               <div className="paction">
                 <span className="paction-ic"><ArrowRight size={16} strokeWidth={2} /></span>

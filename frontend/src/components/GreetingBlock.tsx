@@ -36,7 +36,12 @@ export function GreetingBlock({
           {timeWindowLine ? <span>{timeWindowLine}</span> : null}
         </p>
       )}
-      {dayShapeLine ? <p className="greeting-dayshape">{dayShapeLine}</p> : null}
+      {dayShapeLine ? (
+        <p className="greeting-dayshape">
+          <span className="sample-badge" aria-label="Sample data">Sample</span>
+          {dayShapeLine}
+        </p>
+      ) : null}
       {credibilityLine ? <p className="greeting-credibility">{credibilityLine}</p> : null}
     </section>
   )

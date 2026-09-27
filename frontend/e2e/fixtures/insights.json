@@ -1,0 +1,15 @@
+{
+  "intro": "A few patterns I've been watching. Nothing urgent — just worth your eye.",
+  "insights": [
+    {
+      "title": "Checkout friction rising",
+      "body": "High-urgency items cluster around payment confirm failures.",
+      "category": "trend"
+    },
+    {
+      "title": "Friday compression",
+      "body": "Admin and planning items tighten toward end of week.",
+      "category": "theme"
+    }
+  ]
+}

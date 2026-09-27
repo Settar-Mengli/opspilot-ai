@@ -8,8 +8,13 @@ from pathlib import Path
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from opspilot.jobs.import_json import import_history_runs, import_sample_file, run_import
-from opspilot.persistence.models import RunRow, WorkItemRow
+from opspilot.jobs.import_json import (
+    import_history_runs,
+    import_sample_file,
+    run_import,
+    upsert_run_from_metadata,
+)
+from opspilot.persistence.models import RunArtifactRow, RunRow, WorkItemRow
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SAMPLE_PATH = PROJECT_ROOT / "data" / "raw" / "sample_input.json"
@@ -64,3 +69,29 @@ def test_run_import_cli_helper_round_trip(test_database_url: str) -> None:
     )
     assert stats1["work_item_count"] == stats2["work_item_count"]
     assert stats1["work_item_count"] > 0
+
+
+def test_upsert_run_skips_artifact_path_escape(db_session: Session, tmp_path: Path) -> None:
+    """F-06: artifact filenames must stay inside run_dir (no ../ escape)."""
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    safe = run_dir / "safe.txt"
+    safe.write_text("inside", encoding="utf-8")
+    outside = tmp_path / "outside.txt"
+    outside.write_text("leaked", encoding="utf-8")
+
+    metadata = {
+        "run_id": "run-jail-001",
+        "status": "success",
+        "artifacts": {
+            "safe_doc": "safe.txt",
+            "escape": "../outside.txt",
+        },
+    }
+    upsert_run_from_metadata(db_session, metadata, run_dir)
+    db_session.commit()
+
+    arts = list(db_session.scalars(select(RunArtifactRow).where(RunArtifactRow.run_id == "run-jail-001")))
+    names = {a.name for a in arts}
+    assert names == {"safe_doc"}
+    assert arts[0].content == "inside"

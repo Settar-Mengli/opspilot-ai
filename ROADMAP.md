@@ -16,6 +16,8 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 |-------|----------|------|
 | **B0** | M0 | Docs & architecture lock |
 | **B1** | M1 | Hermetic foundation + Postgres + SEC + `/api/v1` |
+| **B1.5a** | UI hygiene | UI safety net + overlay primitive + U4 fixes |
+| **B1.5b** | UI desktop | Desktop three-pane layout from design-reference |
 | **B2** | M2 | LLM gateway + trace hooks (+ Anthropic prepaid gate) |
 | **B3** | M3 + M4 | Eval platform + injection red-team on **one harness** |
 | **B4** | M5 | Demo Google inbox/calendar |
@@ -23,7 +25,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | **B6** | M8 + M9 | Morning run (in-runner) + Telegram + preferences → evals |
 | **B7** | M10 | Public free-tier deploy |
 
-**Order:** B0 → B1 → B2 → B3 → B4 → B5 → B6 → B7.
+**Order:** B0 → B1 → **B1.5a → B1.5b** → B2 → B3 → B4 → B5 → B6 → B7.
 
 **X-item placement (one batch each):**
 
@@ -36,7 +38,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | X5 JSON→DB importer | **B1** |
 | X6 Anthropic guard in tests | **B1** |
 | X7 OpenAPI-lite + FE types with `/api/v1` | **B1** |
-| X8 panel lifecycle | **B5** |
+| X8 panel lifecycle | **Started B1.5a** (`useOverlay`; `PortalOverlay` introduced then removed in `32fc6e1` unused); agent Ask surfaces finish on **B1.5b layout in B5** |
 
 **Anthropic amendment:** gate in **B2**; optional leaderboard column in **B3**; prod disabled-by-default at **B7**.
 
@@ -58,7 +60,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B1 — Hermetic foundation, Postgres, SEC gate & /api/v1 reshape (M1)
 
-- **Status:** Fix pass complete on `b1/hermetic-foundation` (2026-09-26). PR open — operator merges after CI green.
+- **Status:** Merged to `main` via PR #2 (`c5de149`, 2026-09-26).
 - **Goal:** Honest CI, Postgres persistence (local/CI Compose; Neon deferred), safe settings, versioned API with one error envelope.
 - **Workstream M1** — F1a + V1–V7 critical + D-008/D-009 + X5 + X6 + X7 + O3
   - **Scope:**
@@ -97,6 +99,20 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
       - The frontend dashboard renders from `/api/v1`.
     - **Docs:** master-record PART appended; ROADMAP, ADRs, and CHANGELOG updated.
 - **Deps:** B0 · **Size:** XL · **Metric:** Hermetic CI; $0 test runs; `/api/v1` + Postgres live
+
+### B1.5a — UI safety net & hygiene
+
+- **Status:** Delivered via PR #18 (`b1.5a/ui-safety-net`; C-BASE + owner approval 2026-09-27).
+- **Goal:** Playwright visual/e2e/axe safety net; CSS split; shared overlay primitive; U4 bug fixes; D-026/D-027.
+- **Scope:** Container-only `-linux` baselines; migrate Notify→Ask onto `useOverlay`; U4 (subject_or_title, gear label, CSS token aliases, triage/evening errors, safe-area, Sample badges); F-06 importer path jail; deprecate `api.main`.
+- **Exit:** UI Tests green in pinned Playwright image; docs PART 4 + ADRs; live smoke per plan.
+- **Deps:** B1 · **Size:** XL · **Metric:** 0-diff hygiene + named U4 baseline updates
+
+### B1.5b — Desktop three-pane layout
+
+- **Goal:** ≥1280 three-pane (rail + content + docked Ask) from `frontend/design-reference/` (D-026).
+- **Scope:** Desktop layout only; phone ≤768 stays pixel-locked except owner-approved changes; agent Ask chrome lands here for B5 to finish X8 agent surfaces.
+- **Deps:** B1.5a · **Size:** L · **Metric:** Approved desktop mocks shipped with baseline updates
 
 ### B2 — LLM gateway + traces (M2)
 
@@ -142,7 +158,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 - **Goal:** Tool-using Ask with HITL send.
 - **Workstream M6** — P2 + X8
-  - **Scope:** Bounded tool loop; multi-turn caps; SSE; **read-only tools first**; panel lifecycle (X8).
+  - **Scope:** Bounded tool loop; multi-turn caps; SSE; **read-only tools first**; finish X8 agent Ask surfaces on the **B1.5b** desktop layout (overlay primitive already landed in B1.5a).
   - **Exit criteria (M6):** Smoke ask → tool → grounded answer; quota budget enforced.
 - **Workstream M7** — P3 + X3 enforce
   - **Scope:** Draft UI; approval; Gmail send; audit row; **DEMO_MODE blocks send** for visitors.
