@@ -88,12 +88,14 @@ function collectSpecs(report) {
         const errText = errors.map((e) => e.message || e.value || '').join('\n')
         const pix = errText.match(/(\d+)\s+pixels?\s+\(ratio/i)
         if (pix) diffPixels = Number(pix[1])
-        const isRender =
-          status === 'timedOut' ||
-          /Timeout|locator|toBeVisible|strict mode|not found|Error:/i.test(errText)
         const isPixel =
-          /toHaveScreenshot|pixels \(ratio|Screenshot comparison/i.test(errText) ||
-          status === 'unexpected'
+          diffPixels !== null ||
+          /toHaveScreenshot|Screenshot comparison|Expected:.*Received:/i.test(errText)
+        // Do not treat screenshot pixel mismatches as render failures (Error: is too broad).
+        const isRender =
+          !isPixel &&
+          (status === 'timedOut' ||
+            /Timeout|locator|toBeVisible|strict mode violation|not found/i.test(errText))
         rows.push({
           state,
           viewport,
