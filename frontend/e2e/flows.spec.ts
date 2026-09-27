@@ -60,12 +60,11 @@ test.describe('e2e flows', () => {
     await expect(page.locator('.ask-panel').first()).toBeVisible({ timeout: 5_000 })
   })
 
-  test('6 All Items shows subject or id', async ({ page }) => {
+  test('6 All Items shows subject_or_title', async ({ page }) => {
     await preparePage(page)
     await page.goto('/items')
     await settle(page)
-    // Pre-U4: ids; post-U4: subjects. Accept either for safety-net era.
-    await expect(page.getByText(/WI-013|Checkout errors/i).first()).toBeVisible()
+    await expect(page.getByText('Checkout errors on payment confirm').first()).toBeVisible()
   })
 
   test('7 Insights load and retry', async ({ page }) => {
