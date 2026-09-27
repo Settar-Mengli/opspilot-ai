@@ -60,6 +60,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Mark repo safe for container git
+        shell: bash
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Resolve visual-run config
         id: cfg
         shell: bash
