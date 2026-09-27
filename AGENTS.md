@@ -37,6 +37,7 @@ Free tiers (e.g. Gemini unpaid) **may train on prompts**. Minimize sensitive con
 5. **Live smoke** with exact commands before opening/updating the PR.
 6. **Docs every batch:** append a master-record PART (after main merge rule applies); update ROADMAP / ADRs / CHANGELOG / docs.
 7. Do not pull CUT-list items without an explicit owner decision; DEFER items need a trigger.
+8. **One commit per push:** never batch multiple commits into one push. Push each commit alone, wait for full CI green (including UI Tests) on that SHA, then make the next commit. No force-push to rewrite a red SHA — fix forward.
 
 ## Plan requirements
 
