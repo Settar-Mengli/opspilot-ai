@@ -336,3 +336,64 @@ D-026, D-027; ROADMAP B1.5a/b + order + X8; AGENTS UI gate; architecture CURRENT
 **E0 / settle:** Byte-identical cross-run not achieved. Harness settle disables `backdrop-filter`, `box-shadow`, `filter`, `text-shadow`, and SVG `crispEdges` after measured blur-dominated noise (see D-026 U9 / ui-tests runbook). Residual shape-edge AA ≤25px → owner-adopted **per-state** `maxDiffPixels` table in `visual.spec.ts` (global default 0). Mutation proof: gear **36294854406**, border **36294859777**.
 
 **C-BASE:** Baselines refreshed from GHA update under settle (pair5a **36294414647** PNGs) with owner quote **approved — 2026-09-27**. Production-effect computed-style e2e landed separately.
+
+
+## PART 5 — DEP-1 dependency hygiene — 2026-09-27
+
+Branch: `chore/dep-1-security`. Base: `main@d1c57e0` (PR #18 merged).
+
+### Versions (before → after)
+
+| Package | Before | After | Notes |
+|---------|--------|-------|-------|
+| vite | 8.0.14 | 8.0.16 | Alert floor (not 8.3.1) |
+| postcss | 8.5.15 | 8.5.23 | via overrides |
+| browserslist | 4.28.2 | 4.28.7 | via overrides |
+| baseline-browser-mapping | 2.10.32 | 2.11.0 | via overrides |
+| brace-expansion (5.x via minimatch@10) | 5.0.6 | **5.0.9** | Dependabot floor was 5.0.7; `npm audit` required >5.0.8 |
+| nanoid | 3.3.12 | 3.3.18 | Transitive; needed for `npm audit` clean (X2) |
+| vitest / @vitest/mocker | 4.1.7 | 4.1.11 | Security; Vitest 5 deferred |
+| @playwright/test + playwright | 1.55.0 | 1.55.1 | Chromium 140.0.7339.16→186 |
+| mcr playwright image | v1.55.0-jammy | v1.55.1-jammy | ci.yml + ui-baselines.yml + runbook `$PIN` |
+| react / react-dom | 19.2.6 | 19.3.0 | Matched pair |
+| @types/react / @types/react-dom | 19.2.x | 19.3.0 | Matched |
+| eslint | 10.4.1 | 10.11.0 | |
+| globals | 17.6.0 | 17.12.0 | |
+| psycopg[binary] floor | ≥3.2 | ≥3.3.6 | lock already 3.3.6 |
+| setuptools floor | ≥68 | ≥84.0.0 | |
+| actions/checkout | 4.2.2 | 7.0.1 | |
+| actions/setup-node | 4.4.0 | 7.0.0 | |
+| astral-sh/setup-uv | 5.4.2 | 10.2.0 | |
+
+### Alerts closed (expected post-merge)
+
+npm Dependabot alerts #1–#4, #7, #10, #12–#15 (vite, postcss, brace-expansion, browserslist, baseline-browser-mapping, vitest/@vitest/mocker, playwright). Local `npm audit` (no `--omit`) = 0 vulns at tip. `pip-audit` on frozen prod export = clean.
+
+### Screenshots / X9
+
+- C4 (React) and C5 (Playwright 1.55.1): UI Tests **green** vs committed `-linux` baselines → **0-diff**; no C5b baseline commit; no U9 gallery STOP.
+- **X9** (Chromium .186 tolerance re-measure): UI Baselines update a **36345521702** (`dep1-det-a`) vs b **36345528121** (`dep1-det-b`); identical refs `af6f3f2`; **57 PNGs; maxDiffPx=0; nonzero=0** → PASS vs existing `MAX_DIFF_PIXELS` (all states ≤ tol). `visual/dep1-det-a` and `visual/dep1-det-b` deleted after runs.
+
+### Deferred
+
+- Vitest 5 (Dependabot #10) — major; security closed via 4.1.11.
+- Playwright 1.63 (Dependabot #19) — deferred until after B1.5b; security closed via 1.55.1.
+
+### Dependabot.yml
+
+Grouped minor/patch per ecosystem (`applies-to: version-updates`); Playwright version + security in dedicated groups; majors ungrouped. Cite: GitHub docs `groups` / `applies-to`.
+
+### Superseded PRs (operator close after merge)
+
+#3–#9, #11–#17, #19; #10 closed as deferred major.
+
+### Per-commit CI (push runs)
+
+| SHA | Message | Run id | Result |
+|-----|---------|--------|--------|
+| `c62832a` | npm security floor | 36340206002 | success |
+| `d9e45c0` | GHA majors | 36341082146 | success |
+| `a809b90` | eslint/globals/psycopg/setuptools | 36341968118 | success |
+| `ca09658` | react 19.3.0 | 36342850128 | success |
+| `af6f3f2` | playwright 1.55.1 + pins | 36343753265 | success |
+| `91553f8` | dependabot.yml groups | 36346541375 | success |
