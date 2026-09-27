@@ -102,7 +102,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B1.5a — UI safety net & hygiene
 
-- **Status:** In progress on `b1.5a/ui-safety-net` (Build; no PR until post-build audit).
+- **Status:** Build complete on `b1.5a/ui-safety-net` (C-BASE + owner approval 2026-09-27; PR next).
 - **Goal:** Playwright visual/e2e/axe safety net; CSS split; shared overlay primitive; U4 bug fixes; D-026/D-027.
 - **Scope:** Container-only `-linux` baselines; migrate Notify→Ask onto `useOverlay`; U4 (subject_or_title, gear label, CSS token aliases, triage/evening errors, safe-area, Sample badges); F-06 importer path jail; deprecate `api.main`.
 - **Exit:** UI Tests green in pinned Playwright image; docs PART 4 + ADRs; live smoke per plan.

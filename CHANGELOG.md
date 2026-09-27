@@ -9,7 +9,7 @@ and this project follows Semantic Versioning principles for release tags.
 
 ### Added
 
-- **B1.5a UI safety net:** Playwright 1.55 visual/e2e/axe (container-only `-linux` baselines + Google WOFF2 fixtures); CI UI Tests job; CSS partials; `useOverlay`/`PortalOverlay`; U4 hygiene (subject_or_title, Connections gear label, CSS token aliases, triage/evening errors, safe-area, Sample badges); F-06 importer path jail; deprecate `opspilot.api.main`; ADRs D-026/D-027; PART 4.
+- **B1.5a UI safety net:** Playwright 1.55 visual/e2e/axe (container-only `-linux` baselines + Google WOFF2 fixtures); CI UI Tests + UI Baselines workflow; CSS partials; overlay stack (Escape/scroll/focus; PortalOverlay removed); U4 hygiene; F-06 path jail; deprecate `opspilot.api.main`; ADRs D-026/D-027; PART 4 (+ 2026-09-27 revision: C-BASE, per-state tol, settle exclusions, production-effects e2e).
 - **B1 hermetic foundation:** `OPSPILOT_FORCE_RULES` + pytest-socket; uv lock / Python 3.13 / PEP 735; Compose+CI Postgres; **sync** SQLAlchemy/Alembic (`0002` `runs.finished_at` index); X5 importer; `/api/v1` Postgres-only runs (CLI `--output` files only); error envelope; AI-05 lite `subject_or_title`; Settings without `api_key_preview`; FE `/api/v1` + TS strict + vitest; gitleaks **v8.30.1** + Dependabot; pre-commit; coverage fail-under **72** (CI TOTAL 74.84%); Node 24; PART 3 + D-010/D-025 revised.
 - **B0 docs lock + fix pass:** session history, audit corpus, master record PART 0–2, ADRs D-001–D-024, architecture CURRENT/TARGET, ROADMAP B0–B7, AGENTS plan gate, runbooks (local-dev, zero-spend, free-tier, GHA morning, OAuth re-auth), glossary updates.
 - Session 3 (already on main): provider seam; frontend settings; SettingsPage lint fix.

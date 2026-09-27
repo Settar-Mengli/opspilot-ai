@@ -65,7 +65,7 @@ Every batch plan must show:
 
 - Visual baselines are **container-only** (`mcr.microsoft.com/playwright` pin; filenames end in `-linux`). Host visual runs are unsupported; host may run e2e/axe only. See [docs/runbooks/ui-tests.md](docs/runbooks/ui-tests.md).
 - Any **375** baseline change needs owner approval in the PR + visual sign-off.
-- Behavior-only FE changes must keep `maxDiffPixels: 0` at all viewports unless the commit names the U4/OD states being updated.
+- Behavior-only FE changes must keep `maxDiffPixels: 0` at all viewports unless the commit names the U4/OD states being updated, or updates an owner-approved per-state entry in `frontend/e2e/visual.spec.ts` (`MAX_DIFF_PIXELS`; changing any entry requires owner approval).
 - Contrast/focus-ring pixel fixes are separate ODs — do not auto-apply.
 
 ## Safe git

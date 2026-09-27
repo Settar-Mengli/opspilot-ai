@@ -303,7 +303,7 @@ PART 3 line stating “PR open” for B1 is **pre-merge**. B1 merged via PR #2 @
 | U9 | Baselines = pinned Playwright Linux image; `-linux` suffix; host visuals unsupported |
 | U10 | `index.css` split after safety net; proven 0-diff before overlay migrations |
 
-Fonts: committed Google WOFF2 + OFL under `frontend/e2e/fixtures/fonts/`; route interception in tests. Production `@import` unchanged. Screenshot settle forces monospace for Docker Desktop↔GHA determinism (runbook).
+Fonts: committed Google WOFF2 + OFL under `frontend/e2e/fixtures/fonts/`; route interception in tests. Production `@import` unchanged. Screenshot settle does **not** substitute design fonts; it disables blur/shadow/filter for Skia determinism (D-026 U9 revision; production-effects e2e guards).
 
 ### C13 skip
 
@@ -326,3 +326,13 @@ OD-4 folded into C16 (CSS token aliases). Remaining ODs (contrast/focus-ring pix
 ### Docs
 
 D-026, D-027; ROADMAP B1.5a/b + order + X8; AGENTS UI gate; architecture CURRENT FE; CHANGELOG; adr/README (+ D-025 index).
+
+### Revision — owner approval 2026-09-27 (fix pass / C-BASE)
+
+**Gallery:** run **36291002846** (before **36290296393**). Owner reviewed; every diff attributed to U4/C16 or a new state. Unattributed = 0.
+
+**Process deviation:** C-WF commit `fae0245` CI run **36285349451** went red on UI Tests (greeting AA flake). Forward fix `416dd4d` re-synced 12 monospace-era greeting PNGs (768/1280) from that run’s actuals. Owner **accepted** `416dd4d` as an interim sync only; superseded by C-BASE baselines after this approval. Recorded as a one-push / no-baseline-before-approval deviation.
+
+**E0 / settle:** Byte-identical cross-run not achieved. Harness settle disables `backdrop-filter`, `box-shadow`, `filter`, `text-shadow`, and SVG `crispEdges` after measured blur-dominated noise (see D-026 U9 / ui-tests runbook). Residual shape-edge AA ≤25px → owner-adopted **per-state** `maxDiffPixels` table in `visual.spec.ts` (global default 0). Mutation proof: gear **36294854406**, border **36294859777**.
+
+**C-BASE:** Baselines refreshed from GHA update under settle (pair5a **36294414647** PNGs) with owner quote **approved — 2026-09-27**. Production-effect computed-style e2e landed separately.
