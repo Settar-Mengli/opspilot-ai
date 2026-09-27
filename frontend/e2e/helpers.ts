@@ -7,7 +7,46 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url))
 const FIXTURES = path.join(ROOT, 'fixtures')
 const FONTS = path.join(FIXTURES, 'fonts')
 
-const FROZEN_ISO = '2026-09-26T15:00:00.000Z'
+const FROZEN_ISO = '2026-09-26T02:00:00.000Z'
+
+/**
+ * Freeze wall-clock for greetings (`new Date().getHours()`).
+ * Date.now alone is insufficient — Dashboard uses `new Date().getHours()`.
+ * Night hour (02:00 UTC) → "Working late" (matches C-BASE -linux baselines).
+ */
+function freezeDateInitScript(): string {
+  return `(() => {
+    const fixed = Date.parse('${FROZEN_ISO}');
+    const RealDate = Date;
+    class FrozenDate extends RealDate {
+      constructor(...args) {
+        if (args.length === 0) super(fixed);
+        else super(...args);
+      }
+      static now() { return fixed; }
+    }
+    FrozenDate.parse = RealDate.parse;
+    FrozenDate.UTC = RealDate.UTC;
+    // eslint-disable-next-line no-global-assign
+    Date = FrozenDate;
+  })();`
+}
+
+export async function seedOnboarded(page: Page): Promise<void> {
+  await page.addInitScript(freezeDateInitScript())
+  await page.addInitScript(() => {
+    window.localStorage.setItem('opspilot.userName', 'Alex')
+    window.localStorage.setItem('opspilot.assistantName', 'Bulbul')
+  })
+}
+
+export async function seedFresh(page: Page): Promise<void> {
+  await page.addInitScript(freezeDateInitScript())
+  await page.addInitScript(() => {
+    window.localStorage.removeItem('opspilot.userName')
+    window.localStorage.removeItem('opspilot.assistantName')
+  })
+}
 
 export type ApiMode =
   | 'ok'
@@ -175,24 +214,6 @@ export async function mockApi(page: Page, mode: ApiMode = 'ok'): Promise<void> {
     }
 
     await fulfillJson(route, { error: { code: 'unmocked', message: pathname, details: {} } }, 404)
-  })
-}
-
-export async function seedOnboarded(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    window.localStorage.setItem('opspilot.userName', 'Alex')
-    window.localStorage.setItem('opspilot.assistantName', 'Bulbul')
-    const fixed = Date.parse('2026-09-26T15:00:00.000Z')
-    Date.now = () => fixed
-  })
-}
-
-export async function seedFresh(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    window.localStorage.removeItem('opspilot.userName')
-    window.localStorage.removeItem('opspilot.assistantName')
-    const fixed = Date.parse('2026-09-26T15:00:00.000Z')
-    Date.now = () => fixed
   })
 }
 
