@@ -69,8 +69,6 @@ and this project follows Semantic Versioning principles for release tags.
 
 ### Changed
 
-- **DEP-1 dependency hygiene:** npm security floors (vite 8.0.16, postcss 8.5.23, browserslist 4.28.7, brace-expansion 5.0.9, baseline-browser-mapping 2.11.0, nanoid 3.3.18, vitest 4.1.11); Playwright **1.55.1** + `v1.55.1-jammy` image pins; React 19.3.0 (+ types); GHA checkout/setup-node/setup-uv majors; eslint/globals; psycopg/setuptools floors; Dependabot grouping. PART 5. Deferred: Vitest 5, Playwright 1.63.
-
 - Hardened API run contract in `src/opspilot/api/main.py`:
 	- `date` is validated by API request schema
 	- subprocess execution uses `sys.executable`
