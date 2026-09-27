@@ -127,6 +127,8 @@ jobs:
             FRONTEND_REV="$FRONTEND"
           fi
           git checkout -f "$HARNESS_REV"
+          # Drop harness UI tree so FRONTEND_REV cannot leak leftover paths (e.g. styles/).
+          rm -rf frontend/src frontend/index.html frontend/public
           git checkout "$FRONTEND_REV" -- frontend/src frontend/index.html frontend/public
           git checkout "$HARNESS_REV" -- frontend/e2e frontend/playwright.config.ts frontend/package.json frontend/package-lock.json
           # Before-run leak check: c5de149 must be monolith CSS
