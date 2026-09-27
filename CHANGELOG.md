@@ -16,6 +16,8 @@ and this project follows Semantic Versioning principles for release tags.
 
 ### Changed
 
+- **DEP-1 dependency hygiene:** npm security floors (vite 8.0.16, postcss 8.5.23, browserslist 4.28.7, brace-expansion 5.0.9, baseline-browser-mapping 2.11.0, nanoid 3.3.18, vitest 4.1.11); Playwright **1.55.1** + `v1.55.1-jammy` image pins; React 19.3.0 (+ types); GHA checkout/setup-node/setup-uv majors; eslint/globals; psycopg/setuptools floors; Dependabot grouping. PART 5. Deferred: Vitest 5, Playwright 1.63.
+
 - Settings are env-only / read-only UI (PATCH removed). Coverage ratchet-only from 67.
 - Roadmap IDs are **B0–B7** (+ **B1.5a/b** UI batches); owner decisions D1–D12 corrected in master record; B6 morning job in-runner (D-011); package layout D-024.
 - X8 panel lifecycle started in B1.5a; agent surfaces finish on B1.5b layout in B5.

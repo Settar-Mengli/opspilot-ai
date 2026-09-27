@@ -49,14 +49,14 @@ jobs:
     name: Baselines
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.55.0-jammy
+      image: mcr.microsoft.com/playwright:v1.55.1-jammy
     env:
       CI: "true"
       # Avoid interactive prompts inside the container
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
       - name: Checkout trigger ref
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 

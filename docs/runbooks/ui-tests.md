@@ -5,7 +5,7 @@ Screenshot baselines use Playwright’s platform suffix **`-linux`**.
 
 ## GHA baseline workflow (B1.5a)
 
-Authoritative screenshots are produced only by [`.github/workflows/ui-baselines.yml`](../../.github/workflows/ui-baselines.yml) on GitHub Actions (`mcr.microsoft.com/playwright:v1.55.0-jammy`).
+Authoritative screenshots are produced only by [`.github/workflows/ui-baselines.yml`](../../.github/workflows/ui-baselines.yml) on GitHub Actions (`mcr.microsoft.com/playwright:v1.55.1-jammy`).
 
 Drive runs by pushing throwaway `visual/**` branches that commit `.github/visual-run.json` (`mode`, `frontend_ref`, `harness_ref`, `artifact_name`; compare also needs `before_artifact_run_id` / `before_artifact_name`), or `workflow_dispatch` with the same fields.
 
@@ -19,7 +19,7 @@ Do not commit host-generated PNG baselines. Host runs may execute **e2e + axe on
 ## Local (Windows) — same image as CI
 
 ```powershell
-$PIN = "v1.55.0-jammy"   # must match @playwright/test major.minor.patch
+$PIN = "v1.55.1-jammy"   # must match @playwright/test major.minor.patch
 docker pull mcr.microsoft.com/playwright:$PIN
 docker run --rm -it `
   -v ${PWD}:/work `
