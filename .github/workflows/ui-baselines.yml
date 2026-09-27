@@ -192,6 +192,8 @@ jobs:
         id: pw
         working-directory: frontend
         continue-on-error: true
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: /tmp/pw-report.json
         shell: bash
         run: |
           set -euo pipefail
@@ -201,10 +203,11 @@ jobs:
             EXTRA+=(--update-snapshots)
           fi
           # Pixel failures must not fail the job; continue-on-error handles non-zero exit.
+          # Built-in reporters do not accept path-after-colon; use PLAYWRIGHT_JSON_OUTPUT_FILE.
           npx playwright test e2e/visual.spec.ts "${EXTRA[@]}" \
             --reporter=line \
-            --reporter=json:/tmp/pw-report.json \
-            --reporter=html:playwright-report
+            --reporter=json \
+            --reporter=html
 
       - name: Gallery index + render gate
         shell: bash
