@@ -211,37 +211,85 @@ export async function preparePage(
   await mockApi(page, opts.mode ?? 'ok')
 }
 
+/** Faces used by tokens.css — assert loaded before each screenshot (E0). */
+const REQUIRED_FONT_CHECKS = [
+  '400 16px Poppins',
+  '500 16px Poppins',
+  '600 16px Poppins',
+  '700 16px Poppins',
+  '400 16px Lora',
+  '500 16px Lora',
+  '600 16px Lora',
+  'italic 400 16px Lora',
+] as const
+
 export async function settle(page: Page): Promise<void> {
+  // Harness-only settle: kill motion, blur (Skia nondeterminism), scrollbars, caret.
+  // Does not change app design tokens or substitute fonts.
   await page.addStyleTag({
     content: `
-      /* Monospace + geometric AA: Docker Desktop (Windows) vs GHA Linux share baselines. */
-      html, body, body * {
-        font-family: "Courier New", Courier, monospace !important;
-        font-style: normal !important;
-        letter-spacing: 0 !important;
-        -webkit-font-smoothing: none !important;
-        -moz-osx-font-smoothing: unset !important;
-        text-rendering: geometricPrecision !important;
-      }
       *, *::before, *::after {
         animation: none !important;
         transition: none !important;
         caret-color: transparent !important;
-      }
-      *:focus, *:focus-visible {
-        outline: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        /* Soft shadows/filters rasterize nondeterministically under Skia. */
         box-shadow: none !important;
+        filter: none !important;
+        text-shadow: none !important;
+      }
+      /* Deterministic SVG stroke rasterization (not a design-font override). */
+      svg, svg * {
+        shape-rendering: crispEdges !important;
+      }
+      html, body {
+        overflow: hidden !important;
+        scrollbar-width: none !important;
+      }
+      *::-webkit-scrollbar {
+        width: 0 !important;
+        height: 0 !important;
+        display: none !important;
       }
     `,
   })
-  // Beat AskPanel's 200ms autofocus so focus rings don't flake screenshots.
-  await page.waitForTimeout(250)
-  await page.evaluate(() => {
-    const active = document.activeElement
-    if (active && active instanceof HTMLElement) {
-      active.blur()
+  // Beat AskPanel's 200ms autofocus; longer waits for GHA AA determinism (E0).
+  await page.waitForTimeout(800)
+  await page.evaluate(async (requiredFonts: readonly string[]) => {
+    if (document.fonts?.ready) {
+      await document.fonts.ready
     }
-  })
+    for (const spec of requiredFonts) {
+      await document.fonts.load(spec)
+    }
+    await document.fonts.ready
+    const missing = requiredFonts.filter((spec) => !document.fonts.check(spec))
+    if (missing.length > 0) {
+      throw new Error(`E0 font faces not loaded: ${missing.join(', ')}`)
+    }
+    // Decode any in-DOM images (icons served as <img> if present).
+    const images = Array.from(document.images)
+    await Promise.all(
+      images.map(async (img) => {
+        if (img.complete) return
+        await img.decode().catch(() => undefined)
+      }),
+    )
+    const blurActive = () => {
+      const active = document.activeElement
+      if (active && active instanceof HTMLElement) {
+        active.blur()
+      }
+    }
+    blurActive()
+    await new Promise((r) => setTimeout(r, 50))
+    blurActive()
+    // Two animation frames so layout/paint settle after font swap.
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    })
+  }, REQUIRED_FONT_CHECKS)
   await page.waitForLoadState('networkidle')
-  await page.waitForTimeout(150)
+  await page.waitForTimeout(500)
 }
