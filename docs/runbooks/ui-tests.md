@@ -3,6 +3,14 @@
 **Authority:** CI Linux using the official Playwright Docker image (pinned to match `@playwright/test`).
 Screenshot baselines use Playwright’s platform suffix **`-linux`**.
 
+## GHA baseline workflow (B1.5a fix pass)
+
+Authoritative screenshots are produced only by [`.github/workflows/ui-baselines.yml`](../../.github/workflows/ui-baselines.yml) on GitHub Actions (`mcr.microsoft.com/playwright:v1.55.0-jammy`).
+
+Until that workflow exists on `main`, drive runs by pushing throwaway `visual/**` branches that commit `.github/visual-run.json` (`mode`, `frontend_ref`, `harness_ref`, `artifact_name`; compare also needs `before_artifact_run_id` / `before_artifact_name`). After merge, prefer `workflow_dispatch` with the same fields.
+
+Helper: [`scripts/visual_gallery.mjs`](../../scripts/visual_gallery.mjs) builds the markdown gallery index, enforces the render gate, and compares PNG trees for the E0 determinism gate. Download with `gh run download <run_id> -n <artifact_name>`.
+
 ## Unsupported on Windows host
 
 Visual regression (`toHaveScreenshot` / `--update-snapshots`) on the Windows host is **unsupported**.
