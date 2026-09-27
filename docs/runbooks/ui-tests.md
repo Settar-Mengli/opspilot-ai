@@ -49,7 +49,7 @@ Tests intercept Google Fonts and serve committed WOFF2 files under `frontend/e2e
 ## Determinism (settle + Chromium)
 
 - `/api/v1/**` mocked via Playwright route fixtures
-- Frozen clock (`page.clock` + `Date.now`)
+- Frozen clock for greetings: `page.clock.setFixedTime(2026-09-26T02:00:00.000Z)` in `preparePage` (`frontend/e2e/helpers.ts`); `timezoneId: 'UTC'` (+ `process.env.TZ = 'UTC'`) in `playwright.config.ts`; `settle()` asserts local hour is night (`< 5` or `≥ 22`) so a drifted clock fails loud. **Why night:** approved C-BASE `-linux` baselines show the night greeting ("Working late"); screenshots therefore cover only that greeting variant — not morning/afternoon/evening.
 - `settle()` before screenshots: disables **animation / transition / caret**, **`backdrop-filter`**, **`box-shadow` / `filter` / `text-shadow`**, hides scrollbars, asserts Poppins/Lora faces loaded, forces `svg { shape-rendering: crispEdges }`
 - **Why exclusions:** Cross-runner Skia noise was measured at up to **72px** with launch-args alone (runs **36292157325 / 36292164473**), dominated by backdrop-blur of header chrome. After settle hardening, residual **shape-edge AA** ≤ **25px** on listed states (pairs **36293955065 / 36293962130**, **36294414647 / 36294419505**).
 - **Production still has the effects.** `frontend/e2e/production-effects.spec.ts` asserts computed styles (no `settle()`) on `.ask-panel-overlay`, `.slide-panel-backdrop`, `.evening-panel`, `.notify-panel`, `.bulbul-avatar__halo`. Removing those CSS effects fails the suite.
