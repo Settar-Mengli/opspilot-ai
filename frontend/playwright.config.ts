@@ -1,5 +1,8 @@
 import { defineConfig } from '@playwright/test'
 
+/** Wall-clock + greetings must be UTC so FROZEN night hour → "Working late". */
+process.env.TZ = 'UTC'
+
 const PORT = 4173
 const BASE_URL = `http://127.0.0.1:${PORT}`
 

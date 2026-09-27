@@ -7,33 +7,10 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url))
 const FIXTURES = path.join(ROOT, 'fixtures')
 const FONTS = path.join(FIXTURES, 'fonts')
 
+/** Night hour (02:00 UTC) → "Working late" (matches C-BASE -linux baselines). */
 const FROZEN_ISO = '2026-09-26T02:00:00.000Z'
 
-/**
- * Freeze wall-clock for greetings (`new Date().getHours()`).
- * Date.now alone is insufficient — Dashboard uses `new Date().getHours()`.
- * Night hour (02:00 UTC) → "Working late" (matches C-BASE -linux baselines).
- */
-function freezeDateInitScript(): string {
-  return `(() => {
-    const fixed = Date.parse('${FROZEN_ISO}');
-    const RealDate = Date;
-    class FrozenDate extends RealDate {
-      constructor(...args) {
-        if (args.length === 0) super(fixed);
-        else super(...args);
-      }
-      static now() { return fixed; }
-    }
-    FrozenDate.parse = RealDate.parse;
-    FrozenDate.UTC = RealDate.UTC;
-    // eslint-disable-next-line no-global-assign
-    Date = FrozenDate;
-  })();`
-}
-
 export async function seedOnboarded(page: Page): Promise<void> {
-  await page.addInitScript(freezeDateInitScript())
   await page.addInitScript(() => {
     window.localStorage.setItem('opspilot.userName', 'Alex')
     window.localStorage.setItem('opspilot.assistantName', 'Bulbul')
@@ -41,7 +18,6 @@ export async function seedOnboarded(page: Page): Promise<void> {
 }
 
 export async function seedFresh(page: Page): Promise<void> {
-  await page.addInitScript(freezeDateInitScript())
   await page.addInitScript(() => {
     window.localStorage.removeItem('opspilot.userName')
     window.localStorage.removeItem('opspilot.assistantName')
@@ -227,7 +203,7 @@ export async function preparePage(
   } else {
     await seedFresh(page)
   }
-  await page.clock.install({ time: new Date(FROZEN_ISO) })
+  await page.clock.setFixedTime(new Date(FROZEN_ISO))
   await installFontFixtures(page)
   await mockApi(page, opts.mode ?? 'ok')
 }
@@ -277,6 +253,13 @@ export async function settle(page: Page): Promise<void> {
   })
   // Beat AskPanel's 200ms autofocus; longer waits for GHA AA determinism (E0).
   await page.waitForTimeout(800)
+  // Guard: C-BASE -linux greetings are night ("Working late"). Fail loud if clock drift.
+  const hour = await page.evaluate(() => new Date().getHours())
+  if (hour >= 5 && hour < 22) {
+    throw new Error(
+      `visual harness: expected night hour (Working late), got ${hour}. Check clock.setFixedTime + timezoneId UTC.`,
+    )
+  }
   await page.evaluate(async (requiredFonts: readonly string[]) => {
     if (document.fonts?.ready) {
       await document.fonts.ready
