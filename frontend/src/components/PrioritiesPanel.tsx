@@ -1,3 +1,4 @@
+import { useId, useRef } from 'react'
 import { useOverlay } from '../hooks/useOverlay'
 import type { TriageRecord } from '../api/types'
 import { BulBulAvatar } from './BulBulAvatar'
@@ -17,7 +18,9 @@ interface Props {
 }
 
 export function PrioritiesPanel({ open, records, onClose }: Props) {
-  const { onBackdropClick } = useOverlay({ open, onClose })
+  const panelRef = useRef<HTMLDivElement>(null)
+  const titleId = useId()
+  const { onBackdropClick } = useOverlay({ open, onClose, containerRef: panelRef })
 
   if (!open) return null
 
@@ -31,9 +34,16 @@ export function PrioritiesPanel({ open, records, onClose }: Props) {
 
   return (
     <div className="slide-panel-backdrop" onClick={onBackdropClick}>
-      <div className="slide-panel" onClick={e => e.stopPropagation()}>
+      <div
+        ref={panelRef}
+        className="slide-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={e => e.stopPropagation()}
+      >
         <div className="slide-panel-header">
-          <h2 className="slide-panel-title">The {urgent.length === 1 ? 'one thing' : `${numberWord(urgent.length)} things`}</h2>
+          <h2 className="slide-panel-title" id={titleId}>The {urgent.length === 1 ? 'one thing' : `${numberWord(urgent.length)} things`}</h2>
           <button className="slide-panel-close" onClick={onClose} aria-label="Close panel">✕</button>
         </div>
         <div className="slide-panel-body">

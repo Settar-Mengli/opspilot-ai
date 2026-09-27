@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { getEveningSummary } from '../api/client'
 import { useOverlay } from '../hooks/useOverlay'
 import { BulBulAvatar } from './BulBulAvatar'
@@ -13,6 +13,8 @@ export function EveningPanel({ open, assistantName, onClose }: Props) {
   const [summary, setSummary] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const titleId = useId()
 
   useEffect(() => {
     let cancelled = false
@@ -32,17 +34,28 @@ export function EveningPanel({ open, assistantName, onClose }: Props) {
   }, [assistantName])
 
   // Scroll-lock + Escape-to-close via shared overlay hook
-  const { onBackdropClick } = useOverlay({ open, onClose })
+  const { onBackdropClick } = useOverlay({ open, onClose, containerRef: panelRef })
 
   const paragraphs = summary
     ? summary.split(/\n\n+/).map(p => p.trim()).filter(Boolean)
     : []
 
   return (
-    <div className={`evening-panel-overlay ${open ? 'open' : ''}`} onClick={onBackdropClick}>
-      <div className="evening-panel" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`evening-panel-overlay ${open ? 'open' : ''}`}
+      onClick={onBackdropClick}
+      aria-hidden={!open}
+    >
+      <div
+        ref={panelRef}
+        className="evening-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="evening-panel-header">
-          <div className="evening-panel-title">
+          <div className="evening-panel-title" id={titleId}>
             <span>Wrap up the day</span>
           </div>
           <button className="evening-panel-close" onClick={onClose} aria-label="Close">✕</button>

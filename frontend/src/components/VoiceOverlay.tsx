@@ -1,3 +1,4 @@
+import { useId, useRef } from 'react'
 import { useOverlay } from '../hooks/useOverlay'
 
 interface Props {
@@ -10,12 +11,21 @@ interface Props {
 }
 
 export function VoiceOverlay({ open, listening, transcript, interimTranscript, error, onClose }: Props) {
-  useOverlay({ open, onClose })
+  const panelRef = useRef<HTMLDivElement>(null)
+  const titleId = useId()
+  useOverlay({ open, onClose, containerRef: panelRef })
   const displayText = transcript + interimTranscript
   const showPlaceholder = !displayText.trim() && !error
 
   return (
-    <div className={`voice-overlay ${open ? 'open' : ''}`}>
+    <div
+      ref={panelRef}
+      className={`voice-overlay ${open ? 'open' : ''}`}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      hidden={!open}
+    >
       <div className={`voice-orb ${listening ? 'listening' : ''}`}>
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-1)' }}>
           <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
@@ -23,7 +33,7 @@ export function VoiceOverlay({ open, listening, transcript, interimTranscript, e
         </svg>
       </div>
 
-      <div className="voice-status">
+      <div className="voice-status" id={titleId}>
         {error ? 'Could not hear you' : listening ? 'Listening' : 'Done'}
       </div>
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { askOpsPilot } from '../api/client'
 import type { AskMessage } from '../api/types'
 import { useOverlay } from '../hooks/useOverlay'
@@ -17,7 +17,9 @@ export function AskPanel({ open, assistantName, initialQuestion, onClose }: Prop
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const hasSentInitial = useRef(false)
+  const titleId = useId()
 
   const sendQuestion = useCallback(async (question: string) => {
     const clean = question.trim()
@@ -67,7 +69,7 @@ export function AskPanel({ open, assistantName, initialQuestion, onClose }: Prop
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  const { onBackdropClick } = useOverlay({ open, onClose })
+  const { onBackdropClick } = useOverlay({ open, onClose, containerRef: panelRef })
 
   if (!open) return null
 
@@ -85,9 +87,16 @@ export function AskPanel({ open, assistantName, initialQuestion, onClose }: Prop
 
   return (
     <div className="ask-panel-overlay" onClick={onBackdropClick}>
-      <div className="ask-panel" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={panelRef}
+        className="ask-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="ask-panel-header">
-          <div className="ask-panel-title">
+          <div className="ask-panel-title" id={titleId}>
             <span className="ask-panel-orb">{assistantName.charAt(0).toUpperCase()}</span>
             <span>Ask {assistantName}</span>
           </div>
