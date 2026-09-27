@@ -49,7 +49,7 @@ jobs:
     name: Baselines
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.55.0-jammy
+      image: mcr.microsoft.com/playwright:v1.55.1-jammy
     env:
       CI: "true"
       # Avoid interactive prompts inside the container

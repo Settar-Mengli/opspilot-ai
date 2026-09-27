@@ -152,7 +152,7 @@ jobs:
     name: UI Tests
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.55.0-jammy
+      image: mcr.microsoft.com/playwright:v1.55.1-jammy
     defaults:
       run:
         working-directory: frontend
