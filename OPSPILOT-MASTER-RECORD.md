@@ -331,7 +331,7 @@ D-026, D-027; ROADMAP B1.5a/b + order + X8; AGENTS UI gate; architecture CURRENT
 
 **Gallery:** run **36291002846** (before **36290296393**). Owner reviewed; every diff attributed to U4/C16 or a new state. Unattributed = 0.
 
-**Process deviation:** C-WF commit `fae0245` CI run **36285349451** went red on UI Tests (greeting AA flake). Forward fix `416dd4d` re-synced 12 monospace-era greeting PNGs (768/1280) from that run’s actuals. Owner **accepted** `416dd4d` as an interim sync only; superseded by C-BASE baselines after this approval. Recorded as a one-push / no-baseline-before-approval deviation.
+**Process deviation:** C-WF commit `fae0245` CI run **36285349451** went red on UI Tests (greeting AA flake). Forward fix `416dd4d` re-synced 12 monospace-era greeting PNGs (768/1280) from that run’s actuals. Owner **accepted** `416dd4d` as an interim sync only; superseded by C-BASE baselines after this approval. Recorded as a one-push / no-baseline-before-approval deviation. Separately, C-BASE commit `fdc863f` CI run **36295464243** went red on Frontend Checks (unused `devices` import in `playwright.config.ts`); fixed forward by `c63b960` (run **36295887927** green) — no amend/force-push.
 
 **E0 / settle:** Byte-identical cross-run not achieved. Harness settle disables `backdrop-filter`, `box-shadow`, `filter`, `text-shadow`, and SVG `crispEdges` after measured blur-dominated noise (see D-026 U9 / ui-tests runbook). Residual shape-edge AA ≤25px → owner-adopted **per-state** `maxDiffPixels` table in `visual.spec.ts` (global default 0). Mutation proof: gear **36294854406**, border **36294859777**.
 
