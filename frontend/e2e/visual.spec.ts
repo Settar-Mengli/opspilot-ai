@@ -32,7 +32,21 @@ function screenshotOpts(basename: string): { maxDiffPixels: number } {
   return { maxDiffPixels: MAX_DIFF_PIXELS[key] ?? 0 }
 }
 
+/** Temporary B1.5b hold: skip only chromium-1280 screenshot asserts while desktop layout lands. */
+function skip1280ScreenshotIfHeld(): void {
+  const held = process.env.B15B_DESKTOP_HOLD === '1'
+  const is1280 = test.info().project.name === 'chromium-1280'
+  test.skip(
+    held && is1280,
+    'B15B_DESKTOP_HOLD: 1280 screenshots deferred until baseline commit',
+  )
+}
+
 test.describe('visual baselines', () => {
+  test.beforeEach(() => {
+    skip1280ScreenshotIfHeld()
+  })
+
   test('onboarding', async ({ page }) => {
     await preparePage(page, { onboarded: false })
     await page.goto('/')
