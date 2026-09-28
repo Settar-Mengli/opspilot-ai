@@ -45,10 +45,12 @@ test.describe('e2e flows', () => {
     await page.goto('/dashboard')
     await settle(page)
     await page.getByRole('button', { name: /just ask me/i }).click()
-    const input = page.locator('.ask-panel-input')
+    const input = page.locator('.ask-panel-input:visible, .desk-ask-input:visible').first()
     await input.fill('Status?')
-    await page.locator('.ask-panel-send').click()
-    await expect(page.getByText(/Checkout confirm is the priority/i)).toBeVisible()
+    await page.locator('.ask-panel-send:visible').first().click()
+    await expect(
+      page.locator('.ask-panel:visible, .desk-ask:visible').getByText(/Checkout confirm is the priority/i),
+    ).toBeVisible()
   })
 
   test('5 Ctrl/Cmd+K opens Ask', async ({ page }) => {
@@ -57,7 +59,11 @@ test.describe('e2e flows', () => {
     await settle(page)
     const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
     await page.keyboard.press(`${modifier}+KeyK`)
-    await expect(page.locator('.ask-panel').first()).toBeVisible({ timeout: 5_000 })
+    if (test.info().project.name === 'chromium-1280') {
+      await expect(page.locator('.desk-ask-input')).toBeFocused({ timeout: 5_000 })
+    } else {
+      await expect(page.locator('.ask-panel').first()).toBeVisible({ timeout: 5_000 })
+    }
   })
 
   test('6 All Items shows subject_or_title', async ({ page }) => {
@@ -78,7 +84,7 @@ test.describe('e2e flows', () => {
     await preparePage(page)
     await page.goto('/briefing')
     await settle(page)
-    await expect(page.getByText(/briefing|checkout|Focus/i).first()).toBeVisible()
+    await expect(page.locator('main').getByText(/briefing|checkout|Focus/i).first()).toBeVisible()
   })
 
   test('9 Evening open', async ({ page }) => {

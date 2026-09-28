@@ -1,0 +1,335 @@
+/* B1.5b desktop layout.
+   New chrome defaults to hidden; layout/reveal rules live mostly in min-width: 1280px.
+   Structural .app-center / .skip-link apply at all widths so ≤1279 flex layout stays pixel-stable.
+*/
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  z-index: 200;
+}
+.skip-link:focus {
+  left: 16px;
+  top: 8px;
+  background: var(--accent);
+  color: var(--text-1);
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.app-center {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.desk-rail,
+.desk-ask {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+
+  .app-shell {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) 380px;
+    grid-template-rows: 100vh;
+    min-height: 100vh;
+  }
+
+  .desk-rail {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px 8px;
+    border-right: 1px solid var(--border);
+    background: var(--bg);
+    grid-column: 1;
+    grid-row: 1;
+    z-index: 110;
+  }
+
+  .desk-rail-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .desk-rail-btn {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .desk-rail-btn:hover {
+    background: var(--surface-2);
+    color: var(--text-1);
+  }
+
+  .desk-rail-btn[aria-current="page"] {
+    background: var(--accent-bg);
+    color: var(--accent-bright);
+  }
+
+  .desk-rail-btn .tip {
+    display: none;
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1c1c1a;
+    border: 1px solid var(--border-2);
+    color: var(--text-1);
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    z-index: 120;
+    pointer-events: none;
+  }
+
+  .desk-rail-btn:hover .tip,
+  .desk-rail-btn:focus-visible .tip {
+    display: block;
+  }
+
+  .app-center {
+    grid-column: 2;
+    grid-row: 1;
+    border-right: 1px solid var(--border);
+  }
+
+  .app-shell .top-nav .brand {
+    display: none;
+  }
+
+  .app-shell .top-nav .nav-gear {
+    display: none;
+  }
+
+  .app-shell .content-shell {
+    max-width: none;
+    margin: 0;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .app-shell .dashboard-redesign {
+    max-width: none;
+    margin: 0;
+  }
+
+  .desk-ask {
+    display: flex;
+    flex-direction: column;
+    grid-column: 3;
+    grid-row: 1;
+    min-width: 0;
+    min-height: 0;
+    background: var(--surface);
+  }
+
+  .desk-ask-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .desk-ask-orb {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-1);
+    flex-shrink: 0;
+  }
+
+  .desk-ask-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-1);
+  }
+
+  .desk-ask-sub {
+    font-size: 11px;
+    color: var(--text-3);
+  }
+
+  .desk-ask-body {
+    flex: 1;
+    padding: 16px;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+  }
+
+  .desk-ask-empty {
+    margin: auto;
+    text-align: center;
+    max-width: 260px;
+  }
+
+  .desk-ask-empty p {
+    font-family: var(--font-prose);
+    font-size: 14px;
+    color: var(--text-3);
+    line-height: 1.5;
+    margin: 8px 0 0;
+  }
+
+  .desk-ask .ask-msg {
+    max-width: 92%;
+  }
+
+  .desk-ask .ask-msg-user {
+    align-self: flex-end;
+  }
+
+  .desk-ask .ask-msg-assistant {
+    align-self: flex-start;
+  }
+
+  .desk-ask-footer {
+    padding: 12px 14px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .desk-ask-input {
+    flex: 1;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    border-radius: 8px;
+    color: var(--text-1);
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: var(--font);
+    outline: none;
+  }
+
+  .desk-ask-input:focus {
+    border-color: var(--accent-border);
+  }
+
+  .desk-ask-input::placeholder {
+    color: var(--text-3);
+  }
+
+  .items-split {
+    display: grid;
+    grid-template-columns: minmax(240px, 1fr) minmax(280px, 1.2fr);
+    gap: 0;
+    min-height: 480px;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+    flex: 1;
+  }
+
+  .items-list-pane {
+    border-right: 1px solid var(--border);
+    padding: 12px;
+    overflow: auto;
+    background: var(--surface);
+  }
+
+  .items-detail-pane {
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: auto;
+  }
+
+  .fp-row.is-selected {
+    background: var(--accent-bg);
+    border-color: var(--accent-border);
+  }
+
+  .fp-row {
+    cursor: pointer;
+  }
+
+  .items-detail-subject {
+    font-family: var(--font-prose);
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--text-1);
+    margin: 0;
+    line-height: 1.25;
+  }
+
+  .items-detail-urgency {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .items-detail-urgency--critical { color: #d85a30; }
+  .items-detail-urgency--high { color: #ef9f27; }
+  .items-detail-urgency--medium { color: var(--blue); }
+  .items-detail-urgency--low { color: var(--text-3); }
+
+  .items-detail-reasons {
+    font-family: var(--font-prose);
+    font-size: 14px;
+    color: var(--text-2);
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  .items-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .items-detail-actions button {
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    color: var(--text-1);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .items-detail-actions button:hover {
+    border-color: var(--accent-border);
+  }
+
+  .fp-header .page-back {
+    display: none;
+  }
+}

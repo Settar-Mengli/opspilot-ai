@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpsPilot — Desktop Briefing</title>
+<!-- Same Google Fonts family/weights as production tokens.css -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../src/styles/tokens.css" />
+<link rel="stylesheet" href="../src/styles/shell.css" />
+<link rel="stylesheet" href="../src/styles/dashboard.css" />
+<link rel="stylesheet" href="../src/styles/pages.css" />
+<link rel="stylesheet" href="../src/styles/overlays.css" />
+<link rel="stylesheet" href="_desktop-mockup.css" />
+</head>
+<body class="mk-page">
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="mk-meta">
+  <span><strong>B1.5b mockup</strong> — static HTML (not app code)</span>
+  <span>Ask dock width: <strong>380px</strong> (proposed)</span>
+  <span>Fonts: <strong>Poppins + Lora</strong> (production Google Fonts import)</span>
+  <span>Route: /briefing</span>
+</div>
+
+
+<p class="mk-frame-label">1280px viewport</p>
+<div class="mk-frame mk-frame--1280" data-viewport="1280">
+  <div class="desk-shell">
+
+<nav class="desk-rail" aria-label="Primary">
+  <div class="desk-rail-group">
+    <button type="button" class="desk-rail-btn"  title="Dashboard"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="tip">Dashboard</span></button>
+    <button type="button" class="desk-rail-btn"  title="All Items"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg><span class="tip">All Items</span></button>
+    <button type="button" class="desk-rail-btn"  title="Insights"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg><span class="tip">Insights</span></button>
+    <button type="button" class="desk-rail-btn" aria-current="page" title="Briefing"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg><span class="tip">Briefing</span></button>
+  </div>
+  <div class="desk-rail-group">
+    <button type="button" class="desk-rail-btn"  title="Connections"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg><span class="tip">Connections</span></button>
+    <button type="button" class="desk-rail-btn"  title="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><span class="tip">Settings</span></button>
+  </div>
+</nav>
+
+    <div class="desk-main">
+
+<div class="desk-top">
+  <div class="desk-brand">Ops<span>Pilot</span></div>
+  <div class="desk-top-right">
+    <button type="button" aria-label="Notifications" style="background:none;border:none;color:#b0aea5;padding:6px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+    </button>
+    <div style="display:flex;align-items:center;gap:8px;background:rgba(250,249,245,0.05);border:0.5px solid rgba(250,249,245,0.12);border-radius:999px;padding:4px 12px 4px 6px;">
+      <span style="width:22px;height:22px;border-radius:50%;background:#808000;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">B</span>
+      <span style="font-size:13px;font-weight:500;">BulBulJan</span>
+    </div>
+  </div>
+</div>
+
+      <main id="main" class="desk-content">
+
+<div class="page-header"><h2 class="page-header-title">Today's briefing</h2></div>
+<p style="font-family:var(--font-prose);font-size:15px;color:#EDEBE3;line-height:1.55;max-width:52ch;">Morning shape is calm. One critical loop on Acme Logistics billing latency; two high follow-ups. Friday carries the Q3 close load for Stellar Coffee Co.</p>
+<ul style="margin:16px 0 0;padding-left:18px;color:#b0aea5;font-size:13px;line-height:1.6;">
+  <li>Prioritize the incident handoff before vendor mail.</li>
+  <li>Keep Ask docked for quick clarifications.</li>
+</ul>
+
+      </main>
+    </div>
+
+<aside class="desk-ask" aria-label="Ask">
+  <div class="desk-ask-header">
+    <div class="desk-ask-orb">B</div>
+    <div>
+      <div class="desk-ask-title">Ask BulBulJan</div>
+      <div class="desk-ask-sub">Always available · not a modal</div>
+    </div>
+  </div>
+  <div class="desk-ask-body">
+    <div class="desk-ask-empty">
+      <div class="desk-ask-orb" style="margin:0 auto;">B</div>
+      <p>Ask anything about your day, inbox, or priorities.</p>
+    </div>
+  </div>
+  <div class="desk-ask-footer">
+    <input class="desk-ask-input" placeholder="Ask OpsPilot…" aria-label="Ask input" />
+    <button type="button" class="desk-ask-send">Send</button>
+  </div>
+</aside>
+
+  </div>
+</div>
+
+
+<p class="mk-frame-label">1440px viewport</p>
+<div class="mk-frame mk-frame--1440" data-viewport="1440">
+  <div class="desk-shell">
+
+<nav class="desk-rail" aria-label="Primary">
+  <div class="desk-rail-group">
+    <button type="button" class="desk-rail-btn"  title="Dashboard"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="tip">Dashboard</span></button>
+    <button type="button" class="desk-rail-btn"  title="All Items"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg><span class="tip">All Items</span></button>
+    <button type="button" class="desk-rail-btn"  title="Insights"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg><span class="tip">Insights</span></button>
+    <button type="button" class="desk-rail-btn" aria-current="page" title="Briefing"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg><span class="tip">Briefing</span></button>
+  </div>
+  <div class="desk-rail-group">
+    <button type="button" class="desk-rail-btn"  title="Connections"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg><span class="tip">Connections</span></button>
+    <button type="button" class="desk-rail-btn"  title="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><span class="tip">Settings</span></button>
+  </div>
+</nav>
+
+    <div class="desk-main">
+
+<div class="desk-top">
+  <div class="desk-brand">Ops<span>Pilot</span></div>
+  <div class="desk-top-right">
+    <button type="button" aria-label="Notifications" style="background:none;border:none;color:#b0aea5;padding:6px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+    </button>
+    <div style="display:flex;align-items:center;gap:8px;background:rgba(250,249,245,0.05);border:0.5px solid rgba(250,249,245,0.12);border-radius:999px;padding:4px 12px 4px 6px;">
+      <span style="width:22px;height:22px;border-radius:50%;background:#808000;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">B</span>
+      <span style="font-size:13px;font-weight:500;">BulBulJan</span>
+    </div>
+  </div>
+</div>
+
+      <main id="main" class="desk-content">
+
+<div class="page-header"><h2 class="page-header-title">Today's briefing</h2></div>
+<p style="font-family:var(--font-prose);font-size:15px;color:#EDEBE3;line-height:1.55;max-width:52ch;">Morning shape is calm. One critical loop on Acme Logistics billing latency; two high follow-ups. Friday carries the Q3 close load for Stellar Coffee Co.</p>
+<ul style="margin:16px 0 0;padding-left:18px;color:#b0aea5;font-size:13px;line-height:1.6;">
+  <li>Prioritize the incident handoff before vendor mail.</li>
+  <li>Keep Ask docked for quick clarifications.</li>
+</ul>
+
+      </main>
+    </div>
+
+<aside class="desk-ask" aria-label="Ask">
+  <div class="desk-ask-header">
+    <div class="desk-ask-orb">B</div>
+    <div>
+      <div class="desk-ask-title">Ask BulBulJan</div>
+      <div class="desk-ask-sub">Always available · not a modal</div>
+    </div>
+  </div>
+  <div class="desk-ask-body">
+    <div class="desk-ask-empty">
+      <div class="desk-ask-orb" style="margin:0 auto;">B</div>
+      <p>Ask anything about your day, inbox, or priorities.</p>
+    </div>
+  </div>
+  <div class="desk-ask-footer">
+    <input class="desk-ask-input" placeholder="Ask OpsPilot…" aria-label="Ask input" />
+    <button type="button" class="desk-ask-send">Send</button>
+  </div>
+</aside>
+
+  </div>
+</div>
+
+</body></html>

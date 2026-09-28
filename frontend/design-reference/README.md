@@ -2,11 +2,25 @@
 
 These are the **approved visual targets** for the OpsPilot redesign. They are static HTML mockups, not application code. Open any file in a browser to see exactly what the corresponding screen should look like.
 
+## How to review B1.5b desktop mockups (11–16)
+
+1. Open each file below in a browser (double-click or drag into Chrome/Edge).
+2. Use DevTools responsive mode at **1280×800** and **1440×900** (each mockup also embeds labeled frames at both widths).
+3. Confirm **fonts are Poppins (UI) and Lora (prose)** — same Google Fonts import as production [`frontend/src/styles/tokens.css`](../src/styles/tokens.css). If you see system sans/serif only, check network access to `fonts.googleapis.com` / `fonts.gstatic.com`.
+4. Confirm three-pane chrome: **icon rail (left) + content + Ask dock (380px right)**.
+5. Reply **`mockups approved`** (with any changes to Ask width 360/380/400, rail order, or Items default selection) before Phase 2 app code.
+
+Shared mockup-only sheet: [`_desktop-mockup.css`](_desktop-mockup.css) (not imported by the app). Production layout: [`frontend/src/styles/desktop.css`](../src/styles/desktop.css) (imported last from `index.css`).
+
+**Owner approvals (B1.5b):** `mockups approved` — 2026-09-27 21:43 UTC-4 (defaults locked: Ask 380px; rail Dashboard→All Items→Insights→Briefing / Connections→Settings; Items first urgent; no FUTURE B5). `gallery approved` — 2026-09-27 (before run 36372236858, compare 36372705384).
+
 ## Files
+
+### Historical (01–10) — mobile / card-era targets
 
 | File | Screen | Route / Trigger |
 |------|--------|-----------------|
-| `01-dashboard-desktop.html` | Dashboard (desktop) | `/dashboard` |
+| `01-dashboard-desktop.html` | Dashboard (desktop card, ~680) | `/dashboard` (historical) |
 | `02-dashboard-mobile.html` | Dashboard (mobile) | `/dashboard` |
 | `03-just-ask-me.html` | Conversation panel | "Just ask me" tile → AskPanel |
 | `04-the-two-things.html` | Priorities | "The two things" hero → PrioritiesPanel |
@@ -17,12 +31,25 @@ These are the **approved visual targets** for the OpsPilot redesign. They are st
 | `09-todays-briefing.html` | Daily briefing | "Today's briefing" ghost link → `/briefing` |
 | `10-connections.html` | Integrations roadmap | gear icon → `/connections` |
 
+### B1.5b desktop (≥1280 three-pane) — Phase 1 mockups
+
+| File | Screen | Notes |
+|------|--------|-------|
+| [`11-desktop-dashboard.html`](11-desktop-dashboard.html) | Dashboard | Rail + greeting/tiles + empty docked Ask |
+| [`12-desktop-items-split.html`](12-desktop-items-split.html) | All Items | List + detail split; default = first urgent |
+| [`13-desktop-ask-populated.html`](13-desktop-ask-populated.html) | Ask populated | Conversation in dock + **FUTURE (B5)** streaming/tools/approval variant |
+| [`14-desktop-briefing.html`](14-desktop-briefing.html) | Briefing | Rail Briefing active |
+| [`15-desktop-insights.html`](15-desktop-insights.html) | Insights | Rail Insights active |
+| [`16-desktop-settings-rail.html`](16-desktop-settings-rail.html) | Settings | Settings in rail bottom group; gear stays Connections |
+
+**Proposed defaults (open for owner at review):** Ask width **380px**; rail top Dashboard / All Items / Insights / Briefing, bottom Connections / Settings; Items default = first urgent (critical→low).
+
 ## How these map to the real app
 
 These references use:
 - **Lora** (serif) for the assistant's voice — already the app's `--font-prose`.
 - **Poppins** (sans) for UI — already the app's `--font-ui`.
-- **Tabler icon webfont** (`<i class="ti ti-NAME">`) **for prototype convenience only.** The real app uses **lucide-react** components. Map them:
+- **Tabler icon webfont** (`<i class="ti ti-NAME">`) **for prototype convenience only** on 01–10. B1.5b mockups 11–16 use inline SVG matching **lucide-react** shapes. Map them:
 
 | Tabler (reference) | lucide-react (app) |
 |--------------------|--------------------|

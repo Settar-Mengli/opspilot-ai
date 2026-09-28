@@ -24,6 +24,7 @@ export function VoiceOverlay({ open, listening, transcript, interimTranscript, e
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
+        tabIndex={-1}
       hidden={!open}
     >
       <div className={`voice-orb ${listening ? 'listening' : ''}`}>

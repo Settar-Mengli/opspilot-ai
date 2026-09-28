@@ -41,6 +41,10 @@ async function assertBoxShadow(page: Page, selector: string): Promise<void> {
 
 test.describe('production overlay effects (no settle)', () => {
   test('Ask overlay keeps backdrop-filter (.ask-panel-overlay)', async ({ page }) => {
+    test.skip(
+      test.info().project.name === 'chromium-1280',
+      'Ask is docked at ≥1280; modal overlay not mounted',
+    )
     await preparePage(page)
     await page.goto('/dashboard')
     await page.getByRole('button', { name: /just ask me/i }).click()
@@ -92,5 +96,26 @@ test.describe('production overlay effects (no settle)', () => {
     const animation = await computed(halo, 'animation-name')
     expect(animation, '.bulbul-avatar__halo animation-name').not.toBe('none')
     expect(animation.toLowerCase()).toContain('presence-breathe')
+  })
+
+  test('Voice overlay keeps backdrop-filter (.voice-overlay)', async ({ page }) => {
+    test.skip(
+      test.info().project.name === 'chromium-1280',
+      'Mic lives in mobile dock (≤768); voice overlay exercised on phone/tablet',
+    )
+    await preparePage(page)
+    await page.goto('/dashboard')
+    const mic = page.getByRole('button', { name: /voice input/i })
+    await expect(mic).toBeVisible()
+    await mic.click()
+    await expect(page.locator('.voice-overlay.open')).toBeVisible()
+    await assertBackdropFilter(page, '.voice-overlay')
+  })
+
+  test('Onboarding overlay keeps backdrop-filter (.onboarding-overlay)', async ({ page }) => {
+    await preparePage(page, { onboarded: false })
+    await page.goto('/')
+    await expect(page.locator('.onboarding-overlay')).toBeVisible()
+    await assertBackdropFilter(page, '.onboarding-overlay')
   })
 })

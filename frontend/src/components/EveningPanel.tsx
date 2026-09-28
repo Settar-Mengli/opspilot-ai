@@ -52,6 +52,7 @@ export function EveningPanel({ open, assistantName, onClose }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="evening-panel-header">

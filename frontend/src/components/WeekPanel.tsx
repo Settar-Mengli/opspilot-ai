@@ -41,6 +41,7 @@ export function WeekPanel({ open, onClose }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
         onClick={e => e.stopPropagation()}
       >
         <div className="slide-panel-header">

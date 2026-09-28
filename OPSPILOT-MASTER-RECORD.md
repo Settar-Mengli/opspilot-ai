@@ -397,3 +397,92 @@ Grouped minor/patch per ecosystem (`applies-to: version-updates`); Playwright ve
 | `ca09658` | react 19.3.0 | 36342850128 | success |
 | `af6f3f2` | playwright 1.55.1 + pins | 36343753265 | success |
 | `91553f8` | dependabot.yml groups | 36346541375 | success |
+
+> **Footnote (B1.5b):** Frontend Checks later tightened to `npm audit --audit-level=moderate` without `--omit=dev` (commit `2d96289` / run 36371312437 on `b1.5b/desktop-layout`). See PART 6.
+
+## PART 6 — B1.5b desktop layout — 2026-09-27/28
+
+Branch: `b1.5b/desktop-layout`. Base: `main@5e75a50`.
+
+### Owner approvals
+
+| Gate | Quote | When | Notes |
+|------|-------|------|-------|
+| Mockups (E1) | `mockups approved` | **2026-09-27 21:43 UTC-4** | Defaults locked: Ask dock **380px**; rail Dashboard → All Items → Insights → Briefing / Connections → Settings; Items default = first urgent (critical→low); approved mockup styling/fonts/chrome; **no FUTURE (B5)**. **No deltas** vs plan defaults. |
+| Gallery (U9/E4) | `gallery approved` — 2026-09-27 (before run **36372236858**, compare run **36372705384**) | 2026-09-27 | 375/768 all pass; every 1280 diff attributed to approved layout / new desktop states. |
+
+Phase 2 did **not** start without mockup approval (C3 hold `0b9a0c5` after the quote).
+
+### What shipped
+
+- ≥1280 three-pane: `PrimaryRail` + content + `AskDock` 380px (`frontend/src/styles/desktop.css`, import last).
+- Ask dual-mode: docked `<aside>` ≥1280 / modal `AskPanel` + `useOverlay` &lt;1280; shared App thread; Ctrl/Cmd+K; Escape does not close dock; resize 1280↔1024 thread e2e; `useMinWidth` first-render vitest (no flash).
+- All Items list+detail ≥1280; default first urgent.
+- Design-reference mockups 11–16 + README.
+- NB overlay/blur e2e coverage; Frontend Checks `npm audit --audit-level=moderate` (no `--omit=dev`).
+- D-026 addendum; architecture CURRENT; ROADMAP; CHANGELOG; runbook new states.
+
+### B15B_DESKTOP_HOLD
+
+| | |
+|--|--|
+| Why | Keep every Phase 2 push green while 1280 pixels change; **375/768 screenshots stayed fully enforced**. |
+| Introduced | C3 `0b9a0c5` (run **36367109568**) — CI UI Tests `env: B15B_DESKTOP_HOLD=1`; `visual.spec.ts` skip only chromium-1280 `toHaveScreenshot`. |
+| Covered SHAs | `0b9a0c5` … `faf1a81` (C3–C10), including fix-forward after red layout SHAs. |
+| Removed | C11 `f2458fa` (run **36374581194**) together with refreshed `*-chromium-1280-linux.png` only. **E11:** 0 matches in hold implementation paths: `git grep -n B15B_DESKTOP_HOLD -- .github frontend` → empty; historical mentions in docs remain by design. UI Tests log shows 1280 visual states **executed** (e.g. dashboard, items-split, ask-docked-empty). |
+
+### E2 deviation
+
+Plan E2 asked every `desktop.css` rule inside `@media (min-width: 1280px)`. B1.5b ships these **outside** that MQ — the only permitted exceptions (also in D-026 addendum):
+
+| Rule | Why | ≤1279 visual effect |
+|------|-----|---------------------|
+| `.skip-link` / `.skip-link:focus` | Keyboard accessibility at all widths; off-screen until focused (`left: -9999px`). | None (off-screen until focus). |
+| `.app-center` | Neutral flex wrapper; the wrapper exists in the DOM at all widths. Root cause of `1647e04` 375/768 screenshot fails when flex lived only inside the MQ; fixed in `ec45585`. | None vs main (wrapper is layout-neutral). |
+| `.desk-rail` / `.desk-ask { display: none }` | Safety defaults if chrome were ever present in the DOM below 1280. **Primary strategy is JS mounting** (`1253208`: rail/Ask mount only when `useMinWidth(1280)`). | None (unmounted below 1280). |
+
+**Proof:** 0 changed 375/768 PNGs vs `main@5e75a50` (gallery before **36372236858** / compare **36372705384** — 375/768 all pass; C11 UI Tests **36374581194** and C12 tip **36375183527** enforce 375/768).
+
+### Non-blocking follow-ups (owner batch)
+
+| ID | Item | Owner batch |
+|----|------|-------------|
+| NB-3 | Connections modal: dialog ARIA (`role="dialog"`) + `tabIndex={-1}` (or migrate to `useOverlay`) | Next UI-touching batch |
+| NB-4 | All Items: user-visible error state when triage/`getTriage` fails | Next UI-touching batch |
+
+### Red SHAs during hold (fix-forward)
+
+| SHA | Run | Root cause | Fixed by |
+|-----|-----|------------|----------|
+| `4f822c5` | 36367847525 | C4 hid `.ask-panel-overlay` @≥1280 while Ask still modal → 1280 e2e (Ask invisible). **No** 375/768 screenshot fails. | Dual-mode in `1647e04` |
+| `1647e04` | 36368752355 | `.app-center` flex only inside desktop MQ broke ≤1279 layout → **many 375/768 `toHaveScreenshot` fails** (caught because hold never skipped mobile/tablet). Dual Ask input class collisions. | `ec45585` (flex outside MQ + `.desk-ask-input`) |
+| `ec45585` | 36369715396 | AskDock always mounted (`display:none`) duplicated thread DOM → Playwright strict-mode / hidden text (no new 375/768 pixel diffs). | `1253208` (mount rail/Ask only ≥1280) |
+
+### Per-commit CI (push runs)
+
+| SHA | Message | Run id | Result |
+|-----|---------|--------|--------|
+| `1f61b6f` | docs: commit DEP-1 / B1.5b pre-audit | 36365785871 | success |
+| `204f047` | docs(design): desktop mockups 11–16 | 36366378408 | success |
+| `0b9a0c5` | temporary B15B_DESKTOP_HOLD | 36367109568 | success |
+| `4f822c5` | desktop.css three-pane | 36367847525 | failure (fix-forward) |
+| `1647e04` | rail, Ask dual-mode, Items split | 36368752355 | failure (fix-forward) |
+| `ec45585` | restore ≤1279 flex / dual Ask inputs | 36369715396 | failure (fix-forward) |
+| `1253208` | mount rail/Ask only ≥1280 | 36370790200 | success |
+| `2d96289` | npm audit moderate without omit=dev | 36371312437 | success |
+| `faf1a81` | 1280 desktop visual states under hold | 36371768682 | success |
+| `f2458fa` | refresh 1280 baselines; remove hold | 36374581194 | success |
+| `21ec408` | PART 6 docs | 36375183527 | success |
+
+### Live smoke (E10)
+
+```powershell
+cd C:\Dev\opspilot-ai\frontend
+npm ci
+npm run build
+npm run preview -- --host 127.0.0.1 --port 4173
+# Browser 1280/1440: three-pane; 375/768: no rail/dock Ask
+# E11: 0 matches in hold implementation paths:
+#   git grep -n B15B_DESKTOP_HOLD -- .github frontend  → empty
+#   (historical mentions in docs remain by design)
+```

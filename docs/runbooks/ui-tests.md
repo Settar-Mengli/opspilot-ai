@@ -79,3 +79,9 @@ Mutation proof (must stay ≫ 3× largest tol 26):
 |----------|--------|--------------------|
 | `.nav-gear` color only | **36294854406** | 146 |
 | `.top-nav` 1px border-color | **36294859777** | 1280 |
+
+## B1.5b desktop visual states
+
+New chromium-1280-only screenshots (375/768 N/A): `items-split`, `ask-docked-empty`, `ask-docked-messages`, `settings-rail-active`, `overlays-over-layout`. Existing 1280 states refreshed for three-pane chrome. **375/768 baselines and `MAX_DIFF_PIXELS` unchanged** in B1.5b.
+
+Temporary **`B15B_DESKTOP_HOLD`** (CI UI Tests only) skipped chromium-1280 `toHaveScreenshot` from C3 `0b9a0c5` through C10 `faf1a81` while layout landed; **removed** in C11 `f2458fa` (E11: 0 matches in hold implementation paths: `git grep -n B15B_DESKTOP_HOLD -- .github frontend` → empty; historical mentions in docs remain by design; 1280 visuals executed). Hold did **not** skip 375/768 screenshots — those stayed enforced and caught `1647e04` mobile regressions.

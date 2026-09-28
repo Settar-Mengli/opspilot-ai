@@ -26,6 +26,7 @@ export function NotifyPanel({ open, notifications, assistantName, onClose }: Pro
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
+        tabIndex={-1}
       hidden={!open}
     >
       <div className="notify-head" id={titleId}>

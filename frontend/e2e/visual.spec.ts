@@ -81,10 +81,12 @@ test.describe('visual baselines', () => {
     await page.goto('/dashboard')
     await settle(page)
     await page.getByRole('button', { name: /just ask me/i }).click()
-    const input = page.locator('.ask-panel-input')
+    const input = page.locator('.ask-panel-input:visible, .desk-ask-input:visible').first()
     await input.fill('What needs attention?')
-    await page.locator('.ask-panel-send').click()
-    await expect(page.getByText(/Checkout confirm is the priority/i)).toBeVisible()
+    await page.locator('.ask-panel-send:visible').first().click()
+    await expect(
+      page.locator('.ask-panel:visible, .desk-ask:visible').getByText(/Checkout confirm is the priority/i),
+    ).toBeVisible()
     await settle(page)
     await expect(page).toHaveScreenshot('ask-with-messages.png', screenshotOpts('ask-with-messages'))
   })
@@ -169,10 +171,12 @@ test.describe('visual baselines', () => {
     await page.goto('/dashboard')
     await settle(page)
     await page.getByRole('button', { name: /just ask me/i }).click()
-    const input = page.locator('.ask-panel-input')
+    const input = page.locator('.ask-panel-input:visible, .desk-ask-input:visible').first()
     await input.fill('Hello')
-    await page.locator('.ask-panel-send').click()
-    await expect(page.getByText(/Ask fixture error|500/i).first()).toBeVisible()
+    await page.locator('.ask-panel-send:visible').first().click()
+    await expect(
+      page.locator('.ask-panel:visible, .desk-ask:visible').getByText(/Ask fixture error|500/i),
+    ).toBeVisible()
     await settle(page)
     await expect(page).toHaveScreenshot('ask-error.png', screenshotOpts('ask-error'))
   })
@@ -203,5 +207,65 @@ test.describe('visual baselines', () => {
     })
     await settle(page)
     await expect(page).toHaveScreenshot('evening-error.png', screenshotOpts('evening-error'))
+  })
+})
+
+/** B1.5b desktop chrome states — chromium-1280 only. */
+test.describe('desktop visual states ≥1280', () => {
+  test.beforeEach(() => {
+    test.skip(
+      test.info().project.name !== 'chromium-1280',
+      'desktop visual states are chromium-1280 only',
+    )
+  })
+
+  test('items-split', async ({ page }) => {
+    await preparePage(page)
+    await page.goto('/items')
+    await settle(page)
+    await expect(page.locator('.items-split')).toBeVisible()
+    await expect(page.locator('.fp-row.is-selected')).toBeVisible()
+    await expect(page).toHaveScreenshot('items-split.png', screenshotOpts('items-split'))
+  })
+
+  test('ask-docked-empty', async ({ page }) => {
+    await preparePage(page)
+    await page.goto('/dashboard')
+    await settle(page)
+    await expect(page.locator('.desk-ask-input')).toBeVisible()
+    await expect(page).toHaveScreenshot('ask-docked-empty.png', screenshotOpts('ask-docked-empty'))
+  })
+
+  test('ask-docked-messages', async ({ page }) => {
+    await preparePage(page)
+    await page.goto('/dashboard')
+    await settle(page)
+    const input = page.locator('.desk-ask-input')
+    await input.fill('What needs attention?')
+    await page.locator('.desk-ask .ask-panel-send').click()
+    await expect(page.locator('.desk-ask').getByText(/Checkout confirm is the priority/i)).toBeVisible()
+    await settle(page)
+    await expect(page).toHaveScreenshot('ask-docked-messages.png', screenshotOpts('ask-docked-messages'))
+  })
+
+  test('settings-rail-active', async ({ page }) => {
+    await preparePage(page)
+    await page.goto('/settings')
+    await settle(page)
+    await expect(
+      page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Settings' }),
+    ).toHaveAttribute('aria-current', 'page')
+    await expect(page).toHaveScreenshot('settings-rail-active.png', screenshotOpts('settings-rail-active'))
+  })
+
+  test('overlays-over-layout', async ({ page }) => {
+    await preparePage(page)
+    await page.goto('/dashboard')
+    await settle(page)
+    await page.locator('.dash-hero').click()
+    await expect(page.locator('.slide-panel').first()).toBeVisible()
+    await expect(page.locator('aside.desk-ask')).toBeVisible()
+    await settle(page)
+    await expect(page).toHaveScreenshot('overlays-over-layout.png', screenshotOpts('overlays-over-layout'))
   })
 })
