@@ -134,6 +134,16 @@ function App() {
       .catch(() => setObservations([]))
   }, [])
 
+  // When the viewport crosses into desktop, close modal Ask and focus the dock (same thread).
+  const [desktopForAsk, setDesktopForAsk] = useState(isDesktop)
+  if (isDesktop !== desktopForAsk) {
+    setDesktopForAsk(isDesktop)
+    if (isDesktop && askOpen) {
+      setAskOpen(false)
+      setAskFocusToken((t) => t + 1)
+    }
+  }
+
   if (userName === null || !hasChosenAssistant) {
     return (
       <Onboarding

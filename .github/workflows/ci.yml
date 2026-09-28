@@ -167,8 +167,6 @@ jobs:
         run: npx playwright test
         env:
           CI: "true"
-          # Temporary B1.5b: skip chromium-1280 toHaveScreenshot only (375/768 enforced).
-          B15B_DESKTOP_HOLD: "1"
 
       - name: Upload Playwright report
         if: failure()

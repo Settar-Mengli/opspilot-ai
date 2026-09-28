@@ -68,6 +68,40 @@ test.describe('desktop layout ≥1280', () => {
     await expect(page.locator('.items-detail-pane')).toBeVisible()
     await expect(page.locator('.fp-row.is-selected')).toBeVisible()
   })
+
+  test('Ask thread survives 1280→1024→1280 with one surface and focus', async ({ page }) => {
+    await preparePage(page)
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.goto('/dashboard')
+    await settle(page)
+
+    await expect(page.locator('aside.desk-ask')).toBeVisible()
+    await expect(page.locator('.ask-panel')).toHaveCount(0)
+
+    const dockInput = page.locator('.desk-ask-input')
+    await dockInput.fill('Status?')
+    await page.locator('.desk-ask .ask-panel-send').click()
+    const reply = /Checkout confirm is the priority/i
+    await expect(page.locator('.desk-ask').getByText(reply)).toBeVisible()
+
+    await page.setViewportSize({ width: 1024, height: 800 })
+    await expect(page.locator('aside.desk-ask')).toHaveCount(0)
+    await expect(page.locator('.ask-panel')).toHaveCount(0)
+
+    await page.getByRole('button', { name: /just ask me/i }).click()
+    const modal = page.locator('.ask-panel')
+    await expect(modal).toBeVisible()
+    await expect(modal.getByText(reply)).toBeVisible()
+    await expect(page.locator('aside.desk-ask')).toHaveCount(0)
+    await expect(page.locator('.ask-panel-input')).toBeFocused()
+
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await expect(page.locator('.ask-panel')).toHaveCount(0)
+    await expect(page.locator('aside.desk-ask')).toBeVisible()
+    await expect(page.locator('.desk-ask').getByText(reply)).toBeVisible()
+    await expect(page.locator('.desk-ask-input')).toBeFocused()
+    await expect(page.locator('.ask-panel-input')).toHaveCount(0)
+  })
 })
 
 test.describe('docked Ask hidden below 1280', () => {
