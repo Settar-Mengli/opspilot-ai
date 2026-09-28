@@ -48,7 +48,9 @@ test.describe('e2e flows', () => {
     const input = page.locator('.ask-panel-input:visible, .desk-ask-input:visible').first()
     await input.fill('Status?')
     await page.locator('.ask-panel-send:visible').first().click()
-    await expect(page.getByText(/Checkout confirm is the priority/i)).toBeVisible()
+    await expect(
+      page.locator('.ask-panel:visible, .desk-ask:visible').getByText(/Checkout confirm is the priority/i),
+    ).toBeVisible()
   })
 
   test('5 Ctrl/Cmd+K opens Ask', async ({ page }) => {
@@ -82,7 +84,7 @@ test.describe('e2e flows', () => {
     await preparePage(page)
     await page.goto('/briefing')
     await settle(page)
-    await expect(page.getByText(/briefing|checkout|Focus/i).first()).toBeVisible()
+    await expect(page.locator('main').getByText(/briefing|checkout|Focus/i).first()).toBeVisible()
   })
 
   test('9 Evening open', async ({ page }) => {

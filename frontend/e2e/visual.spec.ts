@@ -98,7 +98,9 @@ test.describe('visual baselines', () => {
     const input = page.locator('.ask-panel-input:visible, .desk-ask-input:visible').first()
     await input.fill('What needs attention?')
     await page.locator('.ask-panel-send:visible').first().click()
-    await expect(page.getByText(/Checkout confirm is the priority/i)).toBeVisible()
+    await expect(
+      page.locator('.ask-panel:visible, .desk-ask:visible').getByText(/Checkout confirm is the priority/i),
+    ).toBeVisible()
     await settle(page)
     await expect(page).toHaveScreenshot('ask-with-messages.png', screenshotOpts('ask-with-messages'))
   })
@@ -186,7 +188,9 @@ test.describe('visual baselines', () => {
     const input = page.locator('.ask-panel-input:visible, .desk-ask-input:visible').first()
     await input.fill('Hello')
     await page.locator('.ask-panel-send:visible').first().click()
-    await expect(page.getByText(/Ask fixture error|500/i).first()).toBeVisible()
+    await expect(
+      page.locator('.ask-panel:visible, .desk-ask:visible').getByText(/Ask fixture error|500/i),
+    ).toBeVisible()
     await settle(page)
     await expect(page).toHaveScreenshot('ask-error.png', screenshotOpts('ask-error'))
   })

@@ -160,7 +160,7 @@ function App() {
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
-      <PrimaryRail inert={!isDesktop} />
+      {isDesktop && <PrimaryRail />}
 
       <div className="app-center">
         <header className="top-nav">
@@ -224,12 +224,13 @@ function App() {
         </main>
       </div>
 
-      <AskDock
-        {...askThread}
-        inert={!isDesktop}
-        inputRef={dockInputRef}
-        focusToken={askFocusToken}
-      />
+      {isDesktop && (
+        <AskDock
+          {...askThread}
+          inputRef={dockInputRef}
+          focusToken={askFocusToken}
+        />
+      )}
 
       <MobileDock
         assistantName={assistantName}

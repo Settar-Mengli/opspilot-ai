@@ -81,6 +81,6 @@ test.describe('docked Ask hidden below 1280', () => {
     await settle(page)
 
     await expect(page.getByRole('navigation', { name: 'Primary' })).toHaveCount(0)
-    await expect(page.locator('aside.desk-ask')).toBeHidden()
+    await expect(page.locator('aside.desk-ask')).toHaveCount(0)
   })
 })

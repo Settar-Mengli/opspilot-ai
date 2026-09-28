@@ -113,13 +113,11 @@ export function AskThreadBody({
   )
 }
 
-interface DockProps extends AskThreadProps {
-  inert?: boolean
-}
+type DockProps = AskThreadProps
 
-export function AskDock({ assistantName, inert = false, ...thread }: DockProps) {
+export function AskDock({ assistantName, ...thread }: DockProps) {
   return (
-    <aside className="desk-ask" aria-label="Ask" inert={inert || undefined}>
+    <aside className="desk-ask" aria-label="Ask">
       <div className="desk-ask-header">
         <div className="desk-ask-orb" aria-hidden>
           {assistantName.charAt(0).toUpperCase()}

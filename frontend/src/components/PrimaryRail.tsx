@@ -20,10 +20,6 @@ const BOTTOM = [
   { to: '/settings', label: 'Settings', icon: Settings },
 ] as const
 
-interface Props {
-  inert?: boolean
-}
-
 function RailLink({
   to,
   label,
@@ -47,9 +43,9 @@ function RailLink({
   )
 }
 
-export function PrimaryRail({ inert = false }: Props) {
+export function PrimaryRail() {
   return (
-    <nav className="desk-rail" aria-label="Primary" inert={inert || undefined}>
+    <nav className="desk-rail" aria-label="Primary">
       <div className="desk-rail-group">
         {TOP.map((item) => (
           <RailLink key={item.to} {...item} />
