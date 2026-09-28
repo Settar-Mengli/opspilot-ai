@@ -10,7 +10,9 @@ These are the **approved visual targets** for the OpsPilot redesign. They are st
 4. Confirm three-pane chrome: **icon rail (left) + content + Ask dock (380px right)**.
 5. Reply **`mockups approved`** (with any changes to Ask width 360/380/400, rail order, or Items default selection) before Phase 2 app code.
 
-Shared mockup-only sheet: [`_desktop-mockup.css`](_desktop-mockup.css) (not imported by the app). Production `desktop.css` lands in Phase 2.
+Shared mockup-only sheet: [`_desktop-mockup.css`](_desktop-mockup.css) (not imported by the app). Production layout: [`frontend/src/styles/desktop.css`](../src/styles/desktop.css) (imported last from `index.css`).
+
+**Owner approvals (B1.5b):** `mockups approved` — 2026-09-27 21:43 UTC-4 (defaults locked: Ask 380px; rail Dashboard→All Items→Insights→Briefing / Connections→Settings; Items first urgent; no FUTURE B5). `gallery approved` — 2026-09-27 (before run 36372236858, compare 36372705384).
 
 ## Files
 

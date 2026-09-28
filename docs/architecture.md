@@ -21,7 +21,9 @@ Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs
 
 Verified on `main` (B1 merge `c5de149`): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, `/api/v1` with envelope, in-process API pipeline (Postgres-only persist), Settings GET-only (`provider`/`model`/`api_key_set` — no key preview), FE on `/api/v1`, coverage fail-under **72**, Node 24 / Python 3.13 / uv.
 
-**B1.5a (branch):** Playwright visual/e2e/axe safety net with container-only `-linux` baselines; CSS partials under `frontend/src/styles/`; shared `useOverlay` overlay lifecycle; U4 hygiene fixes; D-026/D-027. Desktop three-pane remains **TARGET B1.5b**.
+**B1.5a:** Playwright visual/e2e/axe safety net with container-only `-linux` baselines; CSS partials under `frontend/src/styles/`; shared `useOverlay` overlay lifecycle; U4 hygiene fixes; D-026/D-027.
+
+**B1.5b (CURRENT):** ≥1280 three-pane shell (`desktop.css` imported last): primary icon rail, content column, docked Ask 380px; Ask dual-mode (dock ≥1280 / modal &lt;1280); All Items list+detail; landmarks (skip link, `nav[aria-label=Primary]`, Ask `aside`).
 
 ### Endpoints (CURRENT) — `/api/v1`
 
@@ -52,8 +54,11 @@ Notable: **no** `PATCH` settings. Pipeline runs **in-process** (no CLI subproces
 | `src/opspilot/pipeline/` | Daily ops orchestration (`run_daily_ops.py`) |
 | `src/opspilot/adapters/` | rule_based, claude, conversation, evening, insights, briefing, factory, base |
 | `frontend/src/api/` | `/api/v1` client only |
-| `frontend/src/styles/` | CSS partials (`tokens`, `shell`, `mobile`, `overlays`, `dashboard`, `pages`) |
+| `frontend/src/styles/` | CSS partials (`tokens`, `shell`, `mobile`, `desktop`, `overlays`, `dashboard`, `pages`) |
+| `frontend/src/components/PrimaryRail.tsx` | ≥1280 primary nav rail |
+| `frontend/src/components/AskDock.tsx` | Docked Ask + shared `AskThreadBody` |
 | `frontend/src/hooks/useOverlay.ts` | Shared overlay lifecycle (X8 start) |
+| `frontend/src/hooks/useMinWidth.ts` | Ask dual-mode breakpoint (first-render matchMedia) |
 | `frontend/e2e/` | Playwright visual/e2e/axe + font fixtures |
 | `data/raw/` | Sample JSON inputs (API/CLI read) |
 | `data/output/`, `data/history/` | CLI `--output` export only (not API SoT) |

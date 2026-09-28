@@ -110,8 +110,10 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B1.5b — Desktop three-pane layout
 
-- **Goal:** ≥1280 three-pane (rail + content + docked Ask) from `frontend/design-reference/` (D-026).
-- **Scope:** Desktop layout only; phone ≤768 stays pixel-locked except owner-approved changes; agent Ask chrome lands here for B5 to finish X8 agent surfaces.
+- **Status:** Implemented on `b1.5b/desktop-layout` (PR open; not merged).
+- **Goal:** ≥1280 three-pane (rail + content + docked Ask 380px) from `frontend/design-reference/` (D-026).
+- **Scope:** Desktop layout only; phone ≤768 stays pixel-locked except owner-approved changes; agent Ask chrome lands here for B5 to finish X8 agent surfaces. FUTURE (B5) streaming/tools/HITL not built.
+- **Exit:** Mockups + gallery approved; 1280 baselines refreshed; `B15B_DESKTOP_HOLD` removed (E11); PART 6.
 - **Deps:** B1.5a · **Size:** L · **Metric:** Approved desktop mocks shipped with baseline updates
 
 ### B2 — LLM gateway + traces (M2)

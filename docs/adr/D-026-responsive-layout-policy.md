@@ -10,7 +10,8 @@ The Command Center UI must stay calm and predictable across phone, tablet, and d
 
 ## Decision
 
-- **U1/U3/U6/U7 (B1.5b):** At ≥1280, three-pane (icon nav rail + content + docked Ask); Settings in rail; gear stays → `/connections` labeled Connections; mobile footer Settings remains.
+- **U1/U3/U6/U7 (B1.5b):** At ≥1280, three-pane (icon nav rail + content + docked Ask **380px**); Settings in rail (bottom group with Connections); gear stays → `/connections` labeled Connections; mobile footer Settings remains. Rail order (top): Dashboard → All Items → Insights → Briefing; (bottom): Connections → Settings. All Items ≥1280 is list+detail with default selection = first item in urgency order critical→high→medium→low.
+- **Ask dual-mode (B1.5b):** ≥1280 docked `<aside aria-label="Ask">` (no `useOverlay`, not on Escape stack); &lt;1280 modal Ask via `useOverlay`. Shared App-level thread state. Ctrl/Cmd+K focuses dock input ≥1280 / opens modal &lt;1280. Crossing into desktop while modal is open closes modal state and focuses the dock.
 - **U2:** phone ≤768 pixel-identical to CURRENT at B1.5a start (except owner-approved U4); tablet 769–1279 = single centered column; wide ≥1280 = three-pane (B1.5b).
 - **U4/U5:** Mobile visual changes only with owner approval (U4 list + Sample badges until B4 + C16 token aliases). Behavior-only changes OK at 0 screenshot diff.
 - **U8:** B1.5a = safety net + hygiene; B1.5b = desktop from approved static mocks in `frontend/design-reference/`.
