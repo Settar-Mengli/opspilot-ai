@@ -10,8 +10,8 @@ export interface AskThreadProps {
   onInputChange: (value: string) => void
   onSubmit: () => void
   inputRef?: React.RefObject<HTMLInputElement | null>
-  /** When true, focus the input after mount (docked Ctrl/Cmd+K). */
   focusToken?: number
+  variant?: 'modal' | 'dock'
 }
 
 export function AskThreadBody({
@@ -24,6 +24,7 @@ export function AskThreadBody({
   onSubmit,
   inputRef,
   focusToken = 0,
+  variant = 'modal',
 }: AskThreadProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const localInputRef = useRef<HTMLInputElement>(null)
@@ -49,16 +50,22 @@ export function AskThreadBody({
 
   return (
     <>
-      <div className="ask-panel-messages desk-ask-body">
+      <div className={variant === 'dock' ? 'desk-ask-body' : 'ask-panel-messages'}>
         {messages.length === 0 && !loading && (
-          <div className="desk-ask-empty">
-            <div className="desk-ask-orb" aria-hidden>
-              {assistantName.charAt(0).toUpperCase()}
-            </div>
-            <p>
-              I have visibility into your current triage queue. Ask me about priorities,
-              patterns, or what to focus on.
-            </p>
+          <div className={variant === 'dock' ? 'desk-ask-empty' : 'ask-panel-empty'}>
+            {variant === 'dock' ? (
+              <>
+                <div className="desk-ask-orb" aria-hidden>
+                  {assistantName.charAt(0).toUpperCase()}
+                </div>
+                <p>
+                  I have visibility into your current triage queue. Ask me about priorities,
+                  patterns, or what to focus on.
+                </p>
+              </>
+            ) : (
+              'I have visibility into your current triage queue. Ask me about priorities, patterns, or what to focus on.'
+            )}
           </div>
         )}
         {messages.map((msg) => (
@@ -78,10 +85,10 @@ export function AskThreadBody({
         {error && <div className="ask-panel-error">{error}</div>}
         <div ref={messagesEndRef} />
       </div>
-      <div className="desk-ask-footer ask-panel-input-row">
+      <div className={variant === 'dock' ? 'desk-ask-footer' : 'ask-panel-input-row'}>
         <input
           ref={ref}
-          className="ask-panel-input desk-ask-input"
+          className={variant === 'dock' ? 'desk-ask-input' : 'ask-panel-input'}
           placeholder={`Ask ${assistantName} anything…`}
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
@@ -122,7 +129,7 @@ export function AskDock({ assistantName, inert = false, ...thread }: DockProps) 
           <div className="desk-ask-sub">Always available</div>
         </div>
       </div>
-      <AskThreadBody assistantName={assistantName} {...thread} />
+      <AskThreadBody assistantName={assistantName} variant="dock" {...thread} />
     </aside>
   )
 }

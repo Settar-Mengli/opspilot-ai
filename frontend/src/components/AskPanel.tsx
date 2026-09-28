@@ -68,6 +68,7 @@ export function AskPanel({
           onSubmit={onSubmit}
           inputRef={inputRef}
           focusToken={open ? 1 : 0}
+          variant="modal"
         />
       </div>
     </div>

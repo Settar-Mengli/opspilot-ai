@@ -1,6 +1,29 @@
 /* B1.5b desktop layout.
-   New chrome defaults to hidden; layout/reveal rules live only in min-width: 1280px.
-   Do not edit mobile.css or existing base rules for ≤1279. */
+   New chrome defaults to hidden; layout/reveal rules live mostly in min-width: 1280px.
+   Structural .app-center / .skip-link apply at all widths so ≤1279 flex layout stays pixel-stable.
+*/
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  z-index: 200;
+}
+.skip-link:focus {
+  left: 16px;
+  top: 8px;
+  background: var(--accent);
+  color: var(--text-1);
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.app-center {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
 
 .desk-rail,
 .desk-ask {
@@ -8,19 +31,6 @@
 }
 
 @media (min-width: 1280px) {
-  .skip-link {
-    position: absolute;
-    left: -9999px;
-    z-index: 200;
-  }
-  .skip-link:focus {
-    left: 16px;
-    top: 8px;
-    background: var(--accent);
-    color: var(--text-1);
-    padding: 8px 12px;
-    border-radius: 6px;
-  }
 
   .app-shell {
     display: grid;
@@ -98,10 +108,6 @@
   .app-center {
     grid-column: 2;
     grid-row: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 0;
     border-right: 1px solid var(--border);
   }
 
@@ -215,8 +221,24 @@
     flex-shrink: 0;
   }
 
-  .desk-ask-footer .ask-panel-input {
+  .desk-ask-input {
     flex: 1;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    border-radius: 8px;
+    color: var(--text-1);
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: var(--font);
+    outline: none;
+  }
+
+  .desk-ask-input:focus {
+    border-color: var(--accent-border);
+  }
+
+  .desk-ask-input::placeholder {
+    color: var(--text-3);
   }
 
   .items-split {
