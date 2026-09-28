@@ -144,9 +144,9 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-      - name: npm audit (high+)
+      - name: npm audit (moderate+)
         working-directory: frontend
-        run: npm audit --omit=dev --audit-level=high
+        run: npm audit --audit-level=moderate
 
   ui-tests:
     name: UI Tests
