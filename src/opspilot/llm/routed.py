@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import time
 from collections.abc import Sequence
+from dataclasses import replace
 
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.orm import Session
@@ -13,6 +14,7 @@ from opspilot.llm.budgets import add_tokens, tokens_exhausted, try_consume_reque
 from opspilot.llm.circuit import CircuitBreaker
 from opspilot.llm.errors import LlmPolicyDenied, LlmProvidersExhausted, LlmSchemaError
 from opspilot.llm.gateway import AttemptRecorder, default_observe_attempt
+from opspilot.llm.meta_redact import parse_failure_meta
 from opspilot.llm.policy import llm_allowed
 from opspilot.llm.prompts.versioning import prompt_version_sha256
 from opspilot.llm.providers.base import LlmProvider
@@ -136,8 +138,8 @@ class BudgetAwareGateway:
                 max_tokens=max_tokens,
                 model=model,
             )
-            self._record(task=task, provider=provider.name, result=attempt, prompt_version=prompt_version)
             if attempt.status is not AttemptStatus.SUCCESS:
+                self._record(task=task, provider=provider.name, result=attempt, prompt_version=prompt_version)
                 if attempt.status in {AttemptStatus.TIMEOUT, AttemptStatus.ERROR, AttemptStatus.RATE_LIMITED}:
                     self._circuit.trip(provider.name)
                 last_error = attempt.error_code or attempt.status.value
@@ -150,8 +152,23 @@ class BudgetAwareGateway:
             )
             parsed, errors = self._try_parse(schema, attempt.text)
             if parsed is not None:
+                self._record(task=task, provider=provider.name, result=attempt, prompt_version=prompt_version)
                 self._circuit.reset(provider.name)
                 return parsed
+
+            # HTTP success but schema/parse failure — record with parse meta.
+            failed = replace(
+                attempt,
+                meta={
+                    **dict(attempt.meta),
+                    **parse_failure_meta(
+                        error_class="schema_validation",
+                        validation_error=errors,
+                        raw_output=attempt.text,
+                    ),
+                },
+            )
+            self._record(task=task, provider=provider.name, result=failed, prompt_version=prompt_version)
 
             repair_messages = [
                 *messages,
@@ -176,8 +193,8 @@ class BudgetAwareGateway:
                 model=model,
                 repair_hint=errors,
             )
-            self._record(task=task, provider=provider.name, result=repair, prompt_version=repair_pv)
             if repair.status is not AttemptStatus.SUCCESS:
+                self._record(task=task, provider=provider.name, result=repair, prompt_version=repair_pv)
                 if repair.status in {AttemptStatus.TIMEOUT, AttemptStatus.ERROR, AttemptStatus.RATE_LIMITED}:
                     self._circuit.trip(provider.name)
                 last_error = repair.error_code or repair.status.value
@@ -190,8 +207,21 @@ class BudgetAwareGateway:
             )
             parsed_repair, repair_errors = self._try_parse(schema, repair.text)
             if parsed_repair is not None:
+                self._record(task=task, provider=provider.name, result=repair, prompt_version=repair_pv)
                 self._circuit.reset(provider.name)
                 return parsed_repair
+            repair_failed = replace(
+                repair,
+                meta={
+                    **dict(repair.meta),
+                    **parse_failure_meta(
+                        error_class="schema_validation",
+                        validation_error=repair_errors,
+                        raw_output=repair.text,
+                    ),
+                },
+            )
+            self._record(task=task, provider=provider.name, result=repair_failed, prompt_version=repair_pv)
             last_error = repair_errors
 
         raise LlmSchemaError(last_error or "schema validation failed")

@@ -69,3 +69,4 @@ class ProviderResult:
     error_code: str | None = None
     retry_after_s: float | None = None
     raw: dict[str, Any] = field(default_factory=dict)
+    meta: dict[str, Any] = field(default_factory=dict)

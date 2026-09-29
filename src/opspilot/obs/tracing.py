@@ -29,6 +29,7 @@ class LlmSpanAttrs:
     request_id: str | None = None
     error_code: str | None = None
     prompt_version: str | None = None
+    meta: dict[str, Any] | None = None
 
 
 def emit_llm_span(attrs: LlmSpanAttrs, *, extra: dict[str, Any] | None = None) -> None:
@@ -50,6 +51,8 @@ def emit_llm_span(attrs: LlmSpanAttrs, *, extra: dict[str, Any] | None = None) -
         payload["opspilot.error_code"] = attrs.error_code
     if attrs.prompt_version:
         payload["opspilot.prompt_version"] = attrs.prompt_version
+    if attrs.meta:
+        payload["opspilot.meta"] = attrs.meta
     if extra:
         payload.update(extra)
     logger.info("llm.span %s", json.dumps(payload, sort_keys=True, default=str))

@@ -10,6 +10,7 @@ from pydantic import BaseModel, ValidationError
 from sqlalchemy.orm import Session
 
 from opspilot.llm.errors import LlmPolicyDenied, LlmProvidersExhausted, LlmSchemaError
+from opspilot.llm.meta_redact import sanitize_meta
 from opspilot.llm.policy import llm_allowed
 from opspilot.llm.providers.base import LlmProvider
 from opspilot.llm.types import AttemptStatus, CompletionResult, Message, ProviderResult, StreamChunk, TaskName
@@ -56,6 +57,7 @@ def default_observe_attempt(
         request_id=request_id,
         error_code=result.error_code,
         prompt_version=prompt_version,
+        meta=sanitize_meta(result.meta) or None,
     )
     emit_llm_span(attrs)
     append_llm_jsonl(attrs)
@@ -241,7 +243,7 @@ def session_attempt_recorder(session: Session) -> AttemptRecorder:
             request_id=request_id,
             prompt_version=prompt_version,
             error_code=result.error_code,
-            meta={},
+            meta=sanitize_meta(result.meta),
         )
 
     return _record

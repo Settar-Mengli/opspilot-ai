@@ -11,6 +11,7 @@ import httpx
 from pydantic import BaseModel
 
 from opspilot.llm.capabilities import JsonMode, json_mode_for
+from opspilot.llm.meta_redact import http_error_meta
 from opspilot.llm.providers.http import default_timeout, parse_retry_after
 from opspilot.llm.types import AttemptStatus, Message, ProviderResult, StreamChunk, TaskName
 
@@ -146,6 +147,7 @@ class GeminiProvider:
                 model=resolved,
                 error_code=f"http_{response.status_code}",
                 latency_ms=latency_ms,
+                meta=http_error_meta(status_code=response.status_code, body=response.text),
             )
 
         data = response.json()
