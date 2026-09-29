@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from opspilot.llm.gateway import session_attempt_recorder
@@ -42,6 +45,36 @@ def providers_or_empty() -> list[LlmProvider]:
     return build_providers()
 
 
+@contextmanager
+def llm_session_scope(session: Session | None = None) -> Iterator[Session | None]:
+    """Use injected session, or open a short-lived sync session from DATABASE_URL.
+
+    Yields None when no DB is available (caller must fall back to rules/soft).
+    """
+    if session is not None:
+        yield session
+        return
+    try:
+        from opspilot.persistence.db import create_engine, create_session_factory, get_database_url
+
+        engine = create_engine(get_database_url())
+        factory = create_session_factory(engine)
+        owned = factory()
+    except Exception:  # noqa: BLE001 — fail closed to soft/rules
+        logger.debug("llm_session_scope: no database session available", exc_info=True)
+        yield None
+        return
+    try:
+        yield owned
+        owned.commit()
+    except Exception:
+        owned.rollback()
+        raise
+    finally:
+        owned.close()
+        engine.dispose()
+
+
 def complete_prose(
     *,
     task: TaskName,
@@ -49,21 +82,58 @@ def complete_prose(
     user: str,
     max_tokens: int,
     session: Session | None = None,
+    request_id: str | None = None,
 ) -> CompletionResult | None:
-    """Run budget-aware complete; return None on policy/empty/exhaustion."""
+    """Run budget-aware complete; return None on policy/empty/exhaustion/no-session."""
     if not llm_allowed():
         return None
     providers = providers_or_empty()
     if not providers:
         return None
-    recorder = session_attempt_recorder(session) if session is not None else None
-    gw = BudgetAwareGateway(providers, session=session, recorder=recorder, observe=True)
-    try:
-        return gw.complete(
-            task=task,
-            messages=[Message(role="system", content=system), Message(role="user", content=user)],
-            max_tokens=max_tokens,
-        )
-    except Exception as exc:  # noqa: BLE001 — soft-200 at service boundary
-        logger.exception("LLM %s failed: %s", task, exc)
+    with llm_session_scope(session) as scoped:
+        if scoped is None:
+            return None
+        recorder = session_attempt_recorder(scoped)
+        gw = BudgetAwareGateway(providers, session=scoped, recorder=recorder, observe=True, request_id=request_id)
+        try:
+            return gw.complete(
+                task=task,
+                messages=[Message(role="system", content=system), Message(role="user", content=user)],
+                max_tokens=max_tokens,
+            )
+        except Exception as exc:  # noqa: BLE001 — soft-200 at service boundary
+            logger.exception("LLM %s failed: %s", task, exc)
+            return None
+
+
+def complete_structured[T: BaseModel](
+    *,
+    task: TaskName,
+    system: str,
+    user: str,
+    schema: type[T],
+    max_tokens: int,
+    session: Session | None = None,
+    request_id: str | None = None,
+) -> T | None:
+    """Budget-aware complete_json; None on deny/exhaustion."""
+    if not llm_allowed():
         return None
+    providers = providers_or_empty()
+    if not providers:
+        return None
+    with llm_session_scope(session) as scoped:
+        if scoped is None:
+            return None
+        recorder = session_attempt_recorder(scoped)
+        gw = BudgetAwareGateway(providers, session=scoped, recorder=recorder, observe=True, request_id=request_id)
+        try:
+            return gw.complete_json(
+                task=task,
+                messages=[Message(role="system", content=system), Message(role="user", content=user)],
+                schema=schema,
+                max_tokens=max_tokens,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("LLM %s structured failed: %s", task, exc)
+            return None

@@ -33,6 +33,7 @@ from opspilot.models.schemas import (
 from opspilot.nlp.action_extractor import extract_action_items
 from opspilot.nlp.briefing_generator import generate_daily_briefing
 from opspilot.nlp.response_drafter import draft_suggested_response
+from opspilot.services._llm import llm_session_scope
 from opspilot.utils.file_io import write_json_file, write_text_file
 from opspilot.utils.logging_utils import log_event
 
@@ -64,28 +65,36 @@ def run_pipeline(input_path: str, run_date: str, *, runs_root: Path | None = Non
         action_items = []
         suggested_responses = []
 
-        adapter = get_adapter()
-        for item in normalized_items:
-            triage = adapter.classify(item)
-            actions = extract_action_items(item)
-            response_text = draft_suggested_response(item, triage, actions)
-            triage_records.append(triage)
-            action_items.extend(actions)
-            suggested_responses.append(SuggestedResponse(work_item_id=item.id, suggested_response=response_text))
+        with llm_session_scope() as llm_session:
+            adapter = get_adapter(session=llm_session)
+            for item in normalized_items:
+                triage = adapter.classify(item)
+                actions = extract_action_items(item)
+                response_text = draft_suggested_response(item, triage, actions)
+                triage_records.append(triage)
+                action_items.extend(actions)
+                suggested_responses.append(SuggestedResponse(work_item_id=item.id, suggested_response=response_text))
 
-        run_id = generate_run_id(started_at)
-        briefing = generate_daily_briefing(
-            run_date,
-            triage_records,
-            action_items,
-            normalized_items,
-            current_run_id=run_id,
-            runs_root=runs_root,
-        )
-        triage_payload = [to_dict(record) for record in triage_records]
-        action_payload = [to_dict(action) for action in action_items]
-        response_payload = [to_dict(response) for response in suggested_responses]
-        ai_briefing = generate_ai_briefing(run_date, triage_records, action_items, normalized_items, briefing)
+            run_id = generate_run_id(started_at)
+            briefing = generate_daily_briefing(
+                run_date,
+                triage_records,
+                action_items,
+                normalized_items,
+                current_run_id=run_id,
+                runs_root=runs_root,
+            )
+            triage_payload = [to_dict(record) for record in triage_records]
+            action_payload = [to_dict(action) for action in action_items]
+            response_payload = [to_dict(response) for response in suggested_responses]
+            ai_briefing = generate_ai_briefing(
+                run_date,
+                triage_records,
+                action_items,
+                normalized_items,
+                briefing,
+                session=llm_session,
+            )
 
         finished_at = utc_now()
         duration_ms = int((finished_at - started_at).total_seconds() * 1000)

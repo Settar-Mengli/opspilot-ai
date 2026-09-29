@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from sqlalchemy.orm import Session
+
 from opspilot.llm.policy import llm_allowed
 from opspilot.services._llm import complete_prose, providers_or_empty
 
@@ -19,6 +21,8 @@ def generate_ai_briefing(
     action_items: list[Any],
     normalized_items: list[Any],
     fallback_briefing: str,
+    *,
+    session: Session | None = None,
 ) -> str:
     if not llm_allowed() or not providers_or_empty():
         return fallback_briefing
@@ -94,7 +98,7 @@ def generate_ai_briefing(
             f"Deadlines:\n{formatted_deadlines}\n"
             "Write the briefing."
         )
-        result = complete_prose(task="briefing", system=system, user=user, max_tokens=800, session=None)
+        result = complete_prose(task="briefing", system=system, user=user, max_tokens=800, session=session)
         if result is None or not result.text.strip():
             return fallback_briefing
         return result.text.strip()

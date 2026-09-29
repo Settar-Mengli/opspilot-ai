@@ -6,7 +6,7 @@
 2. Default providers: `INFERENCE_PROVIDER_ORDER` (Gemini → Groq → … → soft/rules). See [llm-providers.md](llm-providers.md).
 3. Anthropic: existing prepaid only; enable flag + allowlist + **token and USD** budget + USD/MTok rates; never default; never tests/CI; never visitor Ask.
 4. Fictional data only for demos and seeded mail.
-5. Quotas = VERIFY AT DECISION TIME (do not invent RPM/TPM). Unset budget env → remote deny for that provider.
+5. Quotas = VERIFY AT DECISION TIME (do not invent RPM/TPM). Unset/empty `OPSPILOT_BUDGET_*` → **deny** remote for that provider. **Every** remote path (ask, evening, insights, triage, briefing) goes through `BudgetAwareGateway` with a DB session; missing session → budget deny → soft/rules fallback. Bare `LlmGateway` is only for unit tests inside `opspilot.llm`.
 6. **Never print secrets** (`.env` values, tokens, keys).
 7. **X4:** Free tiers may train on prompts — minimize sensitive content; fictional data only.
 8. **`OPSPILOT_FORCE_RULES` / `OPSPILOT_LLM_DISABLE`:** honor via `llm_allowed()` at **all** call sites (B2). Tests/CI only for FORCE_RULES; never set FORCE_RULES in deploy.

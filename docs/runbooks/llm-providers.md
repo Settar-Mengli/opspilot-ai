@@ -22,10 +22,11 @@ Retired: `OPSPILOT_AI_API_KEY` / `OPSPILOT_AI_PROVIDER` / `OPSPILOT_AI_MODEL`.
 
 Per provider: `OPSPILOT_BUDGET_<PROVIDER>_REQ_DAY` and `_TOK_DAY`.
 
-- Unset/empty → **deny** remote for that provider (no invented defaults).
+- Unset/empty → **deny** remote for that provider (no invented defaults). Applies to **ask, evening, insights, triage, and briefing** — all use `BudgetAwareGateway` + DB session. No session → deny → soft/rules/template.
 - Atomic debit: `INSERT … ON CONFLICT DO NOTHING` then `UPDATE … WHERE req_count < :cap RETURNING …`.
 - Token cap reconciled **post-call** — may overshoot by ≤1 call (use 80% margin).
 - Budget day is **UTC**; Gemini dashboard RPD may be Pacific — document skew when setting caps.
+- `complete_json` repair attempts debit a **second** request against the same provider.
 
 ## Anthropic (D-023)
 

@@ -7,12 +7,9 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from opspilot.llm.errors import LlmSchemaError
-from opspilot.llm.gateway import LlmGateway, session_attempt_recorder
 from opspilot.llm.policy import llm_allowed
 from opspilot.llm.schemas.insights import InsightsPayload
-from opspilot.llm.types import Message
-from opspilot.services._llm import compact_triage_lines, providers_or_empty
+from opspilot.services._llm import compact_triage_lines, complete_structured, providers_or_empty
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +29,11 @@ def generate_insights(
     triage_records: list[dict[str, Any]] | None = None,
     *,
     session: Session | None = None,
+    request_id: str | None = None,
 ) -> dict[str, Any]:
     if not llm_allowed():
         return _fallback(_SOFT)
-    providers = providers_or_empty()
-    if not providers:
+    if not providers_or_empty():
         return _fallback(_SOFT_NO_PROVIDER)
 
     records = triage_records or []
@@ -45,20 +42,16 @@ def generate_insights(
         "(not per-item summaries). Return JSON only matching the schema. 1-5 insights."
     )
     user = compact_triage_lines(records, include_title=True)
-    recorder = session_attempt_recorder(session) if session is not None else None
-    # complete_json uses LlmGateway (repair once); budget debit is best-effort via first provider only in B2.
-    gw = LlmGateway(providers, recorder=recorder, observe=True)
-    try:
-        payload = gw.complete_json(
-            task="insights",
-            messages=[Message(role="system", content=system), Message(role="user", content=user)],
-            schema=InsightsPayload,
-            max_tokens=1200,
-        )
-    except LlmSchemaError:
-        return _fallback("I had trouble structuring my analysis. Please try refreshing.")
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("Insights service error: %s", exc)
+    payload = complete_structured(
+        task="insights",
+        system=system,
+        user=user,
+        schema=InsightsPayload,
+        max_tokens=1200,
+        session=session,
+        request_id=request_id,
+    )
+    if payload is None:
         return _fallback(_SOFT)
 
     return {

@@ -2,23 +2,33 @@
 
 from __future__ import annotations
 
+import json
 import time
 from collections.abc import Sequence
 
+from pydantic import BaseModel, ValidationError
 from sqlalchemy.orm import Session
 
 from opspilot.llm.budgets import add_tokens, tokens_exhausted, try_consume_request
 from opspilot.llm.circuit import CircuitBreaker
-from opspilot.llm.errors import LlmPolicyDenied, LlmProvidersExhausted
+from opspilot.llm.errors import LlmPolicyDenied, LlmProvidersExhausted, LlmSchemaError
 from opspilot.llm.gateway import AttemptRecorder, default_observe_attempt
 from opspilot.llm.policy import llm_allowed
 from opspilot.llm.providers.base import LlmProvider
 from opspilot.llm.routing import filter_by_circuit
 from opspilot.llm.types import AttemptStatus, CompletionResult, Message, ProviderResult, TaskName
 
+_REPAIR_SUFFIX = (
+    "Your previous JSON failed validation. Return corrected JSON only that matches the schema. "
+    "Validation errors:\n{errors}"
+)
+
 
 class BudgetAwareGateway:
-    """Try providers in order with per-attempt budget debit + circuit."""
+    """Try providers in order with per-attempt budget debit + circuit.
+
+    A missing Session is fail-closed (budget_denied); never skip budget checks.
+    """
 
     def __init__(
         self,
@@ -49,42 +59,26 @@ class BudgetAwareGateway:
     ) -> CompletionResult:
         if not llm_allowed():
             raise LlmPolicyDenied("remote LLM disabled by policy")
+        if self._session is None:
+            self._deny_no_session(task=task, model=model)
+            raise LlmProvidersExhausted("budget_denied_no_session")
 
         candidates = filter_by_circuit(self._providers, self._circuit)
         last_error: str | None = None
         for provider in candidates:
-            if self._session is not None:
-                if tokens_exhausted(self._session, provider=provider.name):
-                    self._record(
-                        task=task,
-                        provider=provider.name,
-                        result=ProviderResult(
-                            status=AttemptStatus.BUDGET_DENIED, model=model or "", error_code="tok_cap"
-                        ),
-                    )
-                    last_error = "budget_denied_tokens"
-                    continue
-                if not try_consume_request(self._session, provider=provider.name):
-                    self._record(
-                        task=task,
-                        provider=provider.name,
-                        result=ProviderResult(
-                            status=AttemptStatus.BUDGET_DENIED, model=model or "", error_code="req_cap"
-                        ),
-                    )
-                    last_error = "budget_denied_req"
-                    continue
+            if not self._try_budget(task=task, provider=provider.name, model=model):
+                last_error = "budget_denied"
+                continue
 
             attempt = provider.complete(task=task, messages=messages, max_tokens=max_tokens, model=model)
             self._record(task=task, provider=provider.name, result=attempt)
 
             if attempt.status is AttemptStatus.SUCCESS:
-                if self._session is not None:
-                    add_tokens(
-                        self._session,
-                        provider=provider.name,
-                        tokens=attempt.input_tokens + attempt.output_tokens,
-                    )
+                add_tokens(
+                    self._session,
+                    provider=provider.name,
+                    tokens=attempt.input_tokens + attempt.output_tokens,
+                )
                 self._circuit.reset(provider.name)
                 return CompletionResult(
                     text=attempt.text,
@@ -108,6 +102,128 @@ class BudgetAwareGateway:
             last_error = attempt.error_code or attempt.status.value
 
         raise LlmProvidersExhausted(last_error or "all providers failed or budget-denied")
+
+    def complete_json[T: BaseModel](
+        self,
+        *,
+        task: TaskName,
+        messages: list[Message],
+        schema: type[T],
+        max_tokens: int = 1024,
+        model: str | None = None,
+    ) -> T:
+        """Structured complete with one repair; each provider/repair attempt debits budget."""
+        if not llm_allowed():
+            raise LlmPolicyDenied("remote LLM disabled by policy")
+        if self._session is None:
+            self._deny_no_session(task=task, model=model)
+            raise LlmProvidersExhausted("budget_denied_no_session")
+
+        candidates = filter_by_circuit(self._providers, self._circuit)
+        last_error: str | None = None
+        for provider in candidates:
+            if not self._try_budget(task=task, provider=provider.name, model=model):
+                last_error = "budget_denied"
+                continue
+
+            attempt = provider.complete_json(
+                task=task,
+                messages=messages,
+                schema=schema,
+                max_tokens=max_tokens,
+                model=model,
+            )
+            self._record(task=task, provider=provider.name, result=attempt)
+            if attempt.status is not AttemptStatus.SUCCESS:
+                if attempt.status in {AttemptStatus.TIMEOUT, AttemptStatus.ERROR, AttemptStatus.RATE_LIMITED}:
+                    self._circuit.trip(provider.name)
+                last_error = attempt.error_code or attempt.status.value
+                continue
+
+            add_tokens(
+                self._session,
+                provider=provider.name,
+                tokens=attempt.input_tokens + attempt.output_tokens,
+            )
+            parsed, errors = self._try_parse(schema, attempt.text)
+            if parsed is not None:
+                self._circuit.reset(provider.name)
+                return parsed
+
+            # One repair — separate budget debit.
+            if not self._try_budget(task=task, provider=provider.name, model=model):
+                last_error = "budget_denied_repair"
+                continue
+
+            repair_messages = [
+                *messages,
+                Message(role="assistant", content=attempt.text),
+                Message(role="user", content=_REPAIR_SUFFIX.format(errors=errors)),
+            ]
+            repair = provider.complete_json(
+                task=task,
+                messages=repair_messages,
+                schema=schema,
+                max_tokens=max_tokens,
+                model=model,
+                repair_hint=errors,
+            )
+            self._record(task=task, provider=provider.name, result=repair)
+            if repair.status is not AttemptStatus.SUCCESS:
+                if repair.status in {AttemptStatus.TIMEOUT, AttemptStatus.ERROR, AttemptStatus.RATE_LIMITED}:
+                    self._circuit.trip(provider.name)
+                last_error = repair.error_code or repair.status.value
+                continue
+
+            add_tokens(
+                self._session,
+                provider=provider.name,
+                tokens=repair.input_tokens + repair.output_tokens,
+            )
+            parsed_repair, repair_errors = self._try_parse(schema, repair.text)
+            if parsed_repair is not None:
+                self._circuit.reset(provider.name)
+                return parsed_repair
+            last_error = repair_errors
+
+        raise LlmSchemaError(last_error or "schema validation failed")
+
+    def _try_budget(self, *, task: TaskName, provider: str, model: str | None) -> bool:
+        assert self._session is not None
+        if tokens_exhausted(self._session, provider=provider):
+            self._record(
+                task=task,
+                provider=provider,
+                result=ProviderResult(status=AttemptStatus.BUDGET_DENIED, model=model or "", error_code="tok_cap"),
+            )
+            return False
+        if not try_consume_request(self._session, provider=provider):
+            self._record(
+                task=task,
+                provider=provider,
+                result=ProviderResult(status=AttemptStatus.BUDGET_DENIED, model=model or "", error_code="req_cap"),
+            )
+            return False
+        return True
+
+    def _deny_no_session(self, *, task: TaskName, model: str | None) -> None:
+        name = self._providers[0].name if self._providers else "none"
+        self._record(
+            task=task,
+            provider=name,
+            result=ProviderResult(status=AttemptStatus.BUDGET_DENIED, model=model or "", error_code="no_session"),
+        )
+
+    @staticmethod
+    def _try_parse[T: BaseModel](schema: type[T], text: str) -> tuple[T | None, str]:
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError as exc:
+            return None, f"invalid JSON: {exc}"
+        try:
+            return schema.model_validate(data), ""
+        except ValidationError as exc:
+            return None, str(exc)
 
     def _record(self, *, task: TaskName, provider: str, result: ProviderResult) -> None:
         if self._observe:
