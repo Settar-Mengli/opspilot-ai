@@ -12,10 +12,16 @@ from typing import Any
 from anthropic import Anthropic
 
 from opspilot.config.settings import ai_settings
+from opspilot.llm.policy import llm_allowed
 
 logger = logging.getLogger(__name__)
 
 MAX_TOKENS = 800
+
+_SOFT_NO_KEY = (
+    "I need an Anthropic API key to answer questions. Set ANTHROPIC_API_KEY in your environment and I'll be ready."
+)
+_SOFT_UNAVAILABLE = "I ran into an issue answering that. The API may be unavailable. Please try again in a moment."
 
 
 def _build_system_prompt(assistant_name: str, triage_records: list[dict[str, Any]]) -> str:
@@ -58,22 +64,22 @@ def answer_question(
     Returns a natural-language answer. Falls back to a polite message
     if no API key is configured or the API call fails.
     """
-    api_key = ai_settings.api_key
-    if not api_key:
-        return (
-            "I need an Anthropic API key to answer questions. "
-            "Set ANTHROPIC_API_KEY in your environment and I'll be ready."
-        )
-
     if not question or not question.strip():
         return "I didn't catch a question. What would you like to know?"
+
+    if not llm_allowed():
+        return _SOFT_UNAVAILABLE
+
+    api_key = ai_settings.api_key
+    if not api_key:
+        return _SOFT_NO_KEY
 
     records = triage_records or []
     system_prompt = _build_system_prompt(assistant_name, records)
 
     if ai_settings.provider != "anthropic":
         logger.warning("Unsupported conversation provider configured: %s", ai_settings.provider)
-        return "I ran into an issue answering that. The API may be unavailable. Please try again in a moment."
+        return _SOFT_UNAVAILABLE
 
     try:
         client = Anthropic(api_key=api_key)
@@ -91,4 +97,4 @@ def answer_question(
         return "I wasn't able to generate a response. Please try again."
     except Exception as exc:
         logger.exception("Conversation adapter error: %s", exc)
-        return "I ran into an issue answering that. The API may be unavailable. Please try again in a moment."
+        return _SOFT_UNAVAILABLE

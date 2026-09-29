@@ -14,6 +14,8 @@ def _reload_with_env(monkeypatch: pytest.MonkeyPatch, **env: str | None):
         "OPSPILOT_AI_MODEL",
         "OPSPILOT_AI_API_KEY",
         "ANTHROPIC_API_KEY",
+        "OPSPILOT_FORCE_RULES",
+        "OPSPILOT_LLM_DISABLE",
     ]:
         monkeypatch.delenv(key, raising=False)
 
@@ -24,8 +26,10 @@ def _reload_with_env(monkeypatch: pytest.MonkeyPatch, **env: str | None):
 
     import opspilot.adapters.conversation_adapter as conversation_module
     import opspilot.config.settings as settings_module
+    import opspilot.llm.policy as policy_module
 
     settings_module = importlib.reload(settings_module)
+    policy_module = importlib.reload(policy_module)
     conversation_module = importlib.reload(conversation_module)
     return settings_module, conversation_module
 

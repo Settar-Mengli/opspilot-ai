@@ -3,6 +3,8 @@
 import logging
 import os
 
+from opspilot.llm.policy import llm_allowed
+
 logger = logging.getLogger("opspilot.adapters.briefing")
 
 URGENCY_ORDER = ["critical", "high", "medium", "low"]
@@ -15,6 +17,9 @@ def generate_ai_briefing(
     normalized_items: list,
     fallback_briefing: str,
 ) -> str:
+    if not llm_allowed():
+        return fallback_briefing
+
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         return fallback_briefing

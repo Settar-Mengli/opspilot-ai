@@ -14,6 +14,8 @@ from typing import Any
 
 from anthropic import Anthropic
 
+from opspilot.llm.policy import llm_allowed
+
 logger = logging.getLogger(__name__)
 
 MODEL = "claude-haiku-4-5-20251001"
@@ -62,6 +64,12 @@ def generate_evening_summary(
     Returns natural-language text. Falls back to a polite message if
     no API key is configured or the API call fails.
     """
+    if not llm_allowed():
+        return (
+            "I ran into an issue preparing your end-of-day summary. "
+            "The API may be unavailable. Please try again in a moment."
+        )
+
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         return (
