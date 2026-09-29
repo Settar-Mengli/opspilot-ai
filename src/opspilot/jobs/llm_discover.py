@@ -9,6 +9,11 @@ from typing import Any
 
 import httpx
 
+from opspilot.llm.providers.discover_urls import (
+    gemini_models_list_url,
+    ollama_tags_url,
+    openai_compat_models_url,
+)
 from opspilot.llm.providers.http import default_timeout
 from opspilot.llm.routing import provider_order
 
@@ -34,8 +39,7 @@ def _key_format_warning(provider: str, key: str) -> str | None:
 
 
 def _probe_gemini(client: httpx.Client, key: str) -> dict[str, Any]:
-    url = "https://generativelanguage.googleapis.com/v1beta/models"
-    resp = client.get(url, params={"key": key})
+    resp = client.get(gemini_models_list_url(), params={"key": key})
     return {
         "reachable": resp.status_code < 500,
         "status_code": resp.status_code,
@@ -44,9 +48,9 @@ def _probe_gemini(client: httpx.Client, key: str) -> dict[str, Any]:
     }
 
 
-def _probe_openai_compat(client: httpx.Client, *, base: str, key: str) -> dict[str, Any]:
+def _probe_openai_compat(client: httpx.Client, *, provider: str, key: str) -> dict[str, Any]:
     headers = {"Authorization": f"Bearer {key}"} if key else {}
-    resp = client.get(f"{base.rstrip('/')}/models", headers=headers)
+    resp = client.get(openai_compat_models_url(provider), headers=headers)
     models: list[str] = []
     if resp.status_code == 200:
         try:
@@ -97,16 +101,11 @@ def discover() -> list[dict[str, Any]]:
                         entry["error"] = type(exc).__name__
             elif name in {"groq", "mistral", "openrouter"}:
                 env = {"groq": "GROQ_API_KEY", "mistral": "MISTRAL_API_KEY", "openrouter": "OPENROUTER_API_KEY"}[name]
-                base = {
-                    "groq": "https://api.groq.com/openai/v1",
-                    "mistral": "https://api.mistral.ai/v1",
-                    "openrouter": "https://openrouter.ai/api/v1",
-                }[name]
                 key = os.environ.get(env, "").strip()
                 entry["configured"] = bool(key)
                 if key and client is not None:
                     try:
-                        entry.update(_probe_openai_compat(client, base=base, key=key))
+                        entry.update(_probe_openai_compat(client, provider=name, key=key))
                     except Exception as exc:  # noqa: BLE001
                         entry["reachable"] = False
                         entry["error"] = type(exc).__name__
@@ -116,11 +115,10 @@ def discover() -> list[dict[str, Any]]:
                 entry["configured"] = bool(token and account)
                 entry["note"] = "Dashboard neurons must be recorded manually (STOP A)"
             elif name == "ollama":
-                base = (os.environ.get("OLLAMA_BASE_URL") or "http://127.0.0.1:11434").rstrip("/")
                 entry["configured"] = True
                 if client is not None:
                     try:
-                        resp = client.get(f"{base}/api/tags")
+                        resp = client.get(ollama_tags_url())
                         entry["reachable"] = resp.status_code < 500
                         entry["status_code"] = resp.status_code
                     except Exception as exc:  # noqa: BLE001

@@ -17,6 +17,16 @@ from opspilot.llm.types import AttemptStatus, Message, ProviderResult, StreamChu
 _GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta"
 
 
+def gemini_base_url() -> str:
+    """REST API root (no trailing slash)."""
+    return _GEMINI_BASE
+
+
+def gemini_models_list_url() -> str:
+    """Discover/probe endpoint for listing models."""
+    return f"{_GEMINI_BASE}/models"
+
+
 def resolve_gemini_model(task: TaskName, override: str | None = None) -> str:
     if override:
         return override

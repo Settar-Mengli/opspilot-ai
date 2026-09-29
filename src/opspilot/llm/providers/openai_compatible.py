@@ -60,6 +60,15 @@ def resolve_task_model(provider: str, task: TaskName, override: str | None, mode
     return os.environ.get(task_env) or os.environ.get(model_env) or default
 
 
+def ollama_native_base_url() -> str:
+    """Ollama native (non-/v1) root for /api/tags discover probes."""
+    return (os.environ.get("OLLAMA_BASE_URL") or "http://127.0.0.1:11434").rstrip("/")
+
+
+def ollama_tags_url() -> str:
+    return f"{ollama_native_base_url()}/api/tags"
+
+
 def config_for(provider: str) -> OpenAICompatibleConfig:
     name = provider.strip().lower()
     if name == "cloudflare":
@@ -79,7 +88,7 @@ def config_for(provider: str) -> OpenAICompatibleConfig:
         raise ValueError(f"unsupported openai-compatible provider: {provider}")
     base_url = defaults["base_url"]
     if name == "ollama":
-        base_url = (os.environ.get("OLLAMA_BASE_URL") or base_url).rstrip("/")
+        base_url = ollama_native_base_url()
         if not base_url.endswith("/v1"):
             base_url = f"{base_url}/v1"
     return OpenAICompatibleConfig(
