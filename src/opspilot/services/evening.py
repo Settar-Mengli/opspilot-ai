@@ -23,6 +23,7 @@ def generate_evening_summary(
     triage_records: list[dict[str, Any]] | None = None,
     *,
     session: Session | None = None,
+    request_id: str | None = None,
 ) -> str:
     records = triage_records or []
     system = (
@@ -31,7 +32,9 @@ def generate_evening_summary(
         "Cover: lead story, what is still open, what to carry into tomorrow."
     )
     user = compact_triage_lines(records)
-    result = complete_prose(task="evening", system=system, user=user, max_tokens=700, session=session)
+    result = complete_prose(
+        task="evening", system=system, user=user, max_tokens=700, session=session, request_id=request_id
+    )
     if result is None:
         if not llm_allowed():
             return _SOFT_UNAVAILABLE

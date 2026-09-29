@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 
 from opspilot.llm import FakeProvider, LlmGateway, Message
 from opspilot.llm.gateway import session_attempt_recorder
+from opspilot.llm.prompts.versioning import prompt_version_sha256
+from opspilot.llm.routed import BudgetAwareGateway
 from opspilot.obs.tracing import LlmSpanAttrs, append_llm_jsonl
 from opspilot.persistence.models import LlmCallRow
 
@@ -59,6 +61,27 @@ def test_failover_writes_one_row_per_attempt(db_session: Session) -> None:
     rows = list(db_session.scalars(select(LlmCallRow).order_by(LlmCallRow.id)).all())
     assert [r.provider for r in rows] == ["bad", "good"]
     assert [r.status for r in rows] == ["error", "success"]
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_budget_gateway_writes_prompt_version_and_request_id(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_REQ_DAY", "5")
+    monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_TOK_DAY", "5000")
+    messages = [Message(role="user", content="hi")]
+    expected_pv = prompt_version_sha256(task="ask", messages=messages)
+    gw = BudgetAwareGateway(
+        [FakeProvider(name="gemini", text_responder=lambda _t, _m: "pv")],
+        session=db_session,
+        recorder=session_attempt_recorder(db_session),
+        observe=False,
+        request_id="req-pv-1",
+    )
+    gw.complete(task="ask", messages=messages)
+    row = db_session.scalars(select(LlmCallRow)).one()
+    assert row.request_id == "req-pv-1"
+    assert row.prompt_version == expected_pv
 
 
 def test_append_llm_jsonl_writes_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

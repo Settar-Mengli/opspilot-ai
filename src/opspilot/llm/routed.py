@@ -14,6 +14,7 @@ from opspilot.llm.circuit import CircuitBreaker
 from opspilot.llm.errors import LlmPolicyDenied, LlmProvidersExhausted, LlmSchemaError
 from opspilot.llm.gateway import AttemptRecorder, default_observe_attempt
 from opspilot.llm.policy import llm_allowed
+from opspilot.llm.prompts.versioning import prompt_version_sha256
 from opspilot.llm.providers.base import LlmProvider
 from opspilot.llm.routing import filter_by_circuit
 from opspilot.llm.types import AttemptStatus, CompletionResult, Message, ProviderResult, TaskName
@@ -63,15 +64,16 @@ class BudgetAwareGateway:
             self._deny_no_session(task=task, model=model)
             raise LlmProvidersExhausted("budget_denied_no_session")
 
+        prompt_version = prompt_version_sha256(task=task, messages=messages)
         candidates = filter_by_circuit(self._providers, self._circuit)
         last_error: str | None = None
         for provider in candidates:
-            if not self._try_budget(task=task, provider=provider.name, model=model):
+            if not self._try_budget(task=task, provider=provider.name, model=model, prompt_version=prompt_version):
                 last_error = "budget_denied"
                 continue
 
             attempt = provider.complete(task=task, messages=messages, max_tokens=max_tokens, model=model)
-            self._record(task=task, provider=provider.name, result=attempt)
+            self._record(task=task, provider=provider.name, result=attempt, prompt_version=prompt_version)
 
             if attempt.status is AttemptStatus.SUCCESS:
                 add_tokens(
@@ -119,10 +121,11 @@ class BudgetAwareGateway:
             self._deny_no_session(task=task, model=model)
             raise LlmProvidersExhausted("budget_denied_no_session")
 
+        prompt_version = prompt_version_sha256(task=task, messages=messages)
         candidates = filter_by_circuit(self._providers, self._circuit)
         last_error: str | None = None
         for provider in candidates:
-            if not self._try_budget(task=task, provider=provider.name, model=model):
+            if not self._try_budget(task=task, provider=provider.name, model=model, prompt_version=prompt_version):
                 last_error = "budget_denied"
                 continue
 
@@ -133,7 +136,7 @@ class BudgetAwareGateway:
                 max_tokens=max_tokens,
                 model=model,
             )
-            self._record(task=task, provider=provider.name, result=attempt)
+            self._record(task=task, provider=provider.name, result=attempt, prompt_version=prompt_version)
             if attempt.status is not AttemptStatus.SUCCESS:
                 if attempt.status in {AttemptStatus.TIMEOUT, AttemptStatus.ERROR, AttemptStatus.RATE_LIMITED}:
                     self._circuit.trip(provider.name)
@@ -150,16 +153,21 @@ class BudgetAwareGateway:
                 self._circuit.reset(provider.name)
                 return parsed
 
-            # One repair — separate budget debit.
-            if not self._try_budget(task=task, provider=provider.name, model=model):
-                last_error = "budget_denied_repair"
-                continue
-
             repair_messages = [
                 *messages,
                 Message(role="assistant", content=attempt.text),
                 Message(role="user", content=_REPAIR_SUFFIX.format(errors=errors)),
             ]
+            repair_pv = prompt_version_sha256(task=task, messages=repair_messages)
+            # One repair — separate budget debit.
+            if not self._try_budget(
+                task=task,
+                provider=provider.name,
+                model=model,
+                prompt_version=repair_pv,
+            ):
+                last_error = "budget_denied_repair"
+                continue
             repair = provider.complete_json(
                 task=task,
                 messages=repair_messages,
@@ -168,7 +176,7 @@ class BudgetAwareGateway:
                 model=model,
                 repair_hint=errors,
             )
-            self._record(task=task, provider=provider.name, result=repair)
+            self._record(task=task, provider=provider.name, result=repair, prompt_version=repair_pv)
             if repair.status is not AttemptStatus.SUCCESS:
                 if repair.status in {AttemptStatus.TIMEOUT, AttemptStatus.ERROR, AttemptStatus.RATE_LIMITED}:
                     self._circuit.trip(provider.name)
@@ -188,13 +196,21 @@ class BudgetAwareGateway:
 
         raise LlmSchemaError(last_error or "schema validation failed")
 
-    def _try_budget(self, *, task: TaskName, provider: str, model: str | None) -> bool:
+    def _try_budget(
+        self,
+        *,
+        task: TaskName,
+        provider: str,
+        model: str | None,
+        prompt_version: str | None = None,
+    ) -> bool:
         assert self._session is not None
         if tokens_exhausted(self._session, provider=provider):
             self._record(
                 task=task,
                 provider=provider,
                 result=ProviderResult(status=AttemptStatus.BUDGET_DENIED, model=model or "", error_code="tok_cap"),
+                prompt_version=prompt_version,
             )
             return False
         if not try_consume_request(self._session, provider=provider):
@@ -202,6 +218,7 @@ class BudgetAwareGateway:
                 task=task,
                 provider=provider,
                 result=ProviderResult(status=AttemptStatus.BUDGET_DENIED, model=model or "", error_code="req_cap"),
+                prompt_version=prompt_version,
             )
             return False
         return True
@@ -212,6 +229,7 @@ class BudgetAwareGateway:
             task=task,
             provider=name,
             result=ProviderResult(status=AttemptStatus.BUDGET_DENIED, model=model or "", error_code="no_session"),
+            prompt_version=None,
         )
 
     @staticmethod
@@ -225,8 +243,27 @@ class BudgetAwareGateway:
         except ValidationError as exc:
             return None, str(exc)
 
-    def _record(self, *, task: TaskName, provider: str, result: ProviderResult) -> None:
+    def _record(
+        self,
+        *,
+        task: TaskName,
+        provider: str,
+        result: ProviderResult,
+        prompt_version: str | None = None,
+    ) -> None:
         if self._observe:
-            default_observe_attempt(task=task, provider=provider, result=result, request_id=self._request_id)
+            default_observe_attempt(
+                task=task,
+                provider=provider,
+                result=result,
+                request_id=self._request_id,
+                prompt_version=prompt_version,
+            )
         if self._recorder is not None:
-            self._recorder(task=task, provider=provider, result=result, request_id=self._request_id)
+            self._recorder(
+                task=task,
+                provider=provider,
+                result=result,
+                request_id=self._request_id,
+                prompt_version=prompt_version,
+            )

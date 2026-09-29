@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
@@ -204,36 +204,58 @@ def get_run_ai_briefing(run_id: str, session: Session = Depends(get_db_session))
     return content
 
 
+def _request_id(http_request: Request) -> str | None:
+    rid = getattr(http_request.state, "request_id", None)
+    if isinstance(rid, str) and rid.strip():
+        return rid.strip()
+    return None
+
+
 @router.post("/ask")
-def ask(payload: AskRequest, session: Session = Depends(get_db_session)) -> dict[str, str]:
+def ask(
+    payload: AskRequest,
+    http_request: Request,
+    session: Session = Depends(get_db_session),
+) -> dict[str, str]:
     records = _latest_triage_records(session)
     answer = answer_question(
         question=payload.question,
         assistant_name=payload.assistant_name,
         triage_records=records,
         session=session,
+        request_id=_request_id(http_request),
     )
     return {"answer": answer}
 
 
 @router.post("/evening-summary")
-def evening_summary(payload: EveningSummaryRequest, session: Session = Depends(get_db_session)) -> dict[str, str]:
+def evening_summary(
+    payload: EveningSummaryRequest,
+    http_request: Request,
+    session: Session = Depends(get_db_session),
+) -> dict[str, str]:
     records = _latest_triage_records(session)
     summary = generate_evening_summary(
         assistant_name=payload.assistant_name,
         triage_records=records,
         session=session,
+        request_id=_request_id(http_request),
     )
     return {"summary": summary}
 
 
 @router.post("/insights")
-def insights(payload: InsightsRequest, session: Session = Depends(get_db_session)) -> dict[str, object]:
+def insights(
+    payload: InsightsRequest,
+    http_request: Request,
+    session: Session = Depends(get_db_session),
+) -> dict[str, object]:
     records = _latest_triage_records(session)
     return generate_insights(
         assistant_name=payload.assistant_name,
         triage_records=records,
         session=session,
+        request_id=_request_id(http_request),
     )
 
 

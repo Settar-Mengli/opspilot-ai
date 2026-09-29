@@ -32,6 +32,7 @@ class AttemptRecorder(Protocol):
         provider: str,
         result: ProviderResult,
         request_id: str | None = None,
+        prompt_version: str | None = None,
     ) -> None: ...
 
 
@@ -41,6 +42,7 @@ def default_observe_attempt(
     provider: str,
     result: ProviderResult,
     request_id: str | None = None,
+    prompt_version: str | None = None,
 ) -> None:
     """JSONL + structured span for an attempt (no DB)."""
     attrs = LlmSpanAttrs(
@@ -53,6 +55,7 @@ def default_observe_attempt(
         tokens_out=result.output_tokens,
         request_id=request_id,
         error_code=result.error_code,
+        prompt_version=prompt_version,
     )
     emit_llm_span(attrs)
     append_llm_jsonl(attrs)
@@ -224,6 +227,7 @@ def session_attempt_recorder(session: Session) -> AttemptRecorder:
         provider: str,
         result: ProviderResult,
         request_id: str | None = None,
+        prompt_version: str | None = None,
     ) -> None:
         record_llm_call(
             session,
@@ -235,6 +239,7 @@ def session_attempt_recorder(session: Session) -> AttemptRecorder:
             tokens_in=result.input_tokens,
             tokens_out=result.output_tokens,
             request_id=request_id,
+            prompt_version=prompt_version,
             error_code=result.error_code,
             meta={},
         )

@@ -21,6 +21,7 @@ def answer_question(
     triage_records: list[dict[str, Any]] | None = None,
     *,
     session: Session | None = None,
+    request_id: str | None = None,
 ) -> str:
     if not question or not question.strip():
         return "I didn't catch a question. What would you like to know?"
@@ -37,6 +38,7 @@ def answer_question(
         user=question.strip(),
         max_tokens=800,
         session=session,
+        request_id=request_id,
     )
     if result is None:
         from opspilot.llm.policy import llm_allowed
