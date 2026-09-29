@@ -127,7 +127,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
     - **Evals:** n/a (B3) except smoke hooks if any.
     - **Live smoke:** Free provider happy path via Invoke-RestMethod; optional Anthropic budgeted script (not CI).
     - **Docs:** PART 7; ROADMAP/ADRs/CHANGELOG; free-tier quotas VERIFY AT DECISION TIME noted.
-- **Status (branch `b2/llm-gateway`):** C0–C10 + fix pass F1–F6; **quotas approved 2026-09-29** (C11 caps in `.env.example`). C12 smoke next.
+- **Status (branch `b2/llm-gateway`):** C0–C10 + fix pass F1–F6; **quotas approved 2026-09-29** (C11); **C12 smoke** recorded in PART 7. F7 final records next / PR after owner open-PR.
 - **Deps:** B1 · **Size:** XL · **Metric:** Multi-provider gateway with failover
 
 ### B3 — Eval platform + injection red-team (M3 + M4) — one harness

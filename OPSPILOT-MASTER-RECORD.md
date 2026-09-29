@@ -491,7 +491,7 @@ npm run preview -- --host 127.0.0.1 --port 4173
 
 ### Summary
 
-Hand-rolled `llm/` gateway on branch `b2/llm-gateway` (C0–C10 + fix pass F1–F6 + C11). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; budget-aware triage + briefing. `LlmCall` + UTC budgets (fail-closed on all paths); prompt sha256 + `X-Request-ID` on attempts; pagination; F-03/F-09; timestamptz; discover via provider URL helpers. **Owner quotas approved 2026-09-29** (C11). **C12 smoke evidence** next.
+Hand-rolled `llm/` gateway on branch `b2/llm-gateway` (C0–C10 + fix pass F1–F6 + C11 + C12). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; budget-aware triage + briefing. `LlmCall` + UTC budgets (fail-closed on all paths); prompt sha256 + `X-Request-ID` on attempts; pagination; F-03/F-09; timestamptz; discover via provider URL helpers. **Owner quotas approved 2026-09-29** (C11). **C12 live smoke** evidenced below.
 
 ### STOP A — discover (secrets redacted)
 
@@ -563,7 +563,8 @@ One push per commit; full CI (Backend, Frontend, Gitleaks, UI Tests). Duplicate 
 | `2afde61b90e1cdcccb455373c1f9adafbd43c6c4` | test(llm): host guards + timeout circuit (F4) | 36621298263 | success |
 | `c389419dec4f6c8706bded326ac343d27f610270` | feat(llm): prompt sha256 + request_id (F5) | 36621472720 | success |
 | `74a436c572b51a29b21a968d80c9004fd2f40ca7` | docs(b2): correct PART 7 records (F6) | 36622273815 | success |
-| *(C11)* | chore(llm): documented default caps after quotas approved | *(this commit)* | *(verify run after push)* |
+| `322f0b88ba5d225955944abc8ce5ce8fcdc4d522` | chore(llm): documented default caps after quotas approved (C11) | 36626641853 | success |
+| *(C12)* | docs(b2): C12 live smoke evidence | *(this commit)* | *(verify run after push)* |
 
 ### Exit grep (no leaky clients) — measured after F1/F2
 
@@ -587,12 +588,11 @@ git grep -nE "from anthropic|import anthropic|Anthropic\(" -- ':!src/opspilot/ll
 
 ### Live smoke
 
-Use Invoke-RestMethod per `docs/runbooks/llm-providers.md`. Requires owner-approved budget env (or temporary process-local caps for a demo window). `OPSPILOT_ANTHROPIC_ENABLED=false`.
+Use Invoke-RestMethod per `docs/runbooks/llm-providers.md`. Owner-approved budget env (C11). `OPSPILOT_ANTHROPIC_ENABLED=false`.
 
+### Live smoke evidence — pre-C11 (2026-09-29, process-local temporary budgets)
 
-### Live smoke evidence (2026-09-29, process-local temporary budgets — not locked caps)
-
-Temporary `OPSPILOT_BUDGET_*_REQ_DAY=50` / `_TOK_DAY=200000` in uvicorn process only (owner must still approve 80% measured caps for `.env`).
+Temporary `OPSPILOT_BUDGET_*_REQ_DAY=50` / `_TOK_DAY=200000` in uvicorn process only (superseded by C11 approval).
 
 | Call | Result |
 |------|--------|
@@ -601,4 +601,34 @@ Temporary `OPSPILOT_BUDGET_*_REQ_DAY=50` / `_TOK_DAY=200000` in uvicorn process 
 | POST /evening-summary | 200, summary len 859 |
 | POST /insights | 200, intro len 71, 4 insights |
 
-`llm_calls` status counts after smoke (redacted): cloudflare success 2; gemini error 1 + success 2; groq error 1; mistral success 2; openrouter success 2. Anthropic disabled.
+`llm_calls` status counts (redacted): cloudflare success 2; gemini error 1 + success 2; groq error 1; mistral success 2; openrouter success 2. Anthropic disabled. **K5:** these errors were organic multi-provider attempts, not forced-failover.
+
+### C12 live smoke evidence (2026-09-29, owner-approved caps in process env; `.env` keys not printed)
+
+Budgets/models set in uvicorn process per C11 (not amending committed secrets). Anthropic disabled.
+
+#### Normal path
+
+| Call | Result |
+|------|--------|
+| GET /api/v1/health | ok |
+| POST /ask | 200, answer len 359 |
+| POST /evening-summary | 200, summary len 782 |
+| POST /insights | 200, intro len 146, insights n=0 |
+| POST /runs (sample_input.json) | 200, run-20260929-203808-855 (triage + briefing via gateway) |
+
+`llm_calls` after normal (ids > watermark 18, redacted): cloudflare success 2; gemini error 1 + success 16; groq error 1; mistral success 2. Anthropic none.
+
+#### Forced failover (invalid `GEMINI_API_KEY` in uvicorn process only — `.env` untouched)
+
+POST /ask → 200. Rows: **gemini error** (`http_400`); **groq success**. Matches plan expectation.
+
+#### Policy deny (`OPSPILOT_LLM_DISABLE=1` in process)
+
+POST /ask → 200 soft string (len 93). **NEW llm_calls rows: 0** (zero provider HTTP).
+
+#### Budget deny (`OPSPILOT_BUDGET_GEMINI_REQ_DAY=0` in process)
+
+POST /ask → 200. Rows: **gemini budget_denied** (`req_cap`); **groq success**.
+
+JSONL under `data/llm_traces/` (gitignored); line counts only verified locally — no key material in PART 7.
