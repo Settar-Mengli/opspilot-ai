@@ -491,7 +491,7 @@ npm run preview -- --host 127.0.0.1 --port 4173
 
 ### Summary
 
-Hand-rolled `llm/` gateway shipped on branch `b2/llm-gateway` (Phase 1 C0–C10). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; gateway triage + briefing. `LlmCall` + UTC budget counters; pagination; request_id; F-03/F-09; timestamptz expand/contract. Discover job for STOP A.
+Hand-rolled `llm/` gateway on branch `b2/llm-gateway` (C0–C10 + post-build fix pass F1–F5). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; budget-aware triage + briefing. `LlmCall` + UTC budgets (fail-closed on all paths); prompt sha256 + `X-Request-ID` on attempts; pagination; F-03/F-09; timestamptz; discover via provider URL helpers. **C11 locked caps and C12 smoke evidence** pending owner **quotas approved** (STOP A below).
 
 ### STOP A — discover (secrets redacted)
 
@@ -510,19 +510,62 @@ Command: `uv run python -m opspilot.jobs.llm_discover`
 
 UTC budget day vs Gemini Pacific RPD skew: document when setting caps. Token overshoot ≤1 call after post-call reconcile — keep 80% margin.
 
-### Per-commit CI (branch)
+### Process deviations (B2)
 
-Recorded as pushes land; see `gh run list --branch b2/llm-gateway`. Agent policy: one commit per push; wait for full CI green including UI Tests.
+| Deviation | Record |
+|-----------|--------|
+| STOP A / C11 skipped in initial Phase 2 | Docs+smoke (`faae8c3`) ran with **process-local temporary** budgets before owner **quotas approved**; `.env` caps still unset until C11 after approval. |
+| Red commit `faae8c3` | CI run **36597646762** — Backend Tests (PART 7 CP1252 / ruff). Fix-forward **27cf7be** run **36597963381** green. |
+| Post-build audit B3 | Budget bypass on insights/triage/briefing when `session=None`; fixed in **ba4fa9b** (F3). |
+| Post-build audit B1/B2 / PART 7 | Discover hosts + `OPSPILOT_AI_*` falsely claimed retired; fixed F1/F2; greps below re-verified. |
+| K5 smoke errors | Organic multi-provider failover during happy-path smoke (not forced-failover demo). Counts: gemini error 1 + success 2; groq error 1; others success — **C12** records forced failover + policy deny after C11. |
+| NB3 triage body cap | `_BODY_MAX=800` in `gateway_triage.py`; plan did not lock ≤500 — owner follow-up if X4 tightens further. |
 
-### Exit grep (no leaky clients)
+### Per-commit CI (branch `b2/llm-gateway`)
 
-- Provider HTTP/SDK under `src/opspilot/llm/providers/` only.
-- `ANTHROPIC_API_KEY` only in `llm/providers/anthropic.py` (+ discover does not print it).
-- Retired `OPSPILOT_AI_*` removed from live call paths; `.env.example` marks them retired.
+One push per commit; full CI (Backend, Frontend, Gitleaks, UI Tests). Duplicate GH fire for `0cb2aeb`: **36594366973** + **36594367716** (both green).
+
+| SHA | Subject | Run ID | Result |
+|-----|---------|--------|--------|
+| `23367e2d02674340a9bd5488e0a130b6ee8a08c8` | docs: add B2 pre-audit and ignore tmp/llm_traces | 36588355684 | success |
+| `0965a8c6d1ef39c82a841c67a001cc8183cc613c` | fix(llm): honor FORCE_RULES and LLM_DISABLE at all call sites | 36589290681 | success |
+| `f7aaab859d4d093139a3b61fc1f16b06e57adf33` | feat(llm): add gateway skeleton with fake provider | 36590224628 | success |
+| `5633f355da6baeed1922454747462e58de384ab1` | feat(llm): add LlmCall persistence and JSONL/OTel hooks | 36591081434 | success |
+| `b96cd6a330bb108508bf34873ca95c524882d2b3` | feat(llm): add Gemini/OpenAI-compatible providers, routing, and budgets | 36591887352 | success |
+| `130659ee7621bae79fe579c4013990d63e208d02` | feat(llm): add D-023 gated Anthropic provider | 36592715180 | success |
+| `2ade667049a73e0a813fd2ddb38dc5af41b00ee1` | feat(services): route ask/evening/insights through LLM gateway | 36593526072 | success |
+| `0cb2aebee54dc16dee2274cc81c1ac584f67c829` | feat(llm): migrate triage and briefing through gateway | 36594366973, 36594367716 | success (×2) |
+| `bb0eef05b322c6124b762123481fd89440840fd9` | feat(api): paginate runs, add request_id, sanitize errors | 36595195151 | success |
+| `b10d7ba00a36dcc698e28bfc7700288a579c784a` | feat(db): migrate run and work_item timestamps to timestamptz | 36596008861 | success |
+| `804bc5977ddab87b55cfa92c05bda9734e27a3e8` | feat(llm): add discover stub, env skeleton, and API shape tests | 36596805447 | success |
+| `faae8c36310b834d8d007d75cc358b90eccdf0a8` | docs(b2): PART 7, ADR addenda, runbooks, and smoke evidence | 36597646762 | **failure** (Backend Tests) |
+| `27cf7be7770964388d42f0de5aebef30621913c7` | fix(docs): repair PART 7 UTF-8 encoding for ruff/CI | 36597963381 | success (fix-forward) |
+| `9a99ca6f3c705cfbf894cb75a41c1bd604bb1be7` | fix(llm): route discovery through provider URL helpers (F1) | 36618700387 | success |
+| `5eeacbcffc8f4467dcde418afc0f1118ce1e4490` | refactor(config): fully retire OPSPILOT_AI_* (F2) | 36620107942 | success |
+| `ba4fa9b045bf47beaf4d518e9d5841bf20f086e7` | fix(llm): fail-closed budgets on every remote path (F3) | 36621134610 | success |
+| `2afde61b90e1cdcccb455373c1f9adafbd43c6c4` | test(llm): host guards + timeout circuit (F4) | 36621298263 | success |
+| `c389419dec4f6c8706bded326ac343d27f610270` | feat(llm): prompt sha256 + request_id (F5) | 36621472720 | success |
+| *(F6 docs)* | docs(b2): correct PART 7 records | *(this commit)* | *(verify run after push)* |
+
+### Exit grep (no leaky clients) — measured after F1/F2
+
+```text
+# G1 — provider hosts outside src/opspilot/llm/providers/ (excl. tests/docs)
+git grep -nE "generativelanguage\.googleapis|api\.groq\.com|api\.mistral\.ai|api\.cloudflare|openrouter\.ai|api\.anthropic" -- ':!src/opspilot/llm/providers/' ':!docs/' ':!OPSPILOT*' ':!CHANGELOG*' ':!tests/'
+→ exit 1 (no matches)
+
+# G2 — OPSPILOT_AI_ in src/ or .github/
+git grep -n "OPSPILOT_AI_" -- src/ .github/
+→ exit 1 (no matches)
+
+# G3 — Anthropic SDK outside providers/
+git grep -nE "from anthropic|import anthropic|Anthropic\(" -- ':!src/opspilot/llm/providers/' ':!tests/' ':!docs/'
+→ exit 1 (no matches)
+```
 
 ### Coverage
 
-`fail_under=72` retained; report TOTAL % from CI Backend Tests job on green SHAs.
+`fail_under=72`. Local full suite after F5: **128 passed**, **TOTAL 79.28%** (`uv run pytest -q --cov=opspilot`). CI Backend Tests on green SHAs should match ≥72%.
 
 ### Live smoke
 
