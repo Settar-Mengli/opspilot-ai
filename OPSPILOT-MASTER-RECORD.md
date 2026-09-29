@@ -491,7 +491,7 @@ npm run preview -- --host 127.0.0.1 --port 4173
 
 ### Summary
 
-Hand-rolled `llm/` gateway on branch `b2/llm-gateway` (C0–C10 + fix pass F1–F6 + C11 + C12). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; budget-aware triage + briefing. `LlmCall` + UTC budgets (fail-closed on all paths); prompt sha256 + `X-Request-ID` on attempts; pagination; F-03/F-09; timestamptz; discover via provider URL helpers. **Owner quotas approved 2026-09-29** (C11). **C12 live smoke** evidenced below.
+Hand-rolled `llm/` gateway on branch `b2/llm-gateway` (C0–C13 / fix pass F1–F7 complete). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; budget-aware triage + briefing. `LlmCall` + UTC budgets (fail-closed on all paths); prompt sha256 + `X-Request-ID` on attempts; pagination; F-03/F-09; timestamptz; discover via provider URL helpers. **Owner quotas approved 2026-09-29** (C11). **C12 live smoke** evidenced. **F7 exits** below. Ready for owner **open PR** (agent does not merge).
 
 ### STOP A — discover (secrets redacted)
 
@@ -564,9 +564,10 @@ One push per commit; full CI (Backend, Frontend, Gitleaks, UI Tests). Duplicate 
 | `c389419dec4f6c8706bded326ac343d27f610270` | feat(llm): prompt sha256 + request_id (F5) | 36621472720 | success |
 | `74a436c572b51a29b21a968d80c9004fd2f40ca7` | docs(b2): correct PART 7 records (F6) | 36622273815 | success |
 | `322f0b88ba5d225955944abc8ce5ce8fcdc4d522` | chore(llm): documented default caps after quotas approved (C11) | 36626641853 | success |
-| *(C12)* | docs(b2): C12 live smoke evidence | *(this commit)* | *(verify run after push)* |
+| `480482d6c82dd8832a93fcca05674a316e572704` | docs(b2): C12 live smoke evidence | 36628222191 | success |
+| *(F7)* | docs(b2): final PART 7 exit records | *(this commit)* | *(verify run after push; STOP B)* |
 
-### Exit grep (no leaky clients) — measured after F1/F2
+### Exit grep (no leaky clients) — measured F7
 
 ```text
 # G1 — provider hosts outside src/opspilot/llm/providers/ (excl. tests/docs)
@@ -577,14 +578,14 @@ git grep -nE "generativelanguage\.googleapis|api\.groq\.com|api\.mistral\.ai|api
 git grep -n "OPSPILOT_AI_" -- src/ .github/
 → exit 1 (no matches)
 
-# G3 — Anthropic SDK outside providers/
-git grep -nE "from anthropic|import anthropic|Anthropic\(" -- ':!src/opspilot/llm/providers/' ':!tests/' ':!docs/'
+# G3 — Anthropic SDK outside providers/ (excl. tests/docs/master-record command examples)
+git grep -nE "from anthropic|import anthropic|Anthropic\(" -- ':!src/opspilot/llm/providers/' ':!tests/' ':!docs/' ':!OPSPILOT*'
 → exit 1 (no matches)
 ```
 
-### Coverage
+### Coverage (F7)
 
-`fail_under=72`. Local full suite after F5: **128 passed**, **TOTAL 79.28%** (`uv run pytest -q --cov=opspilot`). CI Backend Tests on green SHAs should match ≥72%.
+`fail_under=72`. Local full suite: **128 passed**, **TOTAL 79.28%** (`uv run pytest -q --cov=opspilot`). mypy `src/opspilot/llm` + `services` + full `src/opspilot`: clean. `ruff check .`: clean. Alembic round-trip: pass. PNG vs `main`: 0 files. PARTs 0–6 vs `main`: byte-identical. `docs/history/*` unchanged; `docs/audits/2026-09-28-b2-preaudit.md` added in C0 only.
 
 ### Live smoke
 
