@@ -491,7 +491,7 @@ npm run preview -- --host 127.0.0.1 --port 4173
 
 ### Summary
 
-Hand-rolled `llm/` gateway on branch `b2/llm-gateway` (C0–C10 + post-build fix pass F1–F5). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; budget-aware triage + briefing. `LlmCall` + UTC budgets (fail-closed on all paths); prompt sha256 + `X-Request-ID` on attempts; pagination; F-03/F-09; timestamptz; discover via provider URL helpers. **C11 locked caps and C12 smoke evidence** pending owner **quotas approved** (STOP A below).
+Hand-rolled `llm/` gateway on branch `b2/llm-gateway` (C0–C10 + fix pass F1–F6 + C11). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; budget-aware triage + briefing. `LlmCall` + UTC budgets (fail-closed on all paths); prompt sha256 + `X-Request-ID` on attempts; pagination; F-03/F-09; timestamptz; discover via provider URL helpers. **Owner quotas approved 2026-09-29** (C11). **C12 smoke evidence** next.
 
 ### STOP A — discover (secrets redacted)
 
@@ -506,15 +506,32 @@ Command: `uv run python -m opspilot.jobs.llm_discover`
 | openrouter | Y | Y | 200 | models sample returned |
 | anthropic | enabled=false | — | — | D-023 off |
 
-**Rate-limit headers:** not returned on these probe endpoints. **Owner action:** record dashboard RPD/RPM/TPM (and Cloudflare neurons); approve `floor(0.8 × measured)` caps before locking `OPSPILOT_BUDGET_*` in `.env`. Until then unset budgets continue to **deny** remote calls (fail closed).
+**Rate-limit headers:** not returned on these probe endpoints for all providers. Owner **quotas approved** 2026-09-29 — see C11 below.
 
-UTC budget day vs Gemini Pacific RPD skew: document when setting caps. Token overshoot ≤1 call after post-call reconcile — keep 80% margin.
+UTC budget day vs Gemini Pacific RPD skew: Gemini free RPD resets Pacific midnight; OpsPilot debits UTC day. Token overshoot ≤1 call after post-call reconcile — keep 80% margin.
+
+### C11 — quotas approved 2026-09-29 by owner
+
+| Provider | Model | Cap type | Measured / published | Approved REQ_DAY | Approved TOK_DAY |
+|----------|-------|----------|----------------------|------------------|------------------|
+| groq | `openai/gpt-oss-20b` | floor(0.8×) | Headers 1,000 RPD, 8,000 TPM; published 200,000 TPD | 800 | 160000 |
+| gemini | `gemini-3.5-flash-lite` | floor(0.8×) REQ; **POLICY** TOK | AI Studio free 500 RPD (Pacific midnight reset) | 400 | 800000 (= 400 × ~2k tok policy) |
+| cloudflare | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` | derived 80% | 10k neurons/day; 26,668 neu/M in, 204,805 neu/M out → ~177k tok/day @ 5:1 in/out; ~100 neu/call | 80 | 140000 |
+| openrouter | `:free` models | floor(0.8×) REQ; **POLICY** TOK | 50 req/day, 20 RPM; unpaid / `is_free_tier=true` | 40 | 160000 |
+| mistral | `ministral-3b-2512` | **OWNER POLICY** | Headers only 750 RPM / 1,300,000 TPM — **no daily quota** | 1000 | 1000000 |
+| ollama | local | unset | optional | — | — |
+| anthropic | — | disabled | D-023 off | — | — |
+
+**OWNER POLICY deviation from pure 80% formula:** Mistral REQ/TOK entirely policy (no daily measured quota); Gemini TOK_DAY and OpenRouter TOK_DAY are policy estimates. Cloudflare TOK uses neuron→token conversion at 5:1 mix (worst-case all-output ≈ 48.8k tokens/day) — documented in `docs/runbooks/llm-providers.md`. OpenRouter: keep `:free` suffix on `OPENROUTER_MODEL`.
+
+Recommended defaults written to `.env.example` and runbooks. Operator applies budget lines to local `.env` (never commit secrets).
 
 ### Process deviations (B2)
 
 | Deviation | Record |
 |-----------|--------|
-| STOP A / C11 skipped in initial Phase 2 | Docs+smoke (`faae8c3`) ran with **process-local temporary** budgets before owner **quotas approved**; `.env` caps still unset until C11 after approval. |
+| STOP A / C11 skipped in initial Phase 2 | Docs+smoke (`faae8c3`) ran with **process-local temporary** budgets before owner **quotas approved**; resolved C11 2026-09-29. |
+| OWNER POLICY caps (C11) | Mistral daily caps + Gemini/OpenRouter TOK_DAY are policy, not pure `floor(0.8 × measured)` — see C11 table. |
 | Red commit `faae8c3` | CI run **36597646762** — Backend Tests (PART 7 CP1252 / ruff). Fix-forward **27cf7be** run **36597963381** green. |
 | Post-build audit B3 | Budget bypass on insights/triage/briefing when `session=None`; fixed in **ba4fa9b** (F3). |
 | Post-build audit B1/B2 / PART 7 | Discover hosts + `OPSPILOT_AI_*` falsely claimed retired; fixed F1/F2; greps below re-verified. |
@@ -545,7 +562,8 @@ One push per commit; full CI (Backend, Frontend, Gitleaks, UI Tests). Duplicate 
 | `ba4fa9b045bf47beaf4d518e9d5841bf20f086e7` | fix(llm): fail-closed budgets on every remote path (F3) | 36621134610 | success |
 | `2afde61b90e1cdcccb455373c1f9adafbd43c6c4` | test(llm): host guards + timeout circuit (F4) | 36621298263 | success |
 | `c389419dec4f6c8706bded326ac343d27f610270` | feat(llm): prompt sha256 + request_id (F5) | 36621472720 | success |
-| *(F6 docs)* | docs(b2): correct PART 7 records | *(this commit)* | *(verify run after push)* |
+| `74a436c572b51a29b21a968d80c9004fd2f40ca7` | docs(b2): correct PART 7 records (F6) | 36622273815 | success |
+| *(C11)* | chore(llm): documented default caps after quotas approved | *(this commit)* | *(verify run after push)* |
 
 ### Exit grep (no leaky clients) — measured after F1/F2
 
