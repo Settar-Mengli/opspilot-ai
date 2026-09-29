@@ -1,9 +1,12 @@
-"""AI-generated executive briefing using Claude."""
+"""AI-generated executive briefing via LLM gateway."""
+
+from __future__ import annotations
 
 import logging
-import os
+from typing import Any
 
 from opspilot.llm.policy import llm_allowed
+from opspilot.services._llm import complete_prose, providers_or_empty
 
 logger = logging.getLogger("opspilot.adapters.briefing")
 
@@ -17,17 +20,10 @@ def generate_ai_briefing(
     normalized_items: list,
     fallback_briefing: str,
 ) -> str:
-    if not llm_allowed():
-        return fallback_briefing
-
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
+    if not llm_allowed() or not providers_or_empty():
         return fallback_briefing
 
     try:
-        import anthropic
-
-        # Build urgency counts
         urgency_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
         sentiment_counts = {"negative": 0, "neutral": 0, "positive": 0}
 
@@ -45,8 +41,7 @@ def generate_ai_briefing(
             urgency_counts[urg] = urgency_counts.get(urg, 0) + 1
             sentiment_counts[sent] = sentiment_counts.get(sent, 0) + 1
 
-        # Top 3 items by urgency
-        def urgency_rank(rec):
+        def urgency_rank(rec: Any) -> int:
             urg = rec.get("urgency", "low") if isinstance(rec, dict) else getattr(rec, "urgency", "low")
             return URGENCY_ORDER.index(urg) if urg in URGENCY_ORDER else 99
 
@@ -56,24 +51,25 @@ def generate_ai_briefing(
         )
         top_3_lines = []
         for record, item in sorted_records[:3]:
-            rec_id = record.get("id", "") if isinstance(record, dict) else getattr(record, "id", "")
+            rec_id = str(record.get("id", "") if isinstance(record, dict) else getattr(record, "id", ""))[:32]
             urg = record.get("urgency", "") if isinstance(record, dict) else getattr(record, "urgency", "")
             cat = record.get("category", "") if isinstance(record, dict) else getattr(record, "category", "")
             if isinstance(item, dict):
-                subject = item.get("subject_or_title") or ""
+                subject = str(item.get("subject_or_title") or "")[:80]
             else:
-                subject = getattr(item, "subject_or_title", None) or ""
+                subject = str(getattr(item, "subject_or_title", None) or "")[:80]
             top_3_lines.append(f"- {rec_id}: {subject} (urgency={urg}, category={cat})")
 
-        # Action items with deadlines
         deadline_lines = []
-        for action in action_items:
+        for action in action_items[:10]:
             deadline = action.get("deadline", None) if isinstance(action, dict) else getattr(action, "deadline", None)
             if deadline:
-                aid = (
+                aid = str(
                     action.get("work_item_id", "") if isinstance(action, dict) else getattr(action, "work_item_id", "")
-                )
-                summary = action.get("summary", "") if isinstance(action, dict) else getattr(action, "summary", "")
+                )[:32]
+                summary = str(
+                    action.get("summary", "") if isinstance(action, dict) else getattr(action, "summary", "")
+                )[:100]
                 owner = (
                     action.get("owner", "unassigned")
                     if isinstance(action, dict)
@@ -84,37 +80,24 @@ def generate_ai_briefing(
         formatted_top = "\n".join(top_3_lines) if top_3_lines else "None"
         formatted_deadlines = "\n".join(deadline_lines) if deadline_lines else "None today"
 
-        system_prompt = (
-            "You are a chief of staff writing a daily executive briefing "
-            "for an operations leader. Write in clear, confident prose. "
-            "No bullet points in the opening paragraph. Be specific about "
-            "what needs attention today and why. Sound like a senior human "
-            "analyst, not a template. Maximum 250 words."
+        system = (
+            "You are a chief of staff writing a daily executive briefing. "
+            "Clear confident prose. Max 250 words. No bullet-only opening."
         )
-
-        user_message = (
-            f"Date: {run_date}\n\n"
-            f"Triage Summary:\n"
-            f"- Total items: {len(triage_records)}\n"
-            f"- Critical: {urgency_counts['critical']}, High: {urgency_counts['high']}, "
-            f"Medium: {urgency_counts['medium']}, Low: {urgency_counts['low']}\n"
-            f"- Negative sentiment signals: {sentiment_counts['negative']}\n\n"
-            f"Top Priority Items:\n{formatted_top}\n\n"
-            f"Items with Deadlines:\n{formatted_deadlines}\n\n"
-            f"Write a daily executive briefing based on this data."
+        user = (
+            f"Date: {run_date}\n"
+            f"Total: {len(triage_records)} "
+            f"C/H/M/L={urgency_counts['critical']}/{urgency_counts['high']}/"
+            f"{urgency_counts['medium']}/{urgency_counts['low']} "
+            f"neg={sentiment_counts['negative']}\n"
+            f"Top:\n{formatted_top}\n"
+            f"Deadlines:\n{formatted_deadlines}\n"
+            "Write the briefing."
         )
-
-        client = anthropic.Anthropic(api_key=api_key)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=800,
-            temperature=0.3,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_message}],
-        )
-
-        return response.content[0].text
-
-    except Exception as exc:
+        result = complete_prose(task="briefing", system=system, user=user, max_tokens=800, session=None)
+        if result is None or not result.text.strip():
+            return fallback_briefing
+        return result.text.strip()
+    except Exception as exc:  # noqa: BLE001
         logger.warning("AI briefing generation failed, using fallback: %s", exc)
         return fallback_briefing

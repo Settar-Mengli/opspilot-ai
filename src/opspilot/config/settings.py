@@ -1,11 +1,15 @@
-"""Centralized runtime AI provider settings."""
+"""Centralized runtime AI provider settings (legacy surface for /settings).
+
+Ask/evening/insights/triage/briefing use the llm/ gateway + free-tier env keys.
+This module remains for the read-only settings payload until B4 settings redesign.
+"""
 
 from __future__ import annotations
 
 import os
 
-DEFAULT_PROVIDER = "anthropic"
-DEFAULT_MODEL = "claude-haiku-4-5-20251001"
+DEFAULT_PROVIDER = "gemini"
+DEFAULT_MODEL = "gemini-2.0-flash-lite"
 
 
 class AISettings:
@@ -18,26 +22,49 @@ class AISettings:
 
     @staticmethod
     def _resolve_provider() -> str:
+        order = os.environ.get("INFERENCE_PROVIDER_ORDER", "").strip()
+        if order:
+            first = order.split(",")[0].strip().lower()
+            if first and first != "anthropic":
+                return first
         provider = os.environ.get("OPSPILOT_AI_PROVIDER", DEFAULT_PROVIDER)
         normalized = provider.strip().lower()
+        if normalized == "anthropic":
+            return DEFAULT_PROVIDER
         return normalized or DEFAULT_PROVIDER
 
     @staticmethod
     def _resolve_model() -> str:
-        model = os.environ.get("OPSPILOT_AI_MODEL", DEFAULT_MODEL)
-        normalized = model.strip()
-        return normalized or DEFAULT_MODEL
+        provider = AISettings._resolve_provider()
+        env_map = {
+            "gemini": "GEMINI_MODEL",
+            "groq": "GROQ_MODEL",
+            "mistral": "MISTRAL_MODEL",
+            "openrouter": "OPENROUTER_MODEL",
+            "cloudflare": "CLOUDFLARE_MODEL",
+            "ollama": "OLLAMA_MODEL",
+        }
+        model_env = env_map.get(provider)
+        if model_env:
+            configured = os.environ.get(model_env, "").strip()
+            if configured:
+                return configured
+        legacy = os.environ.get("OPSPILOT_AI_MODEL", "").strip()
+        return legacy or DEFAULT_MODEL
 
     @staticmethod
     def _resolve_api_key() -> str | None:
-        configured = os.environ.get("OPSPILOT_AI_API_KEY")
-        if configured and configured.strip():
-            return configured.strip()
-
-        fallback = os.environ.get("ANTHROPIC_API_KEY")
-        if fallback and fallback.strip():
-            return fallback.strip()
-
+        for name in (
+            "GEMINI_API_KEY",
+            "GROQ_API_KEY",
+            "MISTRAL_API_KEY",
+            "OPENROUTER_API_KEY",
+            "CLOUDFLARE_API_TOKEN",
+            "OPSPILOT_AI_API_KEY",
+        ):
+            configured = os.environ.get(name)
+            if configured and configured.strip():
+                return configured.strip()
         return None
 
     @property
