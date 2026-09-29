@@ -487,28 +487,28 @@ npm run preview -- --host 127.0.0.1 --port 4173
 #   (historical mentions in docs remain by design)
 ```
 
-## PART 7 — B2 LLM gateway + traces — 2026-09-29
+## PART 7 â€” B2 LLM gateway + traces â€” 2026-09-29
 
 ### Summary
 
-Hand-rolled `llm/` gateway shipped on branch `b2/llm-gateway` (Phase 1 C0–C10). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; gateway triage + briefing. `LlmCall` + UTC budget counters; pagination; request_id; F-03/F-09; timestamptz expand/contract. Discover job for STOP A.
+Hand-rolled `llm/` gateway shipped on branch `b2/llm-gateway` (Phase 1 C0â€“C10). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; gateway triage + briefing. `LlmCall` + UTC budget counters; pagination; request_id; F-03/F-09; timestamptz expand/contract. Discover job for STOP A.
 
-### STOP A — discover (secrets redacted)
+### STOP A â€” discover (secrets redacted)
 
 Command: `uv run python -m opspilot.jobs.llm_discover`
 
 | Provider | Configured | Reachable | Status | Notes |
 |----------|------------|-----------|--------|-------|
-| gemini | Y | Y | 200 | Key format warning: AQ. prefix — verify in AI Studio |
+| gemini | Y | Y | 200 | Key format warning: AQ. prefix â€” verify in AI Studio |
 | groq | Y | Y | 200 | models sample returned (ids only) |
 | mistral | Y | Y | 200 | models sample returned |
-| cloudflare | Y | n/a | — | Dashboard neurons manual |
+| cloudflare | Y | n/a | â€” | Dashboard neurons manual |
 | openrouter | Y | Y | 200 | models sample returned |
-| anthropic | enabled=false | — | — | D-023 off |
+| anthropic | enabled=false | â€” | â€” | D-023 off |
 
-**Rate-limit headers:** not returned on these probe endpoints. **Owner action:** record dashboard RPD/RPM/TPM (and Cloudflare neurons); approve `floor(0.8 × measured)` caps before locking `OPSPILOT_BUDGET_*` in `.env`. Until then unset budgets continue to **deny** remote calls (fail closed).
+**Rate-limit headers:** not returned on these probe endpoints. **Owner action:** record dashboard RPD/RPM/TPM (and Cloudflare neurons); approve `floor(0.8 Ã— measured)` caps before locking `OPSPILOT_BUDGET_*` in `.env`. Until then unset budgets continue to **deny** remote calls (fail closed).
 
-UTC budget day vs Gemini Pacific RPD skew: document when setting caps. Token overshoot =1 call after post-call reconcile — keep 80% margin.
+UTC budget day vs Gemini Pacific RPD skew: document when setting caps. Token overshoot â‰¤1 call after post-call reconcile â€” keep 80% margin.
 
 ### Per-commit CI (branch)
 
@@ -529,7 +529,7 @@ Recorded as pushes land; see `gh run list --branch b2/llm-gateway`. Agent policy
 Use Invoke-RestMethod per `docs/runbooks/llm-providers.md`. Requires owner-approved budget env (or temporary process-local caps for a demo window). `OPSPILOT_ANTHROPIC_ENABLED=false`.
 
 
-### Live smoke evidence (2026-09-29, process-local temporary budgets — not locked caps)
+### Live smoke evidence (2026-09-29, process-local temporary budgets â€” not locked caps)
 
 Temporary `OPSPILOT_BUDGET_*_REQ_DAY=50` / `_TOK_DAY=200000` in uvicorn process only (owner must still approve 80% measured caps for `.env`).
 
