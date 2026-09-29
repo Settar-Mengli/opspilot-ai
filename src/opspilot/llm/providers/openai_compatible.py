@@ -13,6 +13,13 @@ from pydantic import BaseModel
 
 from opspilot.llm.capabilities import JsonMode, json_mode_for
 from opspilot.llm.meta_redact import http_error_meta
+from opspilot.llm.model_defaults import (
+    CLOUDFLARE_DEFAULT_MODEL,
+    GROQ_DEFAULT_MODEL,
+    MISTRAL_DEFAULT_MODEL,
+    OLLAMA_DEFAULT_MODEL,
+    OPENROUTER_DEFAULT_MODEL,
+)
 from opspilot.llm.providers.http import default_timeout, parse_retry_after
 from opspilot.llm.schema_convert import groq_strict_schema, schema_prompt_fragment
 from opspilot.llm.types import AttemptStatus, Message, ProviderResult, StreamChunk, TaskName
@@ -22,25 +29,25 @@ _PROVIDER_DEFAULTS: dict[str, dict[str, str]] = {
         "base_url": "https://api.groq.com/openai/v1",
         "key_env": "GROQ_API_KEY",
         "model_env": "GROQ_MODEL",
-        "default_model": "llama-3.1-8b-instant",
+        "default_model": GROQ_DEFAULT_MODEL,
     },
     "mistral": {
         "base_url": "https://api.mistral.ai/v1",
         "key_env": "MISTRAL_API_KEY",
         "model_env": "MISTRAL_MODEL",
-        "default_model": "mistral-small-latest",
+        "default_model": MISTRAL_DEFAULT_MODEL,
     },
     "openrouter": {
         "base_url": "https://openrouter.ai/api/v1",
         "key_env": "OPENROUTER_API_KEY",
         "model_env": "OPENROUTER_MODEL",
-        "default_model": "openrouter/auto",
+        "default_model": OPENROUTER_DEFAULT_MODEL,
     },
     "ollama": {
         "base_url": "http://127.0.0.1:11434/v1",
         "key_env": "OLLAMA_API_KEY",
         "model_env": "OLLAMA_MODEL",
-        "default_model": "llama3.2",
+        "default_model": OLLAMA_DEFAULT_MODEL,
     },
 }
 
@@ -82,7 +89,7 @@ def config_for(provider: str) -> OpenAICompatibleConfig:
             base_url=base,
             api_key=token,
             model_env="CLOUDFLARE_MODEL",
-            default_model="@cf/meta/llama-3.1-8b-instruct",
+            default_model=CLOUDFLARE_DEFAULT_MODEL,
             extra_headers={},
         )
     defaults = _PROVIDER_DEFAULTS.get(name)

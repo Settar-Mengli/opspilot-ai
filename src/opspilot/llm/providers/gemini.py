@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from opspilot.llm.capabilities import JsonMode, json_mode_for
 from opspilot.llm.meta_redact import http_error_meta
+from opspilot.llm.model_defaults import GEMINI_DEFAULT_MODEL
 from opspilot.llm.providers.http import default_timeout, parse_retry_after
 from opspilot.llm.schema_convert import gemini_response_schema, schema_prompt_fragment
 from opspilot.llm.types import AttemptStatus, Message, ProviderResult, StreamChunk, TaskName
@@ -33,7 +34,7 @@ def resolve_gemini_model(task: TaskName, override: str | None = None) -> str:
     if override:
         return override
     task_key = f"GEMINI_MODEL_{task.upper()}"
-    return os.environ.get(task_key) or os.environ.get("GEMINI_MODEL") or "gemini-2.0-flash-lite"
+    return os.environ.get(task_key) or os.environ.get("GEMINI_MODEL") or GEMINI_DEFAULT_MODEL
 
 
 class GeminiProvider:

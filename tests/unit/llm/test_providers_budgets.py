@@ -34,7 +34,7 @@ def test_provider_order_excludes_anthropic(monkeypatch: pytest.MonkeyPatch) -> N
 
 def test_gemini_success_with_mock_transport(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-    monkeypatch.setenv("GEMINI_MODEL", "gemini-2.0-flash-lite")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert "generativelanguage.googleapis.com" in str(request.url)
@@ -73,12 +73,12 @@ def test_gemini_429_retry_after(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_groq_openai_compatible_mock(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GROQ_API_KEY", "gsk-test")
-    monkeypatch.setenv("GROQ_MODEL", "llama-3.1-8b-instant")
+    monkeypatch.setenv("GROQ_MODEL", "openai/gpt-oss-20b")
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert "api.groq.com" in str(request.url)
         body = json.loads(request.content.decode())
-        assert body["model"] == "llama-3.1-8b-instant"
+        assert body["model"] == "openai/gpt-oss-20b"
         return httpx.Response(
             200,
             json={
@@ -216,7 +216,7 @@ def test_unset_budget_denies(db_session: Session, monkeypatch: pytest.MonkeyPatc
 
 def test_mistral_host_guard(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MISTRAL_API_KEY", "mistral-test")
-    monkeypatch.setenv("MISTRAL_MODEL", "mistral-small-latest")
+    monkeypatch.setenv("MISTRAL_MODEL", "ministral-3b-2512")
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert "api.mistral.ai" in str(request.url)
@@ -238,7 +238,7 @@ def test_mistral_host_guard(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_openrouter_host_guard(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
-    monkeypatch.setenv("OPENROUTER_MODEL", "openrouter/auto")
+    monkeypatch.setenv("OPENROUTER_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert "openrouter.ai" in str(request.url)
@@ -261,7 +261,7 @@ def test_openrouter_host_guard(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_cloudflare_host_guard(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "cf-token")
     monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct-xyz")
-    monkeypatch.setenv("CLOUDFLARE_MODEL", "@cf/meta/llama-3.1-8b-instruct")
+    monkeypatch.setenv("CLOUDFLARE_MODEL", "@cf/meta/llama-3.3-70b-instruct-fp8-fast")
 
     def handler(request: httpx.Request) -> httpx.Response:
         url = str(request.url)

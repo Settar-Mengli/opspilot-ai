@@ -17,11 +17,11 @@ def test_ignores_retired_opspilot_ai_env(monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
-    monkeypatch.setenv("GEMINI_MODEL", "gemini-2.0-flash-lite")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
     settings = AISettings()
     assert settings.provider == "gemini"
-    assert settings.model == "gemini-2.0-flash-lite"
+    assert settings.model == "gemini-3.5-flash-lite"
     assert settings.api_key is None
     assert settings.api_key != "legacy-key-must-be-ignored"
     assert settings.model != "should-never-appear"
@@ -31,11 +31,11 @@ def test_first_configured_provider_in_order(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setenv("INFERENCE_PROVIDER_ORDER", "gemini,groq")
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.setenv("GROQ_API_KEY", "gsk-test-only")
-    monkeypatch.setenv("GROQ_MODEL", "llama-3.1-8b-instant")
+    monkeypatch.setenv("GROQ_MODEL", "openai/gpt-oss-20b")
     monkeypatch.setenv("OPSPILOT_AI_PROVIDER", "mistral")
     monkeypatch.setenv("OPSPILOT_AI_API_KEY", "ignored")
 
     settings = AISettings()
     assert settings.provider == "groq"
-    assert settings.model == "llama-3.1-8b-instant"
+    assert settings.model == "openai/gpt-oss-20b"
     assert settings.api_key == "gsk-test-only"

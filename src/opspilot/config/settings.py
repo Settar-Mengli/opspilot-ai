@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import os
 
+from opspilot.llm.model_defaults import DEFAULT_MODELS, GEMINI_DEFAULT_MODEL
+
 DEFAULT_PROVIDER = "gemini"
-DEFAULT_MODEL = "gemini-2.0-flash-lite"
+DEFAULT_MODEL = GEMINI_DEFAULT_MODEL
 
 _MODEL_ENV: dict[str, str] = {
     "gemini": "GEMINI_MODEL",
@@ -28,15 +30,6 @@ _KEY_ENV: dict[str, str] = {
     "openrouter": "OPENROUTER_API_KEY",
     "cloudflare": "CLOUDFLARE_API_TOKEN",
     "ollama": "OLLAMA_API_KEY",
-}
-
-_DEFAULT_MODELS: dict[str, str] = {
-    "gemini": "gemini-2.0-flash-lite",
-    "groq": "llama-3.1-8b-instant",
-    "mistral": "mistral-small-latest",
-    "openrouter": "openrouter/auto",
-    "cloudflare": "@cf/meta/llama-3.1-8b-instruct",
-    "ollama": "llama3.2",
 }
 
 
@@ -71,7 +64,7 @@ def _model_for(provider: str) -> str:
         configured = os.environ.get(env_name, "").strip()
         if configured:
             return configured
-    return _DEFAULT_MODELS.get(provider, DEFAULT_MODEL)
+    return DEFAULT_MODELS.get(provider, DEFAULT_MODEL)
 
 
 class AISettings:
