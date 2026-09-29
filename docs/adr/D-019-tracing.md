@@ -30,3 +30,9 @@ LangSmith; Phoenix from day one; logs only.
 ## Consequences
 
 Budget gate and leaderboard can debit real usage; CI asserts no live Anthropic.
+
+## Addendum (B2, 2026-09-29)
+
+- One `LlmCall` row per **provider attempt** (statuses: `success|error|429|timeout|budget_denied|policy_denied`).
+- JSONL under `data/llm_traces/` (gitignored) or stdout-oriented logging when `CI=true`; disable with `OPSPILOT_LLM_JSONL=0`.
+- OTel-compatible structured log attrs (`gen_ai.*` style) via `opspilot.obs.tracing`; Phoenix UI still deferred.

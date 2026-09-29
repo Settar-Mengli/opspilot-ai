@@ -121,12 +121,13 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 - **Goal:** Multi-provider free path + metering hooks.
 - **Workstream M2** — A1 + A4 hooks + X4 in gateway
-  - **Scope:** Hand-rolled gateway under `llm/` (D-012/D-024); Gemini/Groq/Ollama; migrate remaining adapters; structured outputs; prompt versions; LlmCall traces; **Anthropic prepaid gate** (D-023); daily free-tier quotas; 429/Retry-After failover; prompt/data minimization (X4).
+  - **Scope:** Hand-rolled gateway under `llm/` (D-012/D-024); Gemini/Groq/Ollama (+ mistral/cloudflare/openrouter); migrate remaining adapters; structured outputs; prompt versions; LlmCall traces; **Anthropic prepaid gate** (D-023); daily free-tier quotas; 429/Retry-After failover; prompt/data minimization (X4); services layer; runs pagination; request_id; timestamptz (D-027).
   - **Exit criteria:**
-    - **Tests:** Fake-provider unit tests; budget=0 or disabled → no Anthropic HTTP; allowlisted+budget mocked path allowed; CI never constructs Anthropic client; 429/Retry-After failover covered; LlmCall rows written in tests with fakes.
+    - **Tests:** Fake-provider unit tests; budget=0 or disabled → no Anthropic HTTP; allowlisted+budget mocked path allowed; CI never constructs Anthropic client; 429/Retry-After failover covered; LlmCall rows written in tests with fakes; ask/evening/insights soft-200 shapes.
     - **Evals:** n/a (B3) except smoke hooks if any.
-    - **Live smoke:** Gemini **or** Ollama happy path; optional separate Anthropic budgeted script (not CI).
-    - **Docs:** PART appended; ROADMAP/ADRs/CHANGELOG updated; free-tier quotas VERIFY AT DECISION TIME noted.
+    - **Live smoke:** Free provider happy path via Invoke-RestMethod; optional Anthropic budgeted script (not CI).
+    - **Docs:** PART 7; ROADMAP/ADRs/CHANGELOG; free-tier quotas VERIFY AT DECISION TIME noted.
+- **Status (branch `b2/llm-gateway`):** Phase 1 code complete (C0–C10). STOP A discover run recorded in PART 7 — **owner must still approve 80% budget caps** before treating live budgets as locked.
 - **Deps:** B1 · **Size:** XL · **Metric:** Multi-provider gateway with failover
 
 ### B3 — Eval platform + injection red-team (M3 + M4) — one harness

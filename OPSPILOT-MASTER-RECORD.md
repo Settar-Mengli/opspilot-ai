@@ -486,3 +486,58 @@ npm run preview -- --host 127.0.0.1 --port 4173
 #   git grep -n B15B_DESKTOP_HOLD -- .github frontend  â†’ empty
 #   (historical mentions in docs remain by design)
 ```
+
+## PART 7 — B2 LLM gateway + traces — 2026-09-29
+
+### Summary
+
+Hand-rolled `llm/` gateway shipped on branch `b2/llm-gateway` (Phase 1 C0–C10). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; gateway triage + briefing. `LlmCall` + UTC budget counters; pagination; request_id; F-03/F-09; timestamptz expand/contract. Discover job for STOP A.
+
+### STOP A — discover (secrets redacted)
+
+Command: `uv run python -m opspilot.jobs.llm_discover`
+
+| Provider | Configured | Reachable | Status | Notes |
+|----------|------------|-----------|--------|-------|
+| gemini | Y | Y | 200 | Key format warning: AQ. prefix — verify in AI Studio |
+| groq | Y | Y | 200 | models sample returned (ids only) |
+| mistral | Y | Y | 200 | models sample returned |
+| cloudflare | Y | n/a | — | Dashboard neurons manual |
+| openrouter | Y | Y | 200 | models sample returned |
+| anthropic | enabled=false | — | — | D-023 off |
+
+**Rate-limit headers:** not returned on these probe endpoints. **Owner action:** record dashboard RPD/RPM/TPM (and Cloudflare neurons); approve `floor(0.8 × measured)` caps before locking `OPSPILOT_BUDGET_*` in `.env`. Until then unset budgets continue to **deny** remote calls (fail closed).
+
+UTC budget day vs Gemini Pacific RPD skew: document when setting caps. Token overshoot =1 call after post-call reconcile — keep 80% margin.
+
+### Per-commit CI (branch)
+
+Recorded as pushes land; see `gh run list --branch b2/llm-gateway`. Agent policy: one commit per push; wait for full CI green including UI Tests.
+
+### Exit grep (no leaky clients)
+
+- Provider HTTP/SDK under `src/opspilot/llm/providers/` only.
+- `ANTHROPIC_API_KEY` only in `llm/providers/anthropic.py` (+ discover does not print it).
+- Retired `OPSPILOT_AI_*` removed from live call paths; `.env.example` marks them retired.
+
+### Coverage
+
+`fail_under=72` retained; report TOTAL % from CI Backend Tests job on green SHAs.
+
+### Live smoke
+
+Use Invoke-RestMethod per `docs/runbooks/llm-providers.md`. Requires owner-approved budget env (or temporary process-local caps for a demo window). `OPSPILOT_ANTHROPIC_ENABLED=false`.
+
+
+### Live smoke evidence (2026-09-29, process-local temporary budgets — not locked caps)
+
+Temporary `OPSPILOT_BUDGET_*_REQ_DAY=50` / `_TOK_DAY=200000` in uvicorn process only (owner must still approve 80% measured caps for `.env`).
+
+| Call | Result |
+|------|--------|
+| GET /api/v1/health | ok |
+| POST /ask | 200, answer len 488 |
+| POST /evening-summary | 200, summary len 859 |
+| POST /insights | 200, intro len 71, 4 insights |
+
+`llm_calls` status counts after smoke (redacted): cloudflare success 2; gemini error 1 + success 2; groq error 1; mistral success 2; openrouter success 2. Anthropic disabled.
