@@ -1,116 +1,57 @@
-import importlib
+"""Ask service / conversation wrapper tests (gateway path)."""
+
+from __future__ import annotations
 
 import pytest
 
-MISSING_KEY_MESSAGE = (
-    "I need an Anthropic API key to answer questions. Set ANTHROPIC_API_KEY in your environment and I'll be ready."
-)
+from opspilot.llm.types import CompletionResult
+from opspilot.services import ask as ask_service
+
 UNAVAILABLE_MESSAGE = "I ran into an issue answering that. The API may be unavailable. Please try again in a moment."
+NO_PROVIDER_MESSAGE = (
+    "I need a free-tier LLM key to answer questions. "
+    "Set GEMINI_API_KEY or GROQ_API_KEY (see .env.example) and I'll be ready."
+)
 
 
-def _reload_with_env(monkeypatch: pytest.MonkeyPatch, **env: str | None):
-    for key in [
-        "OPSPILOT_AI_PROVIDER",
-        "OPSPILOT_AI_MODEL",
-        "OPSPILOT_AI_API_KEY",
-        "ANTHROPIC_API_KEY",
-        "OPSPILOT_FORCE_RULES",
-        "OPSPILOT_LLM_DISABLE",
-    ]:
+def test_empty_question() -> None:
+    assert "didn't catch" in ask_service.answer_question("   ").lower()
+
+
+def test_force_rules_soft(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPSPILOT_FORCE_RULES", "1")
+    assert ask_service.answer_question("What needs attention?") == UNAVAILABLE_MESSAGE
+
+
+def test_no_providers_soft(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("OPSPILOT_FORCE_RULES", raising=False)
+    monkeypatch.delenv("OPSPILOT_LLM_DISABLE", raising=False)
+    for key in (
+        "GEMINI_API_KEY",
+        "GROQ_API_KEY",
+        "MISTRAL_API_KEY",
+        "OPENROUTER_API_KEY",
+        "CLOUDFLARE_API_TOKEN",
+        "CLOUDFLARE_ACCOUNT_ID",
+    ):
         monkeypatch.delenv(key, raising=False)
-
-    for key, value in env.items():
-        if value is None:
-            continue
-        monkeypatch.setenv(key, value)
-
-    import opspilot.adapters.conversation_adapter as conversation_module
-    import opspilot.config.settings as settings_module
-    import opspilot.llm.policy as policy_module
-
-    settings_module = importlib.reload(settings_module)
-    policy_module = importlib.reload(policy_module)
-    conversation_module = importlib.reload(conversation_module)
-    return settings_module, conversation_module
+    monkeypatch.setenv("INFERENCE_PROVIDER_ORDER", "gemini,groq")
+    assert ask_service.answer_question("Any updates?") == NO_PROVIDER_MESSAGE
 
 
-def _stub_anthropic(conversation_module):
-    captured: dict[str, object] = {}
+def test_gateway_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("OPSPILOT_FORCE_RULES", raising=False)
+    monkeypatch.delenv("OPSPILOT_LLM_DISABLE", raising=False)
 
-    class _FakeMessages:
-        def create(self, **kwargs):
-            captured["create"] = kwargs
-            text_block = type("TextBlock", (), {"text": " Stub answer "})()
-            return type("Response", (), {"content": [text_block]})()
+    def _fake_complete(**_kwargs):  # type: ignore[no-untyped-def]
+        return CompletionResult(text=" Prioritize WI-001 ", provider="fake", model="fake-v1")
 
-    class _FakeClient:
-        def __init__(self, api_key: str):
-            captured["api_key"] = api_key
-            self.messages = _FakeMessages()
-
-    conversation_module.Anthropic = _FakeClient
-    return captured
+    monkeypatch.setattr(ask_service, "complete_prose", _fake_complete)
+    assert ask_service.answer_question("What should I prioritize?") == "Prioritize WI-001"
 
 
-def test_default_resolution_uses_anthropic_provider_and_default_model(monkeypatch: pytest.MonkeyPatch):
-    settings_module, conversation_module = _reload_with_env(
-        monkeypatch,
-        ANTHROPIC_API_KEY="legacy-key",
-    )
-    captured = _stub_anthropic(conversation_module)
+def test_adapter_wrapper_delegates(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPSPILOT_FORCE_RULES", "1")
+    from opspilot.adapters.conversation_adapter import answer_question
 
-    answer = conversation_module.answer_question("What should I prioritize?")
-
-    assert answer == "Stub answer"
-    assert settings_module.ai_settings.provider == "anthropic"
-    assert settings_module.ai_settings.model == "claude-haiku-4-5-20251001"
-    assert captured["api_key"] == "legacy-key"
-    assert captured["create"]["model"] == "claude-haiku-4-5-20251001"
-
-
-def test_opspilot_ai_model_overrides_default_model(monkeypatch: pytest.MonkeyPatch):
-    _, conversation_module = _reload_with_env(
-        monkeypatch,
-        ANTHROPIC_API_KEY="legacy-key",
-        OPSPILOT_AI_MODEL="claude-3-5-haiku-latest",
-    )
-    captured = _stub_anthropic(conversation_module)
-
-    answer = conversation_module.answer_question("Give me a quick summary")
-
-    assert answer == "Stub answer"
-    assert captured["create"]["model"] == "claude-3-5-haiku-latest"
-
-
-def test_opspilot_api_key_takes_precedence_over_anthropic_api_key(monkeypatch: pytest.MonkeyPatch):
-    _, conversation_module = _reload_with_env(
-        monkeypatch,
-        ANTHROPIC_API_KEY="legacy-key",
-        OPSPILOT_AI_API_KEY="primary-key",
-    )
-    captured = _stub_anthropic(conversation_module)
-
-    answer = conversation_module.answer_question("What changed?")
-
-    assert answer == "Stub answer"
-    assert captured["api_key"] == "primary-key"
-
-
-def test_missing_key_returns_existing_fallback_message(monkeypatch: pytest.MonkeyPatch):
-    _, conversation_module = _reload_with_env(monkeypatch)
-
-    answer = conversation_module.answer_question("Any updates?")
-
-    assert answer == MISSING_KEY_MESSAGE
-
-
-def test_unsupported_provider_fails_safely(monkeypatch: pytest.MonkeyPatch):
-    _, conversation_module = _reload_with_env(
-        monkeypatch,
-        OPSPILOT_AI_PROVIDER="openai",
-        OPSPILOT_AI_API_KEY="some-key",
-    )
-
-    answer = conversation_module.answer_question("Any updates?")
-
-    assert answer == UNAVAILABLE_MESSAGE
+    assert answer_question("hi") == UNAVAILABLE_MESSAGE

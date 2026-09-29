@@ -196,7 +196,7 @@ class OpenAICompatibleProvider:
                 error_code="timeout",
                 latency_ms=int((time.perf_counter() - started) * 1000),
             )
-        except httpx.HTTPError as exc:
+        except Exception as exc:  # noqa: BLE001 — include pytest-socket blocks
             return ProviderResult(
                 status=AttemptStatus.ERROR,
                 model=resolved,

@@ -11,9 +11,6 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
-from opspilot.adapters.conversation_adapter import answer_question
-from opspilot.adapters.evening_adapter import generate_evening_summary
-from opspilot.adapters.insights_adapter import generate_insights
 from opspilot.api.deps import get_db_session
 from opspilot.api.paths import RAW_INPUT_DIR
 from opspilot.api.schemas import (
@@ -29,6 +26,9 @@ from opspilot.api.services.pipeline import execute_pipeline
 from opspilot.capabilities.registry import get_all_capabilities, get_capability
 from opspilot.config.settings import ai_settings
 from opspilot.persistence.models import RunArtifactRow, RunRow, TriageDecisionRow, WorkItemRow
+from opspilot.services.ask import answer_question
+from opspilot.services.evening import generate_evening_summary
+from opspilot.services.insights import generate_insights
 
 router = APIRouter(prefix="/api/v1")
 
@@ -198,6 +198,7 @@ def ask(payload: AskRequest, session: Session = Depends(get_db_session)) -> dict
         question=payload.question,
         assistant_name=payload.assistant_name,
         triage_records=records,
+        session=session,
     )
     return {"answer": answer}
 
@@ -208,6 +209,7 @@ def evening_summary(payload: EveningSummaryRequest, session: Session = Depends(g
     summary = generate_evening_summary(
         assistant_name=payload.assistant_name,
         triage_records=records,
+        session=session,
     )
     return {"summary": summary}
 
@@ -218,6 +220,7 @@ def insights(payload: InsightsRequest, session: Session = Depends(get_db_session
     return generate_insights(
         assistant_name=payload.assistant_name,
         triage_records=records,
+        session=session,
     )
 
 
