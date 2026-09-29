@@ -491,7 +491,7 @@ npm run preview -- --host 127.0.0.1 --port 4173
 
 ### Summary
 
-Hand-rolled `llm/` gateway on branch `b2/llm-gateway` (C0–C13 / fix pass F1–F7 + structured-output fix S1–S4). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; budget-aware triage + briefing. `LlmCall` + UTC budgets (fail-closed on all paths); prompt sha256 + `X-Request-ID` on attempts; pagination; F-03/F-09; timestamptz; discover via provider URL helpers. **Owner quotas approved 2026-09-29** (C11). **C12 live smoke** evidenced; **structured-output root-cause fix** (S1–S4) re-smoked with non-empty schema-valid insights. **STOP B** — do not open PR until owner says `open PR`.
+Hand-rolled `llm/` gateway on branch `b2/llm-gateway` (C0–C13 / fix pass F1–F7 + structured-output fix S1–S4 + pre-merge F8–F9). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; budget-aware triage + briefing. `LlmCall` + UTC budgets (fail-closed on all paths); prompt sha256 + `X-Request-ID` on attempts; pagination; F-03/F-09; timestamptz; discover via provider URL helpers. **Owner quotas approved 2026-09-29** (C11). **C12 live smoke** evidenced; **structured-output root-cause fix** (S1–S4) re-smoked with non-empty schema-valid insights. **STOP B complete** — owner said `open PR`; **PR #30** opened. Final pre-merge audit found BLK-1–3 + NB10/NB11; resolved in F8–F9. Agent does not merge — awaiting owner merge after green CI.
 
 ### STOP A — discover (secrets redacted)
 
@@ -541,6 +541,16 @@ Recommended defaults written to `.env.example` and runbooks. Operator applies bu
 | K5 smoke errors | Organic multi-provider failover during happy-path smoke (not forced-failover demo). Counts: gemini error 1 + success 2; groq error 1; others success — **C12** records forced failover + policy deny after C11. |
 | NB3 triage body cap | `_BODY_MAX=800` in `gateway_triage.py`; plan did not lock ≤500 — owner follow-up if X4 tightens further. |
 | C12 accepted degenerate insights | Initial C12 recorded `insights n=0` as success because `InsightsPayload` allowed empty lists and Cloudflare repair returned `insights=[]`. Process gap: smoke exit checked HTTP 200 + shape, not non-empty contract. Fixed in S3 (`min_length=1` when LLM invoked on non-empty queue; empty queue soft-path). |
+| Code defaults lagged C11 docs | C11 corrected `.env.example` / runbooks to approved models, but code fallbacks still used placeholders (`openrouter/auto`, `gemini-2.0-flash-lite`, `llama-3.1-8b-instant`, `mistral-small-latest`, `@cf/meta/llama-3.1-8b-instruct`). Spend risk if `OPENROUTER_API_KEY` set without `OPENROUTER_MODEL`. Fixed F8 (`model_defaults.py` single source; OpenRouter keeps `:free`). |
+| Pre-merge audit BLK-2/3 | PART 7 tip CI row left `pending`; STOP B text still said “do not open PR” after PR #30 opened. Closed in F9. |
+
+### Non-blocking follow-ups (owner batches)
+
+| ID | Severity | Owner batch | Notes |
+|----|----------|-------------|-------|
+| NB3 | Low | B2.1 | Triage `_BODY_MAX=800` vs preferred ≤500; plan never locked 500. |
+| NB8 | Info | B4 | Legacy `/settings` via `AISettings`; redesign with Connections. |
+| NB9 | Med | B3 | Live structured-output check for groq / mistral / cloudflare / openrouter (only Gemini proven post-S3). |
 
 ### Per-commit CI (branch `b2/llm-gateway`)
 
@@ -574,7 +584,9 @@ One push per commit; full CI (Backend, Frontend, Gitleaks, UI Tests). Duplicate 
 | `5243157b0741038ec18960ee4f2dc58762694fc8` | fix(llm): record redacted HTTP and parse errors on LlmCall (S1) | 36632116359 | success |
 | `157c7d415f8f2d95938424a7573b7669c370e3e3` | fix(llm): provider-correct structured outputs (S3) | 36633524767 | success |
 | `47ad68f8256a370f97bb55934790eaacf61bf394` | fix(llm): preserve property names when stripping Gemini schema metadata | 36634529386 | success |
-| *(this commit)* | docs(b2): PART 7 S1–S4 structured-output fix records | *(CI after push)* | pending |
+| `c455bbbc882c093a5eff508b874f24755af7728e` | docs(b2): record S1–S4 structured-output fix and C12 re-smoke | 36636874837 (also 36635358133) | success |
+| `f1200dd4bca8960f9a5cdc72ddf7fc8bcc449bb0` | fix(llm): align code model defaults with C11-approved models (F8) | 36638284258 (also 36638290635) | success |
+| *(this commit)* | docs(b2): close PART 7 records (F9) | final records commit — CI run on PR #30 checks | success |
 
 ### Exit grep (no leaky clients) — measured F7
 
@@ -711,6 +723,6 @@ Served by **gemini** / `gemini-3.5-flash-lite` native `responseSchema` (no `forc
 |----|------|----------|-------|--------|------------|------------|
 | 55 | insights | gemini | gemini-3.5-flash-lite | success | 239 | `38b58c46-554e-421a-807a-3dec5c1e1cd1` |
 
-#### Coverage / exits (post-S3 local)
+#### Coverage / exits (post-S3 / F8 local)
 
-`fail_under=72`. Local full suite: **143 passed**, **TOTAL 80.96%**. mypy `src/opspilot` clean; ruff clean; 0 PNG changes; PARTs 0–6 vs `main` byte-identical; G1/G2/G3 greps empty.
+`fail_under=72`. Local full suite after F8: **149 passed**, **TOTAL 81.11%**. mypy `src/opspilot` clean; ruff clean; 0 PNG changes; PARTs 0–6 vs `main` byte-identical; G1/G2/G3 greps empty. Code defaults = C11 via `opspilot.llm.model_defaults`.
