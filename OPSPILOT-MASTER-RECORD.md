@@ -517,12 +517,14 @@ UTC budget day vs Gemini Pacific RPD skew: Gemini free RPD resets Pacific midnig
 | groq | `openai/gpt-oss-20b` | floor(0.8×) | Headers 1,000 RPD, 8,000 TPM; published 200,000 TPD | 800 | 160000 |
 | gemini | `gemini-3.5-flash-lite` | floor(0.8×) REQ; **POLICY** TOK | AI Studio free 500 RPD (Pacific midnight reset) | 400 | 800000 (= 400 × ~2k tok policy) |
 | cloudflare | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` | derived 80% | 10k neurons/day; 26,668 neu/M in, 204,805 neu/M out → ~177k tok/day @ 5:1 in/out; ~100 neu/call | 80 | 140000 |
-| openrouter | `:free` models | floor(0.8×) REQ; **POLICY** TOK | 50 req/day, 20 RPM; unpaid / `is_free_tier=true` | 40 | 160000 |
+| openrouter | `nvidia/nemotron-3-super-120b-a12b:free` | floor(0.8×) REQ; **POLICY** TOK | 50 req/day, 20 RPM; unpaid / `is_free_tier=true` | 40 | 160000 |
 | mistral | `ministral-3b-2512` | **OWNER POLICY** | Headers only 750 RPM / 1,300,000 TPM — **no daily quota** | 1000 | 1000000 |
 | ollama | local | unset | optional | — | — |
 | anthropic | — | disabled | D-023 off | — | — |
 
-**OWNER POLICY deviation from pure 80% formula:** Mistral REQ/TOK entirely policy (no daily measured quota); Gemini TOK_DAY and OpenRouter TOK_DAY are policy estimates. Cloudflare TOK uses neuron→token conversion at 5:1 mix (worst-case all-output ≈ 48.8k tokens/day) — documented in `docs/runbooks/llm-providers.md`. OpenRouter: keep `:free` suffix on `OPENROUTER_MODEL`.
+**OWNER POLICY deviation from pure 80% formula:** Mistral REQ/TOK entirely policy (no daily measured quota); Gemini TOK_DAY and OpenRouter TOK_DAY are policy estimates. Cloudflare TOK uses neuron→token conversion at 5:1 mix (worst-case all-output ≈ 48.8k tokens/day) — documented in `docs/runbooks/llm-providers.md`. OpenRouter model: **`nvidia/nemotron-3-super-120b-a12b:free`** (must keep `:free`).
+
+**Process deviation — wrong OpenRouter model in C11 docs:** Agent substituted `openrouter/auto:free` into `.env.example` / runbooks / C11 guidance instead of the owner-approved `nvidia/nemotron-3-super-120b-a12b:free`. Cause: inferred a generic free-tier placeholder rather than using the exact approved id. Corrected in a follow-up commit; recorded here.
 
 Recommended defaults written to `.env.example` and runbooks. Operator applies budget lines to local `.env` (never commit secrets).
 
@@ -532,6 +534,7 @@ Recommended defaults written to `.env.example` and runbooks. Operator applies bu
 |-----------|--------|
 | STOP A / C11 skipped in initial Phase 2 | Docs+smoke (`faae8c3`) ran with **process-local temporary** budgets before owner **quotas approved**; resolved C11 2026-09-29. |
 | OWNER POLICY caps (C11) | Mistral daily caps + Gemini/OpenRouter TOK_DAY are policy, not pure `floor(0.8 × measured)` — see C11 table. |
+| OpenRouter wrong model id in C11 docs | Agent wrote `openrouter/auto:free` instead of owner-approved `nvidia/nemotron-3-super-120b-a12b:free`; corrected after owner catch. |
 | Red commit `faae8c3` | CI run **36597646762** — Backend Tests (PART 7 CP1252 / ruff). Fix-forward **27cf7be** run **36597963381** green. |
 | Post-build audit B3 | Budget bypass on insights/triage/briefing when `session=None`; fixed in **ba4fa9b** (F3). |
 | Post-build audit B1/B2 / PART 7 | Discover hosts + `OPSPILOT_AI_*` falsely claimed retired; fixed F1/F2; greps below re-verified. |
@@ -565,7 +568,8 @@ One push per commit; full CI (Backend, Frontend, Gitleaks, UI Tests). Duplicate 
 | `74a436c572b51a29b21a968d80c9004fd2f40ca7` | docs(b2): correct PART 7 records (F6) | 36622273815 | success |
 | `322f0b88ba5d225955944abc8ce5ce8fcdc4d522` | chore(llm): documented default caps after quotas approved (C11) | 36626641853 | success |
 | `480482d6c82dd8832a93fcca05674a316e572704` | docs(b2): C12 live smoke evidence | 36628222191 | success |
-| *(F7)* | docs(b2): final PART 7 exit records | *(this commit)* | *(verify run after push; STOP B)* |
+| `2fb62fb711f1812b1c1dcc4cad1cab98f0e0ef6a` | docs(b2): final PART 7 exit records (F7) | 36629178032 | success |
+| *(final records)* | docs(b2): OpenRouter model correction + C12 diagnoses | final records commit — CI run on PR checks | pending PR |
 
 ### Exit grep (no leaky clients) — measured F7
 
@@ -633,3 +637,28 @@ POST /ask → 200 soft string (len 93). **NEW llm_calls rows: 0** (zero provider
 POST /ask → 200. Rows: **gemini budget_denied** (`req_cap`); **groq success**.
 
 JSONL under `data/llm_traces/` (gitignored); line counts only verified locally — no key material in PART 7.
+
+#### C12 diagnosis — insights n=0 (`request_id=94647b01-419b-48fb-a36f-d1815c555503`)
+
+| id | provider | model | status | error_code | tokens_out | note |
+|----|----------|-------|--------|------------|------------|------|
+| 21 | gemini | gemini-3.5-flash-lite | error | http_400 | 0 | structured `complete_json` |
+| 22 | groq | openai/gpt-oss-20b | error | http_400 | 0 | structured (strict/native path) |
+| 23 | mistral | ministral-3b-2512 | success | — | 493 | attempt; parse failed (gateway continued) |
+| 24 | mistral | ministral-3b-2512 | success | — | 455 | one repair; parse failed |
+| 25 | cloudflare | llama-3.3-70b…fp8-fast | success | — | 7 | attempt; parse failed |
+| 26 | cloudflare | llama-3.3-70b…fp8-fast | success | — | 39 | repair; **accepted** |
+
+**Verdict:** Not soft-fallback — soft intros are len ~93 / ~130 / ~62; observed intro len **146**. Not (b) alone. Sequence shows (a) failed schema validation on mistral×2 + cloudflare attempt, then **(c) validated `InsightsPayload` with `insights=[]`** from cloudflare repair (schema allows empty list). HTTP 400s on gemini/groq prevented those providers from contributing. JSONL for the same `request_id` matches statuses above (prompt_version sha256 redacted).
+
+**Suspected CODE defect (not fixed — awaiting owner approval):** Gemini/Groq return `http_400` only on structured insights while prose ask/evening/triage succeed (ask/evening 1 success each; triage 13 success; gemini success 16 overall in window). Likely cause: raw `schema.model_json_schema()` sent as Gemini `responseSchema` / Groq strict `json_schema` (`gemini.py` ~112–114; `openai_compatible.py` ~181–184; `capabilities.py` NATIVE_SCHEMA for gemini + `openai/gpt-oss*`). 4xx response bodies are not stored in `meta` (`gemini.py` ~143–148; `openai_compatible.py` ~225–230), so status class is **4xx config/schema**, Retry-After absent. **Proposed fix (do not apply until approved):** (1) sanitize/convert pydantic schema to provider-compatible JSON Schema; (2) optionally fall back to `json_object` / prompt-only on 400; (3) persist redacted `status_code` + short error message in `LlmCall.meta` for 4xx/429.
+
+#### C12 diagnosis — organic / demo error rows (id > 18, excl. budget_denied)
+
+| id | task | provider | model | HTTP / class | Retry-After | Classification |
+|----|------|----------|-------|--------------|-------------|----------------|
+| 21 | insights | gemini | gemini-3.5-flash-lite | http_400 (4xx schema/config) | none recorded | **Suspected defect** (structured schema path) — not 429 TPM/RPM/RPD |
+| 22 | insights | groq | openai/gpt-oss-20b | http_400 (4xx schema/config) | none recorded | **Suspected defect** (strict JSON schema path) — not rate limit |
+| 41 | ask | gemini | gemini-3.5-flash-lite | http_400 | none recorded | **Expected** forced-failover demo (invalid `GEMINI_API_KEY` in process) |
+
+No organic 429/timeout/5xx rows in the C12 window. Pre-C11 K5 mixed errors remain historical (organic failover, not this demo).
