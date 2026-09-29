@@ -15,9 +15,9 @@ URGENCY_ORDER = ["critical", "high", "medium", "low"]
 
 def generate_ai_briefing(
     run_date: str,
-    triage_records: list,
-    action_items: list,
-    normalized_items: list,
+    triage_records: list[Any],
+    action_items: list[Any],
+    normalized_items: list[Any],
     fallback_briefing: str,
 ) -> str:
     if not llm_allowed() or not providers_or_empty():

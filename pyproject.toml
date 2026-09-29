@@ -77,15 +77,10 @@ mypy_path = "src"
 packages = ["opspilot"]
 warn_unused_ignores = true
 
-# Legacy modules: relaxed until B2 (A8). Explicit list — no blanket repo ignore.
+# Legacy modules: relaxed until later batches. Explicit list — no blanket repo ignore.
+# llm/ and services/ are mypy-strict (B2).
 [[tool.mypy.overrides]]
 module = [
-	"opspilot.adapters.claude_adapter",
-	"opspilot.adapters.conversation_adapter",
-	"opspilot.adapters.evening_adapter",
-	"opspilot.adapters.insights_adapter",
-	"opspilot.adapters.briefing_adapter",
-	"opspilot.adapters.factory",
 	"opspilot.adapters.rule_based",
 	"opspilot.adapters.base",
 	"opspilot.ingest.*",
