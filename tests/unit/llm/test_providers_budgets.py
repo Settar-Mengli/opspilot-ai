@@ -17,7 +17,7 @@ from opspilot.llm.providers.gemini import GeminiProvider
 from opspilot.llm.providers.openai_compatible import OpenAICompatibleProvider
 from opspilot.llm.routed import BudgetAwareGateway
 from opspilot.llm.routing import provider_order
-from opspilot.llm.types import AttemptStatus, Message
+from opspilot.llm.types import AttemptStatus, Message, ProviderResult
 from opspilot.persistence.models import LlmBudgetCounterRow
 
 
@@ -212,3 +212,126 @@ def test_circuit_opens_after_error() -> None:
 def test_unset_budget_denies(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("OPSPILOT_BUDGET_GEMINI_REQ_DAY", raising=False)
     assert try_consume_request(db_session, provider="gemini") is False
+
+
+def test_mistral_host_guard(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MISTRAL_API_KEY", "mistral-test")
+    monkeypatch.setenv("MISTRAL_MODEL", "mistral-small-latest")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert "api.mistral.ai" in str(request.url)
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+            },
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    result = OpenAICompatibleProvider("mistral", client=client).complete(
+        task="ask", messages=[Message(role="user", content="hi")], max_tokens=32
+    )
+    assert result.status is AttemptStatus.SUCCESS
+    client.close()
+
+
+def test_openrouter_host_guard(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
+    monkeypatch.setenv("OPENROUTER_MODEL", "openrouter/auto")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert "openrouter.ai" in str(request.url)
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+            },
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    result = OpenAICompatibleProvider("openrouter", client=client).complete(
+        task="ask", messages=[Message(role="user", content="hi")], max_tokens=32
+    )
+    assert result.status is AttemptStatus.SUCCESS
+    client.close()
+
+
+def test_cloudflare_host_guard(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "cf-token")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct-xyz")
+    monkeypatch.setenv("CLOUDFLARE_MODEL", "@cf/meta/llama-3.1-8b-instruct")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        assert "api.cloudflare.com" in url
+        assert "acct-xyz" in url
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+            },
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    result = OpenAICompatibleProvider("cloudflare", client=client).complete(
+        task="ask", messages=[Message(role="user", content="hi")], max_tokens=32
+    )
+    assert result.status is AttemptStatus.SUCCESS
+    client.close()
+
+
+def test_ollama_host_guard(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+    monkeypatch.setenv("OLLAMA_MODEL", "llama3.2")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert "127.0.0.1:11434" in str(request.url)
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+            },
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    result = OpenAICompatibleProvider("ollama", client=client).complete(
+        task="ask", messages=[Message(role="user", content="hi")], max_tokens=32
+    )
+    assert result.status is AttemptStatus.SUCCESS
+    client.close()
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_timeout_trips_circuit_and_skips_provider(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_REQ_DAY", "20")
+    monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_TOK_DAY", "100000")
+    monkeypatch.setenv("OPSPILOT_BUDGET_GROQ_REQ_DAY", "20")
+    monkeypatch.setenv("OPSPILOT_BUDGET_GROQ_TOK_DAY", "100000")
+    from opspilot.llm.providers.fake import FakeProvider
+
+    slow = FakeProvider(
+        name="gemini",
+        complete_results=[ProviderResult(status=AttemptStatus.TIMEOUT, error_code="timeout", model="g")],
+    )
+    fast = FakeProvider(name="groq", text_responder=lambda _t, _m: "recovered")
+    circuit = CircuitBreaker(open_seconds=60)
+    gw = BudgetAwareGateway([slow, fast], session=db_session, circuit=circuit, observe=False)
+    first = gw.complete(task="ask", messages=[Message(role="user", content="a")])
+    assert first.provider == "groq"
+    assert first.text == "recovered"
+    assert circuit.is_open("gemini") is True
+    groq_calls = {"n": 0}
+    orig = fast.complete
+
+    def counting_complete(**kwargs):  # type: ignore[no-untyped-def]
+        groq_calls["n"] += 1
+        return orig(**kwargs)
+
+    fast.complete = counting_complete  # type: ignore[method-assign]
+    second = gw.complete(task="ask", messages=[Message(role="user", content="b")])
+    assert second.provider == "groq"
+    assert groq_calls["n"] == 1
