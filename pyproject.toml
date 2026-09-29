@@ -17,6 +17,7 @@ dependencies = [
 	"sqlalchemy>=2.0",
 	"psycopg[binary]>=3.3.6",
 	"alembic>=1.20.0",
+	"httpx>=0.28.1",
 ]
 
 # PEP 735: plain `uv sync` installs the default dependency group (dev).
