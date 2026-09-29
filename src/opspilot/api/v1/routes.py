@@ -106,9 +106,22 @@ def create_run(
 
 
 @router.get("/runs", response_class=JSONResponse)
-def list_runs(session: Session = Depends(get_db_session)) -> list[dict[str, Any]]:
-    result = session.execute(select(RunRow).order_by(desc(RunRow.finished_at), desc(RunRow.run_id)))
-    rows = result.scalars().all()
+def list_runs(
+    session: Session = Depends(get_db_session),
+    limit: int = 50,
+    cursor: str | None = None,
+) -> list[dict[str, Any]]:
+    """List runs newest-first. Default limit 50, max 100. Response stays a JSON array."""
+    page_size = min(max(limit, 1), 100)
+    query = select(RunRow).order_by(desc(RunRow.finished_at), desc(RunRow.run_id))
+    if cursor:
+        cur = session.get(RunRow, cursor)
+        if cur is not None:
+            query = query.where(
+                (RunRow.finished_at < cur.finished_at)
+                | ((RunRow.finished_at == cur.finished_at) & (RunRow.run_id < cur.run_id))
+            )
+    rows = session.execute(query.limit(page_size)).scalars().all()
     return [safe_history_metadata(dict(row.metadata_json or {"run_id": row.run_id})) for row in rows]
 
 
