@@ -57,7 +57,18 @@ def _strip_gemini(node: Any) -> Any:
         for k, v in node.items():
             if k in _GEMINI_DROP:
                 continue
-            out[k] = _strip_gemini(v)
+            if k == "properties" and isinstance(v, dict):
+                # Property *names* must be preserved (e.g. field "title"); only strip
+                # metadata keywords on nested schema objects, never on the key map.
+                out[k] = {pk: _strip_gemini(pv) for pk, pv in v.items()}
+            else:
+                out[k] = _strip_gemini(v)
+        # Drop required entries that no longer exist after stripping.
+        if "required" in out and "properties" in out and isinstance(out["properties"], dict):
+            props = out["properties"]
+            req = out.get("required")
+            if isinstance(req, list):
+                out["required"] = [r for r in req if r in props]
         return out
     if isinstance(node, list):
         return [_strip_gemini(v) for v in node]

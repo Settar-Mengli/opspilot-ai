@@ -58,6 +58,12 @@ def test_gemini_schema_inlines_refs_no_defs() -> None:
     assert "definitions" not in dumped
     assert schema.get("type") == "object"
     assert "insights" in (schema.get("properties") or {})
+    items = (schema["properties"]["insights"] or {}).get("items") or {}
+    item_props = items.get("properties") or {}
+    # Field named "title" must survive (S2: Gemini 400 when required refs missing props).
+    assert "title" in item_props
+    assert "body" in item_props
+    assert set(items.get("required") or []).issubset(set(item_props.keys()))
 
 
 def test_groq_strict_additional_properties_on_defs() -> None:
