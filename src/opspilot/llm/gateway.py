@@ -4,13 +4,17 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator, Sequence
+from typing import Protocol
 
 from pydantic import BaseModel, ValidationError
+from sqlalchemy.orm import Session
 
 from opspilot.llm.errors import LlmPolicyDenied, LlmProvidersExhausted, LlmSchemaError
 from opspilot.llm.policy import llm_allowed
 from opspilot.llm.providers.base import LlmProvider
-from opspilot.llm.types import AttemptStatus, CompletionResult, Message, StreamChunk, TaskName
+from opspilot.llm.types import AttemptStatus, CompletionResult, Message, ProviderResult, StreamChunk, TaskName
+from opspilot.obs.tracing import LlmSpanAttrs, append_llm_jsonl, emit_llm_span
+from opspilot.persistence.llm_calls import record_llm_call
 
 _REPAIR_SUFFIX = (
     "Your previous JSON failed validation. Return corrected JSON only that matches the schema. "
@@ -18,17 +22,63 @@ _REPAIR_SUFFIX = (
 )
 
 
+class AttemptRecorder(Protocol):
+    """Persists one provider attempt (typically to llm_calls)."""
+
+    def __call__(
+        self,
+        *,
+        task: TaskName,
+        provider: str,
+        result: ProviderResult,
+        request_id: str | None = None,
+    ) -> None: ...
+
+
+def default_observe_attempt(
+    *,
+    task: TaskName,
+    provider: str,
+    result: ProviderResult,
+    request_id: str | None = None,
+) -> None:
+    """JSONL + structured span for an attempt (no DB)."""
+    attrs = LlmSpanAttrs(
+        task=task,
+        provider=provider,
+        model=result.model or "unknown",
+        status=result.status.value,
+        latency_ms=result.latency_ms,
+        tokens_in=result.input_tokens,
+        tokens_out=result.output_tokens,
+        request_id=request_id,
+        error_code=result.error_code,
+    )
+    emit_llm_span(attrs)
+    append_llm_jsonl(attrs)
+
+
 class LlmGateway:
     """Thin multi-provider gateway: complete / complete_json / stream.
 
     C2 skeleton: inject providers explicitly (typically FakeProvider in tests).
-    Routing, budgets, and LlmCall persistence land in later commits.
+    Routing and budgets land in later commits; attempt metering hooks are optional.
     """
 
-    def __init__(self, providers: Sequence[LlmProvider]) -> None:
+    def __init__(
+        self,
+        providers: Sequence[LlmProvider],
+        *,
+        recorder: AttemptRecorder | None = None,
+        observe: bool = True,
+        request_id: str | None = None,
+    ) -> None:
         if not providers:
             raise ValueError("LlmGateway requires at least one provider")
         self._providers = list(providers)
+        self._recorder = recorder
+        self._observe = observe
+        self._request_id = request_id
 
     def complete(
         self,
@@ -43,6 +93,7 @@ class LlmGateway:
         last_error: str | None = None
         for provider in self._providers:
             result = provider.complete(task=task, messages=messages, max_tokens=max_tokens, model=model)
+            self._record(task=task, provider=provider.name, result=result)
             if result.status is AttemptStatus.SUCCESS:
                 return CompletionResult(
                     text=result.text,
@@ -76,6 +127,7 @@ class LlmGateway:
                 max_tokens=max_tokens,
                 model=model,
             )
+            self._record(task=task, provider=provider.name, result=attempt)
             if attempt.status is not AttemptStatus.SUCCESS:
                 last_error = attempt.error_code or attempt.status.value
                 continue
@@ -96,6 +148,7 @@ class LlmGateway:
                 model=model,
                 repair_hint=errors,
             )
+            self._record(task=task, provider=provider.name, result=repair)
             if repair.status is not AttemptStatus.SUCCESS:
                 last_error = repair.error_code or repair.status.value
                 continue
@@ -119,11 +172,31 @@ class LlmGateway:
         for provider in self._providers:
             try:
                 yield from provider.stream(task=task, messages=messages, max_tokens=max_tokens, model=model)
+                self._record(
+                    task=task,
+                    provider=provider.name,
+                    result=ProviderResult(status=AttemptStatus.SUCCESS, model=model or "", text=""),
+                )
                 return
             except Exception as exc:  # noqa: BLE001 — failover to next provider
                 last_error = str(exc)
+                self._record(
+                    task=task,
+                    provider=provider.name,
+                    result=ProviderResult(
+                        status=AttemptStatus.ERROR,
+                        model=model or "",
+                        error_code=type(exc).__name__,
+                    ),
+                )
                 continue
         raise LlmProvidersExhausted(last_error or "all providers failed to stream")
+
+    def _record(self, *, task: TaskName, provider: str, result: ProviderResult) -> None:
+        if self._observe:
+            default_observe_attempt(task=task, provider=provider, result=result, request_id=self._request_id)
+        if self._recorder is not None:
+            self._recorder(task=task, provider=provider, result=result, request_id=self._request_id)
 
     @staticmethod
     def _assert_policy(*, require_remote: bool) -> None:
@@ -142,6 +215,33 @@ class LlmGateway:
             return None, str(exc)
 
 
+def session_attempt_recorder(session: Session) -> AttemptRecorder:
+    """Build a recorder that writes LlmCallRow via an open SQLAlchemy Session."""
+
+    def _record(
+        *,
+        task: TaskName,
+        provider: str,
+        result: ProviderResult,
+        request_id: str | None = None,
+    ) -> None:
+        record_llm_call(
+            session,
+            task=task,
+            provider=provider,
+            model=result.model or "unknown",
+            status=result.status.value,
+            latency_ms=result.latency_ms,
+            tokens_in=result.input_tokens,
+            tokens_out=result.output_tokens,
+            request_id=request_id,
+            error_code=result.error_code,
+            meta={},
+        )
+
+    return _record
+
+
 def complete(
     *,
     task: TaskName,
@@ -149,9 +249,12 @@ def complete(
     providers: Sequence[LlmProvider],
     max_tokens: int = 1024,
     model: str | None = None,
+    recorder: AttemptRecorder | None = None,
 ) -> CompletionResult:
     """Module-level helper for callers that build a one-shot gateway."""
-    return LlmGateway(providers).complete(task=task, messages=messages, max_tokens=max_tokens, model=model)
+    return LlmGateway(providers, recorder=recorder).complete(
+        task=task, messages=messages, max_tokens=max_tokens, model=model
+    )
 
 
 def complete_json[T: BaseModel](
@@ -162,8 +265,9 @@ def complete_json[T: BaseModel](
     providers: Sequence[LlmProvider],
     max_tokens: int = 1024,
     model: str | None = None,
+    recorder: AttemptRecorder | None = None,
 ) -> T:
-    return LlmGateway(providers).complete_json(
+    return LlmGateway(providers, recorder=recorder).complete_json(
         task=task, messages=messages, schema=schema, max_tokens=max_tokens, model=model
     )
 
@@ -175,5 +279,8 @@ def stream(
     providers: Sequence[LlmProvider],
     max_tokens: int = 1024,
     model: str | None = None,
+    recorder: AttemptRecorder | None = None,
 ) -> Iterator[StreamChunk]:
-    return LlmGateway(providers).stream(task=task, messages=messages, max_tokens=max_tokens, model=model)
+    return LlmGateway(providers, recorder=recorder).stream(
+        task=task, messages=messages, max_tokens=max_tokens, model=model
+    )

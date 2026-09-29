@@ -22,6 +22,8 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
                 "runs",
                 "run_artifacts",
                 "triage_decisions",
+                "llm_calls",
+                "llm_budget_counters",
                 "alembic_version",
             }.issubset(tables)
         finally:
@@ -33,6 +35,7 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
             tables = set(inspect(engine).get_table_names())
             assert "work_items" not in tables
             assert "runs" not in tables
+            assert "llm_calls" not in tables
         finally:
             engine.dispose()
 
@@ -41,9 +44,11 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
         try:
             with engine.connect() as conn:
                 version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            assert version == "0002_runs_finished_at_idx"
+            assert version == "0003_llm_calls"
             indexes = {idx["name"] for idx in inspect(engine).get_indexes("runs")}
             assert "ix_runs_finished_at" in indexes
+            llm_indexes = {idx["name"] for idx in inspect(engine).get_indexes("llm_calls")}
+            assert "ix_llm_calls_created_at" in llm_indexes
         finally:
             engine.dispose()
     finally:
