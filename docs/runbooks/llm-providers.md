@@ -27,6 +27,8 @@ Per provider: `OPSPILOT_BUDGET_<PROVIDER>_REQ_DAY` and `_TOK_DAY`.
 - Token cap reconciled **post-call** — may overshoot by ≤1 call (use 80% margin).
 - Budget day is **UTC**; Gemini AI Studio free RPD resets at **Pacific midnight** — UTC day can span two Gemini days; keep 80% margin.
 - `complete_json` repair attempts debit a **second** request against the same provider.
+- Schema/format HTTP **400** on native schema mode: one same-provider **`json_object` retry** (also budget-debited; own `LlmCall` row), then failover.
+- Structured contracts: non-empty insights queue requires ≥1 insight; empty queue soft-paths without LLM. See D-013 addendum.
 
 ### Owner-approved recommended defaults (2026-09-29)
 

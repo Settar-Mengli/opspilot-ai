@@ -491,7 +491,7 @@ npm run preview -- --host 127.0.0.1 --port 4173
 
 ### Summary
 
-Hand-rolled `llm/` gateway on branch `b2/llm-gateway` (C0–C13 / fix pass F1–F7 complete). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; budget-aware triage + briefing. `LlmCall` + UTC budgets (fail-closed on all paths); prompt sha256 + `X-Request-ID` on attempts; pagination; F-03/F-09; timestamptz; discover via provider URL helpers. **Owner quotas approved 2026-09-29** (C11). **C12 live smoke** evidenced. **F7 exits** below. Ready for owner **open PR** (agent does not merge).
+Hand-rolled `llm/` gateway on branch `b2/llm-gateway` (C0–C13 / fix pass F1–F7 + structured-output fix S1–S4). Spend hole closed (`llm_allowed`). Free-tier providers via httpx; Anthropic SDK gated (D-023). Services for ask/evening/insights; budget-aware triage + briefing. `LlmCall` + UTC budgets (fail-closed on all paths); prompt sha256 + `X-Request-ID` on attempts; pagination; F-03/F-09; timestamptz; discover via provider URL helpers. **Owner quotas approved 2026-09-29** (C11). **C12 live smoke** evidenced; **structured-output root-cause fix** (S1–S4) re-smoked with non-empty schema-valid insights. **STOP B** — do not open PR until owner says `open PR`.
 
 ### STOP A — discover (secrets redacted)
 
@@ -540,6 +540,7 @@ Recommended defaults written to `.env.example` and runbooks. Operator applies bu
 | Post-build audit B1/B2 / PART 7 | Discover hosts + `OPSPILOT_AI_*` falsely claimed retired; fixed F1/F2; greps below re-verified. |
 | K5 smoke errors | Organic multi-provider failover during happy-path smoke (not forced-failover demo). Counts: gemini error 1 + success 2; groq error 1; others success — **C12** records forced failover + policy deny after C11. |
 | NB3 triage body cap | `_BODY_MAX=800` in `gateway_triage.py`; plan did not lock ≤500 — owner follow-up if X4 tightens further. |
+| C12 accepted degenerate insights | Initial C12 recorded `insights n=0` as success because `InsightsPayload` allowed empty lists and Cloudflare repair returned `insights=[]`. Process gap: smoke exit checked HTTP 200 + shape, not non-empty contract. Fixed in S3 (`min_length=1` when LLM invoked on non-empty queue; empty queue soft-path). |
 
 ### Per-commit CI (branch `b2/llm-gateway`)
 
@@ -569,7 +570,11 @@ One push per commit; full CI (Backend, Frontend, Gitleaks, UI Tests). Duplicate 
 | `322f0b88ba5d225955944abc8ce5ce8fcdc4d522` | chore(llm): documented default caps after quotas approved (C11) | 36626641853 | success |
 | `480482d6c82dd8832a93fcca05674a316e572704` | docs(b2): C12 live smoke evidence | 36628222191 | success |
 | `2fb62fb711f1812b1c1dcc4cad1cab98f0e0ef6a` | docs(b2): final PART 7 exit records (F7) | 36629178032 | success |
-| *(final records)* | docs(b2): OpenRouter model correction + C12 diagnoses | final records commit — CI run on PR checks | pending PR |
+| `8883324c15a6d27a7104191cbe806277467e6e7e` | docs(b2): correct OpenRouter model and record C12 diagnoses | 36631077476 | success |
+| `5243157b0741038ec18960ee4f2dc58762694fc8` | fix(llm): record redacted HTTP and parse errors on LlmCall (S1) | 36632116359 | success |
+| `157c7d415f8f2d95938424a7573b7669c370e3e3` | fix(llm): provider-correct structured outputs (S3) | 36633524767 | success |
+| `47ad68f8256a370f97bb55934790eaacf61bf394` | fix(llm): preserve property names when stripping Gemini schema metadata | 36634529386 | success |
+| *(this commit)* | docs(b2): PART 7 S1–S4 structured-output fix records | *(CI after push)* | pending |
 
 ### Exit grep (no leaky clients) — measured F7
 
@@ -662,3 +667,50 @@ JSONL under `data/llm_traces/` (gitignored); line counts only verified locally �
 | 41 | ask | gemini | gemini-3.5-flash-lite | http_400 | none recorded | **Expected** forced-failover demo (invalid `GEMINI_API_KEY` in process) |
 
 No organic 429/timeout/5xx rows in the C12 window. Pre-C11 K5 mixed errors remain historical (organic failover, not this demo).
+
+### Schema fix S1–S4 (owner-approved 2026-09-29)
+
+#### S1 — redacted error detail on `LlmCall`
+
+Non-2xx → `meta.status_code` + redacted `provider_error` (≤500 chars). Parse/validation failure → `error_class`, redacted `validation_error`, `output_len`, redacted `output_head` (≤300). Fixtures in `tests/unit/llm/test_meta_redact.py`.
+
+#### S2 — live per-provider root causes (minimal isolated calls; Anthropic never)
+
+| Provider | Mode | Root cause (evidence) |
+|----------|------|------------------------|
+| gemini | native `responseSchema` | (1) Raw pydantic schema sent `$defs`/`$ref` → `INVALID_ARGUMENT` Unknown name `$defs`. (2) After inlining, strip of JSON-Schema metadata keyword `title` also dropped the **property** named `title` → `required[0]: property is not defined`. |
+| groq | strict `json_schema` on `openai/gpt-oss*` | Missing `additionalProperties: false` on `#/$defs/InsightItem` (and other objects) → HTTP 400. |
+| mistral | `json_object` | HTTP success but invented wrong field names / failed Pydantic validation on attempt + one repair (C12 ids 23–24; tokens_out 493/455). |
+| cloudflare | `json_object` | Degenerate near-empty JSON (C12 attempt tokens_out=7); repair returned `insights=[]` which the old schema **accepted**. |
+| openrouter | `json_object` | Not required for the degenerate path in C12 (failover stopped at cloudflare). Capability remains `json_object` + extract/repair. |
+
+Ambiguity noted: mistral/cloudflare exact wrong-key heads were not fully persisted until S1; classification uses C12 tokens_out + post-S1 meta fixtures / re-diagnosis where available. Do not guess beyond that.
+
+#### S3 — fix summary
+
+- `schema_convert.gemini_response_schema`: inline `$ref`/`$defs`; drop unsupported keywords; **preserve property names** under `properties`.
+- `schema_convert.groq_strict_schema`: `additionalProperties: false` + full `required` on every object (incl. `$defs`).
+- `json_extract.extract_json_object`: strip fences / first balanced `{…}` before validate.
+- `InsightsPayload.insights` `min_length=1` when LLM is invoked; empty queue → soft path without LLM. Same non-empty rule for triage reason fields (already required).
+- On schema/format HTTP 400: one same-provider `force_json_object` retry (budget-debited, own `LlmCall` row), then failover.
+- Repair prompt includes validation errors **and** schema fragment.
+- Hermetic tests: `tests/unit/llm/test_structured_outputs.py` (S2 redacted 400 bodies as fixtures).
+
+#### C12 re-smoke after fix (2026-09-29)
+
+Process env: owner-approved budgets/models; Anthropic disabled; keys from local `.env` (not printed).
+
+| Call | Result |
+|------|--------|
+| GET /api/v1/health | ok |
+| POST /insights | 200, intro len **225**, insights **n=3** (non-empty, schema-valid) |
+
+Served by **gemini** / `gemini-3.5-flash-lite` native `responseSchema` (no `force_json_object`). `llm_calls` after watermark 54:
+
+| id | task | provider | model | status | tokens_out | request_id |
+|----|------|----------|-------|--------|------------|------------|
+| 55 | insights | gemini | gemini-3.5-flash-lite | success | 239 | `38b58c46-554e-421a-807a-3dec5c1e1cd1` |
+
+#### Coverage / exits (post-S3 local)
+
+`fail_under=72`. Local full suite: **143 passed**, **TOTAL 80.96%**. mypy `src/opspilot` clean; ruff clean; 0 PNG changes; PARTs 0–6 vs `main` byte-identical; G1/G2/G3 greps empty.

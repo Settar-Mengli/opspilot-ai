@@ -36,3 +36,4 @@ Budget gate and leaderboard can debit real usage; CI asserts no live Anthropic.
 - One `LlmCall` row per **provider attempt** (statuses: `success|error|429|timeout|budget_denied|policy_denied`).
 - JSONL under `data/llm_traces/` (gitignored) or stdout-oriented logging when `CI=true`; disable with `OPSPILOT_LLM_JSONL=0`.
 - OTel-compatible structured log attrs (`gen_ai.*` style) via `opspilot.obs.tracing`; Phoenix UI still deferred.
+- **Error meta (S1):** non-2xx → `meta.status_code` + redacted `provider_error` (≤500 chars, F-09). Parse/validation failure → `error_class`, redacted `validation_error`, `output_len`, redacted `output_head` (≤300). Schema/format 400 → optional `force_json_object` retry attempt is a **separate** `LlmCall` row.

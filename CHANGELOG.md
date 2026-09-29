@@ -27,6 +27,7 @@ and this project follows Semantic Versioning principles for release tags.
 
 ### Fixed
 
+- **B2 structured outputs (S1–S4):** Gemini `responseSchema` conversion (inline `$ref`/`$defs`, preserve property names); Groq-strict `additionalProperties:false`; JSON fence extraction; reject empty insights on non-empty queues; 400→`json_object` retry; redacted HTTP/parse meta on `LlmCall`.
 - V6 briefing adapter uses `subject_or_title`.
 - Changelog no longer claims a shipped frontend unit/component test suite prior to B1 (Vitest smoke added in B1).
 
