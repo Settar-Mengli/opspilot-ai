@@ -23,7 +23,7 @@ class WorkItemRow(Base):
     subject_or_title: Mapped[str] = mapped_column(Text, nullable=False)
     body_or_description: Mapped[str] = mapped_column(Text, nullable=False)
     sender_or_requester: Mapped[str] = mapped_column(Text, nullable=False)
-    received_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     tags: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
 
     triage_decisions: Mapped[list[TriageDecisionRow]] = relationship(back_populates="work_item")
@@ -33,8 +33,8 @@ class RunRow(Base):
     __tablename__ = "runs"
 
     run_id: Mapped[str] = mapped_column(String(128), primary_key=True)
-    started_at: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    finished_at: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="success")
     input_file: Mapped[str | None] = mapped_column(Text, nullable=True)

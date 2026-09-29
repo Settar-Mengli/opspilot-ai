@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from opspilot.persistence.db import create_engine, create_session_factory, get_database_url
 from opspilot.persistence.models import RunArtifactRow, RunRow, TriageDecisionRow, WorkItemRow
+from opspilot.persistence.timeutil import parse_iso_utc, require_iso_utc
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_SAMPLE = PROJECT_ROOT / "data" / "raw" / "sample_input.json"
@@ -35,7 +36,7 @@ def upsert_work_items(session: Session, items: list[dict[str, Any]]) -> int:
             "subject_or_title": str(raw["subject_or_title"]),
             "body_or_description": str(raw["body_or_description"]),
             "sender_or_requester": str(raw["sender_or_requester"]),
-            "received_at": str(raw["received_at"]),
+            "received_at": require_iso_utc(raw["received_at"]),
             "tags": list(raw.get("tags") or []),
         }
         for raw in items
@@ -100,8 +101,8 @@ def _upsert_run_row(session: Session, metadata: dict[str, Any]) -> None:
     stmt = pg_insert(RunRow).values(
         {
             "run_id": run_id,
-            "started_at": metadata.get("started_at"),
-            "finished_at": metadata.get("finished_at"),
+            "started_at": parse_iso_utc(metadata.get("started_at")),
+            "finished_at": parse_iso_utc(metadata.get("finished_at")),
             "duration_ms": metadata.get("duration_ms"),
             "status": str(metadata.get("status") or "success"),
             "input_file": metadata.get("input_file"),

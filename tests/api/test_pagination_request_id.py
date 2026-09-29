@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -40,7 +41,7 @@ def test_list_runs_default_limit(api_client: TestClient, db_session: Session) ->
         db_session.add(
             RunRow(
                 run_id=f"run-{i}",
-                finished_at=f"2026-09-2{i}T12:00:00Z",
+                finished_at=datetime(2026, 9, 20 + i, 12, 0, tzinfo=UTC),
                 status="success",
                 metadata_json={"run_id": f"run-{i}"},
             )
@@ -58,7 +59,7 @@ def test_list_runs_limit_and_cursor(api_client: TestClient, db_session: Session)
         db_session.add(
             RunRow(
                 run_id=f"c-run-{i}",
-                finished_at=f"2026-09-{10 + i:02d}T12:00:00Z",
+                finished_at=datetime(2026, 9, 10 + i, 12, 0, tzinfo=UTC),
                 status="success",
                 metadata_json={"run_id": f"c-run-{i}"},
             )
