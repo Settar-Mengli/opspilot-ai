@@ -36,6 +36,7 @@ class LlmProvider(Protocol):
         max_tokens: int,
         model: str | None = None,
         repair_hint: str | None = None,
+        force_json_object: bool = False,
     ) -> ProviderResult:
         """Structured JSON completion attempt (schema enforced by gateway)."""
 

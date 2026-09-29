@@ -37,6 +37,11 @@ def generate_insights(
         return _fallback(_SOFT_NO_PROVIDER)
 
     records = triage_records or []
+    # Empty queue: soft path (empty insights list is valid only when there is nothing to analyze).
+    # Non-empty queue: InsightsPayload requires min_length=1 insights; empty list → repair/failover/soft.
+    if not records:
+        return _fallback("The queue is empty — nothing to analyze yet.")
+
     system = (
         f"You are {assistant_name}, OpsPilot chief of staff. Find cross-cutting patterns "
         "(not per-item summaries). Return JSON only matching the schema. 1-5 insights."
@@ -47,7 +52,7 @@ def generate_insights(
         system=system,
         user=user,
         schema=InsightsPayload,
-        max_tokens=1200,
+        max_tokens=2048,
         session=session,
         request_id=request_id,
     )

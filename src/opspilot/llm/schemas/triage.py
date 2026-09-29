@@ -12,6 +12,8 @@ Sentiment = Literal["negative", "neutral", "positive"]
 
 
 class TriagePayload(BaseModel):
+    """Single-item triage. All reason fields must be non-empty (empty is never valid)."""
+
     urgency: Urgency
     urgency_reason: str = Field(min_length=1, max_length=400)
     category: Category

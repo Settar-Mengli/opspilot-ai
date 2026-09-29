@@ -12,5 +12,7 @@ class InsightItem(BaseModel):
 
 
 class InsightsPayload(BaseModel):
+    """Cross-cutting insights. Non-empty insights required when LLM is invoked on a non-empty queue."""
+
     intro: str = Field(min_length=1)
-    insights: list[InsightItem] = Field(default_factory=list)
+    insights: list[InsightItem] = Field(min_length=1)

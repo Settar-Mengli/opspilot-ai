@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from opspilot.llm.capabilities import JsonMode, json_mode_for
 from opspilot.llm.meta_redact import http_error_meta
 from opspilot.llm.providers.http import default_timeout, parse_retry_after
+from opspilot.llm.schema_convert import groq_strict_schema, schema_prompt_fragment
 from opspilot.llm.types import AttemptStatus, Message, ProviderResult, StreamChunk, TaskName
 
 _PROVIDER_DEFAULTS: dict[str, dict[str, str]] = {
@@ -140,11 +141,24 @@ class OpenAICompatibleProvider:
         max_tokens: int,
         model: str | None = None,
         repair_hint: str | None = None,
+        force_json_object: bool = False,
     ) -> ProviderResult:
         msgs = list(messages)
         if repair_hint:
-            msgs.append(Message(role="user", content=f"Fix JSON. Errors: {repair_hint}"))
-        return self._chat(task=task, messages=msgs, max_tokens=max_tokens, model=model, schema=schema)
+            msgs.append(
+                Message(
+                    role="user",
+                    content=f"Fix JSON. Errors: {repair_hint}\n{schema_prompt_fragment(schema)}",
+                )
+            )
+        return self._chat(
+            task=task,
+            messages=msgs,
+            max_tokens=max_tokens,
+            model=model,
+            schema=schema,
+            force_json_object=force_json_object,
+        )
 
     def stream(
         self,
@@ -165,6 +179,7 @@ class OpenAICompatibleProvider:
         max_tokens: int,
         model: str | None,
         schema: type[BaseModel] | None,
+        force_json_object: bool = False,
     ) -> ProviderResult:
         cfg = self._config
         if cfg.name != "ollama" and not cfg.api_key:
@@ -177,20 +192,26 @@ class OpenAICompatibleProvider:
             "messages": [{"role": m.role, "content": m.content} for m in messages],
             "max_tokens": max_tokens,
         }
-        mode = json_mode_for(cfg.name, resolved)
+        mode = JsonMode.JSON_OBJECT if force_json_object else json_mode_for(cfg.name, resolved)
         if schema is not None:
+            # Always remind the model of exact field names for json_object / repair paths.
+            body["messages"] = [
+                *body["messages"],
+                {"role": "user", "content": schema_prompt_fragment(schema)},
+            ]
             if mode is JsonMode.NATIVE_SCHEMA:
                 body["response_format"] = {
                     "type": "json_schema",
-                    "json_schema": {"name": schema.__name__, "schema": schema.model_json_schema(), "strict": True},
+                    "json_schema": {
+                        "name": schema.__name__,
+                        "schema": groq_strict_schema(schema),
+                        "strict": True,
+                    },
                 }
             elif mode is JsonMode.JSON_OBJECT:
                 body["response_format"] = {"type": "json_object"}
             else:
-                body["messages"] = [
-                    *body["messages"],
-                    {"role": "user", "content": "Respond with JSON only matching the requested schema."},
-                ]
+                pass  # prompt fragment already appended
 
         headers = {"Content-Type": "application/json", **cfg.extra_headers}
         if cfg.api_key:

@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from opspilot.llm.capabilities import JsonMode, json_mode_for
 from opspilot.llm.meta_redact import http_error_meta
 from opspilot.llm.providers.http import default_timeout, parse_retry_after
+from opspilot.llm.schema_convert import gemini_response_schema, schema_prompt_fragment
 from opspilot.llm.types import AttemptStatus, Message, ProviderResult, StreamChunk, TaskName
 
 _GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta"
@@ -75,11 +76,24 @@ class GeminiProvider:
         max_tokens: int,
         model: str | None = None,
         repair_hint: str | None = None,
+        force_json_object: bool = False,
     ) -> ProviderResult:
         msgs = list(messages)
         if repair_hint:
-            msgs.append(Message(role="user", content=f"Fix JSON. Errors: {repair_hint}"))
-        return self._generate(task=task, messages=msgs, max_tokens=max_tokens, model=model, schema=schema)
+            msgs.append(
+                Message(
+                    role="user",
+                    content=(f"Fix JSON. Errors: {repair_hint}\n{schema_prompt_fragment(schema)}"),
+                )
+            )
+        return self._generate(
+            task=task,
+            messages=msgs,
+            max_tokens=max_tokens,
+            model=model,
+            schema=schema,
+            force_json_object=force_json_object,
+        )
 
     def stream(
         self,
@@ -100,6 +114,7 @@ class GeminiProvider:
         max_tokens: int,
         model: str | None,
         schema: type[BaseModel] | None,
+        force_json_object: bool = False,
     ) -> ProviderResult:
         if not self._api_key:
             return ProviderResult(status=AttemptStatus.ERROR, error_code="missing_api_key", model=model or "")
@@ -110,9 +125,16 @@ class GeminiProvider:
             "contents": _to_gemini_contents(messages),
             "generationConfig": {"maxOutputTokens": max_tokens},
         }
-        if schema is not None and json_mode_for(self.name, resolved) is JsonMode.NATIVE_SCHEMA:
+        if schema is not None:
             body["generationConfig"]["responseMimeType"] = "application/json"
-            body["generationConfig"]["responseSchema"] = schema.model_json_schema()
+            use_native = not force_json_object and json_mode_for(self.name, resolved) is JsonMode.NATIVE_SCHEMA
+            if use_native:
+                body["generationConfig"]["responseSchema"] = gemini_response_schema(schema)
+            else:
+                # JSON mime without schema — instruct via prompt fragment.
+                body["contents"] = _to_gemini_contents(
+                    [*messages, Message(role="user", content=schema_prompt_fragment(schema))]
+                )
 
         started = time.perf_counter()
         try:

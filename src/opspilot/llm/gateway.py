@@ -10,16 +10,18 @@ from pydantic import BaseModel, ValidationError
 from sqlalchemy.orm import Session
 
 from opspilot.llm.errors import LlmPolicyDenied, LlmProvidersExhausted, LlmSchemaError
+from opspilot.llm.json_extract import extract_json_object
 from opspilot.llm.meta_redact import sanitize_meta
 from opspilot.llm.policy import llm_allowed
 from opspilot.llm.providers.base import LlmProvider
+from opspilot.llm.schema_convert import schema_prompt_fragment
 from opspilot.llm.types import AttemptStatus, CompletionResult, Message, ProviderResult, StreamChunk, TaskName
 from opspilot.obs.tracing import LlmSpanAttrs, append_llm_jsonl, emit_llm_span
 from opspilot.persistence.llm_calls import record_llm_call
 
 _REPAIR_SUFFIX = (
     "Your previous JSON failed validation. Return corrected JSON only that matches the schema. "
-    "Validation errors:\n{errors}"
+    "Validation errors:\n{errors}\n{schema_frag}"
 )
 
 
@@ -143,7 +145,13 @@ class LlmGateway:
             repair_messages = [
                 *messages,
                 Message(role="assistant", content=attempt.text),
-                Message(role="user", content=_REPAIR_SUFFIX.format(errors=errors)),
+                Message(
+                    role="user",
+                    content=_REPAIR_SUFFIX.format(
+                        errors=errors,
+                        schema_frag=schema_prompt_fragment(schema),
+                    ),
+                ),
             ]
             repair = provider.complete_json(
                 task=task,
@@ -210,8 +218,9 @@ class LlmGateway:
 
     @staticmethod
     def _try_parse[T: BaseModel](schema: type[T], text: str) -> tuple[T | None, str]:
+        extracted = extract_json_object(text)
         try:
-            data = json.loads(text)
+            data = json.loads(extracted)
         except json.JSONDecodeError as exc:
             return None, f"invalid JSON: {exc}"
         try:
