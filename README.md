@@ -4,13 +4,13 @@
 
 [![CI](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml)
 
-**CURRENT on `main`:** B0–B2 merged (gateway + traces). **Next:** B2.1 hardening (this branch) → B3 evals. See:
+**CURRENT on `main`:** B0–B2.1 merged (gateway + hardening). **Next:** B3 evals + red-team. See:
 
 - [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history, baseline, locked plan
 - [ROADMAP.md](ROADMAP.md) — batches **B0–B7** (+ B1.5 / B2.1)
 - [docs/architecture.md](docs/architecture.md) — CURRENT vs TARGET
 - [docs/design-decisions.md](docs/design-decisions.md) — portfolio ADR index
-- [docs/adr/](docs/adr/) — ADRs D-001–D-027
+- [docs/adr/](docs/adr/) — ADRs D-001–D-029
 
 Built with TypeScript, React, FastAPI, Postgres, and a **hand-rolled multi-provider LLM gateway** (free-tier Gemini → Groq → Mistral → Cloudflare → OpenRouter → Ollama → rules). Anthropic is prepaid-gated only (D-023; off by default).
 

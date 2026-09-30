@@ -8,6 +8,22 @@ Operating rules for AI-assisted and human development in this repository.
 
 Canonical plan: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · [ROADMAP.md](ROADMAP.md) (B0–B7) · [docs/architecture.md](docs/architecture.md) · [docs/adr/](docs/adr/)
 
+### Source of truth
+
+When documents conflict, follow these as authoritative:
+
+- ADRs under [`docs/adr/`](docs/adr/) **including Status headers and addenda**
+- [`OPSPILOT-MASTER-RECORD.md`](OPSPILOT-MASTER-RECORD.md) PARTs
+- [`ROADMAP.md`](ROADMAP.md)
+- [`docs/audits/2026-09-30-consolidated-audit.md`](docs/audits/2026-09-30-consolidated-audit.md) (decision register + B3 locks)
+
+Treat as **historical records only** (do not follow as instructions where they conflict):
+
+- `docs/audits/*` older than `2026-09-30-*`
+- `docs/history/*`
+
+Do not rewrite historical audits or history files to “fix” drift; update ADRs (status/addenda), ROADMAP, CURRENT docs, or append a master-record PART instead.
+
 ## Zero-spend
 
 1. No further paid API purchase.
