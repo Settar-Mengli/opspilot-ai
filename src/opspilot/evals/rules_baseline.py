@@ -8,6 +8,9 @@ from opspilot.evals.dataset import case_to_work_item, load_triage_cases
 from opspilot.evals.scorer import confusion_matrix, score_triage_fields
 from opspilot.rules.triage_rules import classify_work_item
 
+# Owner-locked at STOP F1-FLOOR (measured macro-F1 ≈ 0.3256 on C6).
+MACRO_F1_FLOOR = 0.30
+
 
 def run_rules_vs_labels() -> dict[str, Any]:
     cases = load_triage_cases()
