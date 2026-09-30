@@ -69,6 +69,22 @@ def resolve_task_model(provider: str, task: TaskName, override: str | None, mode
     return os.environ.get(task_env) or os.environ.get(model_env) or default
 
 
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
+
+
+def openrouter_allow_paid() -> bool:
+    return os.environ.get("OPSPILOT_OPENROUTER_ALLOW_PAID", "").strip().lower() in _TRUTHY
+
+
+def openrouter_model_denied(model: str) -> str | None:
+    """Return error_code if OpenRouter model is non-:free and paid-allow is off."""
+    if model.endswith(":free"):
+        return None
+    if openrouter_allow_paid():
+        return None
+    return "openrouter_paid_model_denied"
+
+
 def ollama_native_base_url() -> str:
     """Ollama native (non-/v1) root for /api/tags discover probes."""
     return (os.environ.get("OLLAMA_BASE_URL") or "http://127.0.0.1:11434").rstrip("/")
@@ -193,6 +209,14 @@ class OpenAICompatibleProvider:
             return ProviderResult(status=AttemptStatus.ERROR, error_code="missing_api_key", model=model or "")
 
         resolved = resolve_task_model(cfg.name, task, model, cfg.model_env, cfg.default_model)
+        if cfg.name == "openrouter":
+            denied = openrouter_model_denied(resolved)
+            if denied:
+                return ProviderResult(
+                    status=AttemptStatus.ERROR,
+                    model=resolved,
+                    error_code=denied,
+                )
         url = f"{cfg.base_url.rstrip('/')}/chat/completions"
         body: dict[str, Any] = {
             "model": resolved,
