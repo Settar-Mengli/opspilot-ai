@@ -53,10 +53,11 @@ def obs_client(test_database_url: str, db_session: Session, monkeypatch: pytest.
 
     from opspilot.adapters.gateway_triage import GatewayTriageAdapter
 
-    monkeypatch.setattr(
-        "opspilot.adapters.factory.get_adapter",
-        lambda session=None: GatewayTriageAdapter(session=session),
-    )
+    def _gateway_adapter(session=None):  # type: ignore[no-untyped-def]
+        return GatewayTriageAdapter(session=session)
+
+    monkeypatch.setattr("opspilot.adapters.factory.get_adapter", _gateway_adapter)
+    monkeypatch.setattr("opspilot.pipeline.run_daily_ops.get_adapter", _gateway_adapter)
 
     def _override() -> Iterator[Session]:
         try:
