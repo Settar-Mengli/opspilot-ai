@@ -11,8 +11,8 @@ Live-only metrics. Hermetic CI gate = rules macro-F1 ≥ 0.30. Anthropic = **ski
 | D1 | gemini | Metrics recomputed under D-LIVE definitions (no extra live) |
 | D2 | groq | Resume missing-pred + failed ids after D-LIVE metrics fix → **60/60** |
 | D3 | mistral | Full re-run after instance-contract prompt (archive prior as attempt1) → **60/60** |
-| D4 | cloudflare | **≤33 cases** (cap 80 REQ/day; leave headroom) |
-| D5 | cloudflare | Remaining **~27** + resume fails |
+| D4 | cloudflare | First **33 triage**; 100% validity (artifact below) |
+| D5 | cloudflare | Remaining **7 triage + 20 redteam** (~27) — **next UTC day** (D4 used 66/80 REQ) |
 | D6 | openrouter | **≤30 cases** (cap 40 REQ/day) |
 | D7 | openrouter | Remaining **~30** + resume fails |
 | — | anthropic | skipped (P7) |
@@ -24,15 +24,16 @@ Live-only metrics. Hermetic CI gate = rules macro-F1 ≥ 0.30. Anthropic = **ski
 | D1 | gemini | 100% (60/60) | 0.606 (n=40) | 0.0 | 0.150 (3/20) | 0 | [`live-gemini-day1.json`](results/live-gemini-day1.json) |
 | D2 | groq | 100% (60/60) | 0.613 (n=40) | 0.0 | 0.400 (8/20) | 0 | [`live-groq-day2.json`](results/live-groq-day2.json) |
 | D3 | mistral | 100% (60/60) | 0.537 (n=40) | 0.0 | 0.500 (10/20) | 0 | [`live-mistral-day3.json`](results/live-mistral-day3.json) |
-| D4–D5 | cloudflare | — | — | — | — | — | pending |
+| D4 | cloudflare | 100% (33/33) | 0.729 (n=33) | 0.0 | N/A (0 redteam) | 0 | [`live-cloudflare-day4.json`](results/live-cloudflare-day4.json) |
+| D5 | cloudflare | — | — | — | — | — | pending (~27 cases) |
 | D6–D7 | openrouter | — | — | — | — | — | pending |
 | — | anthropic | skipped | skipped | skipped | skipped | skipped | P7 |
 
 Harness: `b3-live/v2`. Smoke: Mistral 5 prior schema-fail ids → **5/5** accepted before full D3.
 
-## STOP LIVE before D4
+## STOP LIVE before D5
 
-Do **not** start Cloudflare until owner `go live day 4`. Planned split: **CF D4 ≤33 / D5 ~27** (cap 80/day); **OR D6 ≤30 / D7 ~30** (cap 40/day).
+Cloudflare UTC-day budget after D4: **66/80 REQ** (first write failed after a successful 33-case run; re-run saved the artifact). **14 REQ remaining — insufficient for D5 (~27).** Wait for next UTC day + owner `go live day 5`.
 
 ## Archives / pre-fix footnotes
 
@@ -57,6 +58,12 @@ Historical † rows (validity 65% Mistral, stale Groq F1 0.286, repair% >1) are 
 
 - Full re-run after instance-contract prompt + unwrap → validity **100%** (60/60); F1 **0.537**; ASR **0.500** (10/20); repair **0%**
 - Archive: attempt1 (65% validity, schema-echo failures)
+
+## D4 notes (2026-09-30 UTC)
+
+- Cloudflare first **33 triage** (`triage-v1-001`…`033`); redteam deferred to D5
+- Validity **100%** (33/33); accepted-only F1 **0.729** (n=33); repair **0%**; ASR N/A (no redteam)
+- Budget: first run succeeded in-memory then write path bug (`str` vs `Path`) lost the artifact → re-run saved JSON; counters **66/80 REQ**, **38604** tok. D5 needs next UTC day.
 
 ## PART 9 deviations (draft — finalize at C19)
 
