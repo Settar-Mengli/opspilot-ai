@@ -25,6 +25,10 @@ and this project follows Semantic Versioning principles for release tags.
 - Roadmap IDs are **B0–B7** (+ **B1.5a/b** UI batches); owner decisions D1–D12 corrected in master record; B6 morning job in-runner (D-011); package layout D-024.
 - X8 panel lifecycle started in B1.5a; agent surfaces finish on B1.5b layout in B5.
 
+### Security
+
+- **DEP-2:** bump transitive `brace-expansion` override `5.0.9` → `5.0.12` (Dependabot alert #18 / GHSA-q2hr-2g5m-vwhr).
+
 ### Fixed
 
 - **B2 structured outputs (S1–S4):** Gemini `responseSchema` conversion (inline `$ref`/`$defs`, preserve property names); Groq-strict `additionalProperties:false`; JSON fence extraction; reject empty insights on non-empty queues; 400→`json_object` retry; redacted HTTP/parse meta on `LlmCall`.
