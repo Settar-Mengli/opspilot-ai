@@ -815,40 +815,88 @@ gh repo edit Settar-Mengli/opspilot-ai --description "OpsPilot AI — local-firs
 
 ---
 
-## PART 9 — B3 Evals + red-team (in progress) — 2026-09-30
+## PART 9 — B3 Evals + red-team — 2026-09-30
 
-Branch `b3/evals-redteam`. Live leaderboard under owner-gated caps; hermetic rules macro-F1 floor **0.30**.
+**Status:** merge-ready; live remainder → **B3.1**.
+
+Branch `b3/evals-redteam`. Hermetic rules macro-F1 floor **F1-FLOOR = 0.30** (owner lock at STOP F1-FLOOR; C6 measured ≈0.3256; CI gate `MACRO_F1_FLOOR` in `src/opspilot/evals/rules_baseline.py`). Live leaderboard under owner-gated caps; Anthropic = **skipped** (P7).
+
+### Closeout exits (local, 2026-09-30)
+
+- `uv run pytest -q --cov=opspilot`: **229 passed**, **TOTAL 84%** (≥ B2.1 baseline 82.88%).
+- Tip CI (pre-closeout SHA `3033eea`): run **36766765846** — Backend / Frontend / Gitleaks / UI Tests **success**.
 
 ### Deviations
 
 | ID | Severity | What happened | Cost / impact | Fix |
 |----|----------|---------------|---------------|-----|
-| **D-CF-WRITE-1** | Med | Cloudflare D4 live run completed (33 triage accepted) but the one-off runner passed a **`str`** to `write_eval_json`, which required **`Path`** (`.parent.mkdir`). Artifact was lost; a second live run was required to persist JSON. | **33 wasted Cloudflare REQ** (plus matching tokens) on UTC day 2026-09-30; day counters reached **66/80** REQ after the re-run, leaving insufficient headroom for D5 the same UTC day. | `write_eval_json` now accepts `Path \| str` and always coerces via `Path(...)`. Hermetic regression: `tests/evals/test_report_writer.py`. |
+| **D-GROQ-1** | Med | Groq strict decoding truncated / failed at `max_tokens=300` with P12 fields | Low validity / missing preds on D2 attempt1 | Raise triage structured `max_tokens` to **1024** (`76b9bba`); ASR N/A when none accepted |
+| **D-GROQ-2** | Med | Groq 429 storms + no observe traces on live | Incomplete D2; opaque failures | 429 Retry-After / exp backoff ≤60s; ≥2.5s RPM pacing; `observe=True` + `llm_calls` (`ab98275`) |
+| **D-MISTRAL-1** | Med | Mistral echoed JSON Schema instead of instance payload (attempt1 validity **65%**) | Non-comparable D3 attempt1 | Instance-contract prompt + schema-echo unwrap (**D-LIVE-1/6**, `7ec09be`); full re-run → 60/60 |
+| **D-LIVE-1** | Med | Prompt dumped `model_json_schema` → schema-echo on Mistral | Invalid accepts / low validity | Instance-shaped contract in user/system prompt (`7ec09be`) |
+| **D-LIVE-2** | Low | F1 mixed attempted + accepted rows | Inflated/deflated cross-provider F1 | **Accepted-only** triage macro-F1 (`9f7db1a`) |
+| **D-LIVE-3** | Low | Repair% could exceed 1/case semantics | Misleading repair leaderboard | Repair = successful parse after failed first parse, ≤1/case (`9f7db1a`) |
+| **D-LIVE-4** | Med | ASR counted marker/grounding escapes on rare paths | Distorted ASR | Option A: ASR only on accepted label deviation vs gold `attack_targets` (D-029 addendum) |
+| **D-LIVE-5** | Low | Defense blocks not visible beside ASR | Hard to read defense efficacy | Publish `blocked_by_defenses` with ASR n (`9f7db1a`) |
+| **D-LIVE-6** | Med | Schema-echo bodies reached parse path | Coupled with D-LIVE-1 / D-MISTRAL-1 | Unwrap wrapper objects before validate (`7ec09be`) |
+| **D-LIVE-7** | Med | RPM pacer skipped some structured HTTP retries | Burst 429s under repair | Pace **every** structured HTTP attempt (`77ec93a`) |
+| **D-LIVE-8** | Low | Some published rates lacked n | Non-traceable portfolio numbers | Always publish n with F1/ASR/validity (`9f7db1a`) |
+| **D-LIVE-9** | Low | Validity denominator ambiguity | Incomparable validity% | validity = accepted/attempts with `validity_n` (`9f7db1a`) |
+| **D-LIVE-10** | Med | Empty `evidence_refs` could count as accept | Undermined grounding | Eval path: empty refs ⇒ `grounding_failed` (`9f7db1a`) |
+| **D-LIVE-11** | Low | Pre-fix leaderboard rows still looked current | Reader confusion | Footnotes + attempt1 archives; comparable table only post-fix (`93b9f44`) |
+| **D-CF-WRITE-1** | Med | D4 one-off runner passed **`str`** to `write_eval_json` (required `Path`) | Artifact lost after 33 accepts; **33 wasted Cloudflare REQ**; day counters **66/80 REQ** → **STOP LIVE before D5** (14 rem < ~27 needed) | `Path \| str` coerce + `tests/evals/test_report_writer.py` (`48cf072`) |
 
-### Live schedule status (at PART append)
+### Live schedule (B3 close)
 
-- D1–D3 refreshed post D-LIVE-1..11; D4 Cloudflare 33/33 triage recorded; **STOP LIVE before D5** until next UTC day (or owner override with verified REQ headroom ≥ ~30).
+| Day | Provider | B3 status |
+|-----|----------|-----------|
+| D1 | gemini | 60/60; F1 0.606; ASR 0.150 — artifact stamped `git_sha` |
+| D2 | groq | 60/60; F1 0.613; ASR 0.400 |
+| D3 | mistral | 60/60; F1 0.537; ASR 0.500 |
+| D4 | cloudflare | **Partial 33/60** triage; F1 0.729 (n=33); ASR N/A |
+| D5–D7 | cloudflare / openrouter | **→ B3.1** (CF rem 7 triage + 20 redteam; OR ≤30 + ≤30) |
 
 ### Pre-closeout live smoke (2026-09-30 UTC) — not leaderboard
 
-Harness `b3-live/v2`, `observe=True`. Artifacts under `docs/evals/results/smoke-*-precloseout.json` (**not** merged into day leaderboard JSON).
+Harness `b3-live/v2`, `observe=True`. Artifacts: `docs/evals/results/smoke-*-precloseout.json` (**not** merged into day JSON).
 
-**Cloudflare** (`@cf/meta/llama-3.3-70b-instruct-fp8-fast`) — 3 red-team cases (budget rem 14 REQ):
+**Cloudflare** — 3/3 red-team accepted (budget rem 14 REQ after D4). **OpenRouter** (`nvidia/nemotron-3-super-120b-a12b:free`) — 5/5 accepted (3 triage + 2 red-team). Paths validated before B3.1 D5–D7.
 
-| Case | Result | error_class | HTTP attempts |
-|------|--------|-------------|---------------|
-| rt-v1-001 | accepted | — | 1 |
-| rt-v1-002 | accepted | — | 1 |
-| rt-v1-003 | accepted | — | 1 |
+### Per-commit CI (`main` `7501b9e`..HEAD) — all success
 
-**OpenRouter** (`nvidia/nemotron-3-super-120b-a12b:free`) — 3 triage + 2 red-team:
+| SHA | Subject | Run id |
+|-----|---------|--------|
+| `95234ef` | docs(b3): D-028/D-029 eval ADRs, ROADMAP M4/P7, evals runbook | [36728017797](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36728017797) |
+| `6b8af2c` | docs(b3): A1 source-of-truth + D-006/007/011 status notes | [36728881629](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36728881629) |
+| `a787ee1` | feat(sec): untrusted delimiters + BODY_MAX=500 (P8/P11) | [36729825884](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36729825884) |
+| `17d6114` | feat(db): triage confidence + evidence_refs (P12, Alembic 0006) | [36730752429](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36730752429) |
+| `c46fa4d` | feat(llm): temperature=0 for structured complete_json (P13) | [36731563680](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36731563680) |
+| `10298ed` | feat(evals): triage corpus v1 N=40 + loader (A2/P1) | [36732402819](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36732402819) |
+| `015b8cf` | feat(evals): triage scorer with exact unit tests (P4) | [36733251627](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36733251627) |
+| `6beb4e8` | test(evals): rules-vs-labels report without CI floor (C6/A2) | [36734080212](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36734080212) |
+| `8e063bd` | test(evals): lock rules macro-F1 CI floor at 0.30 (C7) | [36735933848](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36735933848) |
+| `e6d2258` | feat(evals): redteam v1 N=20 + hermetic ASR helpers (C8/A3) | [36736873024](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36736873024) |
+| `d8c9c2a` | feat(evals): hermetic run_evals CLI + JSON writer (C9) | [36737802759](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36737802759) |
+| `eb68971` | feat(evals): single-provider live runner + FakeProvider tests (C10) | [36738736851](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36738736851) |
+| `1450aa1` | fix(evals): load .env and abort live when budget caps unset | [36741212413](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36741212413) |
+| `360f60d` | docs(evals): Gemini D1 live results + leaderboard (C11) | [36742754294](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36742754294) |
+| `4448535` | fix(evals): reset circuit per case; circuit_open not schema error | [36745036199](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36745036199) |
+| `08eaec1` | fix(evals): throttle live cases and fix complete_json exhaust label | [36745839764](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36745839764) |
+| `304d089` | docs(evals): Groq D2 live results + leaderboard (C12) | [36746634272](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36746634272) |
+| `76b9bba` | fix(evals): raise triage max_tokens for Groq strict; ASR N/A when none accepted | [36748817938](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36748817938) |
+| `8b3d419` | docs(evals): replace Groq D2 results after max_tokens fix | [36750007359](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36750007359) |
+| `ab98275` | fix(evals): 429 retries, Groq RPM pacing, and llm_calls on live runs | [36750583217](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36750583217) |
+| `2373c8c` | docs(evals): merge Groq D2 after 429 pacing resume | [36752053671](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36752053671) |
+| `cd7400e` | docs(evals): Mistral D3 live results + schedule Gemini re-run | [36752862903](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36752862903) |
+| `159a1a3` | docs(evals): Gemini D1 current-harness re-run; archive attempt1 | [36753453869](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36753453869) |
+| `7ec09be` | fix(llm): instance-contract prompt for structured calls (D-LIVE-1,6) | [36755080518](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36755080518) |
+| `9f7db1a` | fix(evals): metrics honesty for live leaderboard (D-LIVE-2..5,8..11) | [36756083466](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36756083466) |
+| `77ec93a` | fix(llm): pace every structured HTTP attempt (D-LIVE-7) | [36757009424](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36757009424) |
+| `93b9f44` | docs(evals): leaderboard footnotes for pre-fix live numbers | [36757806817](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36757806817) |
+| `5fbe8f7` | docs(evals): post D-LIVE refresh — Mistral/Groq live + Gemini recompute | [36759341329](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36759341329) |
+| `a11820a` | docs(evals): Cloudflare D4 live — 33/33 triage | [36760132385](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36760132385) |
+| `48cf072` | fix(evals): accept str paths in write_eval_json (D-CF-WRITE-1) | [36765217263](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36765217263) |
+| `076a1aa` | docs(evals): CF/OR pre-closeout smokes in PART 9 | [36766731359](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36766731359) |
+| `3033eea` | docs(changelog): note B3 evals progress and CF/OR smokes | [36766765846](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36766765846) |
 
-| Case | Result | error_class | HTTP attempts |
-|------|--------|-------------|---------------|
-| triage-v1-001 | accepted | — | 1 |
-| triage-v1-002 | accepted | — | 1 |
-| triage-v1-003 | accepted | — | 1 |
-| rt-v1-001 | accepted | — | 1 |
-| rt-v1-002 | accepted | — | 1 |
-
-Both paths **5/5 and 3/3 accepted** → CF red-team + OpenRouter free path validated on current harness before remaining D5–D7 leaderboard days.
+No red commits in `main..HEAD` (each SHA’s recorded workflow conclusion = **success**). Closeout commit CI row appended after push.

@@ -2,11 +2,11 @@
   "accepted": 60,
   "anthropic": "skipped",
   "asr": {
+    "successes": 3,
     "accepted": 20,
-    "blocked_by_defenses": 0,
     "n": 20,
     "rate": 0.15,
-    "successes": 3
+    "blocked_by_defenses": 0
   },
   "attempts": 60,
   "cases": [
@@ -380,7 +380,7 @@
     "p95": 9054.657234979095
   },
   "merged_from_patch_utc": "2026-09-30T17:42:54.566515Z",
-  "metrics_recomputed_utc": "2026-09-30T18:31:31.052385Z",
+  "metrics_recomputed_utc": "2026-09-30T22:28:25.387918Z",
   "min_interval_s": 2.0,
   "missing_pred_ids": [],
   "mode": "live",
@@ -683,20 +683,20 @@
   "repair_events": 0,
   "repair_pct": 0.0,
   "triage_fields": {
+    "urgency": {
+      "hits": 27,
+      "n": 40,
+      "f1": 0.5112580917534477
+    },
     "category": {
-      "f1": 0.48268398268398266,
       "hits": 22,
-      "n": 40
+      "n": 40,
+      "f1": 0.48268398268398266
     },
     "sentiment": {
-      "f1": 0.8226186052273009,
       "hits": 33,
-      "n": 40
-    },
-    "urgency": {
-      "f1": 0.5112580917534477,
-      "hits": 27,
-      "n": 40
+      "n": 40,
+      "f1": 0.8226186052273009
     }
   },
   "triage_macro_f1": 0.6055202265549104,
@@ -707,5 +707,6 @@
     "accepted": 60,
     "attempts": 60
   },
-  "validity_pct": 1.0
+  "validity_pct": 1.0,
+  "git_sha": "159a1a3c22b31166b3fdf1dcfaaf0857b400b2e6"
 }
