@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from opspilot.llm.gateway import session_attempt_recorder
+from opspilot.llm.meta_redact import redact_text
 from opspilot.llm.policy import llm_allowed
 from opspilot.llm.providers.base import LlmProvider
 from opspilot.llm.routed import BudgetAwareGateway
@@ -18,6 +19,13 @@ from opspilot.llm.routing import build_providers
 from opspilot.llm.types import CompletionResult, Message, TaskName
 
 logger = logging.getLogger(__name__)
+
+
+def _log_llm_failure(task: TaskName, exc: BaseException) -> None:
+    code = type(exc).__name__
+    msg = redact_text(str(exc), max_chars=200)
+    logger.error("LLM %s failed error_code=%s message=%s", task, code, msg)
+
 
 _MAX_ITEMS = 20
 _MAX_REASON_CHARS = 120
@@ -102,7 +110,7 @@ def complete_prose(
                 max_tokens=max_tokens,
             )
         except Exception as exc:  # noqa: BLE001 — soft-200 at service boundary
-            logger.exception("LLM %s failed: %s", task, exc)
+            _log_llm_failure(task, exc)
             return None
 
 
@@ -135,5 +143,5 @@ def complete_structured[T: BaseModel](
                 max_tokens=max_tokens,
             )
         except Exception as exc:  # noqa: BLE001
-            logger.exception("LLM %s structured failed: %s", task, exc)
+            _log_llm_failure(task, exc)
             return None
