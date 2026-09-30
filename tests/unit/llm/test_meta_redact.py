@@ -34,6 +34,12 @@ def test_redact_text_cf_token() -> None:
     assert "***" in out
 
 
+def test_redact_text_password_passwd_secret_kv() -> None:
+    raw = "password=hunter2 passwd=sekrit secret=topsecret remaining"
+    out = redact_text(raw, max_chars=500)
+    assert out == "*** *** *** remaining"
+
+
 def test_redact_text_truncates() -> None:
     out = redact_text("x" * 1000, max_chars=50)
     assert len(out) == 50

@@ -752,6 +752,7 @@ Served by **gemini** / `gemini-3.5-flash-lite` native `responseSchema` (no `forc
 - Playwright container `mcr.microsoft.com/playwright:v1.55.1-jammy` Node: **v22.19.0**.
 - `frontend/.npmrc`: `legacy-peer-deps=true` only (no `engine-strict`).
 - Decision: raised engines to `>=24.15 <25` because npm would not fail on engines (warn-only). `.nvmrc` + CI `setup-node` → `24.15`; `ubuntu-24.04` pins applied.
+- Container Node **v22.19.0** < engines **24.15** is harmless now: no `engine-strict`, and the container runs only `npm ci` + Playwright. The drift is resolved in the **U9** batch.
 
 ### A2 (request_id threads)
 
@@ -780,12 +781,17 @@ Served by **gemini** / `gemini-3.5-flash-lite` native `responseSchema` (no `forc
 | 36c4eab | refactor(services): shared soft-deny helper | 36666607974 | success |
 | 101ba31 | docs(llm): mark LlmGateway skeleton/test-only | 36667085571 | success |
 | dff4ac3 | feat(obs): request_id threads, Filter, 500 + access logs | 36667586159 | failure |
-| 2d6293a / 74c3076 / 7114e45 | fix-forward OBS e2e patches | … / 36669203511 | success (final) |
+| 2d6293a | fix(test): force gateway triage in OBS request_id e2e | 36668138679 | failure |
+| 74c3076 | fix(test): patch get_adapter where pipeline imports it | 36668666579 | failure |
+| 7114e45 | fix(test): patch gateway_triage.build_providers for OBS e2e | 36669203511 | success |
 | e2f2501 | feat(db): index run_artifacts.name 0005 | 36669700807 | success |
 | 2000fac | test(llm): circuit / json_extract / budget env | 36670181540 | success |
 | 5c95816 | docs: ROADMAP/architecture/CHANGELOG/templates | 36670692836 | success |
 | 448675f | docs(readme): post-B2 truth + proof pack | 36671180549 | success |
-| (C16) | docs(b2.1): PART 8 closeout | (this push) | pending |
+| 6317dfc | docs(b2.1): PART 8 closeout | 36671754412 | success |
+| (final) | final records commit — CI run on PR checks | (PR checks) | pending |
+
+**Process deviations (fix-forward, no amend):** `a42b427` (run 36664597290) → `6225319`. OBS e2e: `dff4ac3` (36667586159), `2d6293a` (36668138679), `74c3076` (36668666579) → fixed forward in `7114e45` (36669203511).
 
 ### Greps / invariants
 
@@ -799,9 +805,9 @@ Served by **gemini** / `gemini-3.5-flash-lite` native `responseSchema` (no `forc
 
 ### Owner step P-3 (agent did not run)
 
-`	ext
+```
 gh repo edit Settar-Mengli/opspilot-ai --description "OpsPilot AI — local-first AI chief of staff (FastAPI + React + hand-rolled LLM gateway)" --add-topic ai --add-topic fastapi --add-topic python --add-topic react --add-topic portfolio --add-topic llm
-`
+```
 
 ### Deferred
 

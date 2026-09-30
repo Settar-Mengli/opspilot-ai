@@ -12,6 +12,7 @@ _EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 _BEARER_RE = re.compile(
     r"(?i)(?:\bBearer\s+\S+|\b(?:bearer|api[_-]?key|token)\s*[:=]\s*\S+|(?<![A-Za-z0-9])(?:cf_)?token\s*=\s*\S+)"
 )
+_PASSWORDISH_RE = re.compile(r"(?i)\b(?:password|passwd|secret)\s*[:=]\s*\S+")
 _KEYISH_RE = re.compile(
     r"\b(?:sk-[A-Za-z0-9_-]{8,}|gsk_[A-Za-z0-9_-]{8,}|AQ\.[A-Za-z0-9_-]{8,}|AIza[A-Za-z0-9_-]{8,})\b"
 )
@@ -23,6 +24,7 @@ def redact_text(text: str, *, max_chars: int) -> str:
         return ""
     out = _EMAIL_RE.sub("***", text)
     out = _BEARER_RE.sub("***", out)
+    out = _PASSWORDISH_RE.sub("***", out)
     out = _KEYISH_RE.sub("***", out)
     if len(out) > max_chars:
         out = out[:max_chars]
