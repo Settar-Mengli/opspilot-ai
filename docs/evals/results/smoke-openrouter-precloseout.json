@@ -1,0 +1,66 @@
+{
+  "accepted": 5,
+  "attempts": 5,
+  "cases": [
+    {
+      "accepted": true,
+      "error_class": null,
+      "harness_version": "b3-live/v2",
+      "http_attempts": 1,
+      "id": "triage-v1-001",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "rate_limit_events": 0,
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "accepted": true,
+      "error_class": null,
+      "harness_version": "b3-live/v2",
+      "http_attempts": 1,
+      "id": "triage-v1-002",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "rate_limit_events": 0,
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "accepted": true,
+      "error_class": null,
+      "harness_version": "b3-live/v2",
+      "http_attempts": 1,
+      "id": "triage-v1-003",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "rate_limit_events": 0,
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "accepted": true,
+      "error_class": null,
+      "harness_version": "b3-live/v2",
+      "http_attempts": 1,
+      "id": "rt-v1-001",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "rate_limit_events": 0,
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "accepted": true,
+      "error_class": null,
+      "harness_version": "b3-live/v2",
+      "http_attempts": 1,
+      "id": "rt-v1-002",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "rate_limit_events": 0,
+      "repaired": false,
+      "status": "accepted"
+    }
+  ],
+  "harness_version": "b3-live/v2",
+  "mode": "live_smoke",
+  "model": "nvidia/nemotron-3-super-120b-a12b:free",
+  "note": "smoke only \u2014 not merged into leaderboard day artifacts",
+  "provider": "openrouter"
+}

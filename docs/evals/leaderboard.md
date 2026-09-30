@@ -29,7 +29,7 @@ Live-only metrics. Hermetic CI gate = rules macro-F1 ≥ 0.30. Anthropic = **ski
 | D6–D7 | openrouter | — | — | — | — | — | pending |
 | — | anthropic | skipped | skipped | skipped | skipped | skipped | P7 |
 
-Harness: `b3-live/v2`. Smoke: Mistral 5 prior schema-fail ids → **5/5** accepted before full D3.
+Harness: `b3-live/v2`. Pre-closeout smokes (PART 9): Cloudflare 3/3 red-team; OpenRouter 5/5 (`nemotron…:free`) — **not** merged into day artifacts.
 
 ## STOP LIVE before D5
 

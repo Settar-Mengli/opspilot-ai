@@ -140,7 +140,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B3 — Eval platform + injection red-team (M3 + M4) — one harness
 
-- **Status:** In progress on `b3/evals-redteam` (locks P1–P13; Anthropic leaderboard column = `skipped`).
+- **Status:** In progress on `b3/evals-redteam` (locks P1–P13; Anthropic leaderboard column = `skipped`). D1–D4 live recorded; CF/OR pre-closeout smokes **passed**; **D5–D7** remaining before batch exit / STOP PR.
 - **Goal:** Regression + jailbreak/injection defense on a single eval harness.
 - **Workstream M3** — A2 + P8 phase1 lite
   - **Scope:** Labeled fictional corpus; F1/confusion; item-ID grounding + confidence on triage; CI secret-free lane; Anthropic column documented `skipped` (P7; no Anthropic HTTP in B3).
