@@ -48,15 +48,32 @@ def run_hermetic(*, out: Path | None = None) -> dict[str, Any]:
     return payload
 
 
-def run_live_cli(*, provider: str, out: Path | None = None) -> dict[str, Any]:
+def run_live_cli(
+    *,
+    provider: str,
+    out: Path | None = None,
+    resume_from: Path | None = None,
+) -> dict[str, Any]:
     """Owner-gated live path: opens a DB session and runs single-provider eval."""
+    import json
+
+    from opspilot.evals.live import failed_case_ids, merge_live_results
     from opspilot.persistence.db import create_engine, create_session_factory, get_database_url
+
+    case_ids: set[str] | None = None
+    base: dict[str, Any] | None = None
+    if resume_from is not None:
+        base = json.loads(resume_from.read_text(encoding="utf-8"))
+        case_ids = failed_case_ids(base)
+        if not case_ids:
+            raise LiveEvalError(f"no failed cases to resume in {resume_from}")
+        print(f"resume_from={resume_from} failed_cases={len(case_ids)}")
 
     engine = create_engine(get_database_url())
     factory = create_session_factory(engine)
     session = factory()
     try:
-        payload = run_live(provider_name=provider, session=session)
+        payload = run_live(provider_name=provider, session=session, case_ids=case_ids)
         session.commit()
     except Exception:
         session.rollback()
@@ -64,6 +81,10 @@ def run_live_cli(*, provider: str, out: Path | None = None) -> dict[str, Any]:
     finally:
         session.close()
         engine.dispose()
+
+    if base is not None:
+        payload = merge_live_results(base, payload)
+
     target = out or _default_live_out(provider.strip().lower())
     write_eval_json(target, payload)
     payload["_out"] = str(target)
@@ -88,6 +109,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="JSON output path (default under docs/evals/results/).",
     )
+    p.add_argument(
+        "--resume-from",
+        type=Path,
+        default=None,
+        help="Re-run only non-accepted case ids from a prior live JSON and merge.",
+    )
     return p
 
 
@@ -100,13 +127,14 @@ def main(argv: list[str] | None = None) -> int:
             print("ERROR: --live requires --provider <name>", file=sys.stderr)
             return 2
         try:
-            payload = run_live_cli(provider=args.provider, out=args.out)
+            payload = run_live_cli(provider=args.provider, out=args.out, resume_from=args.resume_from)
         except LiveEvalError as exc:
             print(f"ERROR: {exc}", file=sys.stderr)
             return 2
         print(
             f"provider={payload['provider']} validity={payload['validity_pct']:.3f} "
-            f"asr={_format_asr(payload['asr'])} wrote {payload['_out']}"
+            f"asr={_format_asr(payload['asr'])} "
+            f"rate_limit_events={payload.get('rate_limit_events')} wrote {payload['_out']}"
         )
         return 0
     if args.provider:
