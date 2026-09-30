@@ -10,7 +10,7 @@ Index of ADRs for OpsPilot. Status values: Accepted | Superseded | Proposed.
 | [D-004](D-004-adapter-seam.md) | Adapter seam for future models | Accepted | B2 |
 | [D-005](D-005-explicit-validation.md) | Explicit validation and error boundaries | Accepted | — |
 | [D-006](D-006-immutable-run-history.md) | Immutable run history with latest compatibility | Superseded (D-025) | B1 |
-| [D-007](D-007-url-query-run-context.md) | URL query param as frontend run context | Accepted (deferred FE) | UI |
+| [D-007](D-007-url-query-run-context.md) | URL query param as frontend run context | Accepted (deferred FE; re-deferred past B4) | post-B4 UI |
 | [D-008](D-008-database.md) | Database = Neon Postgres | Accepted | B1, B4, B7 |
 | [D-009](D-009-orm-migrations.md) | SQLAlchemy 2 + Alembic; Postgres in tests | Accepted | B1 |
 | [D-010](D-010-async-fastapi.md) | Async FastAPI | Accepted | B1, B5 |
