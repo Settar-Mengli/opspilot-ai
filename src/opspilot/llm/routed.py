@@ -20,7 +20,7 @@ from opspilot.llm.policy import llm_allowed
 from opspilot.llm.prompts.versioning import prompt_version_sha256
 from opspilot.llm.providers.base import LlmProvider
 from opspilot.llm.routing import filter_by_circuit
-from opspilot.llm.schema_convert import schema_prompt_fragment
+from opspilot.llm.schema_convert import schema_prompt_fragment, unwrap_schema_echo
 from opspilot.llm.types import AttemptStatus, CompletionResult, Message, ProviderResult, TaskName
 
 _REPAIR_SUFFIX = (
@@ -379,6 +379,7 @@ class BudgetAwareGateway:
             data = json.loads(extracted)
         except json.JSONDecodeError as exc:
             return None, f"invalid JSON: {exc}", "json_decode"
+        data = unwrap_schema_echo(data)
         try:
             return schema.model_validate(data), "", "ok"
         except ValidationError as exc:
