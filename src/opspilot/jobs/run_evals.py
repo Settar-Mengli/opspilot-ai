@@ -91,6 +91,20 @@ def run_live_cli(
     return payload
 
 
+def run_recompute_cli(*, source: Path, out: Path | None = None) -> dict[str, Any]:
+    """Recompute live metrics from stored rows (no provider calls)."""
+    import json
+
+    from opspilot.evals.live import recompute_live_metrics
+
+    base = json.loads(source.read_text(encoding="utf-8"))
+    payload = recompute_live_metrics(base)
+    target = out or source
+    write_eval_json(target, payload)
+    payload["_out"] = str(target)
+    return payload
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="python -m opspilot.jobs.run_evals")
     p.add_argument(
@@ -113,13 +127,30 @@ def build_parser() -> argparse.ArgumentParser:
         "--resume-from",
         type=Path,
         default=None,
-        help="Re-run only non-accepted case ids from a prior live JSON and merge.",
+        help="Re-run non-accepted and accepted-without-pred case ids from a prior live JSON and merge.",
+    )
+    p.add_argument(
+        "--recompute-metrics",
+        type=Path,
+        default=None,
+        help="Recompute validity/F1/ASR/repair from stored rows in JSON (no live provider calls).",
     )
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.recompute_metrics is not None:
+        if args.live or args.provider:
+            print("ERROR: --recompute-metrics cannot be combined with --live/--provider", file=sys.stderr)
+            return 2
+        payload = run_recompute_cli(source=args.recompute_metrics, out=args.out)
+        print(
+            f"recomputed validity={payload['validity_pct']:.3f} "
+            f"f1_accepted={payload.get('triage_macro_f1')} n={payload.get('triage_macro_f1_n')} "
+            f"asr={_format_asr(payload['asr'])} wrote {payload['_out']}"
+        )
+        return 0
     if args.live:
         # Same dotenv load as pipeline / llm_discover CLIs (repo-root .env).
         load_dotenv()
@@ -133,7 +164,11 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         print(
             f"provider={payload['provider']} validity={payload['validity_pct']:.3f} "
+            f"n={payload.get('validity_n')} "
+            f"f1_accepted={payload.get('triage_macro_f1')} n={payload.get('triage_macro_f1_n')} "
             f"asr={_format_asr(payload['asr'])} "
+            f"blocked={payload.get('asr', {}).get('blocked_by_defenses')} "
+            f"repair_pct={payload.get('repair_pct')} "
             f"rate_limit_events={payload.get('rate_limit_events')} wrote {payload['_out']}"
         )
         return 0
@@ -150,7 +185,9 @@ def _format_asr(asr: dict[str, Any]) -> str:
     rate = asr.get("rate")
     if rate is None:
         return "N/A"
-    return f"{rate:.3f}"
+    accepted = asr.get("accepted")
+    successes = asr.get("successes")
+    return f"{rate:.3f} ({successes}/{accepted})"
 
 
 if __name__ == "__main__":

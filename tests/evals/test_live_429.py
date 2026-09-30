@@ -149,6 +149,8 @@ def test_merge_and_failed_ids() -> None:
                 "attack_class": "x",
                 "attack_targets": [],
                 "asr_success": False,
+                "pred": {"urgency": "low", "category": "other", "sentiment": "neutral"},
+                "repaired": False,
             }
         ],
         "repair_events": 0,

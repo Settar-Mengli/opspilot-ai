@@ -75,6 +75,9 @@ class BudgetAwareGateway:
         self._observe = observe
         self._request_id = request_id
         self._honor_retry_after = honor_retry_after
+        self.last_repair_used: bool = False
+        self.last_parse_error_class: str | None = None
+        self.last_parse_output_head: str | None = None
 
     def complete(
         self,
@@ -147,6 +150,10 @@ class BudgetAwareGateway:
             self._deny_no_session(task=task, model=model)
             raise LlmProvidersExhausted("budget_denied_no_session")
 
+        self.last_repair_used = False
+        self.last_parse_error_class = None
+        self.last_parse_output_head = None
+
         prompt_version = prompt_version_sha256(task=task, messages=messages)
         candidates = filter_by_circuit(self._providers, self._circuit)
         if not candidates:
@@ -213,6 +220,8 @@ class BudgetAwareGateway:
                 self._circuit.reset(provider.name)
                 return parsed
 
+            self.last_parse_error_class = error_class
+            self.last_parse_output_head = (attempt.text or "")[:300]
             failed = replace(
                 attempt,
                 meta={
@@ -263,9 +272,12 @@ class BudgetAwareGateway:
             )
             parsed_repair, repair_errors, repair_class = self._try_parse(schema, repair.text)
             if parsed_repair is not None:
+                self.last_repair_used = True
                 self._record(task=task, provider=provider.name, result=repair, prompt_version=repair_pv)
                 self._circuit.reset(provider.name)
                 return parsed_repair
+            self.last_parse_error_class = repair_class
+            self.last_parse_output_head = (repair.text or "")[:300]
             repair_failed = replace(
                 repair,
                 meta={

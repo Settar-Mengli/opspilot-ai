@@ -126,11 +126,12 @@ def test_live_runner_fake_provider_metrics(db_session: Session, monkeypatch: pyt
         # First triage attempt returns invalid JSON to exercise repair path.
         if repair_hint is None and calls["n"] == 1:
             return "{}"
-        # Extract id from wrapped user message for evidence_refs.
-        user = messages[-1].content if messages else ""
+        # Extract id from UNTRUSTED wrap (schema fragment may be last message).
         item_id = "triage-v1-001"
-        if 'id="' in user:
-            item_id = user.split('id="', 1)[1].split('"', 1)[0]
+        for msg in messages:
+            if "UNTRUSTED" in msg.content and 'id="' in msg.content:
+                item_id = msg.content.split('id="', 1)[1].split('"', 1)[0]
+                break
         return _valid_payload(item_id)
 
     fake = FakeProvider(name="gemini", json_responder=responder)  # type: ignore[arg-type]
