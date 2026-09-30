@@ -45,8 +45,11 @@ def obs_client(test_database_url: str, db_session: Session, monkeypatch: pytest.
 
     monkeypatch.setattr("opspilot.llm.routing.build_providers", _providers)
     monkeypatch.setattr("opspilot.adapters.factory.build_providers", _providers)
+    monkeypatch.setattr("opspilot.adapters.gateway_triage.build_providers", _providers)
     monkeypatch.setattr("opspilot.services._llm.build_providers", _providers)
     monkeypatch.setattr("opspilot.llm.policy.llm_allowed", lambda: True)
+    monkeypatch.setattr("opspilot.adapters.gateway_triage.llm_allowed", lambda: True)
+    monkeypatch.setattr("opspilot.services._llm.llm_allowed", lambda: True)
     monkeypatch.setattr("opspilot.llm.policy.force_rules_enabled", lambda: False)
     monkeypatch.setattr("opspilot.llm.routed.try_consume_request", lambda *a, **k: True)
     monkeypatch.setattr("opspilot.llm.routed.add_tokens", lambda *a, **k: None)
