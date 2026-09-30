@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextvars
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FuturesTimeoutError
@@ -21,8 +22,11 @@ def execute_pipeline(req: RunPipelineRequest) -> PipelineResult:
         raise safe_error(404, "input_not_found", f"Input file not found: {req.input_file}")
 
     try:
+        # A2: ContextVars do not propagate into ThreadPoolExecutor workers;
+        # copy the request context (incl. request_id) into the worker thread.
+        ctx = contextvars.copy_context()
         with ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(run_pipeline, str(input_path), req.date.isoformat())
+            future = pool.submit(ctx.run, run_pipeline, str(input_path), req.date.isoformat())
             return future.result(timeout=RUN_TIMEOUT_SECONDS)
     except FuturesTimeoutError:
         logger.error(

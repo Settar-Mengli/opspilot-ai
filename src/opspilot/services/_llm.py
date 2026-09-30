@@ -21,6 +21,17 @@ from opspilot.llm.types import CompletionResult, Message, TaskName
 logger = logging.getLogger(__name__)
 
 
+def _resolve_request_id(request_id: str | None) -> str | None:
+    if request_id:
+        return request_id
+    try:
+        from opspilot.api.app import request_id_ctx
+
+        return request_id_ctx.get()
+    except Exception:  # noqa: BLE001 — app may be unavailable in some CLI contexts
+        return None
+
+
 def _log_llm_failure(task: TaskName, exc: BaseException) -> None:
     code = type(exc).__name__
     msg = redact_text(str(exc), max_chars=200)
@@ -114,7 +125,13 @@ def complete_prose(
         if scoped is None:
             return None
         recorder = session_attempt_recorder(scoped)
-        gw = BudgetAwareGateway(providers, session=scoped, recorder=recorder, observe=True, request_id=request_id)
+        gw = BudgetAwareGateway(
+            providers,
+            session=scoped,
+            recorder=recorder,
+            observe=True,
+            request_id=_resolve_request_id(request_id),
+        )
         try:
             return gw.complete(
                 task=task,
@@ -146,7 +163,13 @@ def complete_structured[T: BaseModel](
         if scoped is None:
             return None
         recorder = session_attempt_recorder(scoped)
-        gw = BudgetAwareGateway(providers, session=scoped, recorder=recorder, observe=True, request_id=request_id)
+        gw = BudgetAwareGateway(
+            providers,
+            session=scoped,
+            recorder=recorder,
+            observe=True,
+            request_id=_resolve_request_id(request_id),
+        )
         try:
             return gw.complete_json(
                 task=task,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 
@@ -9,7 +10,10 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from opspilot.llm.meta_redact import redact_text
+
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
+logger = logging.getLogger("opspilot.api.errors")
 
 
 def error_body(*, code: str, message: str, details: object | None = None) -> dict[str, object]:
@@ -73,7 +77,14 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def unhandled_handler(_request: Request, _exc: Exception) -> JSONResponse:
+    async def unhandled_handler(request: Request, exc: Exception) -> JSONResponse:
+        rid = getattr(request.state, "request_id", None) or "-"
+        logger.error(
+            "unhandled_error request_id=%s error_code=%s message=%s",
+            rid,
+            type(exc).__name__,
+            redact_text(str(exc), max_chars=200),
+        )
         return JSONResponse(
             status_code=500,
             content=error_body(
