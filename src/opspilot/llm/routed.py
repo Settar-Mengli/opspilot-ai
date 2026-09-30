@@ -309,6 +309,7 @@ class BudgetAwareGateway:
             model=model,
             repair_hint=repair_hint,
             force_json_object=force_json_object,
+            temperature=0.0,
         )
         if force_json_object and attempt.meta is not None:
             attempt = replace(attempt, meta={**dict(attempt.meta), "force_json_object": True})

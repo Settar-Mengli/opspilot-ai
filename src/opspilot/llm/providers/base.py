@@ -37,6 +37,7 @@ class LlmProvider(Protocol):
         model: str | None = None,
         repair_hint: str | None = None,
         force_json_object: bool = False,
+        temperature: float | None = None,
     ) -> ProviderResult:
         """Structured JSON completion attempt (schema enforced by gateway)."""
 

@@ -77,6 +77,7 @@ class GeminiProvider:
         model: str | None = None,
         repair_hint: str | None = None,
         force_json_object: bool = False,
+        temperature: float | None = None,
     ) -> ProviderResult:
         msgs = list(messages)
         if repair_hint:
@@ -93,6 +94,7 @@ class GeminiProvider:
             model=model,
             schema=schema,
             force_json_object=force_json_object,
+            temperature=temperature,
         )
 
     def stream(
@@ -115,15 +117,19 @@ class GeminiProvider:
         model: str | None,
         schema: type[BaseModel] | None,
         force_json_object: bool = False,
+        temperature: float | None = None,
     ) -> ProviderResult:
         if not self._api_key:
             return ProviderResult(status=AttemptStatus.ERROR, error_code="missing_api_key", model=model or "")
 
         resolved = resolve_gemini_model(task, model)
         url = f"{self._base_url}/models/{resolved}:generateContent"
+        gen_cfg: dict[str, Any] = {"maxOutputTokens": max_tokens}
+        if temperature is not None:
+            gen_cfg["temperature"] = temperature
         body: dict[str, Any] = {
             "contents": _to_gemini_contents(messages),
-            "generationConfig": {"maxOutputTokens": max_tokens},
+            "generationConfig": gen_cfg,
         }
         if schema is not None:
             body["generationConfig"]["responseMimeType"] = "application/json"

@@ -134,6 +134,7 @@ class LlmGateway:
                 schema=schema,
                 max_tokens=max_tokens,
                 model=model,
+                temperature=0.0,
             )
             self._record(task=task, provider=provider.name, result=attempt)
             if attempt.status is not AttemptStatus.SUCCESS:
@@ -161,6 +162,7 @@ class LlmGateway:
                 max_tokens=max_tokens,
                 model=model,
                 repair_hint=errors,
+                temperature=0.0,
             )
             self._record(task=task, provider=provider.name, result=repair)
             if repair.status is not AttemptStatus.SUCCESS:
