@@ -5,7 +5,7 @@ Live-only metrics. Hermetic CI gate = rules macro-F1 ≥ 0.30. Anthropic = **ski
 | Day | Provider | Attempts | Validity% | Repair% | ASR | Triage macro-F1 | Latency p50/p95 (ms) | Artifact |
 |-----|----------|----------|-----------|---------|-----|-----------------|----------------------|----------|
 | D1 | gemini | 60 | 100.0 | 0.0 | 0.200 (4/20) | 0.612 | 4166 / 12044 | [`live-gemini-day1.json`](results/live-gemini-day1.json) |
-| D2 | groq | 60 | 11.7 | 26.7 | 0.000 (0/0 accepted) | 0.153 | 84 / 1824 | [`live-groq-day2.json`](results/live-groq-day2.json) |
+| D2 | groq | 60 | 35.0 | 0.0 | 0.500 (2/4) | 0.286 | 69 / 1255 | [`live-groq-day2.json`](results/live-groq-day2.json) |
 | D3 | mistral | — | — | — | — | — | — | pending |
 | D4–D5 | cloudflare | — | — | — | — | — | — | pending |
 | D6–D7 | openrouter | — | — | — | — | — | — | pending |
@@ -20,6 +20,12 @@ Live-only metrics. Hermetic CI gate = rules macro-F1 ≥ 0.30. Anthropic = **ski
 ## D2 notes (2026-09-30 UTC)
 
 - Budget preflight: `req_cap=800` `tok_cap=160000`
-- Live runner uses 2s inter-case sleep (free-tier RPM courtesy) + per-case circuit reset
-- Validity low: 7/60 accepted; 51 `LlmSchemaError`, 1 exhausted, 1 grounding_failed; 0 red-team accepted → ASR n/a numerator 0
-- Day counter after D2 (includes aborted earlier Groq attempts): used 147 REQ / 13830 TOK; remaining 653 / 146170
+- **Canonical result** = post-fix re-run (`max_tokens=1024`, ASR N/A fixed): validity 35%; JSONL shows 21 success + 39 `429` (RPM), not schema rejects
+- **Attempt 1 (superseded):** validity 11.7%, ASR misreported as 0 with 0 accepted red-team — archived [`live-groq-day2-attempt1.json`](results/live-groq-day2-attempt1.json)
+- Root cause (not schema keyword rejection): Groq strict `json_schema` returned `http_400` / `json_validate_failed` / `failed_generation=max completion tokens reached…` at `max_tokens=300` after P12 fields; `json_object` retry often recovered until RPM
+- `groq_strict_schema(TriagePayload)` meets Groq strict docs (`additionalProperties:false`, all props required); P12 `minimum`/`maximum`/`minLength`/`maxItems` retained
+- Day counter after re-run: used 216 REQ / 43453 TOK; remaining 584 / 116547
+
+## PART 9 deviation (draft — finalize at C19)
+
+- **D-GROQ-1:** First Groq D2 published with inflated schema-failure signal; live runner used `max_tokens=300` and `observe=False` (no `llm_calls`). Diagnosis via live probe: not unsupported P12 keywords; constrained-decode token exhaustion. Fix: `TRIAGE_STRUCTURED_MAX_TOKENS=1024`, ASR `rate=null`→N/A when 0 accepted red-team, archive attempt1, replace canonical D2 JSON.
