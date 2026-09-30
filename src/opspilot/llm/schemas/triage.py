@@ -20,3 +20,5 @@ class TriagePayload(BaseModel):
     category_reason: str = Field(min_length=1, max_length=400)
     sentiment: Sentiment
     sentiment_reason: str = Field(min_length=1, max_length=400)
+    confidence: float = Field(ge=0.0, le=1.0)
+    evidence_refs: list[str] = Field(default_factory=list, max_length=16)

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from opspilot.adapters.base import TriageAdapter
 from opspilot.adapters.rule_based import RuleBasedAdapter
+from opspilot.llm.grounding import GroundingError, assert_grounded
 from opspilot.llm.policy import llm_allowed
 from opspilot.llm.prompt_safety import UNTRUSTED_SYSTEM_POLICY, neutralize_text, wrap_untrusted
 from opspilot.llm.providers.base import LlmProvider
@@ -21,6 +22,7 @@ logger = logging.getLogger("opspilot.adapters.gateway_triage")
 _SYSTEM = (
     "You are an operations triage assistant. Classify the work item. "
     f"{UNTRUSTED_SYSTEM_POLICY} "
+    "Include confidence (0-1) and evidence_refs citing only the item id. "
     "Respond with JSON only matching the schema. No markdown."
 )
 _BODY_MAX = 500
@@ -70,6 +72,11 @@ class GatewayTriageAdapter(TriageAdapter):
         )
         if payload is None:
             return self._fallback.classify(item)
+        try:
+            assert_grounded(payload, allowed_ids={item.id})
+        except GroundingError as exc:
+            logger.warning("Gateway triage grounding failed for %s: %s", item.id, exc)
+            return self._fallback.classify(item)
         return TriageRecord(
             id=item.id,
             urgency=payload.urgency,
@@ -78,4 +85,6 @@ class GatewayTriageAdapter(TriageAdapter):
             category_reason=payload.category_reason,
             sentiment=payload.sentiment,
             sentiment_reason=payload.sentiment_reason,
+            confidence=payload.confidence,
+            evidence_refs=list(payload.evidence_refs),
         )
