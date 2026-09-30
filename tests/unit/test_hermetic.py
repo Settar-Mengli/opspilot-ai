@@ -48,7 +48,7 @@ def test_llm_disable_returns_rule_based_without_force_rules(
     assert constructed == []
 
 
-def test_force_rules_does_not_import_claude_adapter(
+def test_force_rules_uses_rule_adapter_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("OPSPILOT_FORCE_RULES", "1")
@@ -57,10 +57,17 @@ def test_force_rules_does_not_import_claude_adapter(
     import builtins
 
     real_import = builtins.__import__
+    banned = {
+        "opspilot.adapters.claude_adapter",
+        "opspilot.adapters.conversation_adapter",
+        "opspilot.adapters.evening_adapter",
+        "opspilot.adapters.insights_adapter",
+        "opspilot.domain.models",
+    }
 
     def _guarded_import(name, *args, **kwargs):  # type: ignore[no-untyped-def]
-        if name == "opspilot.adapters.claude_adapter" or name.endswith("claude_adapter"):
-            raise AssertionError("claude_adapter must not be imported under FORCE_RULES")
+        if name in banned:
+            raise AssertionError(f"{name} must not be imported under FORCE_RULES")
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", _guarded_import)

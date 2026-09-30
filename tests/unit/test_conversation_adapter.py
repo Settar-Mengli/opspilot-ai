@@ -50,8 +50,6 @@ def test_gateway_success(monkeypatch: pytest.MonkeyPatch) -> None:
     assert ask_service.answer_question("What should I prioritize?") == "Prioritize WI-001"
 
 
-def test_adapter_wrapper_delegates(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_services_ask_is_public_entry(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OPSPILOT_FORCE_RULES", "1")
-    from opspilot.adapters.conversation_adapter import answer_question
-
-    assert answer_question("hi") == UNAVAILABLE_MESSAGE
+    assert ask_service.answer_question("hi") == UNAVAILABLE_MESSAGE
