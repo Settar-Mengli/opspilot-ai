@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import replace
 
 from pydantic import BaseModel, ValidationError
@@ -67,6 +67,7 @@ class BudgetAwareGateway:
         observe: bool = True,
         request_id: str | None = None,
         honor_retry_after: bool = True,
+        request_pacer: Callable[[], None] | None = None,
     ) -> None:
         self._providers = list(providers)
         self._session = session
@@ -75,6 +76,7 @@ class BudgetAwareGateway:
         self._observe = observe
         self._request_id = request_id
         self._honor_retry_after = honor_retry_after
+        self._request_pacer = request_pacer
         self.last_repair_used: bool = False
         self.last_parse_error_class: str | None = None
         self.last_parse_output_head: str | None = None
@@ -330,6 +332,8 @@ class BudgetAwareGateway:
             prompt_version=prompt_version,
         ):
             return None, force_json_object
+        if self._request_pacer is not None:
+            self._request_pacer()
         attempt = provider.complete_json(
             task=task,
             messages=messages,

@@ -392,6 +392,7 @@ def run_live(
         observe=True,
         circuit=circuit,
         honor_retry_after=True,
+        request_pacer=pacer.wait,
     )
 
     triage_cases = load_triage_cases()
@@ -419,7 +420,6 @@ def run_live(
             allowed_ids=allowed,
             circuit=circuit,
             provider_name=provider.name,
-            pacer=pacer,
             sleeper=sleeper,
             get_retry_after=lambda: last_retry_after,
             prompt_versions=prompt_versions,
@@ -457,7 +457,6 @@ def run_live(
             allowed_ids=allowed,
             circuit=circuit,
             provider_name=provider.name,
-            pacer=pacer,
             sleeper=sleeper,
             get_retry_after=lambda: last_retry_after,
             prompt_versions=prompt_versions,
@@ -573,7 +572,6 @@ def _classify_with_429_retries(
     allowed_ids: Sequence[str],
     circuit: CircuitBreaker,
     provider_name: str,
-    pacer: _RequestPacer,
     sleeper: Callable[[float], None],
     get_retry_after: Callable[[], float | None],
     prompt_versions: list[str],
@@ -581,7 +579,7 @@ def _classify_with_429_retries(
     last_status = "429"
     for attempt in range(MAX_429_RETRIES + 1):
         circuit.reset(provider_name)
-        pacer.wait()
+        # Per-HTTP pacing lives on BudgetAwareGateway.request_pacer (D-LIVE-7).
         payload, status = _classify_one(gw, item, allowed_ids=allowed_ids, prompt_versions=prompt_versions)
         if payload is not None:
             return payload, status
