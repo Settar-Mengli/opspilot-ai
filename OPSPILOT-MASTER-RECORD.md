@@ -812,3 +812,19 @@ gh repo edit Settar-Mengli/opspilot-ai --description "OpsPilot AI — local-firs
 ### Deferred
 
 - Register B3/UI/B4–B7 items; triage `_BODY_MAX` → B3 P11; Playwright majors → U9 batch.
+
+---
+
+## PART 9 — B3 Evals + red-team (in progress) — 2026-09-30
+
+Branch `b3/evals-redteam`. Live leaderboard under owner-gated caps; hermetic rules macro-F1 floor **0.30**.
+
+### Deviations
+
+| ID | Severity | What happened | Cost / impact | Fix |
+|----|----------|---------------|---------------|-----|
+| **D-CF-WRITE-1** | Med | Cloudflare D4 live run completed (33 triage accepted) but the one-off runner passed a **`str`** to `write_eval_json`, which required **`Path`** (`.parent.mkdir`). Artifact was lost; a second live run was required to persist JSON. | **33 wasted Cloudflare REQ** (plus matching tokens) on UTC day 2026-09-30; day counters reached **66/80** REQ after the re-run, leaving insufficient headroom for D5 the same UTC day. | `write_eval_json` now accepts `Path \| str` and always coerces via `Path(...)`. Hermetic regression: `tests/evals/test_report_writer.py`. |
+
+### Live schedule status (at PART append)
+
+- D1–D3 refreshed post D-LIVE-1..11; D4 Cloudflare 33/33 triage recorded; **STOP LIVE before D5** until next UTC day (or owner override with verified REQ headroom ≥ ~30).

@@ -71,3 +71,4 @@ Historical † rows (validity 65% Mistral, stale Groq F1 0.286, repair% >1) are 
 - **D-GROQ-2:** 429 retries + ≥2.5s Groq pacing + llm_calls observe
 - **D1 re-run:** Original Gemini archived as attempt1
 - **D-LIVE-1..11:** instance-contract prompt; metrics honesty; per-HTTP pacer; leaderboard refresh
+- **D-CF-WRITE-1:** D4 helper passed `str` to `write_eval_json` → artifact lost after successful 33-case run; **33 wasted Cloudflare REQ**; fixed `Path | str` + hermetic `test_report_writer.py` (see master-record PART 9)
