@@ -44,11 +44,13 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
         try:
             with engine.connect() as conn:
                 version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            assert version == "0004_timestamptz"
+            assert version == "0005_run_artifacts_name_idx"
             indexes = {idx["name"] for idx in inspect(engine).get_indexes("runs")}
             assert "ix_runs_finished_at" in indexes
             llm_indexes = {idx["name"] for idx in inspect(engine).get_indexes("llm_calls")}
             assert "ix_llm_calls_created_at" in llm_indexes
+            artifact_indexes = {idx["name"] for idx in inspect(engine).get_indexes("run_artifacts")}
+            assert "ix_run_artifacts_name" in artifact_indexes
             cols = {c["name"]: c for c in inspect(engine).get_columns("runs")}
             assert (
                 "DateTime" in str(cols["finished_at"]["type"])

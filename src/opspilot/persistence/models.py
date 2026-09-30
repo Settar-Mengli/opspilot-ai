@@ -6,7 +6,19 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import CHAR, BigInteger, Date, DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import (
+    CHAR,
+    BigInteger,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -53,7 +65,10 @@ class RunRow(Base):
 
 class RunArtifactRow(Base):
     __tablename__ = "run_artifacts"
-    __table_args__ = (UniqueConstraint("run_id", "name", name="uq_run_artifacts_run_name"),)
+    __table_args__ = (
+        UniqueConstraint("run_id", "name", name="uq_run_artifacts_run_name"),
+        Index("ix_run_artifacts_name", "name"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[str] = mapped_column(String(128), ForeignKey("runs.run_id", ondelete="CASCADE"), nullable=False)
