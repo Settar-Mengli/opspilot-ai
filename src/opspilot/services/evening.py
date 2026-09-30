@@ -6,8 +6,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from opspilot.llm.policy import llm_allowed
-from opspilot.services._llm import compact_triage_lines, complete_prose, providers_or_empty
+from opspilot.services._llm import compact_triage_lines, complete_prose, soft_deny
 
 _SOFT_UNAVAILABLE = (
     "I ran into an issue preparing your end-of-day summary. The API may be unavailable. Please try again in a moment."
@@ -36,9 +35,5 @@ def generate_evening_summary(
         task="evening", system=system, user=user, max_tokens=700, session=session, request_id=request_id
     )
     if result is None:
-        if not llm_allowed():
-            return _SOFT_UNAVAILABLE
-        if not providers_or_empty():
-            return _SOFT_NO_PROVIDER
-        return _SOFT_UNAVAILABLE
+        return soft_deny(unavailable=_SOFT_UNAVAILABLE, no_provider=_SOFT_NO_PROVIDER) or _SOFT_UNAVAILABLE
     return result.text.strip() or _SOFT_UNAVAILABLE

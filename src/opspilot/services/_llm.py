@@ -53,6 +53,18 @@ def providers_or_empty() -> list[LlmProvider]:
     return build_providers()
 
 
+def soft_deny(*, unavailable: str, no_provider: str) -> str | None:
+    """Shared soft-deny order: policy → no providers → None if call may proceed.
+
+    When the LLM attempt already failed, callers treat None as ``unavailable``.
+    """
+    if not llm_allowed():
+        return unavailable
+    if not providers_or_empty():
+        return no_provider
+    return None
+
+
 @contextmanager
 def llm_session_scope(session: Session | None = None) -> Iterator[Session | None]:
     """Use injected session, or open a short-lived sync session from DATABASE_URL.

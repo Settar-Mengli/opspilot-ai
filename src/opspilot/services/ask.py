@@ -6,7 +6,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from opspilot.services._llm import compact_triage_lines, complete_prose
+from opspilot.services._llm import compact_triage_lines, complete_prose, soft_deny
 
 _SOFT_UNAVAILABLE = "I ran into an issue answering that. The API may be unavailable. Please try again in a moment."
 _SOFT_NO_PROVIDER = (
@@ -41,12 +41,5 @@ def answer_question(
         request_id=request_id,
     )
     if result is None:
-        from opspilot.llm.policy import llm_allowed
-        from opspilot.services._llm import providers_or_empty
-
-        if not llm_allowed():
-            return _SOFT_UNAVAILABLE
-        if not providers_or_empty():
-            return _SOFT_NO_PROVIDER
-        return _SOFT_UNAVAILABLE
+        return soft_deny(unavailable=_SOFT_UNAVAILABLE, no_provider=_SOFT_NO_PROVIDER) or _SOFT_UNAVAILABLE
     return result.text.strip() or _SOFT_UNAVAILABLE
