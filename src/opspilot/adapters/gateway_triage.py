@@ -27,6 +27,8 @@ _SYSTEM = (
 )
 _BODY_MAX = 500
 _SUBJECT_MAX = 160
+# Shared with live evals: Groq strict decode needs headroom for P12 fields.
+_STRUCTURED_MAX_TOKENS = 1024
 
 
 def build_triage_user_prompt(item: WorkItem) -> str:
@@ -67,7 +69,7 @@ class GatewayTriageAdapter(TriageAdapter):
             system=_SYSTEM,
             user=user,
             schema=TriagePayload,
-            max_tokens=300,
+            max_tokens=_STRUCTURED_MAX_TOKENS,
             session=self._session,
         )
         if payload is None:

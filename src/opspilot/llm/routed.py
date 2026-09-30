@@ -281,7 +281,7 @@ class BudgetAwareGateway:
             last_error = repair_errors
 
         # Schema path only when the last failure was parse/validation; else provider/budget exhaustion.
-        if last_error in {"budget_denied", "budget_denied_repair"} or (
+        if last_error in {"budget_denied", "budget_denied_repair", "429"} or (
             last_error
             and (
                 last_error.startswith("http_")

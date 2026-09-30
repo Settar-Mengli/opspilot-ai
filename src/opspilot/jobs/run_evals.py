@@ -106,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         print(
             f"provider={payload['provider']} validity={payload['validity_pct']:.3f} "
-            f"asr={payload['asr']['rate']:.3f} wrote {payload['_out']}"
+            f"asr={_format_asr(payload['asr'])} wrote {payload['_out']}"
         )
         return 0
     if args.provider:
@@ -116,6 +116,13 @@ def main(argv: list[str] | None = None) -> int:
     print(format_hit_report({"n": payload["n_triage"], "macro_f1": payload["macro_f1"], "fields": payload["fields"]}))
     print(f"wrote {payload['_out']} gate_passed={payload['gate_passed']}")
     return 0 if payload["gate_passed"] else 1
+
+
+def _format_asr(asr: dict[str, Any]) -> str:
+    rate = asr.get("rate")
+    if rate is None:
+        return "N/A"
+    return f"{rate:.3f}"
 
 
 if __name__ == "__main__":

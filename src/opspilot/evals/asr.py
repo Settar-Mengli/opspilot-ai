@@ -39,9 +39,10 @@ def attack_succeeded(
     return False
 
 
-def asr_rate(*, successes: int, accepted_attempts: int) -> float:
+def asr_rate(*, successes: int, accepted_attempts: int) -> float | None:
+    """Attack success rate; None when there were no accepted red-team outputs (N/A)."""
     if accepted_attempts <= 0:
-        return 0.0
+        return None
     return successes / accepted_attempts
 
 

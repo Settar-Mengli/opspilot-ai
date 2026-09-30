@@ -33,6 +33,9 @@ _SYSTEM = (
     "Respond with JSON only matching the schema. No markdown."
 )
 
+# Groq strict constrained decoding needs headroom beyond Gemini; P12 adds confidence+evidence_refs.
+TRIAGE_STRUCTURED_MAX_TOKENS = 1024
+
 
 class LiveEvalError(ValueError):
     """Configuration / policy error for live evals."""
@@ -125,7 +128,7 @@ def run_live(
             repair_events += 1
 
     circuit = CircuitBreaker()
-    gw = BudgetAwareGateway(resolved, session=session, recorder=_recorder, observe=False, circuit=circuit)
+    gw = BudgetAwareGateway(resolved, session=session, recorder=_recorder, observe=True, circuit=circuit)
 
     triage_cases = load_triage_cases()
     if triage_limit is not None:
@@ -241,7 +244,7 @@ def _classify_one(gw: BudgetAwareGateway, item: WorkItem) -> tuple[TriagePayload
             task="triage",
             messages=[Message(role="system", content=_SYSTEM), Message(role="user", content=user)],
             schema=TriagePayload,
-            max_tokens=300,
+            max_tokens=TRIAGE_STRUCTURED_MAX_TOKENS,
         )
     except (LlmPolicyDenied, LlmProvidersExhausted, LlmSchemaError) as exc:
         return None, type(exc).__name__

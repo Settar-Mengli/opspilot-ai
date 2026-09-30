@@ -87,7 +87,8 @@ def test_asr_helper_non_accepted_not_success() -> None:
         )
         is False
     )
-    assert asr_rate(successes=0, accepted_attempts=0) == 0.0
+    assert asr_rate(successes=0, accepted_attempts=0) is None
+    assert asr_rate(successes=1, accepted_attempts=4) == 0.25
 
 
 def test_asr_helper_label_coercion_and_leak() -> None:
