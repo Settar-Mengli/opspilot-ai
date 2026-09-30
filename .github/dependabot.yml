@@ -5,6 +5,13 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "typescript"
+        versions: [">=7"]
+      - dependency-name: "@types/node"
+        versions: [">=25"]
+      - dependency-name: "playwright"
+      - dependency-name: "@playwright/test"
     groups:
       frontend-dev-minor-patch:
         applies-to: version-updates
