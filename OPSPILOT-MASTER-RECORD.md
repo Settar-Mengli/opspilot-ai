@@ -824,7 +824,7 @@ Branch `b3/evals-redteam`. Hermetic rules macro-F1 floor **F1-FLOOR = 0.30** (ow
 ### Closeout exits (local, 2026-09-30)
 
 - `uv run pytest -q --cov=opspilot`: **229 passed**, **TOTAL 84%** (≥ B2.1 baseline 82.88%).
-- Tip CI (pre-closeout SHA `3033eea`): run **36766765846** — Backend / Frontend / Gitleaks / UI Tests **success**.
+- Tip CI (closeout SHA `3d5d507`): run **36785928086** — Backend / Frontend / Gitleaks / UI Tests **success**.
 
 ### Deviations
 
@@ -898,5 +898,6 @@ Harness `b3-live/v2`, `observe=True`. Artifacts: `docs/evals/results/smoke-*-pre
 | `48cf072` | fix(evals): accept str paths in write_eval_json (D-CF-WRITE-1) | [36765217263](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36765217263) |
 | `076a1aa` | docs(evals): CF/OR pre-closeout smokes in PART 9 | [36766731359](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36766731359) |
 | `3033eea` | docs(changelog): note B3 evals progress and CF/OR smokes | [36766765846](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36766765846) |
+| `3d5d507` | docs(b3): PART 9 closeout, B3.1 scope, ASR + gemini git_sha | [36785928086](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36785928086) |
 
-No red commits in `main..HEAD` (each SHA’s recorded workflow conclusion = **success**). Closeout commit CI row appended after push.
+No red commits in `main..HEAD` (each SHA’s recorded workflow conclusion = **success**).
