@@ -21,10 +21,11 @@ uv run python -m opspilot.jobs.run_evals --live --provider gemini
 
 Rules:
 
-- Exactly one provider per run (no failover).
+- Exactly one provider per run (no failover). Built via `build_providers(order=[name])`.
 - `BudgetAwareGateway` + approved caps only.
 - Anthropic: **skipped** (P7); no Anthropic HTTP.
 - Results: `docs/evals/results/*.json` + `docs/evals/leaderboard.md` — no secrets, no prompt/body text beyond fictional corpus IDs.
+- Metrics include validity%, repair_events/repair%, latency p50/p95, live ASR (D-029).
 
 ### ASR (see D-029)
 

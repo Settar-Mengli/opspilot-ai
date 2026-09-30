@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from opspilot.evals.dataset import REDTEAM_V1, TRIAGE_V1, load_redteam_cases, load_triage_cases
+from opspilot.evals.live import LiveEvalError, run_live
 from opspilot.evals.report import write_eval_json
 from opspilot.evals.rules_baseline import MACRO_F1_FLOOR, format_hit_report, run_rules_vs_labels
 
@@ -16,6 +17,11 @@ from opspilot.evals.rules_baseline import MACRO_F1_FLOOR, format_hit_report, run
 def _default_hermetic_out() -> Path:
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     return Path("docs/evals/results") / f"hermetic-{stamp}.json"
+
+
+def _default_live_out(provider: str) -> Path:
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    return Path("docs/evals/results") / f"live-{provider}-{stamp}.json"
 
 
 def run_hermetic(*, out: Path | None = None) -> dict[str, Any]:
@@ -35,6 +41,28 @@ def run_hermetic(*, out: Path | None = None) -> dict[str, Any]:
         "confusion": report.get("confusion", {}),
     }
     target = out or _default_hermetic_out()
+    write_eval_json(target, payload)
+    payload["_out"] = str(target)
+    return payload
+
+
+def run_live_cli(*, provider: str, out: Path | None = None) -> dict[str, Any]:
+    """Owner-gated live path: opens a DB session and runs single-provider eval."""
+    from opspilot.persistence.db import create_engine, create_session_factory, get_database_url
+
+    engine = create_engine(get_database_url())
+    factory = create_session_factory(engine)
+    session = factory()
+    try:
+        payload = run_live(provider_name=provider, session=session)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        engine.dispose()
+    target = out or _default_live_out(provider.strip().lower())
     write_eval_json(target, payload)
     payload["_out"] = str(target)
     return payload
@@ -64,9 +92,19 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.live:
-        # Live wiring lands in the following commit; refuse until then.
-        print("ERROR: --live path not wired yet (owner-gated; refuse)", file=sys.stderr)
-        return 2
+        if not args.provider:
+            print("ERROR: --live requires --provider <name>", file=sys.stderr)
+            return 2
+        try:
+            payload = run_live_cli(provider=args.provider, out=args.out)
+        except LiveEvalError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 2
+        print(
+            f"provider={payload['provider']} validity={payload['validity_pct']:.3f} "
+            f"asr={payload['asr']['rate']:.3f} wrote {payload['_out']}"
+        )
+        return 0
     if args.provider:
         print("ERROR: --provider requires --live", file=sys.stderr)
         return 2

@@ -26,3 +26,7 @@ def test_cli_hermetic_exit_zero(tmp_path: Path) -> None:
 
 def test_cli_rejects_provider_without_live() -> None:
     assert main(["--provider", "gemini"]) == 2
+
+
+def test_cli_live_without_provider_exits_2() -> None:
+    assert main(["--live"]) == 2
