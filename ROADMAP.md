@@ -133,7 +133,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B2.1 — Hardening + truth
 
-- **Status:** Implementing on `b2.1/hardening` (this batch).
+- **Status:** Implemented on `b2.1/hardening` (PR pending owner `open PR`). PART 8 recorded.
 - **Goal:** Post-B2 hardening: register truth-align, toolchain pins, security redaction/OpenRouter/:request-id, dead-code delete, observability, expand-only index, portfolio docs. API shapes unchanged; 0 PNG changes.
 - **Exit:** Full pytest ≥72% (baseline 81.19%); greps clean; PART 8; Dependabot ignores for TS7 / @types/node≥25 / Playwright until U9.
 - **Deps:** B2 · **Size:** L · **Metric:** Hardening + honest CURRENT docs
