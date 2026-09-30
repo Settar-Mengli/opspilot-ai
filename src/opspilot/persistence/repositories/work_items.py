@@ -1,0 +1,75 @@
+"""Work item repository (provider_id upsert for Gmail sync)."""
+
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any
+from uuid import uuid4
+
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.orm import Session
+
+from opspilot.persistence.models import WorkItemRow
+
+
+def new_work_item_id() -> str:
+    return f"wi_{uuid4().hex}"
+
+
+def upsert_by_provider_id(
+    session: Session,
+    *,
+    provider_id: str,
+    source_type: str,
+    subject_or_title: str,
+    body_or_description: str,
+    sender_or_requester: str,
+    received_at: datetime,
+    thread_id: str | None = None,
+    tags: list[Any] | None = None,
+) -> str:
+    """Insert or update a work item keyed by unique provider_id. Returns row id."""
+    if not provider_id:
+        raise ValueError("provider_id required")
+    existing = session.scalars(select(WorkItemRow).where(WorkItemRow.provider_id == provider_id)).one_or_none()
+    if existing is not None:
+        existing.source_type = source_type
+        existing.subject_or_title = subject_or_title
+        existing.body_or_description = body_or_description
+        existing.sender_or_requester = sender_or_requester
+        existing.received_at = received_at
+        existing.thread_id = thread_id
+        if tags is not None:
+            existing.tags = tags
+        session.flush()
+        return existing.id
+
+    row_id = new_work_item_id()
+    stmt = pg_insert(WorkItemRow).values(
+        id=row_id,
+        provider_id=provider_id,
+        source_type=source_type,
+        subject_or_title=subject_or_title,
+        body_or_description=body_or_description,
+        sender_or_requester=sender_or_requester,
+        received_at=received_at,
+        thread_id=thread_id,
+        tags=tags or [],
+    )
+    stmt = stmt.on_conflict_do_update(
+        constraint="uq_work_items_provider_id",
+        set_={
+            "source_type": stmt.excluded.source_type,
+            "subject_or_title": stmt.excluded.subject_or_title,
+            "body_or_description": stmt.excluded.body_or_description,
+            "sender_or_requester": stmt.excluded.sender_or_requester,
+            "received_at": stmt.excluded.received_at,
+            "thread_id": stmt.excluded.thread_id,
+            "tags": stmt.excluded.tags,
+        },
+    )
+    session.execute(stmt)
+    session.flush()
+    row = session.scalars(select(WorkItemRow).where(WorkItemRow.provider_id == provider_id)).one()
+    return row.id

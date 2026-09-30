@@ -108,7 +108,12 @@ def db_session(test_database_url: str) -> Iterator[Session]:
     engine = create_engine(test_database_url)
     factory = create_session_factory(engine)
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE TABLE triage_decisions, run_artifacts, runs, work_items RESTART IDENTITY CASCADE"))
+        conn.execute(
+            text(
+                "TRUNCATE TABLE triage_decisions, run_artifacts, runs, work_items, "
+                "oauth_credentials, sync_cursors, meetings RESTART IDENTITY CASCADE"
+            )
+        )
     with factory() as session:
         yield session
         session.rollback()
