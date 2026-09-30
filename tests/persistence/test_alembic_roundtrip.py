@@ -24,6 +24,9 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
                 "triage_decisions",
                 "llm_calls",
                 "llm_budget_counters",
+                "oauth_credentials",
+                "sync_cursors",
+                "meetings",
                 "alembic_version",
             }.issubset(tables)
         finally:
@@ -44,7 +47,7 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
         try:
             with engine.connect() as conn:
                 version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            assert version == "0006_triage_confidence_evidence"
+            assert version == "0007_gmail_calendar"
             indexes = {idx["name"] for idx in inspect(engine).get_indexes("runs")}
             assert "ix_runs_finished_at" in indexes
             llm_indexes = {idx["name"] for idx in inspect(engine).get_indexes("llm_calls")}
@@ -59,6 +62,12 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
             triage_cols = {c["name"] for c in inspect(engine).get_columns("triage_decisions")}
             assert "confidence" in triage_cols
             assert "evidence_refs" in triage_cols
+            work_cols = {c["name"] for c in inspect(engine).get_columns("work_items")}
+            assert "provider_id" in work_cols
+            assert "thread_id" in work_cols
+            oauth_cols = {c["name"] for c in inspect(engine).get_columns("oauth_credentials")}
+            assert "refresh_token_enc" in oauth_cols
+
         finally:
             engine.dispose()
     finally:

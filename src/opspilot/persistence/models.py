@@ -15,6 +15,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     Numeric,
     String,
     Text,
@@ -30,6 +31,7 @@ class Base(DeclarativeBase):
 
 class WorkItemRow(Base):
     __tablename__ = "work_items"
+    __table_args__ = (UniqueConstraint("provider_id", name="uq_work_items_provider_id"),)
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     source_type: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -38,6 +40,8 @@ class WorkItemRow(Base):
     sender_or_requester: Mapped[str] = mapped_column(Text, nullable=False)
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     tags: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    provider_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    thread_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     triage_decisions: Mapped[list[TriageDecisionRow]] = relationship(back_populates="work_item")
 
@@ -145,3 +149,69 @@ class LlmBudgetCounterRow(Base):
     day_utc: Mapped[date] = mapped_column(Date, primary_key=True)
     req_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     tok_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class OAuthCredentialRow(Base):
+    """Encrypted OAuth refresh token at rest (D-016 / D-027 bytea)."""
+
+    __tablename__ = "oauth_credentials"
+    __table_args__ = (UniqueConstraint("provider", "account_email", name="uq_oauth_credentials_provider_email"),)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    provider: Mapped[str] = mapped_column(String(64), nullable=False)
+    account_email: Mapped[str] = mapped_column(Text, nullable=False)
+    scopes: Mapped[str] = mapped_column(Text, nullable=False)
+    refresh_token_enc: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+
+class SyncCursorRow(Base):
+    """Provider sync checkpoints (X1): Gmail historyId / Calendar syncToken."""
+
+    __tablename__ = "sync_cursors"
+    __table_args__ = (
+        UniqueConstraint(
+            "provider",
+            "account_email",
+            "cursor_kind",
+            name="uq_sync_cursors_provider_email_kind",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    provider: Mapped[str] = mapped_column(String(64), nullable=False)
+    account_email: Mapped[str] = mapped_column(Text, nullable=False)
+    cursor_kind: Mapped[str] = mapped_column(String(64), nullable=False)
+    cursor_value: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+
+class MeetingRow(Base):
+    """Minimal calendar meeting for WeekPanel (B4)."""
+
+    __tablename__ = "meetings"
+    __table_args__ = (UniqueConstraint("provider_id", name="uq_meetings_provider_id"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    provider_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
