@@ -11,6 +11,7 @@ from sqlalchemy import (
     BigInteger,
     Date,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -96,6 +97,8 @@ class TriageDecisionRow(Base):
     category_reason: Mapped[str] = mapped_column(Text, nullable=False)
     sentiment: Mapped[str] = mapped_column(String(32), nullable=False)
     sentiment_reason: Mapped[str] = mapped_column(Text, nullable=False)
+    confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    evidence_refs: Mapped[list[Any] | None] = mapped_column(JSONB, nullable=True)
 
     work_item: Mapped[WorkItemRow] = relationship(back_populates="triage_decisions")
     run: Mapped[RunRow | None] = relationship(back_populates="triage_decisions")

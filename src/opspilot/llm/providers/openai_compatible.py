@@ -164,6 +164,7 @@ class OpenAICompatibleProvider:
         model: str | None = None,
         repair_hint: str | None = None,
         force_json_object: bool = False,
+        temperature: float | None = None,
     ) -> ProviderResult:
         msgs = list(messages)
         if repair_hint:
@@ -180,6 +181,7 @@ class OpenAICompatibleProvider:
             model=model,
             schema=schema,
             force_json_object=force_json_object,
+            temperature=temperature,
         )
 
     def stream(
@@ -202,6 +204,7 @@ class OpenAICompatibleProvider:
         model: str | None,
         schema: type[BaseModel] | None,
         force_json_object: bool = False,
+        temperature: float | None = None,
     ) -> ProviderResult:
         cfg = self._config
         if cfg.name != "ollama" and not cfg.api_key:
@@ -222,6 +225,8 @@ class OpenAICompatibleProvider:
             "messages": [{"role": m.role, "content": m.content} for m in messages],
             "max_tokens": max_tokens,
         }
+        if temperature is not None:
+            body["temperature"] = temperature
         mode = JsonMode.JSON_OBJECT if force_json_object else json_mode_for(cfg.name, resolved)
         if schema is not None:
             # Always remind the model of exact field names for json_object / repair paths.

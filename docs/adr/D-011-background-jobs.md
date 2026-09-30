@@ -37,3 +37,7 @@ Portfolio “scheduled ops” without early public exposure. Operator must keep 
 ## Blocks
 
 B6, B7 (X2 optional).
+
+## Addendum (B3, 2026-09-30)
+
+**D-011 supersedes principal-review M8** (historical audit `docs/audits/2026-09-26-principal-review.md`), which required HMAC-signed `POST /api/v1/jobs/morning` for the morning job. B6 remains **in-runner GHA only**; X2 HMAC is **B7-optional** only. Do not follow the principal-review HMAC-required exit for B6.

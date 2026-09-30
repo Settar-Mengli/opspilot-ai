@@ -170,6 +170,8 @@ def _upsert_triage_from_json(session: Session, run_id: str, text: str) -> None:
                 "category_reason": str(record.get("category_reason") or ""),
                 "sentiment": str(record.get("sentiment") or "neutral"),
                 "sentiment_reason": str(record.get("sentiment_reason") or ""),
+                "confidence": record.get("confidence"),
+                "evidence_refs": record.get("evidence_refs"),
             }
         )
         stmt = stmt.on_conflict_do_update(
@@ -181,6 +183,8 @@ def _upsert_triage_from_json(session: Session, run_id: str, text: str) -> None:
                 "category_reason": stmt.excluded.category_reason,
                 "sentiment": stmt.excluded.sentiment,
                 "sentiment_reason": stmt.excluded.sentiment_reason,
+                "confidence": stmt.excluded.confidence,
+                "evidence_refs": stmt.excluded.evidence_refs,
             },
         )
         session.execute(stmt)

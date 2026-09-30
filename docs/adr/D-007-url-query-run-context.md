@@ -1,7 +1,7 @@
 # D-007: URL Query Param As Frontend Run Context
 
 - **Date:** 2026-05-29
-- **Status:** Accepted
+- **Status:** Accepted (deferred FE) — FE `?run_id=` not implemented; decision deferred to UI batch
 - **Blocks:** —
 
 ## Context
@@ -30,3 +30,7 @@ localStorage-only context; dedicated run-history route before proving UX value.
 ## Consequences
 
 Simple deep-linkable behavior; invalid run IDs require graceful fallback UX.
+
+## Addendum (B3, 2026-09-30)
+
+FE does **not** currently honor `?run_id=` (register R-7). Implementation deferred to the **UI batch**. Do not treat this ADR as CURRENT FE behavior until that batch lands.

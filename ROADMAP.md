@@ -21,12 +21,13 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | **B2** | M2 | LLM gateway + trace hooks (+ Anthropic prepaid gate) |
 | **B2.1** | Hardening | Hardening + truth (docs/toolchain/security/obs) |
 | **B3** | M3 + M4 | Eval platform + injection red-team on **one harness** |
+| **B3.1** | Live remainder | Finish CF D5 + OpenRouter D6–D7 leaderboard under caps |
 | **B4** | M5 | Demo Google inbox/calendar |
 | **B5** | M6 + M7 | Agentic Ask + SSE + approve & send |
 | **B6** | M8 + M9 | Morning run (in-runner) + Telegram + preferences → evals |
 | **B7** | M10 | Public free-tier deploy |
 
-**Order:** B0 → B1 → **B1.5a → B1.5b** → B2 → **B2.1** → B3 → B4 → B5 → B6 → B7.
+**Order:** B0 → B1 → **B1.5a → B1.5b** → B2 → **B2.1** → B3 → **B3.1** → B4 → B5 → B6 → B7.
 
 **X-item placement (one batch each):**
 
@@ -140,19 +141,31 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B3 — Eval platform + injection red-team (M3 + M4) — one harness
 
+- **Status:** Merge-ready on `b3/evals-redteam` (locks P1–P13; Anthropic = `skipped`). Hermetic F1-FLOOR **0.30**; D1–D3 full + CF D4 **partial 33/60**; CF/OR pre-closeout smokes **passed**. Live remainder → **B3.1**. PART 9 complete.
 - **Goal:** Regression + jailbreak/injection defense on a single eval harness.
 - **Workstream M3** — A2 + P8 phase1 lite
-  - **Scope:** Labeled fictional corpus; F1/confusion; item-ID grounding + confidence on triage; CI secret-free lane; optional Anthropic prepaid leaderboard column.
-  - **Exit criteria (M3):** CI gate fails on triage regression beyond conservative threshold set in B3 plan.
+  - **Scope:** Labeled fictional corpus; F1/confusion; item-ID grounding + confidence on triage; CI secret-free lane; Anthropic column documented `skipped` (P7; no Anthropic HTTP in B3).
+  - **Exit criteria (M3):** CI gate fails on triage regression beyond conservative threshold owner-locked at STOP F1-FLOOR.
 - **Workstream M4** — A3 lite
-  - **Scope:** Delimiters; red-team suite on **same harness**; ASR tracked in CI.
-  - **Exit criteria (M4):** Known attack fixtures fail closed; ASR metric published in CI artifact/docs.
+  - **Scope:** Delimiters; red-team suite on **same harness**; hermetic defense tests in CI; **live ASR reported per provider (not a CI gate)** (P8 / D-029).
+  - **Exit criteria (M4):** Known attack fixtures fail closed hermetically; ASR + validity/repair published in `docs/evals/`.
 - **Batch exit criteria:**
-  - **Tests:** Both M3 and M4 automated gates green.
-  - **Evals:** Golden F1 + red-team ASR as above.
-  - **Live smoke:** Optional hosted free leaderboard run documented.
-  - **Docs:** PART appended; ROADMAP/ADRs/CHANGELOG updated.
-- **Deps:** B2 · **Size:** XL · **Metric:** Triage F1 on golden set; red-team ASR tracked
+  - **Tests:** M3 F1 gate + M4 hermetic defenses green.
+  - **Evals:** Golden F1 + live red-team ASR as above (partial CF + OpenRouter pending documented).
+  - **Live smoke:** Multi-day single-provider leaderboard under approved caps (STOP LIVE); remainder in B3.1.
+  - **Docs:** PART 9; ROADMAP/ADRs/CHANGELOG updated.
+- **Deps:** B2 · **Size:** XL · **Metric:** Triage F1 on golden set; red-team ASR live-reported
+
+### B3.1 — Live leaderboard remainder (CF D5 + OpenRouter D6–D7)
+
+- **Status:** Planned after B3 merge. **No new product scope** (no UI/API/schema/ADR locks beyond publishing remaining live rows).
+- **Scope:**
+  - **Cloudflare D5:** remaining **7 triage + 20 redteam** (~27) under 80 REQ/day (after D4 **66/80** stop).
+  - **OpenRouter D6:** ≤**30** cases (40 REQ/day cap).
+  - **OpenRouter D7:** remaining **~30** + resume fails.
+  - Pre-closeout CF 3/3 + OR 5/5 smokes already done in B3 (not merged into day artifacts).
+- **Exit:** Leaderboard rows for D5–D7 committed under `docs/evals/`; PART append; CHANGELOG note.
+- **Deps:** B3 · **Size:** S · **Metric:** Complete free-tier live table (Anthropic still skipped)
 
 ### B4 — Demo Google inbox/calendar (M5)
 

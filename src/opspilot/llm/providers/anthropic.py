@@ -168,8 +168,9 @@ class AnthropicProvider:
         model: str | None = None,
         repair_hint: str | None = None,
         force_json_object: bool = False,
+        temperature: float | None = None,
     ) -> ProviderResult:
-        del schema, force_json_object  # prompt-only JSON for Anthropic in B2
+        del schema, force_json_object, temperature  # prompt-only JSON for Anthropic in B2
         msgs = list(messages)
         if repair_hint:
             msgs.append(Message(role="user", content=f"Fix JSON. Errors: {repair_hint}"))

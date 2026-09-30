@@ -9,8 +9,8 @@ Index of ADRs for OpsPilot. Status values: Accepted | Superseded | Proposed.
 | [D-003](D-003-cli-first-vertical-slice.md) | CLI-first vertical slice | Accepted | — |
 | [D-004](D-004-adapter-seam.md) | Adapter seam for future models | Accepted | B2 |
 | [D-005](D-005-explicit-validation.md) | Explicit validation and error boundaries | Accepted | — |
-| [D-006](D-006-immutable-run-history.md) | Immutable run history with latest compatibility | Accepted | B1 |
-| [D-007](D-007-url-query-run-context.md) | URL query param as frontend run context | Accepted | — |
+| [D-006](D-006-immutable-run-history.md) | Immutable run history with latest compatibility | Superseded (D-025) | B1 |
+| [D-007](D-007-url-query-run-context.md) | URL query param as frontend run context | Accepted (deferred FE) | UI |
 | [D-008](D-008-database.md) | Database = Neon Postgres | Accepted | B1, B4, B7 |
 | [D-009](D-009-orm-migrations.md) | SQLAlchemy 2 + Alembic; Postgres in tests | Accepted | B1 |
 | [D-010](D-010-async-fastapi.md) | Async FastAPI | Accepted | B1, B5 |
@@ -31,5 +31,7 @@ Index of ADRs for OpsPilot. Status values: Accepted | Superseded | Proposed.
 | [D-025](D-025-run-history-postgres.md) | Run history SoT = Postgres (supersedes D-006) | Accepted | B1+ |
 | [D-026](D-026-responsive-layout-policy.md) | Responsive layout policy (U1–U10) | Accepted | B1.5a, B1.5b, B5+ |
 | [D-027](D-027-schema-conventions.md) | Schema conventions (timestamptz, IDs, money) | Accepted | B2+ |
+| [D-028](D-028-eval-harness.md) | Eval harness (pytest + CLI) | Accepted | B3 |
+| [D-029](D-029-prompt-injection-defenses.md) | Prompt injection defenses + red-team ASR | Accepted | B3 |
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../../OPSPILOT-MASTER-RECORD.md).

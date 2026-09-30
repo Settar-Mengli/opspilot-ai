@@ -1,8 +1,8 @@
 # D-006: Immutable Run History With Latest Compatibility
 
 - **Date:** 2026-05-29
-- **Status:** Accepted
-- **Blocks:** B1
+- **Status:** Superseded by [D-025](D-025-run-history-postgres.md)
+- **Blocks:** B1 (historical)
 
 ## Context
 
@@ -31,3 +31,7 @@ Replace latest outputs entirely; add a database before proving local history val
 ## Consequences
 
 CURRENT file history remains until B1 Postgres migration; TARGET persists runs/items in Neon while retaining export/demo paths as needed.
+
+## Addendum (B3, 2026-09-30)
+
+**Superseded by D-025.** API run history SoT is Postgres (no file primacy for `/api/v1` runs). This ADR is retained for history; do not implement file-based API history from D-006.

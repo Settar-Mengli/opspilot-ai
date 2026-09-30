@@ -51,3 +51,7 @@ Env (fail closed when enabled without rates):
 | `OPSPILOT_ANTHROPIC_USD_PER_MTOK_IN` / `_OUT` | **required when enabled**; debit from SDK `usage` |
 
 Allowlist tasks: `demo_quality`, `leaderboard`, `judge_calibration` — **never** `ask`. Rates **VERIFY AT DECISION TIME** against Anthropic pricing before enabling.
+
+## Addendum (B3, 2026-09-30)
+
+- B3 leaderboard Anthropic column is documented as **`skipped`** (lock P7). **No Anthropic HTTP** in B3; zero-spend. Optional prepaid column remains future (D-018 historical AC superseded for B3 by P7).

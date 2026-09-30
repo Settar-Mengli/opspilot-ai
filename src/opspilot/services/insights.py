@@ -7,6 +7,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from opspilot.llm.prompt_safety import UNTRUSTED_SYSTEM_POLICY
 from opspilot.llm.schemas.insights import InsightsPayload
 from opspilot.services._llm import compact_triage_lines, complete_structured, soft_deny
 
@@ -42,7 +43,8 @@ def generate_insights(
 
     system = (
         f"You are {assistant_name}, OpsPilot chief of staff. Find cross-cutting patterns "
-        "(not per-item summaries). Return JSON only matching the schema. 1-5 insights."
+        f"(not per-item summaries). {UNTRUSTED_SYSTEM_POLICY} "
+        "Return JSON only matching the schema. 1-5 insights."
     )
     user = compact_triage_lines(records, include_title=True)
     payload = complete_structured(

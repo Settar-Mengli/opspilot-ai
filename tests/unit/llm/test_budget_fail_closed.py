@@ -31,8 +31,10 @@ def allow_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 def gemini_key_no_budget(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "fake-key")
     monkeypatch.setenv("INFERENCE_PROVIDER_ORDER", "gemini")
-    monkeypatch.delenv("OPSPILOT_BUDGET_GEMINI_REQ_DAY", raising=False)
-    monkeypatch.delenv("OPSPILOT_BUDGET_GEMINI_TOK_DAY", raising=False)
+    # Empty string (not delenv): load_dotenv() must not re-inject caps from repo .env
+    # when api.app → pipeline.run_daily_ops is imported via request_id resolution.
+    monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_REQ_DAY", "")
+    monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_TOK_DAY", "")
     for name in (
         "GROQ_API_KEY",
         "MISTRAL_API_KEY",

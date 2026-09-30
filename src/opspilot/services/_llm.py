@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from opspilot.llm.gateway import session_attempt_recorder
 from opspilot.llm.meta_redact import redact_text
 from opspilot.llm.policy import llm_allowed
+from opspilot.llm.prompt_safety import neutralize_text, wrap_untrusted
 from opspilot.llm.providers.base import LlmProvider
 from opspilot.llm.routed import BudgetAwareGateway
 from opspilot.llm.routing import build_providers
@@ -43,21 +44,21 @@ _MAX_REASON_CHARS = 120
 
 
 def compact_triage_lines(records: list[dict[str, Any]], *, include_title: bool = False) -> str:
-    """X4-minimized triage context (fictional IDs / short reasons only)."""
+    """X4-minimized triage context (fictional IDs / short reasons only), UNTRUSTED-wrapped."""
     if not records:
-        return "queue: empty"
+        return wrap_untrusted("queue", "queue: empty")
     lines = [f"queue: {min(len(records), _MAX_ITEMS)} items"]
     for record in records[:_MAX_ITEMS]:
-        item_id = str(record.get("id", "?"))[:32]
-        urgency = str(record.get("urgency", "?"))[:16]
-        category = str(record.get("category", "?"))[:24]
-        reason = str(record.get("urgency_reason", ""))[:_MAX_REASON_CHARS]
+        item_id = neutralize_text(str(record.get("id", "?")))[:32]
+        urgency = neutralize_text(str(record.get("urgency", "?")))[:16]
+        category = neutralize_text(str(record.get("category", "?")))[:24]
+        reason = neutralize_text(str(record.get("urgency_reason", "")))[:_MAX_REASON_CHARS]
         if include_title:
-            title = str(record.get("subject_or_title", ""))[:60]
+            title = neutralize_text(str(record.get("subject_or_title", "")))[:60]
             lines.append(f"{item_id}|{urgency}|{category}|{title}|{reason}")
         else:
             lines.append(f"{item_id}|{urgency}|{category}|{reason}")
-    return "\n".join(lines)
+    return wrap_untrusted("queue", "\n".join(lines))
 
 
 def providers_or_empty() -> list[LlmProvider]:

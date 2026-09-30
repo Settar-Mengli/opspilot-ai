@@ -35,3 +35,8 @@ Free-form prose parsing; instructor/library wrappers only.
 - **json_object** providers (mistral, cloudflare, openrouter): schema reminder in prompt; robust fence/prose extraction; adequate `max_tokens`.
 - Schema/format HTTP 400 → one same-provider `json_object` retry (budget debit + `LlmCall` row) then failover.
 - **Empty contract:** if the structured task input is non-empty, an empty answer list/object that omits required content is a **validation failure** (insights: `insights` `min_length=1`; triage: all reason fields `min_length=1`). Truly empty insights queue → soft path without LLM. Briefing remains prose (not structured).
+
+## Addendum (B3, 2026-09-30)
+
+- Structured tasks (triage, insights, eval) use `temperature=0` (P13); prose keeps provider defaults.
+- TriagePayload adds `confidence` + `evidence_refs` with deterministic grounding (`evidence_refs ⊆ allowed_ids`); fields are **not** exposed on the public API in B3 (P12).

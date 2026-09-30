@@ -14,7 +14,7 @@ from opspilot.llm.json_extract import extract_json_object
 from opspilot.llm.meta_redact import sanitize_meta
 from opspilot.llm.policy import llm_allowed
 from opspilot.llm.providers.base import LlmProvider
-from opspilot.llm.schema_convert import schema_prompt_fragment
+from opspilot.llm.schema_convert import schema_prompt_fragment, unwrap_schema_echo
 from opspilot.llm.types import AttemptStatus, CompletionResult, Message, ProviderResult, StreamChunk, TaskName
 from opspilot.obs.tracing import LlmSpanAttrs, append_llm_jsonl, emit_llm_span
 from opspilot.persistence.llm_calls import record_llm_call
@@ -134,6 +134,7 @@ class LlmGateway:
                 schema=schema,
                 max_tokens=max_tokens,
                 model=model,
+                temperature=0.0,
             )
             self._record(task=task, provider=provider.name, result=attempt)
             if attempt.status is not AttemptStatus.SUCCESS:
@@ -161,6 +162,7 @@ class LlmGateway:
                 max_tokens=max_tokens,
                 model=model,
                 repair_hint=errors,
+                temperature=0.0,
             )
             self._record(task=task, provider=provider.name, result=repair)
             if repair.status is not AttemptStatus.SUCCESS:
@@ -224,6 +226,7 @@ class LlmGateway:
             data = json.loads(extracted)
         except json.JSONDecodeError as exc:
             return None, f"invalid JSON: {exc}"
+        data = unwrap_schema_echo(data)
         try:
             return schema.model_validate(data), ""
         except ValidationError as exc:

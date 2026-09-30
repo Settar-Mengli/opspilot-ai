@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import replace
 
 from pydantic import BaseModel, ValidationError
@@ -20,7 +20,7 @@ from opspilot.llm.policy import llm_allowed
 from opspilot.llm.prompts.versioning import prompt_version_sha256
 from opspilot.llm.providers.base import LlmProvider
 from opspilot.llm.routing import filter_by_circuit
-from opspilot.llm.schema_convert import schema_prompt_fragment
+from opspilot.llm.schema_convert import schema_prompt_fragment, unwrap_schema_echo
 from opspilot.llm.types import AttemptStatus, CompletionResult, Message, ProviderResult, TaskName
 
 _REPAIR_SUFFIX = (
@@ -67,6 +67,7 @@ class BudgetAwareGateway:
         observe: bool = True,
         request_id: str | None = None,
         honor_retry_after: bool = True,
+        request_pacer: Callable[[], None] | None = None,
     ) -> None:
         self._providers = list(providers)
         self._session = session
@@ -75,6 +76,10 @@ class BudgetAwareGateway:
         self._observe = observe
         self._request_id = request_id
         self._honor_retry_after = honor_retry_after
+        self._request_pacer = request_pacer
+        self.last_repair_used: bool = False
+        self.last_parse_error_class: str | None = None
+        self.last_parse_output_head: str | None = None
 
     def complete(
         self,
@@ -147,8 +152,14 @@ class BudgetAwareGateway:
             self._deny_no_session(task=task, model=model)
             raise LlmProvidersExhausted("budget_denied_no_session")
 
+        self.last_repair_used = False
+        self.last_parse_error_class = None
+        self.last_parse_output_head = None
+
         prompt_version = prompt_version_sha256(task=task, messages=messages)
         candidates = filter_by_circuit(self._providers, self._circuit)
+        if not candidates:
+            raise LlmProvidersExhausted("circuit_open")
         last_error: str | None = None
         for provider in candidates:
             attempt, used_force_json = self._structured_attempt(
@@ -211,6 +222,8 @@ class BudgetAwareGateway:
                 self._circuit.reset(provider.name)
                 return parsed
 
+            self.last_parse_error_class = error_class
+            self.last_parse_output_head = (attempt.text or "")[:300]
             failed = replace(
                 attempt,
                 meta={
@@ -261,9 +274,12 @@ class BudgetAwareGateway:
             )
             parsed_repair, repair_errors, repair_class = self._try_parse(schema, repair.text)
             if parsed_repair is not None:
+                self.last_repair_used = True
                 self._record(task=task, provider=provider.name, result=repair, prompt_version=repair_pv)
                 self._circuit.reset(provider.name)
                 return parsed_repair
+            self.last_parse_error_class = repair_class
+            self.last_parse_output_head = (repair.text or "")[:300]
             repair_failed = replace(
                 repair,
                 meta={
@@ -278,6 +294,21 @@ class BudgetAwareGateway:
             self._record(task=task, provider=provider.name, result=repair_failed, prompt_version=repair_pv)
             last_error = repair_errors
 
+        # Schema path only when the last failure was parse/validation; else provider/budget exhaustion.
+        if last_error in {"budget_denied", "budget_denied_repair", "429"} or (
+            last_error
+            and (
+                last_error.startswith("http_")
+                or last_error
+                in {
+                    "timeout",
+                    "rate_limited",
+                    "circuit_open",
+                    "all providers failed or budget-denied",
+                }
+            )
+        ):
+            raise LlmProvidersExhausted(last_error)
         raise LlmSchemaError(last_error or "schema validation failed")
 
     def _structured_attempt(
@@ -301,6 +332,8 @@ class BudgetAwareGateway:
             prompt_version=prompt_version,
         ):
             return None, force_json_object
+        if self._request_pacer is not None:
+            self._request_pacer()
         attempt = provider.complete_json(
             task=task,
             messages=messages,
@@ -309,6 +342,7 @@ class BudgetAwareGateway:
             model=model,
             repair_hint=repair_hint,
             force_json_object=force_json_object,
+            temperature=0.0,
         )
         if force_json_object and attempt.meta is not None:
             attempt = replace(attempt, meta={**dict(attempt.meta), "force_json_object": True})
@@ -361,6 +395,7 @@ class BudgetAwareGateway:
             data = json.loads(extracted)
         except json.JSONDecodeError as exc:
             return None, f"invalid JSON: {exc}", "json_decode"
+        data = unwrap_schema_echo(data)
         try:
             return schema.model_validate(data), "", "ok"
         except ValidationError as exc:

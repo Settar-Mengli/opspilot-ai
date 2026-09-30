@@ -43,6 +43,8 @@ class TriageRecord:
     category_reason: str
     sentiment: str
     sentiment_reason: str
+    confidence: float | None = None
+    evidence_refs: list[str] | None = None
 
 
 @dataclass

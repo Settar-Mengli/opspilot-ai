@@ -64,8 +64,9 @@ class FakeProvider:
         model: str | None = None,
         repair_hint: str | None = None,
         force_json_object: bool = False,
+        temperature: float | None = None,
     ) -> ProviderResult:
-        del force_json_object  # fake ignores format mode
+        del force_json_object, temperature  # fake ignores format mode / temperature
         started = time.perf_counter()
         if self.json_results:
             result = self.json_results[min(self._json_i, len(self.json_results) - 1)]

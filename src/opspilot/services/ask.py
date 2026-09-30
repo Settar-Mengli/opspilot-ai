@@ -6,6 +6,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from opspilot.llm.prompt_safety import UNTRUSTED_SYSTEM_POLICY
 from opspilot.services._llm import compact_triage_lines, complete_prose, soft_deny
 
 _SOFT_UNAVAILABLE = "I ran into an issue answering that. The API may be unavailable. Please try again in a moment."
@@ -29,7 +30,8 @@ def answer_question(
     records = triage_records or []
     system = (
         f"You are {assistant_name}, OpsPilot chief of staff. Calm, concise, first person. "
-        f"Cite item IDs when useful. Under 200 words. No markdown headers.\n"
+        f"Cite item IDs when useful. Under 200 words. No markdown headers. "
+        f"{UNTRUSTED_SYSTEM_POLICY}\n"
         f"Context:\n{compact_triage_lines(records)}"
     )
     result = complete_prose(
