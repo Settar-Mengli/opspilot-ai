@@ -39,10 +39,24 @@ def obs_client(test_database_url: str, db_session: Session, monkeypatch: pytest.
         json_responder=lambda *_a, **_k: _TRIAGE_JSON,
         text_responder=lambda task, _msgs: f"briefing:{task}",
     )
-    monkeypatch.setattr("opspilot.adapters.factory.build_providers", lambda: [fake])
-    monkeypatch.setattr("opspilot.services._llm.build_providers", lambda: [fake])
+
+    def _providers() -> list[FakeProvider]:
+        return [fake]
+
+    monkeypatch.setattr("opspilot.llm.routing.build_providers", _providers)
+    monkeypatch.setattr("opspilot.adapters.factory.build_providers", _providers)
+    monkeypatch.setattr("opspilot.services._llm.build_providers", _providers)
+    monkeypatch.setattr("opspilot.llm.policy.llm_allowed", lambda: True)
+    monkeypatch.setattr("opspilot.llm.policy.force_rules_enabled", lambda: False)
     monkeypatch.setattr("opspilot.llm.routed.try_consume_request", lambda *a, **k: True)
     monkeypatch.setattr("opspilot.llm.routed.add_tokens", lambda *a, **k: None)
+
+    from opspilot.adapters.gateway_triage import GatewayTriageAdapter
+
+    monkeypatch.setattr(
+        "opspilot.adapters.factory.get_adapter",
+        lambda session=None: GatewayTriageAdapter(session=session),
+    )
 
     def _override() -> Iterator[Session]:
         try:
