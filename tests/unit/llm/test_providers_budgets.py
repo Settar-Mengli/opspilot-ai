@@ -209,6 +209,16 @@ def test_circuit_opens_after_error() -> None:
     assert circuit.is_open("gemini") is False
 
 
+def test_circuit_auto_closes_after_open_seconds(monkeypatch: pytest.MonkeyPatch) -> None:
+    clock = {"t": 1000.0}
+    monkeypatch.setattr("opspilot.llm.circuit.time.monotonic", lambda: clock["t"])
+    circuit = CircuitBreaker(open_seconds=5.0)
+    circuit.trip("groq")
+    assert circuit.is_open("groq") is True
+    clock["t"] = 1006.0
+    assert circuit.is_open("groq") is False
+
+
 def test_unset_budget_denies(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("OPSPILOT_BUDGET_GEMINI_REQ_DAY", raising=False)
     assert try_consume_request(db_session, provider="gemini") is False

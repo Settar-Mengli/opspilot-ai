@@ -85,6 +85,17 @@ def test_extract_json_from_fence_and_prose() -> None:
     assert json.loads(extract_json_object(wrapped))["intro"] == "x"
 
 
+def test_extract_json_edge_cases() -> None:
+    assert extract_json_object("") == ""
+    assert extract_json_object("```json\n```") == ""
+    unbalanced = '{"a": 1'
+    assert extract_json_object(unbalanced) == '{"a": 1'
+    nested_in_string = '{"msg": "has { brace", "n": 1}'
+    assert json.loads(extract_json_object(nested_in_string))["n"] == 1
+    trailing = '{"ok": true} trailing junk'
+    assert json.loads(extract_json_object(trailing)) == {"ok": True}
+
+
 def test_empty_insights_list_rejected() -> None:
     with pytest.raises(ValidationError):
         InsightsPayload.model_validate({"intro": "hi", "insights": []})
