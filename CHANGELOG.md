@@ -18,6 +18,7 @@ and this project follows Semantic Versioning principles for release tags.
 
 ### Changed
 
+- **Dependabot (post-B2):** #21 `actions/upload-artifact` 7.0.1; #22 frontend-dev minor/patch group; #25 jsdom 30.1.1; #27 `@testing-library/jest-dom` 7.0.1.
 - **DEP-1 dependency hygiene:** npm security floors (vite 8.0.16, postcss 8.5.23, browserslist 4.28.7, brace-expansion 5.0.9, baseline-browser-mapping 2.11.0, nanoid 3.3.18, vitest 4.1.11); Playwright **1.55.1** + `v1.55.1-jammy` image pins; React 19.3.0 (+ types); GHA checkout/setup-node/setup-uv majors; eslint/globals; psycopg/setuptools floors; Dependabot grouping. PART 5. Deferred: Vitest 5, Playwright 1.63.
 - **B1.5b CI:** Frontend Checks `npm audit --audit-level=moderate` (no `--omit=dev`).
 

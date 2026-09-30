@@ -1,6 +1,6 @@
 # OpsPilot Architecture
 
-**Dualism:** Sections labeled **CURRENT** describe post-B1/B1.5 behavior on `main`, plus B2 gateway behavior on branch `b2/llm-gateway` until merge. Sections labeled **TARGET** describe the remaining locked rebuild (B3–B7). Do not present TARGET as shipped.
+**Dualism:** Sections labeled **CURRENT** describe post-B2 behavior on `main` (gateway merged). Sections labeled **TARGET** describe the remaining locked rebuild (B3–B7). Do not present TARGET as shipped.
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
@@ -17,15 +17,15 @@ Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs
 
 ---
 
-## CURRENT (B1 + B1.5 + B2 gateway on branch)
+## CURRENT (B1 + B1.5 + B2 on main)
 
-Verified on `main` (B1 merge `c5de149`): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, `/api/v1` with envelope, in-process API pipeline (Postgres-only persist), Settings GET-only (`provider`/`model`/`api_key_set` — no key preview), FE on `/api/v1`, coverage fail-under **72**, Node 24 / Python 3.13 / uv.
+Verified on `main` (B2 merge `0c71a4a`): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, `/api/v1` with envelope, in-process API pipeline (Postgres-only persist), Settings GET-only (`provider`/`model`/`api_key_set` — no key preview), FE on `/api/v1`, coverage fail-under **72**, Node ≥24.15 / Python 3.13 / uv.
 
 **B1.5a:** Playwright visual/e2e/axe safety net with container-only `-linux` baselines; CSS partials under `frontend/src/styles/`; shared `useOverlay` overlay lifecycle; U4 hygiene fixes; D-026/D-027.
 
 **B1.5b (CURRENT):** ≥1280 three-pane shell (`desktop.css` imported last): primary icon rail, content column, docked Ask 380px; Ask dual-mode (dock ≥1280 / modal &lt;1280); All Items list+detail; landmarks (skip link, `nav[aria-label=Primary]`, Ask `aside`).
 
-**B2 (CURRENT on `b2/llm-gateway`):** hand-rolled `opspilot.llm` gateway; `llm_allowed()` on all call sites; services for ask/evening/insights; free-tier providers + D-023 Anthropic gate; `LlmCall` + UTC budgets; `GET /runs?limit=&cursor=`; `X-Request-ID`; timestamptz for run/work_item times. Live budget caps still require STOP A owner approval.
+**B2 (CURRENT on `main`):** hand-rolled `opspilot.llm` gateway; `llm_allowed()` on all call sites; services for ask/evening/insights; free-tier providers + D-023 Anthropic gate; `LlmCall` + UTC budgets with owner-approved C11 caps; `GET /runs?limit=&cursor=`; `X-Request-ID`; timestamptz for run/work_item times.
 
 ### Endpoints (CURRENT) — `/api/v1`
 

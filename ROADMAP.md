@@ -19,13 +19,14 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | **B1.5a** | UI hygiene | UI safety net + overlay primitive + U4 fixes |
 | **B1.5b** | UI desktop | Desktop three-pane layout from design-reference |
 | **B2** | M2 | LLM gateway + trace hooks (+ Anthropic prepaid gate) |
+| **B2.1** | Hardening | Hardening + truth (docs/toolchain/security/obs) |
 | **B3** | M3 + M4 | Eval platform + injection red-team on **one harness** |
 | **B4** | M5 | Demo Google inbox/calendar |
 | **B5** | M6 + M7 | Agentic Ask + SSE + approve & send |
 | **B6** | M8 + M9 | Morning run (in-runner) + Telegram + preferences → evals |
 | **B7** | M10 | Public free-tier deploy |
 
-**Order:** B0 → B1 → **B1.5a → B1.5b** → B2 → B3 → B4 → B5 → B6 → B7.
+**Order:** B0 → B1 → **B1.5a → B1.5b** → B2 → **B2.1** → B3 → B4 → B5 → B6 → B7.
 
 **X-item placement (one batch each):**
 
@@ -110,7 +111,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B1.5b — Desktop three-pane layout
 
-- **Status:** Implemented on `b1.5b/desktop-layout` (PR open; not merged).
+- **Status:** Merged to `main` (PR #29).
 - **Goal:** ≥1280 three-pane (rail + content + docked Ask 380px) from `frontend/design-reference/` (D-026).
 - **Scope:** Desktop layout only; phone ≤768 stays pixel-locked except owner-approved changes; agent Ask chrome lands here for B5 to finish X8 agent surfaces. FUTURE (B5) streaming/tools/HITL not built.
 - **Exit:** Mockups + gallery approved; 1280 baselines refreshed; `B15B_DESKTOP_HOLD` removed (E11: 0 matches in hold implementation paths `.github`/`frontend`; historical doc mentions by design); PART 6 (incl. E2 deviation record).
@@ -127,8 +128,15 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
     - **Evals:** n/a (B3) except smoke hooks if any.
     - **Live smoke:** Free provider happy path via Invoke-RestMethod; optional Anthropic budgeted script (not CI).
     - **Docs:** PART 7; ROADMAP/ADRs/CHANGELOG; free-tier quotas VERIFY AT DECISION TIME noted.
-- **Status (branch `b2/llm-gateway`):** Batch complete. **PR #30** open; awaiting owner merge after green CI. Quotas approved 2026-09-29; C12 + S1–S4 + F8–F9 in PART 7. Agent does not merge.
+- **Status:** Merged to `main` (PR #30 → `0c71a4a`). Quotas approved 2026-09-29; C12 + S1–S4 + F8–F9 in PART 7.
 - **Deps:** B1 · **Size:** XL · **Metric:** Multi-provider gateway with failover
+
+### B2.1 — Hardening + truth
+
+- **Status:** Implementing on `b2.1/hardening` (this batch).
+- **Goal:** Post-B2 hardening: register truth-align, toolchain pins, security redaction/OpenRouter/:request-id, dead-code delete, observability, expand-only index, portfolio docs. API shapes unchanged; 0 PNG changes.
+- **Exit:** Full pytest ≥72% (baseline 81.19%); greps clean; PART 8; Dependabot ignores for TS7 / @types/node≥25 / Playwright until U9.
+- **Deps:** B2 · **Size:** L · **Metric:** Hardening + honest CURRENT docs
 
 ### B3 — Eval platform + injection red-team (M3 + M4) — one harness
 

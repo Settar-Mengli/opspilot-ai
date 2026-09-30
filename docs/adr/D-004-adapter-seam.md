@@ -29,4 +29,8 @@ Direct provider calls in orchestration logic.
 
 ## Consequences
 
-Better maintainability and swap capability. CURRENT: partial (conversation on AISettings; four adapters still hardcoded). TARGET: all calls through hand-rolled gateway (D-012).
+Better maintainability and swap capability.
+
+## Addendum (B2.1, 2026-09-30)
+
+B2 acceptance met: all LLM calls go through `opspilot.llm` / `BudgetAwareGateway`; feature code does not import provider SDKs (Anthropic SDK only behind D-023). Dead thin adapter wrappers deleted. CURRENT = gateway-shipped (D-012).
