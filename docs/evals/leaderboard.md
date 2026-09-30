@@ -8,53 +8,59 @@ Live-only metrics. Hermetic CI gate = rules macro-F1 ≥ 0.30. Anthropic = **ski
 
 | Day | Provider | Notes |
 |-----|----------|-------|
-| D1 | gemini | Current harness; metrics recomputed under D-LIVE definitions (no extra live) |
-| D2 | groq | Resume accepted-without-pred triage ids after D-LIVE metrics fix |
-| D3 | mistral | Full re-run after instance-contract prompt (archive prior as attempt1) |
+| D1 | gemini | Metrics recomputed under D-LIVE definitions (no extra live) |
+| D2 | groq | Resume missing-pred + failed ids after D-LIVE metrics fix → **60/60** |
+| D3 | mistral | Full re-run after instance-contract prompt (archive prior as attempt1) → **60/60** |
 | D4 | cloudflare | **≤33 cases** (cap 80 REQ/day; leave headroom) |
 | D5 | cloudflare | Remaining **~27** + resume fails |
 | D6 | openrouter | **≤30 cases** (cap 40 REQ/day) |
 | D7 | openrouter | Remaining **~30** + resume fails |
 | — | anthropic | skipped (P7) |
 
-## Results
+## Results (comparable — post D-LIVE-1..11)
 
-| Day | Provider | Attempts | Validity% | Repair% | ASR | Triage macro-F1 (accepted) | Artifact |
-|-----|----------|----------|-----------|---------|-----|----------------------------|----------|
-| D1 | gemini | 60 | 100.0† | —† | 0.150 (3/20)† | 0.606† | [`live-gemini-day1.json`](results/live-gemini-day1.json) |
-| D2 | groq | 60 | 98.3† | 0.0† | 0.474 (9/19)† | 0.286†\* | [`live-groq-day2.json`](results/live-groq-day2.json) |
-| D3 | mistral | 60 | 65.0† | 1.53†‡ | 0.700 (7/10)† | 0.401† | [`live-mistral-day3.json`](results/live-mistral-day3.json) |
+| Day | Provider | Validity | Accepted-only F1 | Repair% | ASR (opt A) | Blocked | Artifact |
+|-----|----------|----------|------------------|---------|-------------|---------|----------|
+| D1 | gemini | 100% (60/60) | 0.606 (n=40) | 0.0 | 0.150 (3/20) | 0 | [`live-gemini-day1.json`](results/live-gemini-day1.json) |
+| D2 | groq | 100% (60/60) | 0.613 (n=40) | 0.0 | 0.400 (8/20) | 0 | [`live-groq-day2.json`](results/live-groq-day2.json) |
+| D3 | mistral | 100% (60/60) | 0.537 (n=40) | 0.0 | 0.500 (10/20) | 0 | [`live-mistral-day3.json`](results/live-mistral-day3.json) |
 | D4–D5 | cloudflare | — | — | — | — | — | pending |
 | D6–D7 | openrouter | — | — | — | — | — | pending |
-| — | anthropic | — | skipped | skipped | skipped | skipped | P7 |
+| — | anthropic | skipped | skipped | skipped | skipped | skipped | P7 |
 
-### Footnotes — pre-fix / not comparable (STOP LIVE until post-fix refresh)
+Harness: `b3-live/v2`. Smoke: Mistral 5 prior schema-fail ids → **5/5** accepted before full D3.
 
-† **Pre D-LIVE-1..11 harness.** Numbers above are historical snapshots from before instance-contract prompts, accepted-only F1, repair redefinition, ASR option A, and per-HTTP pacing. **Do not rank providers using † rows.**
+## STOP LIVE before D4
 
-\* D2 stored F1 kept a **stale** pre-merge value while 17 accepted triage rows lacked `pred` (D-LIVE-2). Accepted-only recompute on available preds was ~0.59 (n=23) — still incomplete until resume.
+Do **not** start Cloudflare until owner `go live day 4`. Planned split: **CF D4 ≤33 / D5 ~27** (cap 80/day); **OR D6 ≤30 / D7 ~30** (cap 40/day).
 
-‡ D3 `repair_pct` > 1 under the old counter (schema_validation + force_json_object events / cases). Post-fix repair ≤1 per case and is recomputed from `repaired` flags.
+## Archives / pre-fix footnotes
 
-**Post-fix refresh plan:** Mistral smoke → full D3 archive+replace; Groq resume 17 missing-pred triage ids; Gemini `--recompute-metrics` only. Then publish a comparable table (validity n, accepted-only F1 n, repair%, ASR n, blocked) before D4.
+| Artifact | Note |
+|----------|------|
+| [`live-gemini-day1-attempt1.json`](results/live-gemini-day1-attempt1.json) | Pre max_tokens/observe fix |
+| [`live-groq-day2-attempt1.json`](results/live-groq-day2-attempt1.json) | Pre D-GROQ pacing |
+| [`live-mistral-day3-attempt1.json`](results/live-mistral-day3-attempt1.json) | Pre D-LIVE-1 (schema-echo; validity 65%) |
 
-## D1 notes (2026-09-30 UTC) — current harness
+Historical † rows (validity 65% Mistral, stale Groq F1 0.286, repair% >1) are **not comparable** and were replaced by the table above.
 
-- Re-run: `max_tokens=1024`, `observe=True`/`llm_calls`, pacing 2.0s, 429 retries; resume of 4×429 → validity **100%** (60/60); ASR **0.150** (3/20)
-- Archive (pre-fix): [`live-gemini-day1-attempt1.json`](results/live-gemini-day1-attempt1.json) — max_tokens=300, observe=False, ASR 0.200
+## D1 notes (2026-09-30 UTC)
+
+- Recompute-only after D-LIVE metrics honesty (no new Gemini HTTP for refresh)
+- Prior live: max_tokens=1024, observe, pacing; validity 100%
 
 ## D2 notes (2026-09-30 UTC)
 
-- Canonical after **D-GROQ-1** + **D-GROQ-2** + resume → validity 98.3%; ASR 0.474
-- Archives: [`live-groq-day2-attempt1.json`](results/live-groq-day2-attempt1.json)
+- Resume 22 ids (17 accepted-without-pred triage + failed/incomplete redteam) → validity **100%**; F1 **0.613**; ASR **0.400** (8/20); 24×429 recovered via retries
 
 ## D3 notes (2026-09-30 UTC)
 
-- Mistral: pacing 1.5s; after resume validity **65%** (39/60); ASR **0.700** (7/10); remaining fails mostly `LlmSchemaError` (schema-echo under `properties`) / `grounding_failed` — addressed by D-LIVE-1
+- Full re-run after instance-contract prompt + unwrap → validity **100%** (60/60); F1 **0.537**; ASR **0.500** (10/20); repair **0%**
+- Archive: attempt1 (65% validity, schema-echo failures)
 
 ## PART 9 deviations (draft — finalize at C19)
 
 - **D-GROQ-1:** max_tokens 300 → 1024 for Groq strict
 - **D-GROQ-2:** 429 retries + ≥2.5s Groq pacing + llm_calls observe
-- **D1 re-run:** Original Gemini archived as attempt1; canonical D1 replaced for cross-provider comparability
-- **D-LIVE-1..11:** instance-contract prompt; metrics honesty; per-HTTP pacer; leaderboard footnotes
+- **D1 re-run:** Original Gemini archived as attempt1
+- **D-LIVE-1..11:** instance-contract prompt; metrics honesty; per-HTTP pacer; leaderboard refresh
