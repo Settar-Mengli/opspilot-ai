@@ -14,6 +14,7 @@ from opspilot.adapters.gateway_triage import build_triage_user_prompt
 from opspilot.evals.asr import asr_rate, attack_succeeded, summarize_redteam_case
 from opspilot.evals.dataset import case_to_work_item, load_redteam_cases, load_triage_cases
 from opspilot.evals.scorer import score_triage_fields, validity_rate
+from opspilot.llm.circuit import CircuitBreaker
 from opspilot.llm.errors import LlmPolicyDenied, LlmProvidersExhausted, LlmSchemaError
 from opspilot.llm.grounding import GroundingError, assert_grounded
 from opspilot.llm.policy import llm_allowed
@@ -122,7 +123,8 @@ def run_live(
         if meta.get("error_class") == "schema_validation" or meta.get("force_json_object"):
             repair_events += 1
 
-    gw = BudgetAwareGateway(resolved, session=session, recorder=_recorder, observe=False)
+    circuit = CircuitBreaker()
+    gw = BudgetAwareGateway(resolved, session=session, recorder=_recorder, observe=False, circuit=circuit)
 
     triage_cases = load_triage_cases()
     if triage_limit is not None:
@@ -139,6 +141,8 @@ def run_live(
     case_rows: list[dict[str, Any]] = []
 
     for case in triage_cases:
+        # Per-case independence for leaderboard (do not let one trip starve the day).
+        circuit.reset(provider.name)
         attempts += 1
         item = _case_work_item(case, inject_payload=False)
         labels = {
@@ -170,6 +174,7 @@ def run_live(
     asr_accepted = 0
     redteam_rows: list[dict[str, Any]] = []
     for case in redteam_cases:
+        circuit.reset(provider.name)
         attempts += 1
         item = _case_work_item(case, inject_payload=True)
         started = time.perf_counter()

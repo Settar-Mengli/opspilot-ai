@@ -74,6 +74,32 @@ def test_live_aborts_before_provider_when_caps_unset(db_session: Session, monkey
 
 
 @pytest.mark.usefixtures("allow_llm")
+def test_complete_json_circuit_open_is_exhausted(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_REQ_DAY", "20")
+    monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_TOK_DAY", "100000")
+    from opspilot.llm.circuit import CircuitBreaker
+    from opspilot.llm.errors import LlmProvidersExhausted
+    from opspilot.llm.routed import BudgetAwareGateway
+    from opspilot.llm.schemas.triage import TriagePayload
+
+    circuit = CircuitBreaker(open_seconds=60)
+    circuit.trip("gemini")
+    gw = BudgetAwareGateway(
+        [FakeProvider(name="gemini")],
+        session=db_session,
+        circuit=circuit,
+        observe=False,
+    )
+    with pytest.raises(LlmProvidersExhausted, match="circuit_open"):
+        gw.complete_json(
+            task="triage",
+            messages=[Message(role="user", content="x")],
+            schema=TriagePayload,
+            max_tokens=64,
+        )
+
+
+@pytest.mark.usefixtures("allow_llm")
 def test_resolve_single_injected_provider() -> None:
     fake = FakeProvider(name="gemini")
     out = resolve_single_provider("gemini", providers=[fake])

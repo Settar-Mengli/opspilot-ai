@@ -149,6 +149,8 @@ class BudgetAwareGateway:
 
         prompt_version = prompt_version_sha256(task=task, messages=messages)
         candidates = filter_by_circuit(self._providers, self._circuit)
+        if not candidates:
+            raise LlmProvidersExhausted("circuit_open")
         last_error: str | None = None
         for provider in candidates:
             attempt, used_force_json = self._structured_attempt(
