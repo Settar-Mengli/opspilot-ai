@@ -1,0 +1,9 @@
+{
+  "label_version": "triage-labels/v1",
+  "n": 40,
+  "promotion_hook": "b6-corrections",
+  "created": "2026-09-30",
+  "reviewers": [
+    "author-self-review"
+  ]
+}
