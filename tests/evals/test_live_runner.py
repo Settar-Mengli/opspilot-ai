@@ -7,7 +7,7 @@ import json
 import pytest
 from sqlalchemy.orm import Session
 
-from opspilot.evals.live import LiveEvalError, resolve_single_provider, run_live
+from opspilot.evals.live import LiveEvalError, require_budget_caps, resolve_single_provider, run_live
 from opspilot.jobs.run_evals import main
 from opspilot.llm.providers.fake import FakeProvider
 from opspilot.llm.schemas.triage import TriagePayload
@@ -39,6 +39,38 @@ def _valid_payload(item_id: str, *, urgency: str = "low") -> str:
 def test_resolve_refuses_anthropic() -> None:
     with pytest.raises(LiveEvalError, match="Anthropic"):
         resolve_single_provider("anthropic")
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_require_budget_caps_aborts_when_unset(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.delenv("OPSPILOT_BUDGET_GEMINI_REQ_DAY", raising=False)
+    monkeypatch.delenv("OPSPILOT_BUDGET_GEMINI_TOK_DAY", raising=False)
+    with pytest.raises(LiveEvalError, match="budget caps unset"):
+        require_budget_caps("gemini")
+    out = capsys.readouterr().out
+    assert "req_cap=None" in out
+    assert "tok_cap=None" in out
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_live_aborts_before_provider_when_caps_unset(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("OPSPILOT_BUDGET_GEMINI_REQ_DAY", raising=False)
+    monkeypatch.delenv("OPSPILOT_BUDGET_GEMINI_TOK_DAY", raising=False)
+
+    def _boom(*_a: object, **_k: object) -> str:
+        raise AssertionError("provider must not be called when caps unset")
+
+    fake = FakeProvider(name="gemini", json_responder=_boom)  # type: ignore[arg-type]
+    with pytest.raises(LiveEvalError, match="budget caps unset"):
+        run_live(
+            provider_name="gemini",
+            session=db_session,
+            providers=[fake],
+            triage_limit=1,
+            redteam_limit=0,
+        )
 
 
 @pytest.mark.usefixtures("allow_llm")

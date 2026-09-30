@@ -37,6 +37,19 @@ class LiveEvalError(ValueError):
     """Configuration / policy error for live evals."""
 
 
+def require_budget_caps(provider_name: str) -> tuple[int, int]:
+    """Print req/tok caps; abort if either is unset (fail closed before provider calls)."""
+    from opspilot.llm.budgets import req_cap, tok_cap
+
+    name = provider_name.strip().lower()
+    rc = req_cap(name)
+    tc = tok_cap(name)
+    print(f"budget_preflight provider={name} req_cap={rc} tok_cap={tc}")
+    if rc is None or tc is None:
+        raise LiveEvalError(f"budget caps unset for {name}: req_cap={rc} tok_cap={tc}; abort without provider calls")
+    return rc, tc
+
+
 def resolve_single_provider(provider_name: str, *, providers: Sequence[LlmProvider] | None = None) -> list[LlmProvider]:
     """Build exactly one provider; Anthropic always refused (P7)."""
     name = provider_name.strip().lower()
@@ -96,6 +109,7 @@ def run_live(
     """Run triage + red-team through BudgetAwareGateway with one provider."""
     if not llm_allowed():
         raise LiveEvalError("remote LLM disabled by policy (FORCE_RULES / LLM_DISABLE)")
+    require_budget_caps(provider_name)
     resolved = resolve_single_provider(provider_name, providers=providers)
     provider = resolved[0]
 

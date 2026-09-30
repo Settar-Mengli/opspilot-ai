@@ -21,6 +21,8 @@ uv run python -m opspilot.jobs.run_evals --live --provider gemini
 
 Rules:
 
+- Live CLI calls `load_dotenv()` (same as pipeline / `llm_discover`) before any budget/provider work.
+- Before the first provider request, prints `budget_preflight provider=… req_cap=… tok_cap=…`; **aborts if either cap is None** (no HTTP).
 - Exactly one provider per run (no failover). Built via `build_providers(order=[name])`.
 - `BudgetAwareGateway` + approved caps only.
 - Anthropic: **skipped** (P7); no Anthropic HTTP.

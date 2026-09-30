@@ -8,6 +8,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
+
 from opspilot.evals.dataset import REDTEAM_V1, TRIAGE_V1, load_redteam_cases, load_triage_cases
 from opspilot.evals.live import LiveEvalError, run_live
 from opspilot.evals.report import write_eval_json
@@ -92,6 +94,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.live:
+        # Same dotenv load as pipeline / llm_discover CLIs (repo-root .env).
+        load_dotenv()
         if not args.provider:
             print("ERROR: --live requires --provider <name>", file=sys.stderr)
             return 2
