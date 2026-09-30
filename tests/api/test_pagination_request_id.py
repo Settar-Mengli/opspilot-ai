@@ -82,6 +82,16 @@ def test_request_id_echo(api_client: TestClient) -> None:
     assert resp.headers.get("X-Request-ID") == "client-req-1"
 
 
+def test_request_id_rejects_illegal_and_oversized(api_client: TestClient) -> None:
+    bad = api_client.get("/api/v1/health", headers={"X-Request-ID": "bad id with spaces!"})
+    assert bad.headers.get("X-Request-ID") != "bad id with spaces!"
+    assert bad.headers.get("X-Request-ID")
+    oversized = "a" * 65
+    big = api_client.get("/api/v1/health", headers={"X-Request-ID": oversized})
+    assert big.headers.get("X-Request-ID") != oversized
+    assert len(big.headers.get("X-Request-ID", "")) <= 64
+
+
 def test_validation_details_sanitized(api_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("OPSPILOT_DEBUG_ERRORS", raising=False)
     resp = api_client.post("/api/v1/ask", json={})

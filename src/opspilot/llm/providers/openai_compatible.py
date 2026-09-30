@@ -12,7 +12,6 @@ import httpx
 from pydantic import BaseModel
 
 from opspilot.llm.capabilities import JsonMode, json_mode_for
-from opspilot.llm.meta_redact import http_error_meta
 from opspilot.llm.model_defaults import (
     CLOUDFLARE_DEFAULT_MODEL,
     GROQ_DEFAULT_MODEL,
@@ -20,7 +19,7 @@ from opspilot.llm.model_defaults import (
     OLLAMA_DEFAULT_MODEL,
     OPENROUTER_DEFAULT_MODEL,
 )
-from opspilot.llm.providers.http import default_timeout, parse_retry_after
+from opspilot.llm.providers.http import default_timeout, map_http_provider_result
 from opspilot.llm.schema_convert import groq_strict_schema, schema_prompt_fragment
 from opspilot.llm.types import AttemptStatus, Message, ProviderResult, StreamChunk, TaskName
 
@@ -67,6 +66,22 @@ def resolve_task_model(provider: str, task: TaskName, override: str | None, mode
         return override
     task_env = f"{model_env}_{task.upper()}"
     return os.environ.get(task_env) or os.environ.get(model_env) or default
+
+
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
+
+
+def openrouter_allow_paid() -> bool:
+    return os.environ.get("OPSPILOT_OPENROUTER_ALLOW_PAID", "").strip().lower() in _TRUTHY
+
+
+def openrouter_model_denied(model: str) -> str | None:
+    """Return error_code if OpenRouter model is non-:free and paid-allow is off."""
+    if model.endswith(":free"):
+        return None
+    if openrouter_allow_paid():
+        return None
+    return "openrouter_paid_model_denied"
 
 
 def ollama_native_base_url() -> str:
@@ -193,6 +208,14 @@ class OpenAICompatibleProvider:
             return ProviderResult(status=AttemptStatus.ERROR, error_code="missing_api_key", model=model or "")
 
         resolved = resolve_task_model(cfg.name, task, model, cfg.model_env, cfg.default_model)
+        if cfg.name == "openrouter":
+            denied = openrouter_model_denied(resolved)
+            if denied:
+                return ProviderResult(
+                    status=AttemptStatus.ERROR,
+                    model=resolved,
+                    error_code=denied,
+                )
         url = f"{cfg.base_url.rstrip('/')}/chat/completions"
         body: dict[str, Any] = {
             "model": resolved,
@@ -243,22 +266,9 @@ class OpenAICompatibleProvider:
             )
 
         latency_ms = int((time.perf_counter() - started) * 1000)
-        if response.status_code == 429:
-            return ProviderResult(
-                status=AttemptStatus.RATE_LIMITED,
-                model=resolved,
-                error_code="429",
-                retry_after_s=parse_retry_after(response),
-                latency_ms=latency_ms,
-            )
-        if response.status_code >= 400:
-            return ProviderResult(
-                status=AttemptStatus.ERROR,
-                model=resolved,
-                error_code=f"http_{response.status_code}",
-                latency_ms=latency_ms,
-                meta=http_error_meta(status_code=response.status_code, body=response.text),
-            )
+        mapped = map_http_provider_result(response=response, model=resolved, latency_ms=latency_ms)
+        if mapped is not None:
+            return mapped
 
         data = response.json()
         choices = data.get("choices") or []

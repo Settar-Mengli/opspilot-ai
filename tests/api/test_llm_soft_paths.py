@@ -47,7 +47,11 @@ def test_ask_under_force_rules_soft_and_no_anthropic(
     monkeypatch.setattr("anthropic.Anthropic", _track)
     resp = soft_client.post("/api/v1/ask", json={"question": "What needs attention?", "assistant_name": "OpsPilot"})
     assert resp.status_code == 200
-    assert "answer" in resp.json()
+    body = resp.json()
+    assert body["answer"] == (
+        "I ran into an issue answering that. The API may be unavailable. Please try again in a moment."
+    )
+    assert "sk-ant" not in body["answer"]
     assert constructed == []
 
 
@@ -64,7 +68,12 @@ def test_evening_under_force_rules_soft_and_no_anthropic(
     monkeypatch.setattr("anthropic.Anthropic", _track)
     resp = soft_client.post("/api/v1/evening-summary", json={"assistant_name": "OpsPilot"})
     assert resp.status_code == 200
-    assert "summary" in resp.json()
+    body = resp.json()
+    assert body["summary"] == (
+        "I ran into an issue preparing your end-of-day summary. "
+        "The API may be unavailable. Please try again in a moment."
+    )
+    assert "sk-ant" not in body["summary"]
     assert constructed == []
 
 
@@ -82,8 +91,11 @@ def test_insights_under_force_rules_soft_and_no_anthropic(
     resp = soft_client.post("/api/v1/insights", json={"assistant_name": "OpsPilot"})
     assert resp.status_code == 200
     body = resp.json()
-    assert "intro" in body
+    assert body["intro"] == (
+        "I ran into an issue analyzing the data. The API may be unavailable. Please try again in a moment."
+    )
     assert body["insights"] == []
+    assert "sk-ant" not in body["intro"]
     assert constructed == []
 
 

@@ -11,9 +11,8 @@ import httpx
 from pydantic import BaseModel
 
 from opspilot.llm.capabilities import JsonMode, json_mode_for
-from opspilot.llm.meta_redact import http_error_meta
 from opspilot.llm.model_defaults import GEMINI_DEFAULT_MODEL
-from opspilot.llm.providers.http import default_timeout, parse_retry_after
+from opspilot.llm.providers.http import default_timeout, map_http_provider_result
 from opspilot.llm.schema_convert import gemini_response_schema, schema_prompt_fragment
 from opspilot.llm.types import AttemptStatus, Message, ProviderResult, StreamChunk, TaskName
 
@@ -156,22 +155,9 @@ class GeminiProvider:
             )
 
         latency_ms = int((time.perf_counter() - started) * 1000)
-        if response.status_code == 429:
-            return ProviderResult(
-                status=AttemptStatus.RATE_LIMITED,
-                model=resolved,
-                error_code="429",
-                retry_after_s=parse_retry_after(response),
-                latency_ms=latency_ms,
-            )
-        if response.status_code >= 400:
-            return ProviderResult(
-                status=AttemptStatus.ERROR,
-                model=resolved,
-                error_code=f"http_{response.status_code}",
-                latency_ms=latency_ms,
-                meta=http_error_meta(status_code=response.status_code, body=response.text),
-            )
+        mapped = map_http_provider_result(response=response, model=resolved, latency_ms=latency_ms)
+        if mapped is not None:
+            return mapped
 
         data = response.json()
         text = _extract_text(data)

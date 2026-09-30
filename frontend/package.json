@@ -14,7 +14,7 @@
     "gen:api": "openapi-typescript ./openapi.json -o src/api/generated.ts"
   },
   "engines": {
-    "node": ">=24 <25"
+    "node": ">=24.15 <25"
   },
   "dependencies": {
     "lucide-react": "^1.17.0",

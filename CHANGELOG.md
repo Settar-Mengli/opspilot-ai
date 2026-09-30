@@ -9,6 +9,7 @@ and this project follows Semantic Versioning principles for release tags.
 
 ### Added
 
+- **B2.1 Hardening + truth:** register + Corrections; Node 24.15 / ubuntu-24.04 / Dependabot ignores; recursive meta redaction; OpenRouter `:free` runtime gate; X-Request-ID validation; redacted LLM service logs; dead adapter delete; shared HTTP/soft-deny helpers; OBS request_id (thread-safe) + access/500 logs; `0005` `ix_run_artifacts_name`; README proof pack; design-decisions + issue/PR templates; PART 8.
 - **B2 LLM gateway + traces:** hand-rolled `llm/` gateway (Gemini REST + OpenAI-compatible providers + D-023 Anthropic gate); `LlmCall` / budget counters; services for ask/evening/insights; gateway triage + briefing; runs pagination + `X-Request-ID`; F-03/F-09; timestamptz migrate; `llm_discover` job; runbook `docs/runbooks/llm-providers.md`; PART 7; ADR addenda D-012/D-013/D-019/D-023. **Env migration:** retire `OPSPILOT_AI_*`; use `INFERENCE_PROVIDER_ORDER` + per-provider keys/models + `OPSPILOT_BUDGET_*` (owner-approved 2026-09-29 defaults in `.env.example`). **Code defaults** aligned with C11 via `opspilot.llm.model_defaults` (OpenRouter keeps `:free`).
 - **B1.5b desktop layout:** ≥1280 three-pane (primary rail + content + Ask dock 380px); Ask dual-mode (docked ↔ modal); All Items list+detail (default first urgent); design-reference mockups 11–16; temporary `B15B_DESKTOP_HOLD` then removed with refreshed `*-chromium-1280-linux.png` baselines; PART 6; D-026 addendum.
 - **B1.5a UI safety net:** Playwright 1.55 visual/e2e/axe (container-only `-linux` baselines + Google WOFF2 fixtures); CI UI Tests + UI Baselines workflow; CSS partials; overlay stack (Escape/scroll/focus; PortalOverlay removed); U4 hygiene; F-06 path jail; deprecate `opspilot.api.main`; ADRs D-026/D-027; PART 4 (+ 2026-09-27 revision: C-BASE, per-state tol, settle exclusions, production-effects e2e).
@@ -18,6 +19,7 @@ and this project follows Semantic Versioning principles for release tags.
 
 ### Changed
 
+- **Dependabot (post-B2):** #21 `actions/upload-artifact` 7.0.1; #22 frontend-dev minor/patch group; #25 jsdom 30.1.1; #27 `@testing-library/jest-dom` 7.0.1.
 - **DEP-1 dependency hygiene:** npm security floors (vite 8.0.16, postcss 8.5.23, browserslist 4.28.7, brace-expansion 5.0.9, baseline-browser-mapping 2.11.0, nanoid 3.3.18, vitest 4.1.11); Playwright **1.55.1** + `v1.55.1-jammy` image pins; React 19.3.0 (+ types); GHA checkout/setup-node/setup-uv majors; eslint/globals; psycopg/setuptools floors; Dependabot grouping. PART 5. Deferred: Vitest 5, Playwright 1.63.
 - **B1.5b CI:** Frontend Checks `npm audit --audit-level=moderate` (no `--omit=dev`).
 

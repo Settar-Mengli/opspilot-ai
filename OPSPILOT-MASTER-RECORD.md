@@ -726,3 +726,89 @@ Served by **gemini** / `gemini-3.5-flash-lite` native `responseSchema` (no `forc
 #### Coverage / exits (post-S3 / F8 local)
 
 `fail_under=72`. Local full suite after F8: **149 passed**, **TOTAL 81.11%**. mypy `src/opspilot` clean; ruff clean; 0 PNG changes; PARTs 0–6 vs `main` byte-identical; G1/G2/G3 greps empty. Code defaults = C11 via `opspilot.llm.model_defaults`.
+
+## PART 8 — B2 merge closeout + B2.1 Hardening + truth — 2026-09-30
+
+### Summary
+
+- B2 merged to main: PR #30 → `0c71a4a` (2026-09-30).
+- DEP-2 #31 → `aa5c73d` (brace-expansion / alert #18).
+- Dependabot merged: #21 upload-artifact 7.0.1; #22 frontend-dev group; #25 jsdom 30.1.1; #27 jest-dom 7.0.1.
+- Dependabot closed (majors deferred): #23 lucide; #24 Playwright 1.63; #26 @types/node 26; #28 TypeScript 7.
+- B2.1 on `b2.1/hardening`: register C0 + Corrections; toolchain pins; security F-04/06/08/09/12; CQ deletes + shared helpers; OBS-1 (A2 thread-safe request_id); DM-03 0005; TQ strengthen; portfolio docs.
+- PART 7 left untouched (append-only).
+
+### Baseline
+
+- Plan tip: `5933685` · CI `36657422313` · 149 passed · coverage **81.19%**.
+- B2.1 local exit: **170 passed**, TOTAL **82.88%** (above baseline).
+
+### Corrections
+
+- See `docs/audits/2026-09-30-consolidated-audit.md` § Corrections (B2.1 plan verification). Coverage claim corrected to 81.19%.
+
+### A1 (Node engines)
+
+- Playwright container `mcr.microsoft.com/playwright:v1.55.1-jammy` Node: **v22.19.0**.
+- `frontend/.npmrc`: `legacy-peer-deps=true` only (no `engine-strict`).
+- Decision: raised engines to `>=24.15 <25` because npm would not fail on engines (warn-only). `.nvmrc` + CI `setup-node` → `24.15`; `ubuntu-24.04` pins applied.
+- Container Node **v22.19.0** < engines **24.15** is harmless now: no `engine-strict`, and the container runs only `npm ci` + Playwright. The drift is resolved in the **U9** batch.
+
+### A2 (request_id threads)
+
+- `execute_pipeline` uses `contextvars.copy_context().run` into `ThreadPoolExecutor`.
+- `_llm.complete_*` falls back to `request_id_ctx`.
+- E2E: `tests/api/test_obs_request_id.py::test_post_runs_propagates_request_id_to_llm_calls`.
+
+### A3 (access log)
+
+- Access log records `request.url.path` only (no query string / bodies).
+
+### Per-commit CI (branch `b2.1/hardening`)
+
+| SHA | Subject | Run ID | Result |
+|-----|---------|--------|--------|
+| 454afda | docs(audit): consolidated register + Corrections | 36661376407 | success |
+| 088d81f | chore(ci): Node 24.15, ubuntu-24.04, Dependabot ignores | 36661887350 | success |
+| e8c1959 | chore(fe): remove ANTHROPIC_API_KEY from frontend/.env.example | 36662375874 | success |
+| 8172ebe | fix(sec): recursive meta sanitize + expanded patterns | 36662944252 | success |
+| 4545b42 | fix(llm): reject non-:free OpenRouter unless paid-allow | 36663498094 | success |
+| 73c92a0 | fix(api): validate X-Request-ID | 36664003147 | success |
+| a42b427 | fix(llm): redact service LLM failure logs | 36664597290 | failure |
+| 6225319 | fix(test): F-09 log assert without caplog | 36665111028 | success |
+| 4d731d8 | refactor: delete dead adapters and domain.models | 36665611706 | success |
+| 3c9036b | refactor(llm): share provider HTTP error mapping | 36666127780 | success |
+| 36c4eab | refactor(services): shared soft-deny helper | 36666607974 | success |
+| 101ba31 | docs(llm): mark LlmGateway skeleton/test-only | 36667085571 | success |
+| dff4ac3 | feat(obs): request_id threads, Filter, 500 + access logs | 36667586159 | failure |
+| 2d6293a | fix(test): force gateway triage in OBS request_id e2e | 36668138679 | failure |
+| 74c3076 | fix(test): patch get_adapter where pipeline imports it | 36668666579 | failure |
+| 7114e45 | fix(test): patch gateway_triage.build_providers for OBS e2e | 36669203511 | success |
+| e2f2501 | feat(db): index run_artifacts.name 0005 | 36669700807 | success |
+| 2000fac | test(llm): circuit / json_extract / budget env | 36670181540 | success |
+| 5c95816 | docs: ROADMAP/architecture/CHANGELOG/templates | 36670692836 | success |
+| 448675f | docs(readme): post-B2 truth + proof pack | 36671180549 | success |
+| 6317dfc | docs(b2.1): PART 8 closeout | 36671754412 | success |
+| (final) | final records commit — CI run on PR checks | (PR checks) | pending |
+
+**Process deviations (fix-forward, no amend):** `a42b427` (run 36664597290) → `6225319`. OBS e2e: `dff4ac3` (36667586159), `2d6293a` (36668138679), `74c3076` (36668666579) → fixed forward in `7114e45` (36669203511).
+
+### Greps / invariants
+
+- Provider hosts outside `llm/providers/`: empty
+- `OPSPILOT_AI_*` in src: empty (tests assert retirement only)
+- Bare `LlmGateway` outside `llm/`: empty
+- Deleted module imports: only hermetic ban-list strings
+- OpenAPI / `generated.ts`: unchanged vs main
+- PNG diff vs main: **0**
+- No live LLM smoke (by plan)
+
+### Owner step P-3 (agent did not run)
+
+```
+gh repo edit Settar-Mengli/opspilot-ai --description "OpsPilot AI — local-first AI chief of staff (FastAPI + React + hand-rolled LLM gateway)" --add-topic ai --add-topic fastapi --add-topic python --add-topic react --add-topic portfolio --add-topic llm
+```
+
+### Deferred
+
+- Register B3/UI/B4–B7 items; triage `_BODY_MAX` → B3 P11; Playwright majors → U9 batch.

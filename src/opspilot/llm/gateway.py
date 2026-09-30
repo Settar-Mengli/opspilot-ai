@@ -66,10 +66,11 @@ def default_observe_attempt(
 
 
 class LlmGateway:
-    """Thin multi-provider gateway: complete / complete_json / stream.
+    """Skeleton / test-only multi-provider gateway (complete / complete_json / stream).
 
-    C2 skeleton: inject providers explicitly (typically FakeProvider in tests).
-    Routing and budgets land in later commits; attempt metering hooks are optional.
+    Production services must use ``BudgetAwareGateway`` (see D-012). This class remains
+    for unit tests and the module-level ``complete`` / ``complete_json`` helpers; do not
+    merge failover loops with ``BudgetAwareGateway``.
     """
 
     def __init__(

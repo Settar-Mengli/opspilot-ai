@@ -38,3 +38,7 @@ B2.
 - Provider clients: Gemini **native REST** (`generativelanguage.googleapis.com`); one **OpenAI-compatible** httpx client class for groq / mistral / cloudflare / openrouter / ollama; Anthropic **SDK only** behind D-023.
 - Official provider SDKs beyond Anthropic only via a future ADR addendum if REST proves insufficient.
 - Default `INFERENCE_PROVIDER_ORDER` excludes Anthropic; final fallback is rules/soft/template.
+
+## Addendum (B2.1, 2026-09-30)
+
+- ``LlmGateway`` is skeleton/test-only. Production ask/evening/insights/triage/briefing paths use ``BudgetAwareGateway`` (budgets + circuits). The dual classes are intentional; do **not** merge failover loops.

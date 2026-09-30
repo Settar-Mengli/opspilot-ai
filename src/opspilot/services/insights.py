@@ -7,9 +7,8 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from opspilot.llm.policy import llm_allowed
 from opspilot.llm.schemas.insights import InsightsPayload
-from opspilot.services._llm import compact_triage_lines, complete_structured, providers_or_empty
+from opspilot.services._llm import compact_triage_lines, complete_structured, soft_deny
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +30,9 @@ def generate_insights(
     session: Session | None = None,
     request_id: str | None = None,
 ) -> dict[str, Any]:
-    if not llm_allowed():
-        return _fallback(_SOFT)
-    if not providers_or_empty():
-        return _fallback(_SOFT_NO_PROVIDER)
+    blocked = soft_deny(unavailable=_SOFT, no_provider=_SOFT_NO_PROVIDER)
+    if blocked is not None:
+        return _fallback(blocked)
 
     records = triage_records or []
     # Empty queue: soft path (empty insights list is valid only when there is nothing to analyze).

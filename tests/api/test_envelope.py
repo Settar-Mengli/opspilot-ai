@@ -57,6 +57,34 @@ def test_envelope_unhandled_500_hides_internals(monkeypatch: pytest.MonkeyPatch)
     assert "RuntimeError" not in resp.text
 
 
+def test_envelope_unhandled_500_logs_request_id_without_secrets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from sqlalchemy.orm import Session
+
+    import opspilot.api.errors as errors_mod
+
+    rid = "audit-500-rid-001"
+    recorded: list[str] = []
+
+    def _capture(msg: str, *args: object, **_kwargs: object) -> None:
+        recorded.append(msg % args if args else msg)
+
+    def _explode(self, *args, **kwargs):
+        raise RuntimeError("password=hunter2 api_key=sk-ant-abcdefghijklmnop")
+
+    monkeypatch.setattr(Session, "execute", _explode)
+    monkeypatch.setattr(errors_mod.logger, "error", _capture)
+    resp = client.get("/api/v1/runs", headers={"X-Request-ID": rid})
+    assert resp.status_code == 500
+    messages = [m for m in recorded if "unhandled_error" in m]
+    assert messages, f"no unhandled_error log; recorded={recorded}"
+    msg = messages[0]
+    assert f"request_id={rid}" in msg
+    assert "hunter2" not in msg
+    assert "sk-ant-abcdefghijklmnop" not in msg
+
+
 def test_settings_exact_key_set():
     resp = client.get("/api/v1/settings")
     assert resp.status_code == 200

@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from opspilot.llm.gateway import session_attempt_recorder
+from opspilot.llm.meta_redact import redact_text
 from opspilot.llm.policy import llm_allowed
 from opspilot.llm.providers.base import LlmProvider
 from opspilot.llm.routed import BudgetAwareGateway
@@ -18,6 +19,24 @@ from opspilot.llm.routing import build_providers
 from opspilot.llm.types import CompletionResult, Message, TaskName
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_request_id(request_id: str | None) -> str | None:
+    if request_id:
+        return request_id
+    try:
+        from opspilot.api.app import request_id_ctx
+
+        return request_id_ctx.get()
+    except Exception:  # noqa: BLE001 — app may be unavailable in some CLI contexts
+        return None
+
+
+def _log_llm_failure(task: TaskName, exc: BaseException) -> None:
+    code = type(exc).__name__
+    msg = redact_text(str(exc), max_chars=200)
+    logger.error("LLM %s failed error_code=%s message=%s", task, code, msg)
+
 
 _MAX_ITEMS = 20
 _MAX_REASON_CHARS = 120
@@ -43,6 +62,18 @@ def compact_triage_lines(records: list[dict[str, Any]], *, include_title: bool =
 
 def providers_or_empty() -> list[LlmProvider]:
     return build_providers()
+
+
+def soft_deny(*, unavailable: str, no_provider: str) -> str | None:
+    """Shared soft-deny order: policy → no providers → None if call may proceed.
+
+    When the LLM attempt already failed, callers treat None as ``unavailable``.
+    """
+    if not llm_allowed():
+        return unavailable
+    if not providers_or_empty():
+        return no_provider
+    return None
 
 
 @contextmanager
@@ -94,7 +125,13 @@ def complete_prose(
         if scoped is None:
             return None
         recorder = session_attempt_recorder(scoped)
-        gw = BudgetAwareGateway(providers, session=scoped, recorder=recorder, observe=True, request_id=request_id)
+        gw = BudgetAwareGateway(
+            providers,
+            session=scoped,
+            recorder=recorder,
+            observe=True,
+            request_id=_resolve_request_id(request_id),
+        )
         try:
             return gw.complete(
                 task=task,
@@ -102,7 +139,7 @@ def complete_prose(
                 max_tokens=max_tokens,
             )
         except Exception as exc:  # noqa: BLE001 — soft-200 at service boundary
-            logger.exception("LLM %s failed: %s", task, exc)
+            _log_llm_failure(task, exc)
             return None
 
 
@@ -126,7 +163,13 @@ def complete_structured[T: BaseModel](
         if scoped is None:
             return None
         recorder = session_attempt_recorder(scoped)
-        gw = BudgetAwareGateway(providers, session=scoped, recorder=recorder, observe=True, request_id=request_id)
+        gw = BudgetAwareGateway(
+            providers,
+            session=scoped,
+            recorder=recorder,
+            observe=True,
+            request_id=_resolve_request_id(request_id),
+        )
         try:
             return gw.complete_json(
                 task=task,
@@ -135,5 +178,5 @@ def complete_structured[T: BaseModel](
                 max_tokens=max_tokens,
             )
         except Exception as exc:  # noqa: BLE001
-            logger.exception("LLM %s structured failed: %s", task, exc)
+            _log_llm_failure(task, exc)
             return None
