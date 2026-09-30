@@ -140,19 +140,20 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B3 — Eval platform + injection red-team (M3 + M4) — one harness
 
+- **Status:** In progress on `b3/evals-redteam` (locks P1–P13; Anthropic leaderboard column = `skipped`).
 - **Goal:** Regression + jailbreak/injection defense on a single eval harness.
 - **Workstream M3** — A2 + P8 phase1 lite
-  - **Scope:** Labeled fictional corpus; F1/confusion; item-ID grounding + confidence on triage; CI secret-free lane; optional Anthropic prepaid leaderboard column.
-  - **Exit criteria (M3):** CI gate fails on triage regression beyond conservative threshold set in B3 plan.
+  - **Scope:** Labeled fictional corpus; F1/confusion; item-ID grounding + confidence on triage; CI secret-free lane; Anthropic column documented `skipped` (P7; no Anthropic HTTP in B3).
+  - **Exit criteria (M3):** CI gate fails on triage regression beyond conservative threshold owner-locked at STOP F1-FLOOR.
 - **Workstream M4** — A3 lite
-  - **Scope:** Delimiters; red-team suite on **same harness**; ASR tracked in CI.
-  - **Exit criteria (M4):** Known attack fixtures fail closed; ASR metric published in CI artifact/docs.
+  - **Scope:** Delimiters; red-team suite on **same harness**; hermetic defense tests in CI; **live ASR reported per provider (not a CI gate)** (P8 / D-029).
+  - **Exit criteria (M4):** Known attack fixtures fail closed hermetically; ASR + validity/repair published in `docs/evals/`.
 - **Batch exit criteria:**
-  - **Tests:** Both M3 and M4 automated gates green.
-  - **Evals:** Golden F1 + red-team ASR as above.
-  - **Live smoke:** Optional hosted free leaderboard run documented.
-  - **Docs:** PART appended; ROADMAP/ADRs/CHANGELOG updated.
-- **Deps:** B2 · **Size:** XL · **Metric:** Triage F1 on golden set; red-team ASR tracked
+  - **Tests:** M3 F1 gate + M4 hermetic defenses green.
+  - **Evals:** Golden F1 + live red-team ASR as above.
+  - **Live smoke:** Multi-day single-provider leaderboard under approved caps (STOP LIVE).
+  - **Docs:** PART 9; ROADMAP/ADRs/CHANGELOG updated.
+- **Deps:** B2 · **Size:** XL · **Metric:** Triage F1 on golden set; red-team ASR live-reported
 
 ### B4 — Demo Google inbox/calendar (M5)
 

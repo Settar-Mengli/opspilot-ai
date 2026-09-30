@@ -30,3 +30,7 @@ Promptfoo/LangSmith paid; defer evals until after agentic Ask.
 ## Consequences
 
 B3 is a hard gate before trusting tool-using Ask on email bodies.
+
+## Addendum (B3, 2026-09-30)
+
+- Lock **P7** wins over the Acceptance Criteria “optional prepaid Anthropic column”: B3 publishes Anthropic as **`skipped`** with **no Anthropic HTTP**. See D-028 / D-023 B3 addendum. Harness details: D-028; defenses + ASR: D-029.

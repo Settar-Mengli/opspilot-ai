@@ -31,5 +31,7 @@ Index of ADRs for OpsPilot. Status values: Accepted | Superseded | Proposed.
 | [D-025](D-025-run-history-postgres.md) | Run history SoT = Postgres (supersedes D-006) | Accepted | B1+ |
 | [D-026](D-026-responsive-layout-policy.md) | Responsive layout policy (U1–U10) | Accepted | B1.5a, B1.5b, B5+ |
 | [D-027](D-027-schema-conventions.md) | Schema conventions (timestamptz, IDs, money) | Accepted | B2+ |
+| [D-028](D-028-eval-harness.md) | Eval harness (pytest + CLI) | Accepted | B3 |
+| [D-029](D-029-prompt-injection-defenses.md) | Prompt injection defenses + red-team ASR | Accepted | B3 |
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../../OPSPILOT-MASTER-RECORD.md).
