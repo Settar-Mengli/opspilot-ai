@@ -11,12 +11,17 @@ _SECRET_KEY_RE = re.compile(
     re.IGNORECASE,
 )
 _REDACTED = "***"
+_KEY_PREFIXES = ("sk-", "gsk_", "aq.", "aiza")
 
 
 def redact_value(key: str, value: Any) -> Any:
     if _SECRET_KEY_RE.search(key):
         return _REDACTED
-    if isinstance(value, str) and len(value) > 8 and value.lower().startswith(("sk-", "gsk_", "aq.")):
+    if isinstance(value, dict):
+        return redact_fields(value)
+    if isinstance(value, list):
+        return [redact_value(key, item) for item in value]
+    if isinstance(value, str) and len(value) > 8 and value.lower().startswith(_KEY_PREFIXES):
         return _REDACTED
     return value
 
