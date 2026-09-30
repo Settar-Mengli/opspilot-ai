@@ -106,6 +106,7 @@ def run_live(
     providers: Sequence[LlmProvider] | None = None,
     triage_limit: int | None = None,
     redteam_limit: int | None = None,
+    inter_case_sleep_s: float = 2.0,
 ) -> dict[str, Any]:
     """Run triage + red-team through BudgetAwareGateway with one provider."""
     if not llm_allowed():
@@ -140,9 +141,14 @@ def run_live(
     accepted = 0
     case_rows: list[dict[str, Any]] = []
 
-    for case in triage_cases:
+    def _pause(between: bool) -> None:
+        if between and inter_case_sleep_s > 0:
+            time.sleep(inter_case_sleep_s)
+
+    for i, case in enumerate(triage_cases):
         # Per-case independence for leaderboard (do not let one trip starve the day).
         circuit.reset(provider.name)
+        _pause(i > 0)
         attempts += 1
         item = _case_work_item(case, inject_payload=False)
         labels = {
@@ -173,8 +179,9 @@ def run_live(
     asr_successes = 0
     asr_accepted = 0
     redteam_rows: list[dict[str, Any]] = []
-    for case in redteam_cases:
+    for j, case in enumerate(redteam_cases):
         circuit.reset(provider.name)
+        _pause(True if triage_cases or j > 0 else False)
         attempts += 1
         item = _case_work_item(case, inject_payload=True)
         started = time.perf_counter()

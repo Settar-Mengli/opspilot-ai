@@ -280,6 +280,21 @@ class BudgetAwareGateway:
             self._record(task=task, provider=provider.name, result=repair_failed, prompt_version=repair_pv)
             last_error = repair_errors
 
+        # Schema path only when the last failure was parse/validation; else provider/budget exhaustion.
+        if last_error in {"budget_denied", "budget_denied_repair"} or (
+            last_error
+            and (
+                last_error.startswith("http_")
+                or last_error
+                in {
+                    "timeout",
+                    "rate_limited",
+                    "circuit_open",
+                    "all providers failed or budget-denied",
+                }
+            )
+        ):
+            raise LlmProvidersExhausted(last_error)
         raise LlmSchemaError(last_error or "schema validation failed")
 
     def _structured_attempt(

@@ -70,6 +70,7 @@ def test_live_aborts_before_provider_when_caps_unset(db_session: Session, monkey
             providers=[fake],
             triage_limit=1,
             redteam_limit=0,
+            inter_case_sleep_s=0.0,
         )
 
 
@@ -139,6 +140,7 @@ def test_live_runner_fake_provider_metrics(db_session: Session, monkeypatch: pyt
         providers=[fake],
         triage_limit=2,
         redteam_limit=1,
+        inter_case_sleep_s=0.0,
     )
     assert report["mode"] == "live"
     assert report["provider"] == "gemini"
