@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from opspilot.adapters.base import TriageAdapter
 from opspilot.adapters.rule_based import RuleBasedAdapter
 from opspilot.llm.policy import llm_allowed
+from opspilot.llm.prompt_safety import UNTRUSTED_SYSTEM_POLICY, neutralize_text, wrap_untrusted
 from opspilot.llm.providers.base import LlmProvider
 from opspilot.llm.routing import build_providers
 from opspilot.llm.schemas.triage import TriagePayload
@@ -19,10 +20,23 @@ logger = logging.getLogger("opspilot.adapters.gateway_triage")
 
 _SYSTEM = (
     "You are an operations triage assistant. Classify the work item. "
+    f"{UNTRUSTED_SYSTEM_POLICY} "
     "Respond with JSON only matching the schema. No markdown."
 )
-_BODY_MAX = 800
+_BODY_MAX = 500
 _SUBJECT_MAX = 160
+
+
+def build_triage_user_prompt(item: WorkItem) -> str:
+    """Build delimiter-wrapped triage user prompt (P8 / P11)."""
+    inner = (
+        f"source={neutralize_text(item.source_type)[:32]}\n"
+        f"subject={neutralize_text(item.subject_or_title)[:_SUBJECT_MAX]}\n"
+        f"body={neutralize_text(item.body_or_description)[:_BODY_MAX]}\n"
+        f"sender={neutralize_text(item.sender_or_requester)[:80]}\n"
+        f"tags={neutralize_text(','.join(item.tags))[:120]}"
+    )
+    return wrap_untrusted(item.id, inner)
 
 
 class GatewayTriageAdapter(TriageAdapter):
@@ -45,15 +59,7 @@ class GatewayTriageAdapter(TriageAdapter):
             return self._fallback.classify(item)
 
     def _classify_gateway(self, item: WorkItem, providers: list[LlmProvider]) -> TriageRecord:
-        user = (
-            f"<item id={item.id!s}>\n"
-            f"source={item.source_type[:32]}\n"
-            f"subject={item.subject_or_title[:_SUBJECT_MAX]}\n"
-            f"body={item.body_or_description[:_BODY_MAX]}\n"
-            f"sender={item.sender_or_requester[:80]}\n"
-            f"tags={','.join(item.tags)[:120]}\n"
-            f"</item>"
-        )
+        user = build_triage_user_prompt(item)
         payload = complete_structured(
             task="triage",
             system=_SYSTEM,

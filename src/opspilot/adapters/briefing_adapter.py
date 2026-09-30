@@ -8,6 +8,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from opspilot.llm.policy import llm_allowed
+from opspilot.llm.prompt_safety import UNTRUSTED_SYSTEM_POLICY, neutralize_text, wrap_untrusted
 from opspilot.services._llm import complete_prose, providers_or_empty
 
 logger = logging.getLogger("opspilot.adapters.briefing")
@@ -59,9 +60,9 @@ def generate_ai_briefing(
             urg = record.get("urgency", "") if isinstance(record, dict) else getattr(record, "urgency", "")
             cat = record.get("category", "") if isinstance(record, dict) else getattr(record, "category", "")
             if isinstance(item, dict):
-                subject = str(item.get("subject_or_title") or "")[:80]
+                subject = neutralize_text(str(item.get("subject_or_title") or ""))[:80]
             else:
-                subject = str(getattr(item, "subject_or_title", None) or "")[:80]
+                subject = neutralize_text(str(getattr(item, "subject_or_title", None) or ""))[:80]
             top_3_lines.append(f"- {rec_id}: {subject} (urgency={urg}, category={cat})")
 
         deadline_lines = []
@@ -71,8 +72,8 @@ def generate_ai_briefing(
                 aid = str(
                     action.get("work_item_id", "") if isinstance(action, dict) else getattr(action, "work_item_id", "")
                 )[:32]
-                summary = str(
-                    action.get("summary", "") if isinstance(action, dict) else getattr(action, "summary", "")
+                summary = neutralize_text(
+                    str(action.get("summary", "") if isinstance(action, dict) else getattr(action, "summary", ""))
                 )[:100]
                 owner = (
                     action.get("owner", "unassigned")
@@ -83,10 +84,14 @@ def generate_ai_briefing(
 
         formatted_top = "\n".join(top_3_lines) if top_3_lines else "None"
         formatted_deadlines = "\n".join(deadline_lines) if deadline_lines else "None today"
+        untrusted_blob = wrap_untrusted(
+            "briefing",
+            f"Top:\n{formatted_top}\nDeadlines:\n{formatted_deadlines}",
+        )
 
         system = (
             "You are a chief of staff writing a daily executive briefing. "
-            "Clear confident prose. Max 250 words. No bullet-only opening."
+            f"Clear confident prose. Max 250 words. No bullet-only opening. {UNTRUSTED_SYSTEM_POLICY}"
         )
         user = (
             f"Date: {run_date}\n"
@@ -94,8 +99,7 @@ def generate_ai_briefing(
             f"C/H/M/L={urgency_counts['critical']}/{urgency_counts['high']}/"
             f"{urgency_counts['medium']}/{urgency_counts['low']} "
             f"neg={sentiment_counts['negative']}\n"
-            f"Top:\n{formatted_top}\n"
-            f"Deadlines:\n{formatted_deadlines}\n"
+            f"{untrusted_blob}\n"
             "Write the briefing."
         )
         result = complete_prose(task="briefing", system=system, user=user, max_tokens=800, session=session)

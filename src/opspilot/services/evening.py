@@ -6,6 +6,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from opspilot.llm.prompt_safety import UNTRUSTED_SYSTEM_POLICY
 from opspilot.services._llm import compact_triage_lines, complete_prose, soft_deny
 
 _SOFT_UNAVAILABLE = (
@@ -28,6 +29,7 @@ def generate_evening_summary(
     system = (
         f"You are {assistant_name}, OpsPilot chief of staff delivering an end-of-day summary. "
         "Calm, warm, first person. Under 200 words, three short paragraphs max. Prose only. "
+        f"{UNTRUSTED_SYSTEM_POLICY} "
         "Cover: lead story, what is still open, what to carry into tomorrow."
     )
     user = compact_triage_lines(records)
