@@ -1,6 +1,6 @@
 # OpsPilot Architecture
 
-**Dualism:** Sections labeled **CURRENT** describe post-B1 behavior on `main` (B0 and B1 merged). Sections labeled **TARGET** describe the remaining locked rebuild (B2–B7). Do not present TARGET as shipped.
+**Dualism:** Sections labeled **CURRENT** describe post-B1/B1.5 behavior on `main`, plus B2 gateway behavior on branch `b2/llm-gateway` until merge. Sections labeled **TARGET** describe the remaining locked rebuild (B3–B7). Do not present TARGET as shipped.
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
@@ -17,13 +17,15 @@ Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs
 
 ---
 
-## CURRENT (B1 — hermetic foundation)
+## CURRENT (B1 + B1.5 + B2 gateway on branch)
 
 Verified on `main` (B1 merge `c5de149`): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, `/api/v1` with envelope, in-process API pipeline (Postgres-only persist), Settings GET-only (`provider`/`model`/`api_key_set` — no key preview), FE on `/api/v1`, coverage fail-under **72**, Node 24 / Python 3.13 / uv.
 
 **B1.5a:** Playwright visual/e2e/axe safety net with container-only `-linux` baselines; CSS partials under `frontend/src/styles/`; shared `useOverlay` overlay lifecycle; U4 hygiene fixes; D-026/D-027.
 
 **B1.5b (CURRENT):** ≥1280 three-pane shell (`desktop.css` imported last): primary icon rail, content column, docked Ask 380px; Ask dual-mode (dock ≥1280 / modal &lt;1280); All Items list+detail; landmarks (skip link, `nav[aria-label=Primary]`, Ask `aside`).
+
+**B2 (CURRENT on `b2/llm-gateway`):** hand-rolled `opspilot.llm` gateway; `llm_allowed()` on all call sites; services for ask/evening/insights; free-tier providers + D-023 Anthropic gate; `LlmCall` + UTC budgets; `GET /runs?limit=&cursor=`; `X-Request-ID`; timestamptz for run/work_item times. Live budget caps still require STOP A owner approval.
 
 ### Endpoints (CURRENT) — `/api/v1`
 
@@ -85,11 +87,10 @@ Legacy unversioned routes and subprocess `/run` — deleted in B1.
 
 </details>
 
-### Adapters / settings (still partially CURRENT)
+### Adapters / settings (historical — superseded on B2 branch)
 
-- Conversation path uses `AISettings` (`OPSPILOT_AI_*` with `ANTHROPIC_API_KEY` fallback).
-- Evening / insights / briefing / claude adapters still read env / hardcode model (gateway is B2).
-- Factory honors `OPSPILOT_FORCE_RULES` so tests never construct Anthropic for **triage**. Until B2 gateway, FORCE_RULES is **triage-factory-only** — evening/insights/briefing/conversation paths do not yet honor it (see runbooks).
+- Pre-B2: Conversation used `AISettings` / Anthropic; evening/insights/briefing/claude called Anthropic directly; FORCE_RULES was triage-factory-only.
+- **B2:** `llm_allowed()` + gateway/services; Anthropic only via D-023; see CURRENT section above.
 
 ### Data flow (files + DB)
 

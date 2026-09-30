@@ -38,3 +38,16 @@ Demo/leaderboard can use Haiku/Sonnet-class quality sparingly; CI stays free.
 ## Blocks
 
 B2, B3, B7.
+
+## Addendum (B2, 2026-09-29)
+
+Env (fail closed when enabled without rates):
+
+| Var | Role |
+|-----|------|
+| `OPSPILOT_ANTHROPIC_ENABLED` | default false |
+| `OPSPILOT_ANTHROPIC_BUDGET_TOKENS` | remaining token budget |
+| `OPSPILOT_ANTHROPIC_BUDGET_USD` | remaining USD budget |
+| `OPSPILOT_ANTHROPIC_USD_PER_MTOK_IN` / `_OUT` | **required when enabled**; debit from SDK `usage` |
+
+Allowlist tasks: `demo_quality`, `leaderboard`, `judge_calibration` — **never** `ask`. Rates **VERIFY AT DECISION TIME** against Anthropic pricing before enabling.

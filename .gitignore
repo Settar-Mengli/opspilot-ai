@@ -44,3 +44,9 @@ frontend/.env.local
 
 # Runtime logs
 *.log
+
+# Ephemeral local scratch
+tmp/
+
+# LLM JSONL traces (D-019)
+data/llm_traces/

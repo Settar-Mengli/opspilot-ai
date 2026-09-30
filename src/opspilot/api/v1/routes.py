@@ -6,14 +6,11 @@ import json
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
-from opspilot.adapters.conversation_adapter import answer_question
-from opspilot.adapters.evening_adapter import generate_evening_summary
-from opspilot.adapters.insights_adapter import generate_insights
 from opspilot.api.deps import get_db_session
 from opspilot.api.paths import RAW_INPUT_DIR
 from opspilot.api.schemas import (
@@ -29,6 +26,9 @@ from opspilot.api.services.pipeline import execute_pipeline
 from opspilot.capabilities.registry import get_all_capabilities, get_capability
 from opspilot.config.settings import ai_settings
 from opspilot.persistence.models import RunArtifactRow, RunRow, TriageDecisionRow, WorkItemRow
+from opspilot.services.ask import answer_question
+from opspilot.services.evening import generate_evening_summary
+from opspilot.services.insights import generate_insights
 
 router = APIRouter(prefix="/api/v1")
 
@@ -106,9 +106,22 @@ def create_run(
 
 
 @router.get("/runs", response_class=JSONResponse)
-def list_runs(session: Session = Depends(get_db_session)) -> list[dict[str, Any]]:
-    result = session.execute(select(RunRow).order_by(desc(RunRow.finished_at), desc(RunRow.run_id)))
-    rows = result.scalars().all()
+def list_runs(
+    session: Session = Depends(get_db_session),
+    limit: int = 50,
+    cursor: str | None = None,
+) -> list[dict[str, Any]]:
+    """List runs newest-first. Default limit 50, max 100. Response stays a JSON array."""
+    page_size = min(max(limit, 1), 100)
+    query = select(RunRow).order_by(desc(RunRow.finished_at), desc(RunRow.run_id))
+    if cursor:
+        cur = session.get(RunRow, cursor)
+        if cur is not None:
+            query = query.where(
+                (RunRow.finished_at < cur.finished_at)
+                | ((RunRow.finished_at == cur.finished_at) & (RunRow.run_id < cur.run_id))
+            )
+    rows = session.execute(query.limit(page_size)).scalars().all()
     return [safe_history_metadata(dict(row.metadata_json or {"run_id": row.run_id})) for row in rows]
 
 
@@ -191,33 +204,58 @@ def get_run_ai_briefing(run_id: str, session: Session = Depends(get_db_session))
     return content
 
 
+def _request_id(http_request: Request) -> str | None:
+    rid = getattr(http_request.state, "request_id", None)
+    if isinstance(rid, str) and rid.strip():
+        return rid.strip()
+    return None
+
+
 @router.post("/ask")
-def ask(payload: AskRequest, session: Session = Depends(get_db_session)) -> dict[str, str]:
+def ask(
+    payload: AskRequest,
+    http_request: Request,
+    session: Session = Depends(get_db_session),
+) -> dict[str, str]:
     records = _latest_triage_records(session)
     answer = answer_question(
         question=payload.question,
         assistant_name=payload.assistant_name,
         triage_records=records,
+        session=session,
+        request_id=_request_id(http_request),
     )
     return {"answer": answer}
 
 
 @router.post("/evening-summary")
-def evening_summary(payload: EveningSummaryRequest, session: Session = Depends(get_db_session)) -> dict[str, str]:
+def evening_summary(
+    payload: EveningSummaryRequest,
+    http_request: Request,
+    session: Session = Depends(get_db_session),
+) -> dict[str, str]:
     records = _latest_triage_records(session)
     summary = generate_evening_summary(
         assistant_name=payload.assistant_name,
         triage_records=records,
+        session=session,
+        request_id=_request_id(http_request),
     )
     return {"summary": summary}
 
 
 @router.post("/insights")
-def insights(payload: InsightsRequest, session: Session = Depends(get_db_session)) -> dict[str, object]:
+def insights(
+    payload: InsightsRequest,
+    http_request: Request,
+    session: Session = Depends(get_db_session),
+) -> dict[str, object]:
     records = _latest_triage_records(session)
     return generate_insights(
         assistant_name=payload.assistant_name,
         triage_records=records,
+        session=session,
+        request_id=_request_id(http_request),
     )
 
 

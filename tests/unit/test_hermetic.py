@@ -12,6 +12,27 @@ def test_force_rules_returns_rule_based_even_with_api_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("OPSPILOT_FORCE_RULES", "1")
+    monkeypatch.delenv("OPSPILOT_LLM_DISABLE", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test-fake")
+
+    constructed: list[bool] = []
+
+    def _track(*_args, **_kwargs):  # type: ignore[no-untyped-def]
+        constructed.append(True)
+        raise AssertionError("Anthropic client must not be constructed")
+
+    monkeypatch.setattr("anthropic.Anthropic", _track)
+
+    adapter = get_adapter()
+    assert isinstance(adapter, RuleBasedAdapter)
+    assert constructed == []
+
+
+def test_llm_disable_returns_rule_based_without_force_rules(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OPSPILOT_FORCE_RULES", raising=False)
+    monkeypatch.setenv("OPSPILOT_LLM_DISABLE", "1")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test-fake")
 
     constructed: list[bool] = []

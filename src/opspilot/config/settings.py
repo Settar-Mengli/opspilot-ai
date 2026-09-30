@@ -1,11 +1,70 @@
-"""Centralized runtime AI provider settings."""
+"""Centralized runtime AI provider settings (legacy surface for /settings).
+
+Ask/evening/insights/triage/briefing use the llm/ gateway + free-tier env keys.
+This module remains for the read-only settings payload until B4 settings redesign.
+Retired legacy provider/model/key env vars (pre-gateway) are ignored.
+"""
 
 from __future__ import annotations
 
 import os
 
-DEFAULT_PROVIDER = "anthropic"
-DEFAULT_MODEL = "claude-haiku-4-5-20251001"
+from opspilot.llm.model_defaults import DEFAULT_MODELS, GEMINI_DEFAULT_MODEL
+
+DEFAULT_PROVIDER = "gemini"
+DEFAULT_MODEL = GEMINI_DEFAULT_MODEL
+
+_MODEL_ENV: dict[str, str] = {
+    "gemini": "GEMINI_MODEL",
+    "groq": "GROQ_MODEL",
+    "mistral": "MISTRAL_MODEL",
+    "openrouter": "OPENROUTER_MODEL",
+    "cloudflare": "CLOUDFLARE_MODEL",
+    "ollama": "OLLAMA_MODEL",
+}
+
+_KEY_ENV: dict[str, str] = {
+    "gemini": "GEMINI_API_KEY",
+    "groq": "GROQ_API_KEY",
+    "mistral": "MISTRAL_API_KEY",
+    "openrouter": "OPENROUTER_API_KEY",
+    "cloudflare": "CLOUDFLARE_API_TOKEN",
+    "ollama": "OLLAMA_API_KEY",
+}
+
+
+def _provider_order() -> list[str]:
+    raw = os.environ.get("INFERENCE_PROVIDER_ORDER", "").strip()
+    if not raw:
+        return [DEFAULT_PROVIDER]
+    names = [p.strip().lower() for p in raw.split(",") if p.strip()]
+    return [n for n in names if n and n != "anthropic"] or [DEFAULT_PROVIDER]
+
+
+def _key_for(provider: str) -> str | None:
+    if provider == "cloudflare":
+        token = os.environ.get("CLOUDFLARE_API_TOKEN", "").strip()
+        account = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
+        if token and account:
+            return token
+        return None
+    if provider == "ollama":
+        # Local; treat as configured without a key.
+        return os.environ.get("OLLAMA_API_KEY", "").strip() or "local"
+    env_name = _KEY_ENV.get(provider)
+    if not env_name:
+        return None
+    value = os.environ.get(env_name, "").strip()
+    return value or None
+
+
+def _model_for(provider: str) -> str:
+    env_name = _MODEL_ENV.get(provider)
+    if env_name:
+        configured = os.environ.get(env_name, "").strip()
+        if configured:
+            return configured
+    return DEFAULT_MODELS.get(provider, DEFAULT_MODEL)
 
 
 class AISettings:
@@ -18,27 +77,23 @@ class AISettings:
 
     @staticmethod
     def _resolve_provider() -> str:
-        provider = os.environ.get("OPSPILOT_AI_PROVIDER", DEFAULT_PROVIDER)
-        normalized = provider.strip().lower()
-        return normalized or DEFAULT_PROVIDER
+        order = _provider_order()
+        for name in order:
+            if _key_for(name):
+                return name
+        return order[0]
 
     @staticmethod
     def _resolve_model() -> str:
-        model = os.environ.get("OPSPILOT_AI_MODEL", DEFAULT_MODEL)
-        normalized = model.strip()
-        return normalized or DEFAULT_MODEL
+        return _model_for(AISettings._resolve_provider())
 
     @staticmethod
     def _resolve_api_key() -> str | None:
-        configured = os.environ.get("OPSPILOT_AI_API_KEY")
-        if configured and configured.strip():
-            return configured.strip()
-
-        fallback = os.environ.get("ANTHROPIC_API_KEY")
-        if fallback and fallback.strip():
-            return fallback.strip()
-
-        return None
+        provider = AISettings._resolve_provider()
+        key = _key_for(provider)
+        if provider == "ollama" and key == "local":
+            return None
+        return key
 
     @property
     def provider(self) -> str:

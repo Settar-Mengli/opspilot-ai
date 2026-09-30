@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import os
+from typing import Any
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
 
 
 def error_body(*, code: str, message: str, details: object | None = None) -> dict[str, object]:
@@ -12,6 +17,28 @@ def error_body(*, code: str, message: str, details: object | None = None) -> dic
     if details is not None:
         err["details"] = details
     return {"error": err}
+
+
+def _debug_errors_enabled() -> bool:
+    return os.environ.get("OPSPILOT_DEBUG_ERRORS", "").strip().lower() in _TRUTHY
+
+
+def sanitize_validation_details(errors: list[Any]) -> list[dict[str, Any]]:
+    """F-03: codes/paths only unless OPSPILOT_DEBUG_ERRORS=1."""
+    if _debug_errors_enabled():
+        return list(errors)
+    sanitized: list[dict[str, Any]] = []
+    for item in errors:
+        if not isinstance(item, dict):
+            sanitized.append({"type": "validation_error"})
+            continue
+        sanitized.append(
+            {
+                "type": str(item.get("type", "validation_error")),
+                "loc": item.get("loc", []),
+            }
+        )
+    return sanitized
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -22,7 +49,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             content=error_body(
                 code="validation_error",
                 message="Request validation failed.",
-                details=exc.errors(),
+                details=sanitize_validation_details(list(exc.errors())),
             ),
         )
 

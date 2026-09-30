@@ -27,6 +27,11 @@ Free-form prose parsing; instructor/library wrappers only.
 
 - B2/B3: unvalidated model JSON never becomes domain state; schema failures retry once then fail closed.
 
-## Consequences
+## Addendum (B2, 2026-09-29) — structured output contracts
 
-Eval cases can assert schemas; adapter code shrinks around shared validation.
+- Prefer native schema/mode where the provider accepts it; always `model_validate` after `extract_json_object`.
+- **Gemini** `generationConfig.responseSchema` (generateContent): subset of OpenAPI 3.0 Schema — **no `$ref` / `$defs`**; strip unsupported keywords; never drop property *names* that collide with metadata keywords (e.g. field `title`). Doc: [Gemini API structured output](https://ai.google.dev/gemini-api/docs/structured-output) (`responseMimeType` + `responseSchema`).
+- **Groq** strict (`openai/gpt-oss*`): every object needs `additionalProperties: false` and `required` covering all properties (Groq structured-outputs docs). Other Groq models stay `json_object`.
+- **json_object** providers (mistral, cloudflare, openrouter): schema reminder in prompt; robust fence/prose extraction; adequate `max_tokens`.
+- Schema/format HTTP 400 → one same-provider `json_object` retry (budget debit + `LlmCall` row) then failover.
+- **Empty contract:** if the structured task input is non-empty, an empty answer list/object that omits required content is a **validation failure** (insights: `insights` `min_length=1`; triage: all reason fields `min_length=1`). Truly empty insights queue → soft path without LLM. Briefing remains prose (not structured).

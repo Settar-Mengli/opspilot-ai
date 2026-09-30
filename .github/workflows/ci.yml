@@ -62,7 +62,6 @@ jobs:
       DATABASE_URL: postgresql+psycopg://opspilot:opspilot@localhost:5432/opspilot_test
       OPSPILOT_FORCE_RULES: "1"
       ANTHROPIC_API_KEY: sk-ant-test-fake
-      OPSPILOT_AI_API_KEY: sk-ant-test-fake
 
     steps:
       - name: Checkout
