@@ -1125,6 +1125,88 @@ Red commits and fix-forward: `9ba9190` OpenAPI drift -> `8b6043b`; `a3f6333` / `
 | Merge CI | [36899500943](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36899500943) **success** |
 | PART 12 tip SHA | `840fc50` (fills PART 12 `_(tip)_` row) |
 
+### Neon 0008 (process record - not STOP LIVE approval)
+
+| Item | Value |
+|---|---|
+| Host label | `ep-withered-dew-b528cx5k-pooler.c-7.us-east-2.aws.neon.tech` |
+| Observed at closeout check | `alembic_version` already `0008_ask_hitl_send`; tables `mail_drafts` / `mail_send_audit` present |
+| Observed counts (read-only) | `work_items` **63**, `llm_calls` **124** |
+| How / when applied | **Deviation:** applied without recorded owner go. Most likely `uv run alembic upgrade head` during C1 (`d698f84` era) while repo `.env` `DATABASE_URL` pointed at Neon (host confirmed only at later read-only check). Exact upgrade command+host pair was **not** logged at apply time. |
+| Expand-only claim | New tables only per migration file; **no existing-table data-change claim** until owner verifies at STOP LIVE |
+
+**Do not treat this section as STOP LIVE complete.**
+
+### STOP VISUAL (pending owner gallery)
+
+Refreshed this batch (container CI actuals) -- **owner approval not recorded before proceeding**:
+
+- `ask-error-chromium-375-linux.png` (**375 - owner approval required**)
+- `ask-error-chromium-768-linux.png`
+- `ask-error-chromium-1280-linux.png`
+
+Unchanged but listed for gallery: `ask-empty` / `ask-with-messages` / `ask-docked-empty` / `ask-docked-messages` at 375/768/1280 as applicable.
+
+### Live smoke
+
+**Not run in fix-pass.** Counts-only STOP LIVE remains owner-owned (see runbook at fix-pass STOP).
+
+### Deviations
+
+| ID | Note |
+|---|---|
+| OpenAPI/e2e lag | C3/C4/C5 red until generated.ts + SSE mocks + ask-error baselines fixed forward |
+| Neon 0008 without owner go | 0008 present on Neon without recorded owner approval before apply; expand-only intent; verify at STOP LIVE |
+| STOP SCOPE | Proceeded without recorded owner approval of STOP SCOPE before build continuation |
+| STOP VISUAL | Proceeded / PR opened without recorded owner gallery approval of refreshed ask-error baselines (incl. 375) |
+| Live send | Deferred to owner reconnect + allowlist; hermetic gates cover DEMO_MODE/allowlist |
+
+### Fix-pass (post-build audit) - hermetic only
+
+- Tip before fix-pass: `70cafed` (PR #40).
+- Local hermetic after fixes: **333** passed; coverage TOTAL **82.46%** (preflight baseline >=82%; CI fail-under 72).
+- No live provider calls; no Google API; no Neon writes in fix-pass.
+- Visual: **no visual change** (no baseline refresh this pass).
+- Alembic head on branch: **0009_mail_send_audit_failed** (expand-only `send_failed` + `error_code`).
+
+### CI (branch commits)
+
+| SHA | Subject | CI |
+|---|---|---|
+| `0a4f5d5` | feat(evals): B3.1 live guards (checkpoint, selection, local-DB, ceiling) | success ([36883926570](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36883926570)) |
+| `6eeed06` | docs: B3.1 truth slice -- README, architecture, ROADMAP, SoT rules | success ([36885051568](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36885051568)) |
+| `bae7c16` | docs(architecture): rephrase B2.1 migration 0005 as historical | success ([36886871974](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36886871974)) |
+| `633d882` | docs(evals): Cloudflare D5 live + combined CF leaderboard | success ([36888069905](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36888069905)) |
+| `93ea59b` | docs(evals): OpenRouter D6 live triage 001-015 + leaderboard | success ([36889976709](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36889976709)) |
+| `d95de78` | docs(b3.1): PART 12 closeout; OR stop at D6; CURRENT bump; next B5 | success ([36896021342](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36896021342)) |
+| _(tip)_ | docs(b3.1): PART 12 tip fill (PR #39 + closeout CI) | CI run on PR checks |
+
+### PR
+
+- PR: [#39](https://github.com/Settar-Mengli/opspilot-ai/pull/39) on branch `b3.1/live-remainder`.
+- Closeout records SHA: `d95de78`. Tip-fill commit SHA = this tip row after push.
+- Agent does **not** merge; owner merges after CI green.
+- **Merge SHA + merge CI run id:** record in **B5** first PART (not here).
+
+## PART 13 -- B5 Agentic Ask + HITL send -- 2026-10-01
+
+### Summary
+
+- Branch: `b5/agentic-ask` cut from `origin/main` @ `1a6fe7d` (B3.1 merged).
+- Scope: M6+M7 (JSON-emulated agent loop, SSE Ask, HITL approve/send, `gmail.send`), Gmail `messageDeleted` local removal, DM-09 `ttft_ms` on Ask, hermetic `ask_agent` + `redteam_agent`, Alembic **0008**.
+- SoT docs updated this batch (ROADMAP B5 DONE; OUT items reassigned; architecture CURRENT through B5; D-007 -> deps+U9).
+- **Next after merge:** **B6**.
+- Agent does **not** merge.
+
+### B3.1 merge facts (recorded here per PART 12 deferral)
+
+| Item | Value |
+|---|---|
+| PR | [#39](https://github.com/Settar-Mengli/opspilot-ai/pull/39) |
+| Merge SHA | `1a6fe7d` |
+| Merge CI | [36899500943](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36899500943) **success** |
+| PART 12 tip SHA | `840fc50` (fills PART 12 `_(tip)_` row) |
+
 ### Neon 0008 (STOP LIVE)
 
 | Item | Value |
@@ -1179,7 +1261,9 @@ Unchanged but listed for gallery: `ask-empty` / `ask-with-messages` / `ask-docke
 | `d38b82e` | test(evals): hermetic ask_agent + agentic red-team | success ([36913317914](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36913317914)) |
 | `d46be56` | test(ui): vitest mail edit/approve client paths | success ([36914131594](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36914131594)) |
 | `3f438da` | docs(b5): SoT closeout PART 13 + ROADMAP/architecture | failure (UTF-8 in PART; fixed forward) |
-| _(tip)_ | docs(b5): PART 13 UTF-8 fix + tip CI | CI run on this push / PR |
+| `70cafed` | fix(docs): write PART 13 as UTF-8 | success ([36916317365](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36916317365)) |
+| `8875e75` | fix(b5): abort/timeout, HITL harden, CSRF, minimized tool_end | success ([36919502155](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36919502155); PR [36919507129](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36919507129)) |
+| _(tip)_ | docs(b5): fix-pass PART 13 + CURRENT-after-B5-merge wording | _(after push)_ |
 
 ### PR
 

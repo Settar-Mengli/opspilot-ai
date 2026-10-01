@@ -1,6 +1,6 @@
 # OpsPilot Architecture
 
-**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B5** (agentic Ask + HITL send) plus **B3.1** live leaderboard closeout. Sections labeled **TARGET** describe the remaining locked rebuild (**B6–B7** only). Do not present TARGET as shipped.
+**Dualism:** Sections labeled **CURRENT after B5 merge** describe behavior once B5 lands on `main` (agentic Ask + HITL send) plus **B3.1** live leaderboard closeout already on `main`. Until B5 merges, treat B5 bullets as **branch CURRENT** (not yet on `main`). Sections labeled **TARGET** describe the remaining locked rebuild (**B6–B7** only). Do not present TARGET as shipped.
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
@@ -17,9 +17,9 @@ Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs
 
 ---
 
-## CURRENT (B1–B5 on main path; B3.1 live closeout)
+## CURRENT (B1–B4 on main; B5 on branch — CURRENT after B5 merge)
 
-Verified through **B5** branch (cut from `main` @ `1a6fe7d` after B3.1 merge): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, Alembic head **0008**, `/api/v1` with envelope, FE on `/api/v1`, coverage fail-under **72**, Node ≥24.15 / Python 3.13 / uv.
+Verified through **B5** branch (cut from `main` @ `1a6fe7d` after B3.1 merge; **not yet on main**): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, Alembic head **0009** (expand-only on `mail_send_audit`), `/api/v1` with envelope, FE on `/api/v1`, coverage fail-under **72**, Node ≥24.15 / Python 3.13 / uv.
 
 **B1.5a:** Playwright visual/e2e/axe safety net with container-only `-linux` baselines; CSS partials; `useOverlay`; D-026/D-027.
 
@@ -35,7 +35,7 @@ Verified through **B5** branch (cut from `main` @ `1a6fe7d` after B3.1 merge): h
 
 **B3.1 (CURRENT):** live guards; CF D5 + CF combined 60/60; OpenRouter partial D6; merge SHA **`1a6fe7d`** (PR #39).
 
-**B5 (CURRENT):** `opspilot.agent` JSON-emulated tool loop (D-031); caps 5/8; `POST /ask/stream` SSE (D-032); HITL mail draft edit/approve + allowlist + DEMO_MODE (D-033); `gmail.send`; deleted-message sync; Alembic **0008** (`mail_drafts`, `mail_send_audit`); hermetic `ask_agent` + `redteam_agent` evals.
+**B5 (CURRENT after B5 merge):** `opspilot.agent` JSON-emulated tool loop (D-031); caps 5/8; `POST /ask/stream` SSE (D-032); HITL mail draft edit/approve + allowlist + DEMO_MODE (D-033); `gmail.send`; deleted-message sync; Alembic **0008**/**0009** (`mail_drafts`, `mail_send_audit` + failed/error_code); hermetic `ask_agent` + `redteam_agent` evals.
 
 ### Endpoints (CURRENT) — `/api/v1`
 
