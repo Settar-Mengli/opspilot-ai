@@ -69,14 +69,18 @@ def _sync_gmail(
         cursor_kind=sync_cursors.CURSOR_GMAIL_HISTORY,
     )
     ids: list[str]
+    deleted_ids: list[str] = []
     if cursor:
         hist = client.history_message_ids(start_history_id=cursor)
         if hist is None:
             ids = client.list_message_ids(max_results=50)
         else:
-            ids = hist
+            ids, deleted_ids = hist
     else:
         ids = client.list_message_ids(max_results=50)
+
+    for mid in deleted_ids:
+        work_items.delete_by_provider_id(session, provider_id=mid)
 
     upserted = 0
     for mid in ids:

@@ -121,28 +121,37 @@ class GmailClient:
             raise GoogleHttpError("gmail_get_failed", status_code=resp.status_code)
         return parse_message(resp.json())
 
-    def history_message_ids(self, *, start_history_id: str) -> list[str] | None:
-        """Return new message ids, or None if history expired (caller should full sync)."""
+    def history_message_ids(self, *, start_history_id: str) -> tuple[list[str], list[str]] | None:
+        """Return (added_ids, deleted_ids), or None if history expired (caller should full sync)."""
         resp = self._transport.request(
             "GET",
             f"{GMAIL_API}/users/me/history",
             headers=self._headers(),
-            params={"startHistoryId": start_history_id, "historyTypes": "messageAdded"},
+            params={
+                "startHistoryId": start_history_id,
+                "historyTypes": "messageAdded,messageDeleted",
+            },
         )
         if resp.status_code == 404:
             return None
         if resp.status_code >= 400:
             raise GoogleHttpError("gmail_history_failed", status_code=resp.status_code)
-        ids: list[str] = []
+        added: list[str] = []
+        deleted: list[str] = []
         for entry in resp.json().get("history") or []:
             if not isinstance(entry, dict):
                 continue
-            for added in entry.get("messagesAdded") or []:
-                if isinstance(added, dict):
-                    msg = added.get("message") or {}
+            for added_entry in entry.get("messagesAdded") or []:
+                if isinstance(added_entry, dict):
+                    msg = added_entry.get("message") or {}
                     if isinstance(msg, dict) and msg.get("id"):
-                        ids.append(str(msg["id"]))
-        return ids
+                        added.append(str(msg["id"]))
+            for deleted_entry in entry.get("messagesDeleted") or []:
+                if isinstance(deleted_entry, dict):
+                    msg = deleted_entry.get("message") or {}
+                    if isinstance(msg, dict) and msg.get("id"):
+                        deleted.append(str(msg["id"]))
+        return added, deleted
 
     def send_reply(
         self,

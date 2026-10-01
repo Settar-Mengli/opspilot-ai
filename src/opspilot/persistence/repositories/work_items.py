@@ -75,6 +75,16 @@ def upsert_by_provider_id(
     return row.id
 
 
+def delete_by_provider_id(session: Session, *, provider_id: str) -> bool:
+    """Delete a work item by Gmail message id. Returns True if a row was deleted."""
+    row = session.scalars(select(WorkItemRow).where(WorkItemRow.provider_id == provider_id)).one_or_none()
+    if row is None:
+        return False
+    session.delete(row)
+    session.flush()
+    return True
+
+
 def _gmail_untriaged_filter() -> Any:
     has_decision = exists(select(TriageDecisionRow.id).where(TriageDecisionRow.work_item_id == WorkItemRow.id))
     return (WorkItemRow.source_type == "gmail") & (~has_decision)
