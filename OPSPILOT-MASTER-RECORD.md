@@ -957,6 +957,24 @@ F-INS, NB-4, NB-3/C13, Connections connect/sync, WeekPanel from `GET /calendar/w
 
 **STOP LIVE pending owner** `google setup done` (Google Cloud Testing client + Neon + Fernet/session secrets). Hermetic tests cover PKCE/CORS/sync fakes.
 
+
+### Live-smoke findings (STOP LIVE fix-forward)
+
+Operator live smoke on Neon (post-OAuth sync succeeded; WeekPanel showed real Calendar events) exposed:
+
+| ID | Finding | Fix |
+|----|---------|-----|
+| G1 | `POST /runs` always triaged `sample_input.json` and re-imported it; never read synced `gmail` work_items | DB ingest when `is_connected`; skip sample import |
+| G2 | OAuth callback did not require Gmail+Calendar scopes; missing `scope` in token response was invented as full `SCOPES` | Required-scope gate; never invent; incomplete → redirect `oauth_error=grant_required` |
+| G3 | `google_reauth_required` showed only an error string; no Reconnect/Disconnect | Reconnect (OAuth start) + `DELETE /oauth/google` (revoke, delete credential+cursors, clear cookie; keep synced rows) |
+| G4 | Sync now did not trigger triage | Post-sync `triage_connected_gmail`; UI `Synced N mail, M meetings — triaged K` |
+
+**Deviation — C5 default ingest reported done but not implemented:** B4 C5 docs/progress claimed connected default ingest; CURRENT code until this fix-forward still filed-ingested sample only. Corrected here.
+
+**Dashboard:** SAMPLE badge hidden when `google_connected` (fixtures remain disconnected → no baseline refresh for that state).
+
+**Visuals:** No STOP VISUAL refresh in this fix-forward — e2e fixtures keep `google_connected: false`, so connected Disconnect / SAMPLE-off states are not in the approved baseline set.
+
 **Dotenv / DATABASE_URL (STOP LIVE prep):** `alembic/env.py`, API `create_app` / `config.settings`, and `get_database_url()` all call `load_repo_dotenv()` (same `load_dotenv()` pattern as eval/pipeline CLIs; existing env wins). Fallback remains local Docker default when unset. Logs and `uv run python -m opspilot.jobs.db_host` print only `database host=<first-label>` (never the URL). Pytest pins local `DATABASE_URL` when unset so hermetic runs cannot pick Neon from `.env`.
 
 ### Follow-ups
@@ -979,3 +997,11 @@ B3.1 live days after B4 merge · B5 send · B7 public hardening.
 | `09e635a` | chore(ui): STOP VISUAL baselines | success (UI Tests run `36797010023`) |
 | `b756905` | docs(b4): PART 10 | failure (Backend ruff format UTF-8; fixed forward) |
 | `76f78e8` | docs(b4): PART 10 UTF-8 + gallery | success |
+| `d9d968a` | fix(db): load repo .env for alembic/API | success |
+| `5aa1861` | fix(auth): require Gmail+Calendar scopes | failure (FE lint; fixed forward) |
+| `7a6239c` | fix(ui): grant-required message lint | success |
+| `5c17f39` | feat(api): DB gmail ingest when connected | success |
+| `f83dc74` | feat(api): post-sync triage | success |
+| `c4500f4` | feat(auth): Disconnect / Reconnect | failure (OpenAPI drift; fixed forward) |
+| `97f5707` | fix(api): OpenAPI disconnect route | (CI) |
+| `11ca10c` | feat(ui): hide Sample when connected | (CI) |
