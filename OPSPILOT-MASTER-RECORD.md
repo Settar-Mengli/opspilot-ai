@@ -902,3 +902,119 @@ Harness `b3-live/v2`, `observe=True`. Artifacts: `docs/evals/results/smoke-*-pre
 | `62329d5` | docs(b3): append closeout SHA CI row to PART 9 | [36786823619](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36786823619) |
 
 No red commits in `main..HEAD` (each SHA’s recorded workflow conclusion = **success**). PR-tip CI for any subsequent docs-only SHA is verified via `gh pr checks` on the open PR.
+## PART 10 -- B4 Real Gmail + Google Calendar -- 2026-09-30
+
+**Branch:** `b4/gmail-calendar` · **Baseline:** `main` @ `da81fae` (CI run `36790968616` success).
+**Locks:** L1-L15 + A1 (CORS credentials, 127.0.0.1 FE/API) + owner decisions (D-007 re-defer, RUNS FE out, Meeting in 0007, fixed loopback, B3.1 after B4).
+
+### Schema
+
+Alembic `0007_gmail_calendar`: `work_items.provider_id`/`thread_id`, `oauth_credentials` (Fernet `bytea`), `sync_cursors`, `meetings`.
+
+### OAuth / session / DEMO
+
+- PKCE Web client; redirect `http://127.0.0.1:8000/api/v1/oauth/google/callback`.
+- Scopes: openid/email + gmail.readonly + calendar.readonly.
+- `TOKEN_ENCRYPTION_KEY` Fernet; `OPSPILOT_SESSION_SECRET` cookie; `OPSPILOT_DEMO_MODE`.
+- D-016 addendum; **D-030** operator session + CORS A1.
+- Sync via Connections UI (no curl cookie smoke).
+
+### UI
+
+F-INS, NB-4, NB-3/C13, Connections connect/sync, WeekPanel from `GET /calendar/week`, Settings demo/google rows.
+
+**STOP VISUAL** refreshed basenames (all `*-linux.png`; container-only D-026) — 13 files:
+
+1. `connections-chromium-375-linux.png`
+2. `connections-chromium-768-linux.png`
+3. `connections-chromium-1280-linux.png`
+4. `connections-modal-chromium-375-linux.png`
+5. `connections-modal-chromium-768-linux.png`
+6. `connections-modal-chromium-1280-linux.png`
+7. `week-open-chromium-375-linux.png`
+8. `week-open-chromium-768-linux.png`
+9. `week-open-chromium-1280-linux.png`
+10. `settings-chromium-375-linux.png`
+11. `settings-chromium-768-linux.png`
+12. `settings-chromium-1280-linux.png`
+13. `settings-rail-active-chromium-1280-linux.png`
+
+**375 files (owner gallery):** (1) `connections-chromium-375-linux.png`, (4) `connections-modal-chromium-375-linux.png`, (7) `week-open-chromium-375-linux.png`, (10) `settings-chromium-375-linux.png`.
+
+**Owner gallery:** visual **approved** for the 13 PNGs above (2026-09-30). `MAX_DIFF_PIXELS` unchanged.
+
+### Process deviations (B4)
+
+| Deviation | Record |
+|-----------|--------|
+| (a) OAuth/sync before STOP GOOGLE-SETUP | C3-C5 built with hermetic fake Google clients only; live Google Cloud / Neon / secrets deferred to STOP LIVE. |
+| (b) C11 past STOP VISUAL | PART 10 / docs committed at `b756905` before owner gallery approval of the 13 baselines. |
+| (c) Red tip `b756905` | Backend Ruff format failed: invalid UTF-8 (`0x97`) in PART 10 title; fixed forward in `76f78e8`. |
+| (d) Coverage TOTAL | Pre-merge audit local `pytest --cov`: **82.46%** (down from informal **84%** bar cited in audits). CI ratchet remains `--cov-fail-under=72` (`.github/workflows/ci.yml`); tip Backend Tests green. Not a B4 product regression — floor met; informal 84% not the CI gate. |
+
+### Live smoke
+
+**STOP LIVE complete** (operator, 2026-10-01) on Neon + Google OAuth Testing.
+
+**Steps (operator):** (1) API+FE local with `.env` DATABASE_URL=Neon, Fernet/session secrets, Google Web client; (2) Connect Google (Gmail+Calendar scopes); (3) Sync now; (4) WeekPanel + Priorities; (5) Sync again for incremental + next triage batch.
+
+**Results (counts only; no mail bodies/subjects):** Connect OK; incremental Calendar sync OK; capped triage drained **50/50** gmail items (`OPSPILOT_SYNC_TRIAGE_CAP=10` batches). Neon after smoke: gmail work_items **50**, non-gmail sample rows **13** (retained), gmail triage_decisions **50**, sample triage_decisions **13**, meetings **4**, sync_cursors **2**, runs **6**. G7 filter hides sample in connected UI without deleting Neon rows. Hermetic tests cover PKCE/CORS/sync fakes + G1-G7.
+
+### Live-smoke findings (STOP LIVE fix-forward)
+
+Operator live smoke on Neon (post-OAuth sync succeeded; WeekPanel showed real Calendar events) exposed:
+
+| ID | Finding | Fix |
+|----|---------|-----|
+| G1 | `POST /runs` always triaged `sample_input.json` and re-imported it; never read synced `gmail` work_items | DB ingest when `is_connected`; skip sample import |
+| G2 | OAuth callback did not require Gmail+Calendar scopes; missing `scope` in token response was invented as full `SCOPES` | Required-scope gate; never invent; incomplete -> redirect `oauth_error=grant_required` |
+| G3 | `google_reauth_required` showed only an error string; no Reconnect/Disconnect | Reconnect (OAuth start) + `DELETE /oauth/google` (revoke, delete credential+cursors, clear cookie; keep synced rows) |
+| G4 | Sync now did not trigger triage | Post-sync `triage_connected_gmail`; UI `Synced N mail, M meetings -- triaged K` |
+| G5 | Incremental Calendar sync sent `syncToken` with `showDeleted=false` (and window params); Google 400 `calendar_list_failed`; unhandled `GoogleHttpError` became bare 500 / CORS "Failed to fetch" | `list_events`: syncToken alone (+ pageToken/maxResults); cancelled -> delete meeting; `post_sync` maps `GoogleHttpError` -> 502 `google_sync_failed` with `details.status_code` |
+| G6 | Post-sync triage of all gmail rows (~50) exceeded RUN_TIMEOUT_SECONDS (120); ThreadPoolExecutor shutdown(wait=True) held the request Session open; rollback InternalError masked 504 as bare 500; sync txn risked rolling back with triage | Commit sync before triage; untriaged-only + OPSPILOT_SYNC_TRIAGE_CAP (default 10) on fresh Session; timeout shutdown(wait=False); rollback_failed logs and re-raises original; UI `triaged K (P pending)`; background-job triage deferred to B6 |
+| G7 | Pre-fix sample work_items/triage (13) mixed into connected triage list/briefing/ask context with Gmail items | When `is_connected`, triage/briefing/ask/evening/insights use `source_type=gmail` only; sample surfaces only when disconnected (rows kept in Neon; no delete-in-code) |
+
+**Deviation — C5 default ingest reported done but not implemented:** B4 C5 docs/progress claimed connected default ingest; CURRENT code until this fix-forward still filed-ingested sample only. Corrected here.
+
+**Dashboard:** SAMPLE badge hidden when `google_connected` (fixtures remain disconnected -> no baseline refresh for that state).
+
+**Visuals:** No STOP VISUAL refresh in this fix-forward — e2e fixtures keep `google_connected: false`, so connected Disconnect / SAMPLE-off states are not in the approved baseline set.
+
+**Dotenv / DATABASE_URL (STOP LIVE prep):** `alembic/env.py`, API `create_app` / `config.settings`, and `get_database_url()` all call `load_repo_dotenv()` (same `load_dotenv()` pattern as eval/pipeline CLIs; existing env wins). Fallback remains local Docker default when unset. Logs and `uv run python -m opspilot.jobs.db_host` print only `database host=<first-label>` (never the URL). Pytest pins local `DATABASE_URL` when unset so hermetic runs cannot pick Neon from `.env`.
+
+### Follow-ups
+
+See ROADMAP **Open findings** (every deferred item has an owner batch). Highlights: G6 background-job triage -> **B6**; F-01/F-02/F-13 + `/ready` -> **B7**; B3.1 live days; deps+U9 / OD batch; Gmail deleted-message removal -> **B5**.
+
+### CI (branch; tip = final records commit)
+
+Red commits and fix-forward: `9ba9190` OpenAPI drift -> `8b6043b`; `a3f6333` / `92f395c` / `9aa34b4` visual -> `09e635a`; `b756905` UTF-8 ruff -> `76f78e8`; `5aa1861` FE lint -> `7a6239c`; `c4500f4` OpenAPI disconnect -> `97f5707`.
+
+| SHA | Subject | CI |
+|---|---|---|
+| `8d392c1` | chore(b4): Dependabot / D-007 / env placeholders | success ([36791876895](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36791876895)) |
+| `6cfb358` | feat(db): schema 0007 | success ([36792581775](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36792581775)) |
+| `f94395a` | feat(db): Fernet + repos | success ([36793333645](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36793333645)) |
+| `9ba9190` | feat(auth): OAuth PKCE + CORS A1 | failure OpenAPI drift ([36794029900](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36794029900)); fixed by `8b6043b` |
+| `8b6043b` | feat(b4): sync + OpenAPI | success ([36794729666](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36794729666)) |
+| `cb7a22f` | fix(ui): F-INS + NB-4 | success ([36795409667](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36795409667)) |
+| `a3f6333` | feat(ui): Connections A1 | failure visual ([36796072477](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36796072477)); fixed by `09e635a` |
+| `92f395c` | feat(ui): WeekPanel calendar | failure visual ([36796830117](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36796830117)); fixed by `09e635a` |
+| `9aa34b4` | feat(ui): Settings status | failure visual ([36796832479](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36796832479)); fixed by `09e635a` |
+| `09e635a` | chore(ui): STOP VISUAL baselines | success ([36797010023](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36797010023)) |
+| `b756905` | docs(b4): PART 10 | failure UTF-8 ruff ([36797636353](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36797636353)); fixed by `76f78e8` |
+| `76f78e8` | docs(b4): PART 10 UTF-8 + gallery | success ([36799197648](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36799197648)) |
+| `d9d968a` | fix(db): load repo .env for alembic/API | success ([36806034688](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36806034688)) |
+| `5aa1861` | fix(auth): require Gmail+Calendar scopes | failure FE lint ([36812002725](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36812002725)); fixed by `7a6239c` |
+| `7a6239c` | fix(ui): grant-required message lint | success ([36812628496](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36812628496)) |
+| `5c17f39` | feat(api): DB gmail ingest when connected | success ([36813139432](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36813139432)) |
+| `f83dc74` | feat(api): post-sync triage | success ([36813637536](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36813637536)) |
+| `c4500f4` | feat(auth): Disconnect / Reconnect | failure OpenAPI ([36814127970](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36814127970)); fixed by `97f5707` |
+| `97f5707` | fix(api): OpenAPI disconnect route | success ([36814692313](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36814692313)) |
+| `11ca10c` | feat(ui): hide Sample when connected | success ([36814915416](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36814915416)) |
+| `2d661cf` | docs(b4): PART 10 live-smoke G1-G4 | success ([36815411443](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36815411443)) |
+| `31f2e0e` | fix(sync): Calendar syncToken / GoogleHttpError (G5) | success ([36817805949](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36817805949)) |
+| `36805cc` | fix(sync): capped untriaged triage (G6) | success ([36819970426](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36819970426)) |
+| `283deb9` | fix(api): hide sample when connected (G7) | success ([36822031979](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36822031979)) |
+| `bf34298` | docs(b4): STOP LIVE closeout + Open findings | CI run on PR checks ([36822810661](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36822810661)) |
+| _(tip)_ | final records commit — CI run on PR checks | CI run on PR checks |

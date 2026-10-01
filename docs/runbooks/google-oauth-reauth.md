@@ -6,22 +6,29 @@ Keep the operator demo Gmail/Calendar refresh token fresh under Google OAuth **T
 
 ## Rules
 
-- Refresh token is stored **encrypted in Neon**.
+- Refresh token is stored **encrypted in Neon** (or local Postgres during hermetic/dev).
 - Encryption key lives in env / GHA secrets — **never** commit the key or plaintext token.
 - **Never log or print** the token (raw or decrypted).
-- Visitors never connect Gmail.
+- Visitors never connect Gmail (`OPSPILOT_DEMO_MODE=1` blocks OAuth).
 
 ## Weekly operator procedure
 
-1. Run the local app OAuth flow as the demo operator account.
-2. App encrypts the new refresh token and writes ciphertext to Neon.
-3. Confirm morning job can decrypt (next GHA run or local smoke).
-4. If auth fails in the morning job: expect Telegram “re-auth needed”; skip sync until this procedure succeeds.
+1. Ensure API listens on `127.0.0.1:8000` and FE on `http://127.0.0.1:5173` (not `localhost` — A1 cookie).
+2. Open Connections → **Connect Google** (or reconnect) as the Testing demo account.
+3. App exchanges auth code + PKCE, Fernet-encrypts the refresh token (`TOKEN_ENCRYPTION_KEY`), writes `oauth_credentials.refresh_token_enc` (`bytea`), and sets `opspilot_operator` session cookie.
+4. Click **Sync now** in the UI (do not paste cookies into curl).
+5. Confirm WeekPanel and triage show synced fictional data.
+6. If morning job (B6) fails auth: expect Telegram “re-auth needed”; skip sync until this procedure succeeds.
 
-## Encryption scheme (document for implementers)
+## Encryption scheme
 
-- Symmetric encryption of the refresh token at rest in Neon (algorithm and key length fixed in B4 implementation ADR/PR).
-- Key rotation: generate new key → re-encrypt row under new key → update GHA/env secret → retire old key. Exact steps to be filled when B4 ships the encryptor; this runbook is the SoT location for that procedure.
+- Algorithm: **Fernet** (`cryptography.fernet`) — AES-128-CBC + HMAC, url-safe base64 key.
+- Env: `TOKEN_ENCRYPTION_KEY` = `Fernet.generate_key()` output (keep secret).
+- Key rotation:
+  1. Generate new key.
+  2. Decrypt existing row(s) with old key; re-encrypt with new key; update DB.
+  3. Update `.env` / GHA secret to the new key; retire old key.
+  4. Never commit either key.
 
 ## Fail-closed morning behavior (B6)
 

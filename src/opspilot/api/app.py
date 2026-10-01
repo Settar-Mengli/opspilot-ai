@@ -13,11 +13,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
-from opspilot.api.errors import register_exception_handlers
-from opspilot.api.v1.routes import router as v1_router
+from opspilot.config.env_load import load_repo_dotenv
+
+# Load repo .env before settings / DB resolve (existing process env wins).
+load_repo_dotenv()
+
+from opspilot.api.errors import register_exception_handlers  # noqa: E402
+from opspilot.api.v1.oauth_routes import router as oauth_router  # noqa: E402
+from opspilot.api.v1.routes import router as v1_router  # noqa: E402
+from opspilot.persistence.db import log_active_database_host  # noqa: E402
 
 LOCAL_UI_ORIGINS = [
-    "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
 
@@ -76,6 +82,9 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
 
 
 def create_app() -> FastAPI:
+    load_repo_dotenv()
+    log_active_database_host(logger=logging.getLogger("opspilot.api"))
+
     root = logging.getLogger()
     if not any(isinstance(f, RequestIdFilter) for f in root.filters):
         root.addFilter(RequestIdFilter())
@@ -88,13 +97,14 @@ def create_app() -> FastAPI:
     application.add_middleware(
         CORSMiddleware,
         allow_origins=LOCAL_UI_ORIGINS,
-        allow_credentials=False,
-        allow_methods=["GET", "POST"],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["Content-Type", "X-Request-ID"],
     )
     application.add_middleware(RequestIdMiddleware)
     register_exception_handlers(application)
     application.include_router(v1_router)
+    application.include_router(oauth_router, prefix="/api/v1")
     return application
 
 

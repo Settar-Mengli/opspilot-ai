@@ -67,11 +67,17 @@ class InsightsRequest(BaseModel):
     )
 
 
-def safe_error(status_code: int, code: str, message: str) -> HTTPException:
-    return HTTPException(
-        status_code=status_code,
-        detail={"error": code, "message": message},
-    )
+def safe_error(
+    status_code: int,
+    code: str,
+    message: str,
+    *,
+    details: object | None = None,
+) -> HTTPException:
+    detail: dict[str, object] = {"error": code, "message": message}
+    if details is not None:
+        detail["details"] = details
+    return HTTPException(status_code=status_code, detail=detail)
 
 
 def safe_artifact_name(raw_name: object) -> str | None:

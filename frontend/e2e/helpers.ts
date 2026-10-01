@@ -96,6 +96,7 @@ export async function mockApi(page: Page, mode: ApiMode = 'ok'): Promise<void> {
   const settings = readJson('settings.json')
   const insights = readJson('insights.json')
   const capabilities = readJson('capabilities.json')
+  const calendarWeek = readJson('calendar-week.json')
   const briefing = readText('briefing.txt')
 
   await page.route('**/api/v1/**', async (route) => {
@@ -138,6 +139,10 @@ export async function mockApi(page: Page, mode: ApiMode = 'ok'): Promise<void> {
     }
     if (pathname.endsWith('/capabilities') && method === 'GET') {
       await fulfillJson(route, capabilities)
+      return
+    }
+    if (pathname.endsWith('/calendar/week') && method === 'GET') {
+      await fulfillJson(route, calendarWeek)
       return
     }
     if (pathname.endsWith('/runs') && method === 'GET') {

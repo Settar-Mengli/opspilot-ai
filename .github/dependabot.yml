@@ -12,6 +12,10 @@ updates:
         versions: [">=25"]
       - dependency-name: "playwright"
       - dependency-name: "@playwright/test"
+      # Baseline-affecting / U9 batch — do not auto-bump until owner U9 refresh
+      - dependency-name: "lucide-react"
+      - dependency-name: "vitest"
+        versions: [">=5"]
     groups:
       frontend-dev-minor-patch:
         applies-to: version-updates

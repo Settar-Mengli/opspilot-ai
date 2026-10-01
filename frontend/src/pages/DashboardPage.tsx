@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getTriage } from '../api/client'
+import { getApiSettings, getTriage } from '../api/client'
 import type { TriageRecord } from '../api/types'
 import { GreetingBlock } from '../components/GreetingBlock'
 import { PrioritiesPanel } from '../components/PrioritiesPanel'
@@ -27,6 +27,7 @@ export function DashboardPage({ userName, assistantName, onAsk, onEveningClick }
   const [error, setError] = useState<string | null>(null)
   const [prioritiesOpen, setPrioritiesOpen] = useState(false)
   const [weekOpen, setWeekOpen] = useState(false)
+  const [googleConnected, setGoogleConnected] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -44,6 +45,11 @@ export function DashboardPage({ userName, assistantName, onAsk, onEveningClick }
         }
       })
       .finally(() => { if (!cancelled) setLoading(false) })
+    getApiSettings()
+      .then(s => {
+        if (!cancelled) setGoogleConnected(s.google_connected === true)
+      })
+      .catch(() => { /* keep default disconnected */ })
     return () => { cancelled = true }
   }, [])
 
@@ -96,6 +102,7 @@ export function DashboardPage({ userName, assistantName, onAsk, onEveningClick }
         urgencyLine={urgencyLine}
         dayShapeLine={dayShapeLine}
         credibilityLine={credibilityLine}
+        showSampleBadge={!googleConnected}
       />
 
       {error && (

@@ -89,6 +89,8 @@ def test_settings_exact_key_set():
     resp = client.get("/api/v1/settings")
     assert resp.status_code == 200
     body = resp.json()
-    assert set(body.keys()) == {"provider", "model", "api_key_set"}
+    assert set(body.keys()) == {"provider", "model", "api_key_set", "demo_mode", "google_connected"}
     assert "api_key_preview" not in body
     assert isinstance(body["api_key_set"], bool)
+    assert isinstance(body["demo_mode"], bool)
+    assert isinstance(body["google_connected"], bool)

@@ -72,6 +72,14 @@ export function SettingsPage() {
               <span className="settings-status-label">API key set</span>
               <span className="settings-status-value">{status?.api_key_set ? 'yes' : 'no'}</span>
             </p>
+            <p className="settings-status-row">
+              <span className="settings-status-label">DEMO_MODE</span>
+              <span className="settings-status-value">{status?.demo_mode ? 'on' : 'off'}</span>
+            </p>
+            <p className="settings-status-row">
+              <span className="settings-status-label">Google connected</span>
+              <span className="settings-status-value">{status?.google_connected ? 'yes' : 'no'}</span>
+            </p>
           </>
         )}
         {errorMessage && <p className="settings-error">{errorMessage}</p>}

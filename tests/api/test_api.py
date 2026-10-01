@@ -39,6 +39,9 @@ class _FakeExecutor:
     def result(self, timeout=None):
         return self._submit_impl()
 
+    def shutdown(self, wait=True, cancel_futures=False):
+        return None
+
 
 @pytest.fixture(autouse=True)
 def _api_uses_test_db(test_database_url: str, db_session: Session):

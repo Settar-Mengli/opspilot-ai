@@ -33,11 +33,19 @@ from opspilot.services.insights import generate_insights
 router = APIRouter(prefix="/api/v1")
 
 
-def _settings_payload() -> dict[str, object]:
+def _settings_payload(session: Session | None = None) -> dict[str, object]:
+    from opspilot.persistence.repositories import oauth_credentials
+    from opspilot.services.operator_session import demo_mode_enabled
+
+    google_connected = False
+    if session is not None:
+        google_connected = oauth_credentials.is_connected(session, provider="google")
     return {
         "provider": ai_settings.provider,
         "model": ai_settings.model,
         "api_key_set": bool(ai_settings.api_key),
+        "demo_mode": demo_mode_enabled(),
+        "google_connected": google_connected,
     }
 
 
@@ -52,13 +60,26 @@ def _artifact_text(session: Session, run_id: str, logical_name: str) -> str | No
     return None if row is None else row.content
 
 
+def _google_connected(session: Session) -> bool:
+    from opspilot.persistence.repositories import oauth_credentials
+
+    return oauth_credentials.is_connected(session, provider="google")
+
+
 def _latest_triage_records(session: Session) -> list[dict[str, Any]]:
-    """Latest triage decisions joined to work items (same shape as GET /triage)."""
-    result = session.execute(
+    """Latest triage decisions joined to work items (same shape as GET /triage).
+
+    When Google is connected, only ``source_type=gmail`` rows are returned so sample
+    work items never mix into the operator queue (G7). Disconnected = all sources.
+    """
+    stmt = (
         select(TriageDecisionRow, WorkItemRow)
         .join(WorkItemRow, TriageDecisionRow.work_item_id == WorkItemRow.id)
         .order_by(desc(TriageDecisionRow.id))
     )
+    if _google_connected(session):
+        stmt = stmt.where(WorkItemRow.source_type == "gmail")
+    result = session.execute(stmt)
     seen: set[str] = set()
     payload: list[dict[str, Any]] = []
     for decision, work_item in result.all():
@@ -80,14 +101,30 @@ def _latest_triage_records(session: Session) -> list[dict[str, Any]]:
     return payload
 
 
+def _latest_named_briefing(session: Session, *, name: str) -> str | None:
+    """Latest run artifact by name; when connected, only runs that triage gmail items."""
+    stmt = select(RunArtifactRow).where(RunArtifactRow.name == name)
+    if _google_connected(session):
+        gmail_run = (
+            select(TriageDecisionRow.run_id)
+            .join(WorkItemRow, TriageDecisionRow.work_item_id == WorkItemRow.id)
+            .where(WorkItemRow.source_type == "gmail")
+            .where(TriageDecisionRow.run_id.is_not(None))
+            .distinct()
+        )
+        stmt = stmt.where(RunArtifactRow.run_id.in_(gmail_run))
+    row = session.execute(stmt.order_by(desc(RunArtifactRow.id)).limit(1)).scalar_one_or_none()
+    return None if row is None else row.content
+
+
 @router.get("/health", response_class=PlainTextResponse)
 def health() -> str:
     return "ok"
 
 
 @router.get("/settings", response_class=JSONResponse)
-def get_settings() -> dict[str, object]:
-    return _settings_payload()
+def get_settings(session: Session = Depends(get_db_session)) -> dict[str, object]:
+    return _settings_payload(session)
 
 
 @router.post("/runs")
@@ -95,6 +132,24 @@ def create_run(
     req: RunPipelineRequest,
     session: Session = Depends(get_db_session),
 ) -> dict[str, object]:
+    from opspilot.persistence.repositories import oauth_credentials
+
+    if oauth_credentials.is_connected(session, provider="google"):
+        from opspilot.api.services.gmail_triage import triage_connected_gmail_fresh
+
+        # G6: triage on a fresh session (same cap as Sync); do not hold the request Session across LLM.
+        triaged = triage_connected_gmail_fresh(run_date=req.date)
+        run_id = str(triaged["run_id"] or "")
+        return {
+            "status": "success",
+            "stdout": (
+                f"OpsPilot AI run completed.\nrun_id: {run_id}\n"
+                f"triaged: {triaged['triaged']} pending: {triaged['pending']}"
+            ),
+            "run_id": run_id or None,
+            "triaged": triaged["triaged"],
+            "pending": triaged["pending"],
+        }
     result = execute_pipeline(req)
     sample = RAW_INPUT_DIR / Path(req.input_file).name
     run_id = persist_pipeline_result(session, result, sample_input=sample)
@@ -134,9 +189,21 @@ def get_run(run_id: str, session: Session = Depends(get_db_session)) -> dict[str
 
 
 @router.get("/triage", response_class=JSONResponse)
-def get_triage(session: Session = Depends(get_db_session)) -> list[dict[str, Any]]:
+def get_triage(
+    session: Session = Depends(get_db_session),
+    limit: int = 100,
+    cursor: str | None = None,
+) -> list[dict[str, Any]]:
     """Latest triage decisions with AI-05 lite subject_or_title from WorkItem."""
-    return _latest_triage_records(session)
+    page_size = max(1, min(limit, 100))
+    records = _latest_triage_records(session)
+    if cursor:
+        try:
+            idx = next(i for i, r in enumerate(records) if r.get("id") == cursor)
+            records = records[idx + 1 :]
+        except StopIteration:
+            records = []
+    return records[:page_size]
 
 
 @router.get("/runs/{run_id}/triage", response_class=JSONResponse)
@@ -157,13 +224,10 @@ def get_run_triage(run_id: str, session: Session = Depends(get_db_session)) -> l
 
 @router.get("/briefing", response_class=PlainTextResponse)
 def get_briefing(session: Session = Depends(get_db_session)) -> str:
-    result = session.execute(
-        select(RunArtifactRow).where(RunArtifactRow.name == "daily_briefing").order_by(desc(RunArtifactRow.id)).limit(1)
-    )
-    row = result.scalar_one_or_none()
-    if row is None:
+    content = _latest_named_briefing(session, name="daily_briefing")
+    if content is None:
         raise safe_error(404, "briefing_not_found", "Briefing not found.")
-    return row.content
+    return content
 
 
 @router.get("/runs/{run_id}/briefing", response_class=PlainTextResponse)
@@ -178,18 +242,13 @@ def get_run_briefing(run_id: str, session: Session = Depends(get_db_session)) ->
 
 @router.get("/ai-briefing", response_class=PlainTextResponse)
 def get_ai_briefing(session: Session = Depends(get_db_session)) -> str:
-    result = session.execute(
-        select(RunArtifactRow).where(RunArtifactRow.name == "ai_briefing").order_by(desc(RunArtifactRow.id)).limit(1)
-    )
-    row = result.scalar_one_or_none()
-    if row is not None:
-        return row.content
-    fallback = session.execute(
-        select(RunArtifactRow).where(RunArtifactRow.name == "daily_briefing").order_by(desc(RunArtifactRow.id)).limit(1)
-    ).scalar_one_or_none()
+    content = _latest_named_briefing(session, name="ai_briefing")
+    if content is not None:
+        return content
+    fallback = _latest_named_briefing(session, name="daily_briefing")
     if fallback is None:
         raise safe_error(404, "briefing_not_found", "No briefing available.")
-    return fallback.content
+    return fallback
 
 
 @router.get("/runs/{run_id}/ai-briefing", response_class=PlainTextResponse)
@@ -268,13 +327,67 @@ def get_inputs() -> dict[str, object]:
 
 
 @router.get("/capabilities")
-def list_capabilities() -> list[Any]:
-    return get_all_capabilities()
+def list_capabilities(session: Session = Depends(get_db_session)) -> list[Any]:
+    from dataclasses import asdict, replace
+
+    from opspilot.capabilities.registry import CapabilityStatus
+    from opspilot.persistence.repositories import oauth_credentials
+
+    connected = oauth_credentials.is_connected(session, provider="google")
+    caps = []
+    for cap in get_all_capabilities():
+        if cap.id in {"email", "calendar"}:
+            status = CapabilityStatus.CONNECTED if connected else CapabilityStatus.AVAILABLE
+            caps.append(asdict(replace(cap, status=status)))
+        else:
+            caps.append(asdict(cap))
+    return caps
 
 
 @router.get("/capabilities/{capability_id}")
-def get_capability_by_id(capability_id: str) -> Any:
+def get_capability_by_id(capability_id: str, session: Session = Depends(get_db_session)) -> Any:
+    from dataclasses import asdict, replace
+
+    from opspilot.capabilities.registry import CapabilityStatus
+    from opspilot.persistence.repositories import oauth_credentials
+
     capability = get_capability(capability_id)
     if capability is None:
         raise safe_error(404, "capability_not_found", "Capability not found.")
-    return capability
+    if capability.id in {"email", "calendar"}:
+        connected = oauth_credentials.is_connected(session, provider="google")
+        status = CapabilityStatus.CONNECTED if connected else CapabilityStatus.AVAILABLE
+        return asdict(replace(capability, status=status))
+    return asdict(capability)
+
+
+@router.get("/calendar/week", response_class=JSONResponse)
+def get_calendar_week(
+    start: str,
+    end: str,
+    session: Session = Depends(get_db_session),
+) -> dict[str, Any]:
+    from datetime import datetime
+
+    from opspilot.persistence.repositories import meetings
+
+    try:
+        start_dt = datetime.fromisoformat(start)
+        end_dt = datetime.fromisoformat(end)
+    except ValueError as exc:
+        raise safe_error(400, "invalid_date_range", "start and end must be ISO datetimes.") from exc
+    if start_dt.tzinfo is None or end_dt.tzinfo is None:
+        raise safe_error(400, "invalid_date_range", "start and end must be timezone-aware.")
+    rows = meetings.list_in_range(session, start=start_dt, end=end_dt)
+    return {
+        "meetings": [
+            {
+                "id": row.id,
+                "provider_id": row.provider_id,
+                "title": row.title,
+                "start_at": row.start_at.isoformat(),
+                "end_at": row.end_at.isoformat(),
+            }
+            for row in rows
+        ]
+    }

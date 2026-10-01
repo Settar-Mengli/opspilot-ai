@@ -63,9 +63,10 @@ def register_exception_handlers(app: FastAPI) -> None:
         if isinstance(detail, dict) and "error" in detail and "message" in detail:
             code = str(detail["error"])
             message = str(detail["message"])
+            details = detail.get("details")
             return JSONResponse(
                 status_code=exc.status_code,
-                content=error_body(code=code, message=message),
+                content=error_body(code=code, message=message, details=details),
             )
         if isinstance(detail, str):
             message = detail

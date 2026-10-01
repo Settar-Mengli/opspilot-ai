@@ -15,8 +15,11 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from opspilot.persistence.db import get_database_url, to_sync_url  # noqa: E402
+from opspilot.config.env_load import load_repo_dotenv  # noqa: E402
+from opspilot.persistence.db import get_database_url, log_active_database_host, to_sync_url  # noqa: E402
 from opspilot.persistence.models import Base  # noqa: E402
+
+load_repo_dotenv()
 
 config = context.config
 if config.config_file_name is not None:
@@ -26,6 +29,7 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
+    log_active_database_host()
     return to_sync_url(get_database_url())
 
 

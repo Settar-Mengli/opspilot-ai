@@ -64,13 +64,17 @@ $env:DATABASE_URL='postgresql+psycopg://opspilot:opspilot@127.0.0.1:5432/opspilo
 uv run uvicorn opspilot.api.app:app --app-dir src --reload --host 127.0.0.1 --port 8000
 ```
 
+Use **127.0.0.1** (not `localhost`) for the API host so the operator session cookie matches the FE origin (A1).
+
 ## Run frontend
 
 ```powershell
 cd frontend
 npm ci
-npm run dev
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
+
+Open **http://127.0.0.1:5173** only. Mixing `localhost` and `127.0.0.1` breaks the cross-port operator cookie (FE→API credentials).
 
 ## Test / lint
 

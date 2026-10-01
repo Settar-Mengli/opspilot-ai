@@ -1,6 +1,6 @@
 from opspilot.models.schemas import WorkItem
 
-VALID_SOURCE_TYPES = {"email", "task", "support_request"}
+VALID_SOURCE_TYPES = {"email", "task", "support_request", "gmail"}
 
 
 def normalize_items(raw_items: list[dict]) -> list[WorkItem]:

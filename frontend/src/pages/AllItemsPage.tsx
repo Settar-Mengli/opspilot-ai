@@ -38,6 +38,7 @@ export function AllItemsPage({ onAsk }: Props) {
   const isDesktop = useMinWidth(1280)
   const [records, setRecords] = useState<TriageRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -46,12 +47,17 @@ export function AllItemsPage({ onAsk }: Props) {
       .then((r) => {
         if (cancelled) return
         setRecords(r)
+        setError(null)
         const first = urgencyOrder
           .flatMap((u) => r.filter((x) => x.urgency === u))
           .at(0)
         setSelectedId(first?.id ?? null)
       })
-      .catch(console.error)
+      .catch((err) => {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : 'Failed to load items.')
+        setRecords([])
+      })
       .finally(() => {
         if (!cancelled) setLoading(false)
       })
@@ -136,6 +142,11 @@ export function AllItemsPage({ onAsk }: Props) {
           <LoopSkeleton />
           <LoopSkeleton />
           <LoopSkeleton />
+        </div>
+      ) : error ? (
+        <div className="fp-intro" role="alert">
+          <BulBulAvatar size={26} />
+          <p className="fp-intro-txt">{error}</p>
         </div>
       ) : isDesktop ? (
         <div className="items-split">

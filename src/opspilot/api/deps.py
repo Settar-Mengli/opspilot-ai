@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterator
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from opspilot.persistence.db import create_sync_engine, create_sync_session_factory, get_database_url
+
+logger = logging.getLogger("opspilot.api.deps")
 
 _engine: Engine | None = None
 _session_factory: sessionmaker[Session] | None = None
@@ -27,9 +30,12 @@ def get_db_session() -> Iterator[Session]:
         try:
             yield session
             session.commit()
-        except Exception:
-            session.rollback()
-            raise
+        except Exception as exc:
+            try:
+                session.rollback()
+            except Exception:
+                logger.exception("rollback_failed")
+            raise exc
 
 
 def reset_db_engine() -> None:

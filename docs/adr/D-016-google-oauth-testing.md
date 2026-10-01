@@ -39,3 +39,22 @@ Operational burden: weekly re-auth. Brief may be stale if auth fails until opera
 ## Blocks
 
 B4, B6, B7.
+
+## Addendum (B4, 2026-09-30)
+
+Implementation locks for B4:
+
+- OAuth **authorization code + PKCE (S256)**; Google Cloud **Web** client.
+- Redirect URI (exact): `http://127.0.0.1:8000/api/v1/oauth/google/callback`.
+- Scopes: `openid`, `email`, `https://www.googleapis.com/auth/gmail.readonly`, `https://www.googleapis.com/auth/calendar.readonly` only.
+- Refresh token Fernet-encrypted in Postgres `bytea`; env key `TOKEN_ENCRYPTION_KEY`.
+- Operator session cookie: see D-030.
+- Testing forever; weekly re-auth runbook remains SoT for rotation steps.
+
+## Addendum (B4 STOP LIVE final, 2026-10-01)
+
+- Required-scope gate: token response must include Gmail + Calendar readonly; never invent missing `scope`; incomplete grant → FE `oauth_error=grant_required`.
+- `DELETE /api/v1/oauth/google` disconnect: best-effort revoke, delete credential + cursors, clear cookie; keep synced work_items/meetings.
+- Sync commits before capped untriaged triage (`OPSPILOT_SYNC_TRIAGE_CAP`, default 10); Calendar `syncToken` requests omit window/`showDeleted=false`.
+- Connected operator surfaces filter to `source_type=gmail` (G7); sample rows may remain in Neon but are not shown while connected.
+- Live smoke on Neon verified (counts in PART 10); visitors never connect Gmail; DEMO_MODE blocks OAuth/sync.

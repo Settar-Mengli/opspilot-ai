@@ -1,0 +1,18 @@
+{
+  "meetings": [
+    {
+      "id": "mtg_fixture_1",
+      "provider_id": "evt_fixture_1",
+      "title": "Northwind sync",
+      "start_at": "2026-09-30T15:00:00+00:00",
+      "end_at": "2026-09-30T16:00:00+00:00"
+    },
+    {
+      "id": "mtg_fixture_2",
+      "provider_id": "evt_fixture_2",
+      "title": "Q3 prep",
+      "start_at": "2026-10-02T14:00:00+00:00",
+      "end_at": "2026-10-02T15:30:00+00:00"
+    }
+  ]
+}

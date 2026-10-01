@@ -113,4 +113,23 @@ export interface ApiSettings {
   provider: string
   model: string
   api_key_set: boolean
+  demo_mode?: boolean
+  google_connected?: boolean
+}
+
+export interface CalendarMeeting {
+  id: string
+  provider_id: string
+  title: string
+  start_at: string
+  end_at: string
+}
+
+export interface SyncResult {
+  account_email: string
+  gmail_upserted: number
+  calendar_upserted: number
+  triaged: number
+  pending: number
+  run_id?: string | null
 }
