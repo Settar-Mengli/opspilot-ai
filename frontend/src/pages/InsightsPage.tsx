@@ -87,7 +87,11 @@ export function InsightsPage({ assistantName, onAsk }: Props) {
       {!loading && !error && insights.length === 0 && (
         <div className="ni-intro">
           <BulBulAvatar size={26} />
-          <p className="ni-intro-txt">Nothing to surface yet. Once patterns form, I'll bring them here.</p>
+          <p className="ni-intro-txt">
+            {intro.trim()
+              ? intro
+              : "Nothing to surface yet. Once patterns form, I'll bring them here."}
+          </p>
         </div>
       )}
 
