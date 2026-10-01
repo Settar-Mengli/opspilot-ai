@@ -1,10 +1,12 @@
 import type {
   ApiSettings,
+  CalendarMeeting,
   Capability,
   InsightsResponse,
   RunMetadata,
   RunPipelineResult,
   RunSummary,
+  SyncResult,
   TriageRecord,
 } from './types'
 
@@ -102,7 +104,7 @@ async function getErrorDetail(response: Response): Promise<unknown> {
 }
 
 async function requestText(path: string): Promise<string> {
-  const response = await fetch(`${API_BASE_URL}${path}`)
+  const response = await fetch(`${API_BASE_URL}${path}`, { credentials: 'include' })
   if (!response.ok) {
     const detail = await getErrorDetail(response)
     throw toApiError(response.status, detail)
@@ -112,7 +114,10 @@ async function requestText(path: string): Promise<string> {
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, init)
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    credentials: 'include',
+  })
   if (!response.ok) {
     const detail = await getErrorDetail(response)
     throw toApiError(response.status, detail)
@@ -281,4 +286,14 @@ export async function getCapabilities(): Promise<Capability[]> {
     throw new Error('Unexpected capabilities response shape')
   }
   return payload as Capability[]
+}
+
+export async function postSync(): Promise<SyncResult> {
+  return requestJson<SyncResult>('/api/v1/sync', { method: 'POST' })
+}
+
+export async function getCalendarWeek(start: string, end: string): Promise<CalendarMeeting[]> {
+  const q = new URLSearchParams({ start, end })
+  const payload = await requestJson<{ meetings?: CalendarMeeting[] }>(`/api/v1/calendar/week?${q}`)
+  return Array.isArray(payload.meetings) ? payload.meetings : []
 }

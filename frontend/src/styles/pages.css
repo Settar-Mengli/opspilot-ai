@@ -666,6 +666,10 @@
   align-items: center;
   gap: 13px;
   padding: 14px 15px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
   background: rgba(250, 249, 245, 0.03);
   border: 0.5px solid rgba(250, 249, 245, 0.08);
   border-radius: 12px;
