@@ -9,7 +9,10 @@ from __future__ import annotations
 
 import os
 
+from opspilot.config.env_load import load_repo_dotenv
 from opspilot.llm.model_defaults import DEFAULT_MODELS, GEMINI_DEFAULT_MODEL
+
+load_repo_dotenv()
 
 DEFAULT_PROVIDER = "gemini"
 DEFAULT_MODEL = GEMINI_DEFAULT_MODEL

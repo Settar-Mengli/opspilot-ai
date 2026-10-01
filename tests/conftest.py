@@ -6,17 +6,29 @@ import os
 from collections.abc import Iterator
 
 import pytest
+
+# Pin local DB before any app/settings import can load Neon from repo .env.
+# CI already sets DATABASE_URL; load_dotenv() does not override existing keys.
+if not os.environ.get("DATABASE_URL", "").strip():
+    os.environ["DATABASE_URL"] = "postgresql+psycopg://opspilot:opspilot@127.0.0.1:5432/opspilot"
+
 from sqlalchemy import create_engine as create_admin_engine
 from sqlalchemy import text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 from tests.db_support import alembic_upgrade as _alembic_upgrade
 
-from opspilot.persistence.db import create_engine, create_session_factory, to_sync_url
+from opspilot.persistence.db import DEFAULT_DATABASE_URL, create_engine, create_session_factory, to_sync_url
 
 TEST_DB_NAME = "opspilot_test"
 ALEMBIC_RT_DB_NAME = "opspilot_alembic_rt"
 DEFAULT_ADMIN_URL = "postgresql+psycopg://opspilot:opspilot@127.0.0.1:5432/postgres"
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Hermetic guard: keep tests on local Postgres if DATABASE_URL was unset."""
+    if not os.environ.get("DATABASE_URL", "").strip():
+        os.environ["DATABASE_URL"] = DEFAULT_DATABASE_URL
 
 
 @pytest.fixture(autouse=True)

@@ -957,6 +957,8 @@ F-INS, NB-4, NB-3/C13, Connections connect/sync, WeekPanel from `GET /calendar/w
 
 **STOP LIVE pending owner** `google setup done` (Google Cloud Testing client + Neon + Fernet/session secrets). Hermetic tests cover PKCE/CORS/sync fakes.
 
+**Dotenv / DATABASE_URL (STOP LIVE prep):** `alembic/env.py`, API `create_app` / `config.settings`, and `get_database_url()` all call `load_repo_dotenv()` (same `load_dotenv()` pattern as eval/pipeline CLIs; existing env wins). Fallback remains local Docker default when unset. Logs and `uv run python -m opspilot.jobs.db_host` print only `database host=<first-label>` (never the URL). Pytest pins local `DATABASE_URL` when unset so hermetic runs cannot pick Neon from `.env`.
+
 ### Follow-ups
 
 B3.1 live days after B4 merge · B5 send · B7 public hardening.
@@ -976,3 +978,4 @@ B3.1 live days after B4 merge · B5 send · B7 public hardening.
 | `9aa34b4` | feat(ui): Settings status | (batch visual) |
 | `09e635a` | chore(ui): STOP VISUAL baselines | success (UI Tests run `36797010023`) |
 | `b756905` | docs(b4): PART 10 | failure (Backend ruff format UTF-8; fixed forward) |
+| `76f78e8` | docs(b4): PART 10 UTF-8 + gallery | success |

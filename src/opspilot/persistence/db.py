@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from collections.abc import Iterator
 
@@ -9,11 +10,33 @@ from sqlalchemy import create_engine as create_sa_engine
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import Session, sessionmaker
 
+from opspilot.config.env_load import load_repo_dotenv
+
 DEFAULT_DATABASE_URL = "postgresql+psycopg://opspilot:opspilot@127.0.0.1:5432/opspilot"
+
+_log = logging.getLogger("opspilot.persistence.db")
 
 
 def get_database_url() -> str:
+    """Resolve DATABASE_URL after loading repo ``.env`` (existing env wins)."""
+    load_repo_dotenv()
     return os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL).strip() or DEFAULT_DATABASE_URL
+
+
+def database_host_label(url: str | None = None) -> str:
+    """First DNS/IP label of the DB host for safe logs — never the full URL or password."""
+    parsed = make_url(url if url is not None else get_database_url())
+    host = (parsed.host or "").strip()
+    if not host:
+        return "(none)"
+    return host.split(".", 1)[0]
+
+
+def log_active_database_host(*, logger: logging.Logger | None = None) -> str:
+    """Log ``database host=<first-label>`` and return that label (never the URL)."""
+    label = database_host_label()
+    (logger or _log).info("database host=%s", label)
+    return label
 
 
 def to_sync_url(url: str | None = None) -> str:
