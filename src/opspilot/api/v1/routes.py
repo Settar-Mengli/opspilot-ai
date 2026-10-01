@@ -60,13 +60,26 @@ def _artifact_text(session: Session, run_id: str, logical_name: str) -> str | No
     return None if row is None else row.content
 
 
+def _google_connected(session: Session) -> bool:
+    from opspilot.persistence.repositories import oauth_credentials
+
+    return oauth_credentials.is_connected(session, provider="google")
+
+
 def _latest_triage_records(session: Session) -> list[dict[str, Any]]:
-    """Latest triage decisions joined to work items (same shape as GET /triage)."""
-    result = session.execute(
+    """Latest triage decisions joined to work items (same shape as GET /triage).
+
+    When Google is connected, only ``source_type=gmail`` rows are returned so sample
+    work items never mix into the operator queue (G7). Disconnected = all sources.
+    """
+    stmt = (
         select(TriageDecisionRow, WorkItemRow)
         .join(WorkItemRow, TriageDecisionRow.work_item_id == WorkItemRow.id)
         .order_by(desc(TriageDecisionRow.id))
     )
+    if _google_connected(session):
+        stmt = stmt.where(WorkItemRow.source_type == "gmail")
+    result = session.execute(stmt)
     seen: set[str] = set()
     payload: list[dict[str, Any]] = []
     for decision, work_item in result.all():
@@ -86,6 +99,22 @@ def _latest_triage_records(session: Session) -> list[dict[str, Any]]:
             }
         )
     return payload
+
+
+def _latest_named_briefing(session: Session, *, name: str) -> str | None:
+    """Latest run artifact by name; when connected, only runs that triage gmail items."""
+    stmt = select(RunArtifactRow).where(RunArtifactRow.name == name)
+    if _google_connected(session):
+        gmail_run = (
+            select(TriageDecisionRow.run_id)
+            .join(WorkItemRow, TriageDecisionRow.work_item_id == WorkItemRow.id)
+            .where(WorkItemRow.source_type == "gmail")
+            .where(TriageDecisionRow.run_id.is_not(None))
+            .distinct()
+        )
+        stmt = stmt.where(RunArtifactRow.run_id.in_(gmail_run))
+    row = session.execute(stmt.order_by(desc(RunArtifactRow.id)).limit(1)).scalar_one_or_none()
+    return None if row is None else row.content
 
 
 @router.get("/health", response_class=PlainTextResponse)
@@ -195,13 +224,10 @@ def get_run_triage(run_id: str, session: Session = Depends(get_db_session)) -> l
 
 @router.get("/briefing", response_class=PlainTextResponse)
 def get_briefing(session: Session = Depends(get_db_session)) -> str:
-    result = session.execute(
-        select(RunArtifactRow).where(RunArtifactRow.name == "daily_briefing").order_by(desc(RunArtifactRow.id)).limit(1)
-    )
-    row = result.scalar_one_or_none()
-    if row is None:
+    content = _latest_named_briefing(session, name="daily_briefing")
+    if content is None:
         raise safe_error(404, "briefing_not_found", "Briefing not found.")
-    return row.content
+    return content
 
 
 @router.get("/runs/{run_id}/briefing", response_class=PlainTextResponse)
@@ -216,18 +242,13 @@ def get_run_briefing(run_id: str, session: Session = Depends(get_db_session)) ->
 
 @router.get("/ai-briefing", response_class=PlainTextResponse)
 def get_ai_briefing(session: Session = Depends(get_db_session)) -> str:
-    result = session.execute(
-        select(RunArtifactRow).where(RunArtifactRow.name == "ai_briefing").order_by(desc(RunArtifactRow.id)).limit(1)
-    )
-    row = result.scalar_one_or_none()
-    if row is not None:
-        return row.content
-    fallback = session.execute(
-        select(RunArtifactRow).where(RunArtifactRow.name == "daily_briefing").order_by(desc(RunArtifactRow.id)).limit(1)
-    ).scalar_one_or_none()
+    content = _latest_named_briefing(session, name="ai_briefing")
+    if content is not None:
+        return content
+    fallback = _latest_named_briefing(session, name="daily_briefing")
     if fallback is None:
         raise safe_error(404, "briefing_not_found", "No briefing available.")
-    return fallback.content
+    return fallback
 
 
 @router.get("/runs/{run_id}/ai-briefing", response_class=PlainTextResponse)
