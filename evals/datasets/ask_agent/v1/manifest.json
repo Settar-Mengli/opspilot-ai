@@ -1,0 +1,6 @@
+{
+  "id": "ask_agent/v1",
+  "description": "Hermetic Ask agent tool-loop cases (B5 / D-031). FakeProvider scripts only.",
+  "n_cases": 6,
+  "notes": "fictional data; no live LLM"
+}

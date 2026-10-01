@@ -27,14 +27,26 @@ def _default_live_out(provider: str) -> Path:
 
 
 def run_hermetic(*, out: Path | None = None) -> dict[str, Any]:
+    from opspilot.evals.dataset import (
+        ASK_AGENT_V1,
+        REDTEAM_AGENT_V1,
+        load_ask_agent_cases,
+        load_redteam_agent_cases,
+    )
+    from opspilot.llm.policy import llm_allowed
+
     report = run_rules_vs_labels()
-    payload = {
+    payload: dict[str, Any] = {
         "mode": "hermetic",
         "created_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "triage_dataset": str(TRIAGE_V1.as_posix()),
         "redteam_dataset": str(REDTEAM_V1.as_posix()),
+        "ask_agent_dataset": str(ASK_AGENT_V1.as_posix()),
+        "redteam_agent_dataset": str(REDTEAM_AGENT_V1.as_posix()),
         "n_triage": len(load_triage_cases()),
         "n_redteam": len(load_redteam_cases()),
+        "n_ask_agent": len(load_ask_agent_cases()),
+        "n_redteam_agent": len(load_redteam_agent_cases()),
         "macro_f1": report["macro_f1"],
         "macro_f1_floor": MACRO_F1_FLOOR,
         "gate_passed": report["macro_f1"] >= MACRO_F1_FLOOR,
@@ -42,6 +54,36 @@ def run_hermetic(*, out: Path | None = None) -> dict[str, Any]:
         # confusion matrices only — no prompt/body text
         "confusion": report.get("confusion", {}),
     }
+    if llm_allowed():
+        try:
+            from opspilot.evals.ask_agent import run_ask_agent_hermetic, run_redteam_agent_hermetic
+            from opspilot.persistence.db import create_engine, create_session_factory, get_database_url
+
+            engine = create_engine(get_database_url())
+            SessionLocal = create_session_factory(engine)
+            with SessionLocal() as session:
+                ask_report = run_ask_agent_hermetic(session)
+                rta_report = run_redteam_agent_hermetic(session)
+                session.commit()
+            payload["ask_agent"] = {
+                "passed": ask_report["passed"],
+                "n": ask_report["n"],
+                "gate_passed": ask_report["gate_passed"],
+            }
+            payload["redteam_agent"] = {
+                "passed": rta_report["passed"],
+                "n": rta_report["n"],
+                "gate_passed": rta_report["gate_passed"],
+            }
+            payload["gate_passed"] = bool(
+                payload["gate_passed"] and ask_report["gate_passed"] and rta_report["gate_passed"]
+            )
+        except Exception as exc:  # noqa: BLE001 — record soft failure; triage gate still reported
+            payload["ask_agent_error"] = type(exc).__name__
+    else:
+        payload["ask_agent"] = {"skipped": "llm_policy"}
+        payload["redteam_agent"] = {"skipped": "llm_policy"}
+
     target = out or _default_hermetic_out()
     write_eval_json(target, payload)
     payload["_out"] = str(target)

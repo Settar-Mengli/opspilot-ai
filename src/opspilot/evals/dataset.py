@@ -20,10 +20,13 @@ def _repo_root() -> Path:
 REPO_ROOT = _repo_root()
 TRIAGE_V1 = REPO_ROOT / "evals" / "datasets" / "triage" / "v1"
 REDTEAM_V1 = REPO_ROOT / "evals" / "datasets" / "redteam" / "v1"
+ASK_AGENT_V1 = REPO_ROOT / "evals" / "datasets" / "ask_agent" / "v1"
+REDTEAM_AGENT_V1 = REPO_ROOT / "evals" / "datasets" / "redteam_agent" / "v1"
 
 
-def load_triage_cases(path: Path | None = None) -> list[dict[str, Any]]:
-    target = path or (TRIAGE_V1 / "cases.jsonl")
+def load_jsonl_cases(target: Path) -> list[dict[str, Any]]:
+    if not target.exists():
+        return []
     cases: list[dict[str, Any]] = []
     for line in target.read_text(encoding="utf-8").splitlines():
         line = line.strip()
@@ -31,6 +34,10 @@ def load_triage_cases(path: Path | None = None) -> list[dict[str, Any]]:
             continue
         cases.append(json.loads(line))
     return cases
+
+
+def load_triage_cases(path: Path | None = None) -> list[dict[str, Any]]:
+    return load_jsonl_cases(path or (TRIAGE_V1 / "cases.jsonl"))
 
 
 def case_to_work_item(case: dict[str, Any]) -> WorkItem:
@@ -46,13 +53,12 @@ def case_to_work_item(case: dict[str, Any]) -> WorkItem:
 
 
 def load_redteam_cases(path: Path | None = None) -> list[dict[str, Any]]:
-    target = path or (REDTEAM_V1 / "attacks.jsonl")
-    if not target.exists():
-        return []
-    cases: list[dict[str, Any]] = []
-    for line in target.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        cases.append(json.loads(line))
-    return cases
+    return load_jsonl_cases(path or (REDTEAM_V1 / "attacks.jsonl"))
+
+
+def load_ask_agent_cases(path: Path | None = None) -> list[dict[str, Any]]:
+    return load_jsonl_cases(path or (ASK_AGENT_V1 / "cases.jsonl"))
+
+
+def load_redteam_agent_cases(path: Path | None = None) -> list[dict[str, Any]]:
+    return load_jsonl_cases(path or (REDTEAM_AGENT_V1 / "attacks.jsonl"))
