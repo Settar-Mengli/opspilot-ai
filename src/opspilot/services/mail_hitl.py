@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from opspilot.integrations.gmail_client import GmailClient
@@ -39,6 +41,17 @@ class MailHitlError(RuntimeError):
         self.code = code
         self.message = message
         self.http_status = http_status
+
+
+def _send_day_lock_key(day_start: datetime) -> int:
+    """Stable signed 63-bit advisory lock key for UTC send-cap day."""
+    digest = hashlib.sha256(f"opspilot_send_cap:{day_start.date().isoformat()}".encode()).digest()
+    return int.from_bytes(digest[:8], "big") & 0x7FFFFFFFFFFFFFFF
+
+
+def _acquire_send_cap_lock(session: Session, day_start: datetime) -> None:
+    """Transaction-scoped advisory lock; released on commit/rollback."""
+    session.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": _send_day_lock_key(day_start)})
 
 
 def _send_max_per_day() -> int:
@@ -163,7 +176,9 @@ def approve_and_send(
         raise MailHitlError("recipient_not_allowlisted", "Recipient not on send allowlist.", http_status=403)
 
     max_day = _send_max_per_day()
-    sent_today = mail_send_audit.count_successful_sends_utc_day(session, day_start=_utc_day_start())
+    day_start = _utc_day_start()
+    _acquire_send_cap_lock(session, day_start)
+    sent_today = mail_send_audit.count_successful_sends_utc_day(session, day_start=day_start)
     if sent_today >= max_day:
         mail_send_audit.insert_audit(
             session,
