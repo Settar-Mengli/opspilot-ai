@@ -13,8 +13,8 @@ Live-only metrics. Hermetic CI gate = rules macro-F1 ≥ 0.30. Anthropic = **ski
 | D3 | mistral | Full re-run after instance-contract prompt (archive prior as attempt1) → **60/60** |
 | D4 | cloudflare | **Partial** first **33/60** corpus (triage only); 100% validity (artifact below) |
 | D5 | cloudflare | Remainder **7 triage + 20 redteam** — **done** (B3.1, 2026-10-01 UTC) |
-| D6 | openrouter | Triage `001`–`015` — **done** (B3.1, 2026-10-01 UTC) |
-| D7–D9 | openrouter | **Pending** — ≤15 cases/day, `--max-requests 30`; conditional D10 resume — **B3.1** |
+| D6 | openrouter | Triage `001`–`015` — **done**; OR stopped here (D-B31-4 amended 2026-10-01) |
+| D7–D9 / D10 | openrouter | **Cancelled** (owner 2026-10-01) — not run; see OPTIONAL backlog |
 | — | anthropic | skipped (P7) |
 
 ## Results (comparable — post D-LIVE-1..11)
@@ -28,13 +28,14 @@ Live-only metrics. Hermetic CI gate = rules macro-F1 ≥ 0.30. Anthropic = **ski
 | D5 | cloudflare | 100% (27/27) | 0.564 (n=7) | 0.0 | 0.150 (3/20) | 0 | [`live-cloudflare-day5.json`](results/live-cloudflare-day5.json) |
 | CF combined | cloudflare | 100% (60/60) | 0.706 (n=40) | 0.0 | 0.150 (3/20) | 0 | [`live-cloudflare-combined.json`](results/live-cloudflare-combined.json) |
 | D6 | openrouter | 100% (15/15) | 0.619 (n=15) | 0.0 (n=15) | N/A (n=0) | 0 (n=0) | [`live-openrouter-day6.json`](results/live-openrouter-day6.json) |
-| D7–D9 | openrouter | — | — | — | — | — | **pending** → B3.1 |
-| OR combined | openrouter | — | — | — | — | — | **pending** until D9/D10 |
+| OR (B3.1 close) | openrouter | **partial** — D6 only | 0.619 (n=15 triage) | 0.0 (n=15) | **N/A** (red-team not run) | 0 (n=0) | D6 artifact only — **no** `live-openrouter-combined.json` |
 | — | anthropic | skipped | skipped | skipped | skipped | skipped | P7 |
 
 Harness: `b3-live/v2`. Pre-closeout smokes (PART 9): Cloudflare 3/3 red-team; OpenRouter 5/5 (`nemotron…:free`) — **not** merged into day artifacts.
 
 **CF combined footnote:** D4 @ `5fbe8f71c3dd0293716147d19d97f86e48548e47` + D5 @ `bae7c164ec0a38f0e096529c1aeef06057aa00a3`; harness `b3-live/v2` unchanged.
+
+**OpenRouter footnote (D-B31-4 amended 2026-10-01):** B3.1 published **partial** OpenRouter only — D6 triage `001`–`015` (n=15, F1 **0.619**); red-team **not run** (ASR **N/A**); D7–D9/D10 and required OR combined artifact **cancelled** to unblock **B5**. Remainder (triage `016`–`040` + red-team 20) is OPTIONAL backlog (no owner batch). Artifact git_sha `633d88236cc292c5bc7a4688bfcd68ab71feced6`; harness `b3-live/v2`.
 
 ## Archives / pre-fix footnotes
 
@@ -77,9 +78,9 @@ Historical † rows (validity 65% Mistral, stale Groq F1 0.286, repair% >1) are 
 
 - OpenRouter triage `triage-v1-001`–`015` (15 cases); `--suite triage`; `--max-requests 30`; requests_used **15**; model `nvidia/nemotron-3-super-120b-a12b:free`
 - Validity **100%** (15/15); accepted-only F1 **0.619** (n=15); repair **0.0** (n=15); ASR **N/A** (n=0 redteam); `blocked_by_defenses` **0** (n=0); rate_limit_events **0**; zero failures
-- OR combined artifact **pending** until D9/D10; git_sha `633d88236cc292c5bc7a4688bfcd68ab71feced6`; harness `b3-live/v2`
+- Owner amended D-B31-4 same day: **stop OR after D6**; D7–D9/D10 + OR combined **cancelled** (not deferred as B3.1 work)
 - Live eval DB: local Postgres only (`database host=127`); LAST_GUARD_SHA `0a4f5d5`; `OPSPILOT_OPENROUTER_ALLOW_PAID` unset; Anthropic disabled
 
 ## Deviations
 
-See master-record **PART 9** (D-GROQ-1/2, D-MISTRAL-1, D-LIVE-1..11, D-CF-WRITE-1). B3.1 OpenRouter D7–D9 (+ conditional D10) still pending. Guard-commit squash deviation → PART 12.
+See master-record **PART 9** (D-GROQ-1/2, D-MISTRAL-1, D-LIVE-1..11, D-CF-WRITE-1) and **PART 12** (guard-commit squash; **D-B31-4 amended 2026-10-01** OR stop at D6).

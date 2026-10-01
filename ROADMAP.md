@@ -21,7 +21,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | **B2** | M2 | LLM gateway + trace hooks (+ Anthropic prepaid gate) |
 | **B2.1** | Hardening | Hardening + truth (docs/toolchain/security/obs) |
 | **B3** | M3 + M4 | Eval platform + injection red-team on **one harness** |
-| **B3.1** | Live remainder | Finish CF D5 + OpenRouter D6–D7 leaderboard under caps |
+| **B3.1** | Live remainder | CF D5 + combined done; OpenRouter **partial** D6 only (D7–D9/D10 cancelled) |
 | **B4** | M5 | Demo Google inbox/calendar |
 | **B5** | M6 + M7 | Agentic Ask + SSE + approve & send |
 | **B6** | M8 + M9 | Morning run (in-runner) + Telegram + preferences → evals |
@@ -29,7 +29,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 **Order:** B0 → B1 → **B1.5a → B1.5b** → B2 → **B2.1** → B3 → B4 → **B3.1** → B5 → B6 → B7.
 
-*(Planned spine listed B3.1 before B4; **executed** order was B3 → B4 → B3.1 per owner lock.)*
+*(Planned spine listed B3.1 before B4; **executed** order was B3 then B4 then B3.1 per owner lock.)*
 
 **X-item placement (one batch each):**
 
@@ -153,20 +153,21 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
   - **Exit criteria (M4):** Known attack fixtures fail closed hermetically; ASR + validity/repair published in `docs/evals/`.
 - **Batch exit criteria:**
   - **Tests:** M3 F1 gate + M4 hermetic defenses green.
-  - **Evals:** Golden F1 + live red-team ASR as above (partial CF + OpenRouter pending documented).
-  - **Live smoke:** Multi-day single-provider leaderboard under approved caps (STOP LIVE); remainder in B3.1.
+  - **Evals:** Golden F1 + live red-team ASR as above (partial CF documented; remainder completed in B3.1 with OR partial).
+  - **Live smoke:** Multi-day single-provider leaderboard under approved caps (STOP LIVE); remainder completed in B3.1.
   - **Docs:** PART 9; ROADMAP/ADRs/CHANGELOG updated.
 - **Deps:** B2 · **Size:** XL · **Metric:** Triage F1 on golden set; red-team ASR live-reported
 
-### B3.1 — Live leaderboard remainder (CF D5 + OpenRouter D6–D9)
+### B3.1 — Live leaderboard remainder (CF D5 + OpenRouter D6 partial)
 
-- **Status:** In progress on `b3.1/live-remainder` (**after B4 merge**). **No new product scope** (no UI/API/schema/ADR locks beyond publishing remaining live rows + pre-live guards).
-- **Scope:**
-  - **Cloudflare D5:** remaining **7 triage + 20 redteam** (~27) under 80 REQ/day; combined CF artifact; conditional CF resume day if failures.
-  - **OpenRouter D6–D9:** ≤**15** cases/day (40 REQ/day cap, ≥25% margin @ ×2); conditional **D10** resume if failures.
-  - Pre-closeout CF 3/3 + OR 5/5 smokes already done in B3 (not merged into day artifacts).
-- **Exit:** Leaderboard rows for D5–D9[/D10] + combined artifacts under `docs/evals/`; PART 12; CHANGELOG note.
-- **Deps:** B3 · B4 · **Size:** S · **Metric:** Complete free-tier live table (Anthropic still skipped)
+- **Status:** Done on branch `b3.1/live-remainder` (PR open; owner merges). **No new product scope.**
+- **Delivered:**
+  - Pre-live guards (checkpoint, case selection, local-DB refuse, per-case commit, `--max-requests`); `LAST_GUARD_SHA` `0a4f5d5`.
+  - **Cloudflare D5** + **CF combined** (60/60; F1 0.706 n=40; ASR 0.150 3/20).
+  - **OpenRouter D6** triage `001`–`015` only (F1 0.619 n=15; ASR N/A — red-team not run).
+- **Owner amendment (D-B31-4, 2026-10-01):** OpenRouter D7–D9/D10 + required OR combined artifact **cancelled** to unblock **B5**. Remainder → OPTIONAL backlog (no owner batch).
+- **Exit:** Leaderboard CURRENT; PART 12; CHANGELOG; next **B5**.
+- **Deps:** B3 · B4 · **Size:** S · **Metric:** CF complete + OR partial published (Anthropic still skipped)
 
 ### B4 — Demo Google inbox/calendar (M5)
 
@@ -180,7 +181,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
     - **Live smoke:** **DONE** — Connect + Sync + capped triage 50/50; WeekPanel live meetings; G1–G7 fixed forward.
     - **Docs:** PART 10; D-016/D-030 final; ROADMAP Open findings; CHANGELOG.
 - **Deps:** B1 persistence, B2 gateway, B3 before agent reads bodies · **Size:** XL · **Metric:** Live fictional inbox demo
-- **Next after merge:** B3.1 (CF/OR live rows only), then B5.
+- **Next after merge:** B3.1 (done — see above), then **B5**.
 
 ### B5 — Agentic Ask + approve & send (M6 + M7)
 
@@ -229,7 +230,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ---
 
-## Open findings (deferred; every row has an owner batch)
+## Open findings (deferred; owner-batch rows unless marked OPTIONAL)
 
 | Item | Owner batch | Notes |
 |------|-------------|-------|
@@ -238,7 +239,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | F-02 HTTP rate limiting | **B7** | |
 | F-13 disable `/docs` in public deploy | **B7** | |
 | OBS-2 `/ready` DB check | **B7** | |
-| B3.1 live leaderboard days (CF D5 + OpenRouter D6–D7) | **B3.1** | After B4 merge |
+| OpenRouter leaderboard completion (triage 016–040 + red-team 20) | **OPTIONAL** | Unassigned; D-B31-4 amended 2026-10-01 (OR stopped at D6 to unblock B5) |
 | Dependabot majors: Playwright 1.63, lucide, TypeScript 7, Vitest 5 | **deps+U9** | Dedicated baseline refresh batch |
 | OD-1 / OD-2 / OD-3 / OD-5 / OD-6 (contrast, focus rings, fonts, axe) | **OD** | Owner-approved OD batch with U9 |
 | D-007 `?run_id=` deep-link + RUNS FE paging | **B5** | Agent/Ask surfaces + history UX |

@@ -1,6 +1,6 @@
 # OpsPilot Architecture
 
-**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B4** (gateway, evals harness, Gmail/Calendar). Sections labeled **TARGET** describe the remaining locked rebuild (**B3.1** live leaderboard rows + **B5–B7**). Do not present TARGET as shipped.
+**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B4** plus **B3.1** live leaderboard closeout (CF combined; OpenRouter partial D6). Sections labeled **TARGET** describe the remaining locked rebuild (**B5–B7** only). Do not present TARGET as shipped.
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
@@ -17,9 +17,9 @@ Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs
 
 ---
 
-## CURRENT (B1–B4 on main)
+## CURRENT (B1–B4 on main; B3.1 live closeout)
 
-Verified on `main` (B2 `0c71a4a`; B2.1 `7501b9e`; B3 `3eb7baf`; B4 `c6e677c`): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, Alembic head **0007**, `/api/v1` with envelope, FE on `/api/v1`, coverage fail-under **72**, Node ≥24.15 / Python 3.13 / uv.
+Verified on `main` (B2 `0c71a4a`; B2.1 `7501b9e`; B3 `3eb7baf`; B4 `c6e677c`) with B3.1 live remainder on PR branch `b3.1/live-remainder`: hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, Alembic head **0007**, `/api/v1` with envelope, FE on `/api/v1`, coverage fail-under **72**, Node ≥24.15 / Python 3.13 / uv.
 
 **B1.5a:** Playwright visual/e2e/axe safety net with container-only `-linux` baselines; CSS partials; `useOverlay`; D-026/D-027.
 
@@ -29,9 +29,11 @@ Verified on `main` (B2 `0c71a4a`; B2.1 `7501b9e`; B3 `3eb7baf`; B4 `c6e677c`): h
 
 **B2.1 (CURRENT):** recursive meta redaction; OpenRouter `:free` gate; OBS request_id; dead-adapter delete; introduced migration 0005 in that batch (current head: 0007); toolchain pins.
 
-**B3 (CURRENT):** eval harness `b3-live/v2`; triage N=40 + red-team N=20; hermetic F1 floor 0.30; live D1–D3 full; CF D4 partial 33/60; Alembic `0006` confidence/evidence_refs.
+**B3 (CURRENT):** eval harness `b3-live/v2`; triage N=40 + red-team N=20; hermetic F1 floor 0.30; live D1–D3 full; CF D4 partial 33/60 (remainder in B3.1); Alembic `0006` confidence/evidence_refs.
 
 **B4 (CURRENT):** Gmail/Calendar OAuth PKCE + Fernet credentials; SyncCursor; Meeting; DEMO_MODE; operator session cookie (D-030); Connections/WeekPanel; Alembic **0007**.
+
+**B3.1 (CURRENT):** live guards (checkpoint / case-ids / local-DB / ceiling); CF D5 + CF combined 60/60 (F1 0.706 n=40); OpenRouter **partial** D6 triage n=15 F1 0.619 (ASR N/A); D7–D9/D10 cancelled (D-B31-4 amended 2026-10-01).
 
 ### Endpoints (CURRENT) — `/api/v1`
 
