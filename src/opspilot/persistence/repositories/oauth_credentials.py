@@ -75,3 +75,20 @@ def is_connected(session: Session, *, provider: str = "google") -> bool:
     if row is None:
         return False
     return has_required_scopes(row.scopes)
+
+
+def delete_provider(
+    session: Session,
+    *,
+    provider: str = "google",
+    account_email: str | None = None,
+) -> int:
+    """Delete oauth credential row(s). Returns number of rows deleted. Keeps work_items/meetings."""
+    stmt = select(OAuthCredentialRow).where(OAuthCredentialRow.provider == provider)
+    if account_email is not None:
+        stmt = stmt.where(OAuthCredentialRow.account_email == account_email)
+    rows = list(session.scalars(stmt).all())
+    for row in rows:
+        session.delete(row)
+    session.flush()
+    return len(rows)

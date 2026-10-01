@@ -39,23 +39,34 @@ function sanitizeBaseUrl(url: string | undefined): string {
 const API_BASE_URL = sanitizeBaseUrl(import.meta.env.VITE_API_BASE_URL)
 
 function toApiError(status: number, detail: unknown): Error {
-  const envelopeMessage = messageFromErrorEnvelope(detail)
-  if (envelopeMessage) {
-    return new Error(`${status}: ${envelopeMessage}`)
-  }
-
-  if (typeof detail === 'string') {
-    return new Error(`${status}: ${detail}`)
-  }
-
+  let code: string | undefined
   if (detail && typeof detail === 'object') {
     const record = detail as Record<string, unknown>
-    if (typeof record.message === 'string') {
-      return new Error(`${status}: ${record.message}`)
+    if (record.error && typeof record.error === 'object') {
+      const nested = record.error as Record<string, unknown>
+      if (typeof nested.code === 'string') {
+        code = nested.code
+      }
     }
   }
 
-  return new Error(`${status}: Request failed`)
+  const envelopeMessage = messageFromErrorEnvelope(detail)
+  let message: string
+  if (envelopeMessage) {
+    message = `${status}: ${envelopeMessage}`
+  } else if (typeof detail === 'string') {
+    message = `${status}: ${detail}`
+  } else if (detail && typeof detail === 'object') {
+    const record = detail as Record<string, unknown>
+    message = typeof record.message === 'string' ? `${status}: ${record.message}` : `${status}: Request failed`
+  } else {
+    message = `${status}: Request failed`
+  }
+
+  const err = new Error(message) as Error & { code?: string; status?: number }
+  err.code = code
+  err.status = status
+  return err
 }
 
 /** Parse `{ error: { code, message, details? } }` from API error payloads. */
@@ -290,6 +301,10 @@ export async function getCapabilities(): Promise<Capability[]> {
 
 export async function postSync(): Promise<SyncResult> {
   return requestJson<SyncResult>('/api/v1/sync', { method: 'POST' })
+}
+
+export async function disconnectGoogle(): Promise<void> {
+  await requestJson<{ status: string }>('/api/v1/oauth/google', { method: 'DELETE' })
 }
 
 export async function getCalendarWeek(start: string, end: string): Promise<CalendarMeeting[]> {

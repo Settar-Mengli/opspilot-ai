@@ -15,14 +15,16 @@ from opspilot.integrations.google_oauth import (
     GoogleOAuthError,
     IncompleteGrantError,
     complete_oauth,
+    revoke_refresh_token,
     start_pkce,
 )
 from opspilot.persistence.crypto import EncryptionUnavailableError
-from opspilot.persistence.repositories import oauth_credentials
+from opspilot.persistence.repositories import oauth_credentials, sync_cursors
 from opspilot.services import google_sync
 from opspilot.services.operator_session import (
     COOKIE_NAME,
     SessionUnavailableError,
+    clear_operator_cookie,
     demo_mode_enabled,
     set_operator_cookie,
     verify_session,
@@ -125,3 +127,25 @@ def post_sync(request: Request, session: Session = Depends(get_db_session)) -> d
         raise safe_error(503, "encryption_unavailable", "Token encryption unavailable.") from exc
     except google_sync.GoogleReauthRequired as exc:
         raise safe_error(401, "google_reauth_required", "Google re-auth required.") from exc
+
+
+@router.delete("/oauth/google", response_class=JSONResponse)
+def disconnect_google(request: Request, session: Session = Depends(get_db_session)) -> JSONResponse:
+    """Revoke Google token (best-effort), delete credential + cursors, clear cookie. Keeps synced data."""
+    if demo_mode_enabled():
+        raise safe_error(403, "demo_mode_blocks_oauth", "DEMO_MODE blocks Google OAuth.")
+    sess = verify_session(request.cookies.get(COOKIE_NAME))
+    if sess is None:
+        raise safe_error(401, "operator_auth_required", "Operator session required.")
+    cred = oauth_credentials.get_decrypted_refresh(session, provider="google")
+    if cred is not None:
+        account_email, refresh = cred
+        revoke_refresh_token(refresh)
+        sync_cursors.delete_for_account(session, provider="google", account_email=account_email)
+        oauth_credentials.delete_provider(session, provider="google", account_email=account_email)
+    else:
+        oauth_credentials.delete_provider(session, provider="google")
+
+    response = JSONResponse({"status": "disconnected"})
+    clear_operator_cookie(response)
+    return response

@@ -55,3 +55,19 @@ def upsert_cursor(
     )
     session.execute(stmt)
     session.flush()
+
+
+def delete_for_account(session: Session, *, provider: str, account_email: str) -> int:
+    """Delete all sync cursors for provider+email. Returns deleted count."""
+    rows = list(
+        session.scalars(
+            select(SyncCursorRow).where(
+                SyncCursorRow.provider == provider,
+                SyncCursorRow.account_email == account_email,
+            )
+        ).all()
+    )
+    for row in rows:
+        session.delete(row)
+    session.flush()
+    return len(rows)

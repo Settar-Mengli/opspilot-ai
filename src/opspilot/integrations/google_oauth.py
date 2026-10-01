@@ -29,6 +29,7 @@ REQUIRED_SCOPES = frozenset(
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
+REVOKE_URL = "https://oauth2.googleapis.com/revoke"
 
 DEFAULT_REDIRECT_URI = "http://127.0.0.1:8000/api/v1/oauth/google/callback"
 
@@ -197,3 +198,18 @@ def complete_oauth(
         raise IncompleteGrantError("incomplete_grant")
     email = ex.fetch_email(access_token=access)
     return TokenBundle(refresh_token=refresh, access_token=access, email=email, scopes=scope)
+
+
+def revoke_refresh_token(
+    refresh_token: str,
+    *,
+    transport: Any | None = None,
+) -> None:
+    """Best-effort revoke at Google. Local disconnect proceeds even if revoke fails."""
+    from opspilot.integrations.google_http import HttpxTransport
+
+    tx = transport or HttpxTransport()
+    try:
+        tx.request("POST", REVOKE_URL, data={"token": refresh_token})
+    except Exception:
+        return

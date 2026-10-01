@@ -1,12 +1,20 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { getCapabilities, getApiSettings, postSync } from '../api/client'
+import { getCapabilities, getApiSettings, postSync, disconnectGoogle } from '../api/client'
 import type { ApiSettings, Capability } from '../api/types'
 import { Mail, MessageSquare, Calendar, FileText, Building2, CreditCard, Circle, Zap, ArrowLeft } from 'lucide-react'
 import { useOverlay } from '../hooks/useOverlay'
 
 const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') || 'http://127.0.0.1:8000'
 const GRANT_REQUIRED_MSG = 'Grant Gmail and Calendar access to continue'
+
+function errorCode(err: unknown): string | undefined {
+  if (err && typeof err === 'object' && 'code' in err) {
+    const code = (err as { code?: unknown }).code
+    return typeof code === 'string' ? code : undefined
+  }
+  return undefined
+}
 
 const CATEGORY_ICONS: Record<string, typeof Mail> = {
   email: Mail,
@@ -43,6 +51,8 @@ export function ConnectionsPage() {
     searchParams.get('oauth_error') === 'grant_required' ? GRANT_REQUIRED_MSG : null,
   )
   const [syncing, setSyncing] = useState(false)
+  const [needsReauth, setNeedsReauth] = useState(false)
+  const [disconnecting, setDisconnecting] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const { onBackdropClick } = useOverlay({
@@ -77,6 +87,7 @@ export function ConnectionsPage() {
   const runSync = async () => {
     setSyncing(true)
     setSyncMsg(null)
+    setNeedsReauth(false)
     try {
       const result = await postSync()
       setSyncMsg(
@@ -84,9 +95,29 @@ export function ConnectionsPage() {
       )
       refresh()
     } catch (err) {
-      setSyncMsg(err instanceof Error ? err.message : 'Sync failed.')
+      if (errorCode(err) === 'google_reauth_required') {
+        setNeedsReauth(true)
+        setSyncMsg('Google re-auth required. Reconnect to continue.')
+      } else {
+        setSyncMsg(err instanceof Error ? err.message : 'Sync failed.')
+      }
     } finally {
       setSyncing(false)
+    }
+  }
+
+  const runDisconnect = async () => {
+    setDisconnecting(true)
+    setSyncMsg(null)
+    try {
+      await disconnectGoogle()
+      setNeedsReauth(false)
+      setSyncMsg('Disconnected Google. Synced mail and meetings were kept.')
+      refresh()
+    } catch (err) {
+      setSyncMsg(err instanceof Error ? err.message : 'Disconnect failed.')
+    } finally {
+      setDisconnecting(false)
     }
   }
 
@@ -118,9 +149,18 @@ export function ConnectionsPage() {
               ? 'Operator Google account linked (readonly). Sync pulls fictional demo mail and the week ahead.'
               : 'Connect your Testing-mode Google account. Readonly Gmail and Calendar only.'}
           </p>
-          {googleConnected ? (
-            <button className="cn-feat-btn" type="button" disabled={syncing} onClick={() => { void runSync() }}>
-              {syncing ? 'Syncing…' : 'Sync now'}
+          {googleConnected && !needsReauth ? (
+            <>
+              <button className="cn-feat-btn" type="button" disabled={syncing || disconnecting} onClick={() => { void runSync() }}>
+                {syncing ? 'Syncing…' : 'Sync now'}
+              </button>
+              <button className="cn-feat-btn" type="button" disabled={syncing || disconnecting} onClick={() => { void runDisconnect() }}>
+                {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+              </button>
+            </>
+          ) : needsReauth ? (
+            <button className="cn-feat-btn" type="button" onClick={connectGoogle}>
+              Reconnect
             </button>
           ) : (
             <button className="cn-feat-btn" type="button" onClick={connectGoogle}>
