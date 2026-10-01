@@ -969,6 +969,7 @@ Operator live smoke on Neon (post-OAuth sync succeeded; WeekPanel showed real Ca
 | G3 | `google_reauth_required` showed only an error string; no Reconnect/Disconnect | Reconnect (OAuth start) + `DELETE /oauth/google` (revoke, delete credential+cursors, clear cookie; keep synced rows) |
 | G4 | Sync now did not trigger triage | Post-sync `triage_connected_gmail`; UI `Synced N mail, M meetings — triaged K` |
 | G5 | Incremental Calendar sync sent `syncToken` with `showDeleted=false` (and window params); Google 400 `calendar_list_failed`; unhandled `GoogleHttpError` became bare 500 / CORS "Failed to fetch" | `list_events`: syncToken alone (+ pageToken/maxResults); cancelled -> delete meeting; `post_sync` maps `GoogleHttpError` -> 502 `google_sync_failed` with `details.status_code` |
+| G6 | Post-sync triage of all gmail rows (~50) exceeded RUN_TIMEOUT_SECONDS (120); ThreadPoolExecutor shutdown(wait=True) held the request Session open; rollback InternalError masked 504 as bare 500; sync txn risked rolling back with triage | Commit sync before triage; untriaged-only + OPSPILOT_SYNC_TRIAGE_CAP (default 10) on fresh Session; timeout shutdown(wait=False); rollback_failed logs and re-raises original; UI `triaged K (P pending)`; background-job triage deferred to B6 |
 
 **Deviation — C5 default ingest reported done but not implemented:** B4 C5 docs/progress claimed connected default ingest; CURRENT code until this fix-forward still filed-ingested sample only. Corrected here.
 
@@ -979,6 +980,8 @@ Operator live smoke on Neon (post-OAuth sync succeeded; WeekPanel showed real Ca
 **Dotenv / DATABASE_URL (STOP LIVE prep):** `alembic/env.py`, API `create_app` / `config.settings`, and `get_database_url()` all call `load_repo_dotenv()` (same `load_dotenv()` pattern as eval/pipeline CLIs; existing env wins). Fallback remains local Docker default when unset. Logs and `uv run python -m opspilot.jobs.db_host` print only `database host=<first-label>` (never the URL). Pytest pins local `DATABASE_URL` when unset so hermetic runs cannot pick Neon from `.env`.
 
 ### Follow-ups
+
+G6 background-job triage (202 + poll) deferred to **B6 morning run** (D-011). Sync now remains capped in-process batches.
 
 B3.1 live days after B4 merge · B5 send · B7 public hardening.
 

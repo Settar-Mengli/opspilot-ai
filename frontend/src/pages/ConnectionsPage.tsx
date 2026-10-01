@@ -91,7 +91,7 @@ export function ConnectionsPage() {
     try {
       const result = await postSync()
       setSyncMsg(
-        `Synced ${result.gmail_upserted} mail, ${result.calendar_upserted} meetings — triaged ${result.triaged}.`,
+        `Synced ${result.gmail_upserted} mail, ${result.calendar_upserted} meetings — triaged ${result.triaged} (${result.pending} pending)`,
       )
       refresh()
     } catch (err) {

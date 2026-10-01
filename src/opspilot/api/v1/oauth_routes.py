@@ -116,12 +116,15 @@ def post_sync(request: Request, session: Session = Depends(get_db_session)) -> d
         raise safe_error(401, "operator_auth_required", "Operator session required.")
     try:
         sync_result = google_sync.run_sync(session)
-        from opspilot.api.services.gmail_triage import triage_connected_gmail
+        # G6: persist sync before triage so a triage timeout cannot roll back mail/meetings/cursors.
+        session.commit()
+        from opspilot.api.services.gmail_triage import triage_connected_gmail_fresh
 
-        triaged = triage_connected_gmail(session)
+        triaged = triage_connected_gmail_fresh()
         return {
             **sync_result,
             "triaged": triaged["triaged"],
+            "pending": triaged["pending"],
             "run_id": triaged["run_id"],
         }
     except EncryptionUnavailableError as exc:

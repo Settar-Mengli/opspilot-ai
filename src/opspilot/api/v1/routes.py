@@ -103,16 +103,27 @@ def create_run(
     req: RunPipelineRequest,
     session: Session = Depends(get_db_session),
 ) -> dict[str, object]:
-    from opspilot.api.services.gmail_triage import triage_connected_gmail
     from opspilot.persistence.repositories import oauth_credentials
 
     if oauth_credentials.is_connected(session, provider="google"):
-        triaged = triage_connected_gmail(session, run_date=req.date)
-        run_id = str(triaged["run_id"])
-    else:
-        result = execute_pipeline(req)
-        sample = RAW_INPUT_DIR / Path(req.input_file).name
-        run_id = persist_pipeline_result(session, result, sample_input=sample)
+        from opspilot.api.services.gmail_triage import triage_connected_gmail_fresh
+
+        # G6: triage on a fresh session (same cap as Sync); do not hold the request Session across LLM.
+        triaged = triage_connected_gmail_fresh(run_date=req.date)
+        run_id = str(triaged["run_id"] or "")
+        return {
+            "status": "success",
+            "stdout": (
+                f"OpsPilot AI run completed.\nrun_id: {run_id}\n"
+                f"triaged: {triaged['triaged']} pending: {triaged['pending']}"
+            ),
+            "run_id": run_id or None,
+            "triaged": triaged["triaged"],
+            "pending": triaged["pending"],
+        }
+    result = execute_pipeline(req)
+    sample = RAW_INPUT_DIR / Path(req.input_file).name
+    run_id = persist_pipeline_result(session, result, sample_input=sample)
     return {
         "status": "success",
         "stdout": f"OpsPilot AI run completed.\nrun_id: {run_id}",

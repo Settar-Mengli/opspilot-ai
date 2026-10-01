@@ -24,45 +24,55 @@ def execute_pipeline(
     """Run the daily ops pipeline in-memory (no filesystem artifacts).
 
     When ``raw_items`` is set (Google-connected DB ingest), skip the sample file.
+    On timeout, do not wait for the worker (``shutdown(wait=False)``).
     """
     input_path = resolve_input_file(req.input_file)
     if raw_items is None and not input_path.exists():
         raise safe_error(404, "input_not_found", f"Input file not found: {req.input_file}")
 
+    # A2: ContextVars do not propagate into ThreadPoolExecutor workers;
+    # copy the request context (incl. request_id) into the worker thread.
+    ctx = contextvars.copy_context()
+
+    def _call() -> PipelineResult:
+        return run_pipeline(str(input_path), req.date.isoformat(), raw_items=raw_items)
+
+    executor = ThreadPoolExecutor(max_workers=1)
     try:
-        # A2: ContextVars do not propagate into ThreadPoolExecutor workers;
-        # copy the request context (incl. request_id) into the worker thread.
-        ctx = contextvars.copy_context()
-
-        def _call() -> PipelineResult:
-            return run_pipeline(str(input_path), req.date.isoformat(), raw_items=raw_items)
-
-        with ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(ctx.run, _call)
+        future = executor.submit(ctx.run, _call)
+        try:
             return future.result(timeout=RUN_TIMEOUT_SECONDS)
-    except FuturesTimeoutError:
-        logger.error(
-            "pipeline_run_timeout",
-            extra={"timeout_seconds": RUN_TIMEOUT_SECONDS, "input_file": req.input_file},
-        )
-        raise safe_error(504, "pipeline_timeout", "Pipeline run timed out.") from None
-    except OpsPilotError as exc:
-        logger.error(
-            "pipeline_run_failed",
-            extra={
-                "input_file": req.input_file,
-                "error_type": type(exc).__name__,
-                "error_message": str(exc),
-            },
-        )
-        raise safe_error(500, "pipeline_failed", "Pipeline execution failed.") from exc
-    except Exception as exc:
-        logger.error(
-            "pipeline_run_failed",
-            extra={
-                "input_file": req.input_file,
-                "error_type": type(exc).__name__,
-                "error_message": str(exc)[:1000],
-            },
-        )
-        raise safe_error(500, "pipeline_failed", "Pipeline execution failed.") from exc
+        except FuturesTimeoutError:
+            logger.error(
+                "pipeline_run_timeout",
+                extra={"timeout_seconds": RUN_TIMEOUT_SECONDS, "input_file": req.input_file},
+            )
+            raise safe_error(504, "pipeline_timeout", "Pipeline run timed out.") from None
+        except OpsPilotError as exc:
+            logger.error(
+                "pipeline_run_failed",
+                extra={
+                    "input_file": req.input_file,
+                    "error_type": type(exc).__name__,
+                    "error_message": str(exc),
+                },
+            )
+            raise safe_error(500, "pipeline_failed", "Pipeline execution failed.") from exc
+        except Exception as exc:
+            # HTTPException (incl. safe_error 504) must propagate unchanged.
+            from fastapi import HTTPException
+
+            if isinstance(exc, HTTPException):
+                raise
+            logger.error(
+                "pipeline_run_failed",
+                extra={
+                    "input_file": req.input_file,
+                    "error_type": type(exc).__name__,
+                    "error_message": str(exc)[:1000],
+                },
+            )
+            raise safe_error(500, "pipeline_failed", "Pipeline execution failed.") from exc
+    finally:
+        # G6: never block the request thread waiting for a timed-out worker.
+        executor.shutdown(wait=False, cancel_futures=True)
