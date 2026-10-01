@@ -169,15 +169,15 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B4 — Demo Google inbox/calendar (M5)
 
-- **Status:** Implemented on `b4/gmail-calendar` (awaiting owner live smoke + PR merge).
+- **Status:** Complete on `b4/gmail-calendar` — STOP LIVE passed (Neon); PR open / awaiting merge.
 - **Goal:** Live fictional inbox/calendar for operator demo.
 - **Workstream M5** — P1 + X1 + X3 + D-016
   - **Scope:** OAuth Testing forever; sync + idempotency (X1); replace JSON default path; WeekPanel from calendar; **DEMO_MODE** introduced (X3); encrypted refresh token in Neon; weekly re-auth runbook.
   - **Exit criteria:**
     - **Tests:** Sync idempotency tests; DEMO_MODE flag tests; no visitor OAuth path. **DONE** (hermetic).
     - **Evals:** n/a or reuse B3 corpus on synced fictional items.
-    - **Live smoke:** Pending owner Google/Neon setup (`google setup done`) then UI Connect + Sync.
-    - **Docs:** PART 10; D-016 addendum; D-030; ROADMAP/CHANGELOG; re-auth runbook filled.
+    - **Live smoke:** **DONE** — Connect + Sync + capped triage 50/50; WeekPanel live meetings; G1–G7 fixed forward.
+    - **Docs:** PART 10; D-016/D-030 final; ROADMAP Open findings; CHANGELOG.
 - **Deps:** B1 persistence, B2 gateway, B3 before agent reads bodies · **Size:** XL · **Metric:** Live fictional inbox demo
 - **Next after merge:** B3.1 (CF/OR live rows only), then B5.
 
@@ -225,6 +225,31 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
     - **Live smoke:** Public URL; sleep-tolerant; visitors cannot select Anthropic; DEMO_MODE enforced.
     - **Docs:** PART appended; ROADMAP/ADRs/CHANGELOG updated.
 - **Deps:** B1–B6 spine quality bar · **Size:** XL · **Metric:** Public free-tier demo URL
+
+---
+
+## Open findings (deferred; every row has an owner batch)
+
+| Item | Owner batch | Notes |
+|------|-------------|-------|
+| Background-job triage (202 + poll / Sync enqueue) | **B6** | G6; Sync stays capped in-process until morning job |
+| F-01 authn/authz on public `/api/v1` | **B7** | Operator cookie is local-demo only (D-030) |
+| F-02 HTTP rate limiting | **B7** | |
+| F-13 disable `/docs` in public deploy | **B7** | |
+| OBS-2 `/ready` DB check | **B7** | |
+| B3.1 live leaderboard days (CF D5 + OpenRouter D6–D7) | **B3.1** | After B4 merge |
+| Dependabot majors: Playwright 1.63, lucide, TypeScript 7, Vitest 5 | **deps+U9** | Dedicated baseline refresh batch |
+| OD-1 / OD-2 / OD-3 / OD-5 / OD-6 (contrast, focus rings, fonts, axe) | **OD** | Owner-approved OD batch with U9 |
+| D-007 `?run_id=` deep-link + RUNS FE paging | **B5** | Agent/Ask surfaces + history UX |
+| `generated.ts` unused (hand-written client) | **B5** | Wire when API surface grows |
+| Duplicate `getTriage` fetches | **B5** | FE data-loading cleanup |
+| FE code splitting | **B5** | |
+| `complete_json` path split / dual gateway loops | **B5** | Keep intentional until Ask streaming needs unify |
+| CQ-04 soft-deny user-visible copy unification | **B5** | Per-surface strings today |
+| F-11 token cap ≤1-call overshoot | **B5** | Documented; 80% margin |
+| DM-09 `ttft_ms` / `usd_estimate` / LlmCall links | **B5** | ttft with SSE; USD with F-05 |
+| F-05 Anthropic USD debit on LlmCall | **B7** | Precondition before Anthropic ever enabled (P7 off) |
+| Gmail deleted messages not removed on sync | **B5** | History/list does not delete local rows today |
 
 ---
 

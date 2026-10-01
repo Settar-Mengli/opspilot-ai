@@ -27,3 +27,10 @@ B4 needs operator-only Google OAuth and sync without public rate limits (B7). Th
 ## Consequences
 
 Local demo auth only; B7 must harden visitors/public exposure separately.
+
+## Addendum (B4 STOP LIVE final, 2026-10-01)
+
+- Live smoke confirmed Sync now via Connections UI with `credentials: "include"` (no pasted cookie).
+- Guarded routes that require the operator cookie: `POST /api/v1/sync`, `DELETE /api/v1/oauth/google` (and DEMO_MODE blocks both).
+- Disconnect clears the operator cookie; Reconnect re-enters PKCE start.
+- B7 still owns public authn/authz (F-01), rate limits (F-02), and `/ready` (OBS-2).

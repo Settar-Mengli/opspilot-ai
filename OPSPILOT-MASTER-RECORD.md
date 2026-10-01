@@ -955,7 +955,11 @@ F-INS, NB-4, NB-3/C13, Connections connect/sync, WeekPanel from `GET /calendar/w
 
 ### Live smoke
 
-**STOP LIVE pending owner** `google setup done` (Google Cloud Testing client + Neon + Fernet/session secrets). Hermetic tests cover PKCE/CORS/sync fakes.
+**STOP LIVE complete** (operator, 2026-10-01) on Neon + Google OAuth Testing.
+
+**Steps (operator):** (1) API+FE local with `.env` DATABASE_URL=Neon, Fernet/session secrets, Google Web client; (2) Connect Google (Gmail+Calendar scopes); (3) Sync now; (4) WeekPanel + Priorities; (5) Sync again for incremental + next triage batch.
+
+**Results (counts only; no mail bodies/subjects):** Connect OK; incremental Calendar sync OK; capped triage drained **50/50** gmail items (`OPSPILOT_SYNC_TRIAGE_CAP=10` batches). Neon after smoke: gmail work_items **50**, non-gmail sample rows **13** (retained), gmail triage_decisions **50**, sample triage_decisions **13**, meetings **4**, sync_cursors **2**, runs **6**. G7 filter hides sample in connected UI without deleting Neon rows. Hermetic tests cover PKCE/CORS/sync fakes + G1?G7.
 
 
 ### Live-smoke findings (STOP LIVE fix-forward)
@@ -970,6 +974,7 @@ Operator live smoke on Neon (post-OAuth sync succeeded; WeekPanel showed real Ca
 | G4 | Sync now did not trigger triage | Post-sync `triage_connected_gmail`; UI `Synced N mail, M meetings — triaged K` |
 | G5 | Incremental Calendar sync sent `syncToken` with `showDeleted=false` (and window params); Google 400 `calendar_list_failed`; unhandled `GoogleHttpError` became bare 500 / CORS "Failed to fetch" | `list_events`: syncToken alone (+ pageToken/maxResults); cancelled -> delete meeting; `post_sync` maps `GoogleHttpError` -> 502 `google_sync_failed` with `details.status_code` |
 | G6 | Post-sync triage of all gmail rows (~50) exceeded RUN_TIMEOUT_SECONDS (120); ThreadPoolExecutor shutdown(wait=True) held the request Session open; rollback InternalError masked 504 as bare 500; sync txn risked rolling back with triage | Commit sync before triage; untriaged-only + OPSPILOT_SYNC_TRIAGE_CAP (default 10) on fresh Session; timeout shutdown(wait=False); rollback_failed logs and re-raises original; UI `triaged K (P pending)`; background-job triage deferred to B6 |
+| G7 | Pre-fix sample work_items/triage (13) mixed into connected triage list/briefing/ask context with Gmail items | When `is_connected`, triage/briefing/ask/evening/insights use `source_type=gmail` only; sample surfaces only when disconnected (rows kept in Neon; no delete-in-code) |
 
 **Deviation — C5 default ingest reported done but not implemented:** B4 C5 docs/progress claimed connected default ingest; CURRENT code until this fix-forward still filed-ingested sample only. Corrected here.
 
@@ -981,9 +986,7 @@ Operator live smoke on Neon (post-OAuth sync succeeded; WeekPanel showed real Ca
 
 ### Follow-ups
 
-G6 background-job triage (202 + poll) deferred to **B6 morning run** (D-011). Sync now remains capped in-process batches.
-
-B3.1 live days after B4 merge · B5 send · B7 public hardening.
+See ROADMAP **Open findings** (every deferred item has an owner batch). Highlights: G6 background-job triage -> **B6**; F-01/F-02/F-13 + `/ready` -> **B7**; B3.1 live days; deps+U9 / OD batch; Gmail deleted-message removal -> **B5**.
 
 ### CI (branch; tip row filled at PR open)
 
@@ -1009,3 +1012,8 @@ B3.1 live days after B4 merge · B5 send · B7 public hardening.
 | `c4500f4` | feat(auth): Disconnect / Reconnect | failure (OpenAPI drift; fixed forward) |
 | `97f5707` | fix(api): OpenAPI disconnect route | (CI) |
 | `11ca10c` | feat(ui): hide Sample when connected | (CI) |
+| `2d661cf` | docs(b4): PART 10 live-smoke G1-G4 | success |
+| `31f2e0e` | fix(sync): Calendar syncToken / GoogleHttpError (G5) | success |
+| `36805cc` | fix(sync): capped untriaged triage (G6) | success |
+| `283deb9` | fix(api): hide sample when connected (G7) | success |
+| _(tip)_ | docs(b4): STOP LIVE closeout + Open findings | CI run on PR checks |
