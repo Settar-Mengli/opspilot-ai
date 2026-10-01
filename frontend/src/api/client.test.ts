@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { API_PREFIX, approveMailDraft, editMailDraft } from './client'
+import { API_PREFIX, approveMailDraft, editMailDraft, formatMailHitlError } from './client'
 
 describe('api client', () => {
   afterEach(() => {
@@ -47,5 +47,18 @@ describe('api client', () => {
       payload_sha256: hash,
       idempotency_key: undefined,
     })
+  })
+
+  it('formatMailHitlError maps status codes with request id', () => {
+    const mk = (status: number, code: string, requestId = 'req-1') =>
+      Object.assign(new Error('x'), { status, code, requestId })
+    expect(formatMailHitlError(mk(409, 'draft_already_claimed'))).toContain('already sent')
+    expect(formatMailHitlError(mk(409, 'draft_already_claimed'))).toContain('ref req-1')
+    expect(formatMailHitlError(mk(403, 'demo_mode_blocks_send'))).toContain('Demo mode')
+    expect(formatMailHitlError(mk(403, 'recipient_not_allowlisted'))).toContain('allowlist')
+    expect(formatMailHitlError(mk(403, 'draft_owner_mismatch'))).toContain('do not own')
+    expect(formatMailHitlError(mk(429, 'send_daily_cap'))).toContain('Daily send limit')
+    expect(formatMailHitlError(mk(422, 'unsafe_subject'))).toContain('rejected')
+    expect(formatMailHitlError(mk(500, 'internal_error'))).toContain('server error')
   })
 })

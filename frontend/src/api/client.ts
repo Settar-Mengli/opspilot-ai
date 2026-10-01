@@ -63,9 +63,10 @@ function toApiError(status: number, detail: unknown): Error {
     message = `${status}: Request failed`
   }
 
-  const err = new Error(message) as Error & { code?: string; status?: number }
+  const err = new Error(message) as Error & { code?: string; status?: number; requestId?: string }
   err.code = code
   err.status = status
+  err.requestId = requestIdFromErrorEnvelope(detail)
   return err
 }
 
@@ -86,7 +87,7 @@ export function messageFromErrorEnvelope(detail: unknown): string | null {
 }
 
 export function isErrorEnvelope(detail: unknown): detail is {
-  error: { code: string; message: string; details?: unknown }
+  error: { code: string; message: string; details?: unknown; request_id?: string }
 } {
   if (!detail || typeof detail !== 'object') {
     return false
@@ -97,6 +98,49 @@ export function isErrorEnvelope(detail: unknown): detail is {
   }
   const nested = record.error as Record<string, unknown>
   return typeof nested.code === 'string' && typeof nested.message === 'string'
+}
+
+function requestIdFromErrorEnvelope(detail: unknown): string | undefined {
+  if (!isErrorEnvelope(detail)) return undefined
+  const nested = (detail as { error: Record<string, unknown> }).error
+  return typeof nested.request_id === 'string' ? nested.request_id : undefined
+}
+
+/** User-facing copy for HITL approve/edit failures (status + code). */
+export function formatMailHitlError(err: unknown): string {
+  const status = typeof err === 'object' && err && 'status' in err ? Number((err as { status?: number }).status) : 0
+  const code =
+    typeof err === 'object' && err && 'code' in err && typeof (err as { code?: string }).code === 'string'
+      ? (err as { code: string }).code
+      : undefined
+  const requestId =
+    typeof err === 'object' && err && 'requestId' in err && typeof (err as { requestId?: string }).requestId === 'string'
+      ? (err as { requestId: string }).requestId
+      : undefined
+  const suffix = requestId ? ` (ref ${requestId})` : ''
+
+  if (status === 409 || code === 'draft_already_claimed' || code === 'draft_not_approvable' || code === 'draft_not_editable') {
+    return `This draft was already sent or is no longer approvable.${suffix}`
+  }
+  if (status === 403) {
+    if (code === 'demo_mode_blocks_send') return `Demo mode blocks sending.${suffix}`
+    if (code === 'recipient_not_allowlisted') return `Recipient is not on the send allowlist.${suffix}`
+    if (code === 'draft_owner_mismatch') return `You do not own this draft.${suffix}`
+    return `Send was forbidden.${suffix}`
+  }
+  if (status === 429 || code === 'send_daily_cap') {
+    return `Daily send limit reached. Try again tomorrow (UTC).${suffix}`
+  }
+  if (status === 422 || code === 'validation_error' || code === 'unsafe_subject' || code === 'forbidden_edit_fields') {
+    return `Draft update was rejected. Check subject and body.${suffix}`
+  }
+  if (status >= 500) {
+    return `Send failed due to a server error.${suffix}`
+  }
+  if (err instanceof Error && err.message) {
+    return err.message
+  }
+  return `Approve failed.${suffix}`
 }
 
 async function getErrorDetail(response: Response): Promise<unknown> {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, Navigate } from 'react-router-dom'
-import { getHealth, getTriage, editMailDraft, approveMailDraft } from './api/client'
+import { getHealth, getTriage, editMailDraft, approveMailDraft, formatMailHitlError } from './api/client'
 import { askOpsPilotStream } from './api/askStream'
 import type { AskDraftCard, AskMessage, AskToolStep } from './api/types'
 import { Brand } from './components/Brand'
@@ -246,7 +246,7 @@ function App() {
           await approveMailDraft(edited.id, edited.payload_sha256)
           setAskDraft(null)
         } catch (e) {
-          setAskError(e instanceof Error ? e.message : 'Approve failed.')
+          setAskError(formatMailHitlError(e))
         }
       })()
     },

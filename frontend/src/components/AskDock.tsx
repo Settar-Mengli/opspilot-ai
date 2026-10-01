@@ -116,7 +116,9 @@ export function AskThreadBody({
                 aria-label="Draft body"
               />
             </label>
-            <p className="ask-draft-meta">To: {draft.toAddrs} (server-managed)</p>
+            <p className="ask-draft-meta" aria-live="polite">
+              To: {draft.toAddrs} (server-managed)
+            </p>
             <button
               type="button"
               className="ask-draft-approve"
@@ -139,7 +141,11 @@ export function AskThreadBody({
             </div>
           </div>
         )}
-        {error && <div className="ask-panel-error">{error}</div>}
+        {error && (
+          <div className="ask-panel-error" role="alert">
+            {error}
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
       <div className={variant === 'dock' ? 'desk-ask-footer' : 'ask-panel-input-row'}>
