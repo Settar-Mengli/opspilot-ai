@@ -153,6 +153,25 @@ export async function mockApi(page: Page, mode: ApiMode = 'ok'): Promise<void> {
       await fulfillJson(route, { files: ['sample_input.json'] })
       return
     }
+    if (pathname.endsWith('/ask/stream') && method === 'POST') {
+      if (mode === 'ask-error') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'text/event-stream',
+          body: 'data: {"type":"error","request_id":"e2e","code":"ask_failed","message":"Ask fixture error"}\n\n',
+        })
+        return
+      }
+      const answer = 'Checkout confirm is the priority. I can draft a status note when you want.'
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body:
+          `data: {"type":"token","request_id":"e2e","text":${JSON.stringify(answer)}}\n\n` +
+          `data: {"type":"final","request_id":"e2e","answer":${JSON.stringify(answer)}}\n\n`,
+      })
+      return
+    }
     if (pathname.endsWith('/ask') && method === 'POST') {
       if (mode === 'ask-error') {
         await fulfillJson(
