@@ -904,10 +904,10 @@ Harness `b3-live/v2`, `observe=True`. Artifacts: `docs/evals/results/smoke-*-pre
 No red commits in `main..HEAD` (each SHAâ€™s recorded workflow conclusion = **success**). PR-tip CI for any subsequent docs-only SHA is verified via `gh pr checks` on the open PR.
 
 
-## PART 10 — B4 Real Gmail + Google Calendar — 2026-09-30
+## PART 10 -- B4 Real Gmail + Google Calendar -- 2026-09-30
 
-**Branch:** `b4/gmail-calendar` · **Baseline:** `main` @ `da81fae` (CI run `36790968616` success).
-**Locks:** L1–L15 + A1 (CORS credentials, 127.0.0.1 FE/API) + owner decisions (D-007 re-defer, RUNS FE out, Meeting in 0007, fixed loopback, B3.1 after B4).
+**Branch:** `b4/gmail-calendar` Â· **Baseline:** `main` @ `da81fae` (CI run `36790968616` success).
+**Locks:** L1-L15 + A1 (CORS credentials, 127.0.0.1 FE/API) + owner decisions (D-007 re-defer, RUNS FE out, Meeting in 0007, fixed loopback, B3.1 after B4).
 
 ### Schema
 
@@ -924,7 +924,34 @@ Alembic `0007_gmail_calendar`: `work_items.provider_id`/`thread_id`, `oauth_cred
 ### UI
 
 F-INS, NB-4, NB-3/C13, Connections connect/sync, WeekPanel from `GET /calendar/week`, Settings demo/google rows.
-STOP VISUAL PNG set: connections*, connections-modal*, week-open*, settings*, settings-rail-active* (375 listed in C10 commit).
+
+**STOP VISUAL** refreshed basenames (all `*-linux.png`; container-only D-026) â€” 13 files:
+
+1. `connections-chromium-375-linux.png`
+2. `connections-chromium-768-linux.png`
+3. `connections-chromium-1280-linux.png`
+4. `connections-modal-chromium-375-linux.png`
+5. `connections-modal-chromium-768-linux.png`
+6. `connections-modal-chromium-1280-linux.png`
+7. `week-open-chromium-375-linux.png`
+8. `week-open-chromium-768-linux.png`
+9. `week-open-chromium-1280-linux.png`
+10. `settings-chromium-375-linux.png`
+11. `settings-chromium-768-linux.png`
+12. `settings-chromium-1280-linux.png`
+13. `settings-rail-active-chromium-1280-linux.png`
+
+**375 files (owner gallery):** (1) `connections-chromium-375-linux.png`, (4) `connections-modal-chromium-375-linux.png`, (7) `week-open-chromium-375-linux.png`, (10) `settings-chromium-375-linux.png`.
+
+**Owner gallery:** visual **approved** for the 13 PNGs above (2026-09-30). `MAX_DIFF_PIXELS` unchanged.
+
+### Process deviations (B4)
+
+| Deviation | Record |
+|-----------|--------|
+| (a) OAuth/sync before STOP GOOGLE-SETUP | C3-C5 built with hermetic fake Google clients only; live Google Cloud / Neon / secrets deferred to STOP LIVE. |
+| (b) C11 past STOP VISUAL | PART 10 / docs committed at `b756905` before owner gallery approval of the 13 baselines. |
+| (c) Red tip `b756905` | Backend Ruff format failed: invalid UTF-8 (`0x97`) in PART 10 title; fixed forward in this commit. |
 
 ### Live smoke
 
@@ -932,7 +959,7 @@ STOP VISUAL PNG set: connections*, connections-modal*, week-open*, settings*, se
 
 ### Follow-ups
 
-B3.1 live days after B4 merge · B5 send · B7 public hardening.
+B3.1 live days after B4 merge Â· B5 send Â· B7 public hardening.
 
 ### CI (branch; tip row filled at PR open)
 
@@ -947,4 +974,5 @@ B3.1 live days after B4 merge · B5 send · B7 public hardening.
 | `a3f6333` | feat(ui): Connections A1 | failure (visual; fixed by STOP VISUAL) |
 | `92f395c` | feat(ui): WeekPanel calendar | (batch visual) |
 | `9aa34b4` | feat(ui): Settings status | (batch visual) |
-| `09e635a` | chore(ui): STOP VISUAL baselines | CI run on PR checks |
+| `09e635a` | chore(ui): STOP VISUAL baselines | success (UI Tests run `36797010023`) |
+| `b756905` | docs(b4): PART 10 | failure (Backend ruff format UTF-8; fixed forward) |
