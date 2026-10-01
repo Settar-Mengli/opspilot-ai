@@ -1,7 +1,7 @@
 import { API_BASE_URL } from './client'
 
-/** Feature gate: Approve/send API wiring lands in C6 (D-033). */
-export const ASK_APPROVE_ENABLED = false
+/** Feature gate: Approve/send API is wired (D-033 / C6). */
+export const ASK_APPROVE_ENABLED = true
 
 export interface AskStreamHandlers {
   onToken?: (text: string) => void

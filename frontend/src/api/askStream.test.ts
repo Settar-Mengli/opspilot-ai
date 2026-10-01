@@ -12,7 +12,7 @@ describe('askStream', () => {
     expect(rest).toBe('partial')
   })
 
-  it('keeps Approve disabled until C6', () => {
-    expect(ASK_APPROVE_ENABLED).toBe(false)
+  it('enables Approve after HITL lands', () => {
+    expect(ASK_APPROVE_ENABLED).toBe(true)
   })
 })

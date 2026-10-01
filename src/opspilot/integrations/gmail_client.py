@@ -143,3 +143,45 @@ class GmailClient:
                     if isinstance(msg, dict) and msg.get("id"):
                         ids.append(str(msg["id"]))
         return ids
+
+    def send_reply(
+        self,
+        *,
+        thread_id: str,
+        in_reply_to_provider_id: str,
+        to_addrs: str,
+        subject: str,
+        body: str,
+    ) -> str:
+        """Reply in-thread. Belt-and-suspenders DEMO_MODE + allowlist before HTTP."""
+        from opspilot.services.operator_session import demo_mode_enabled
+        from opspilot.services.send_allowlist import recipients_allowed
+
+        if demo_mode_enabled():
+            raise GoogleHttpError("demo_mode_blocks_send")
+        if not recipients_allowed(to_addrs):
+            raise GoogleHttpError("recipient_not_allowlisted")
+        if not thread_id or not in_reply_to_provider_id:
+            raise GoogleHttpError("missing_thread_or_provider")
+
+        import email.message
+
+        msg = email.message.EmailMessage()
+        msg["To"] = to_addrs
+        msg["Subject"] = subject
+        msg["In-Reply-To"] = in_reply_to_provider_id
+        msg["References"] = in_reply_to_provider_id
+        msg.set_content(body)
+        raw = base64.urlsafe_b64encode(msg.as_bytes()).decode("ascii").rstrip("=")
+        resp = self._transport.request(
+            "POST",
+            f"{GMAIL_API}/users/me/messages/send",
+            headers=self._headers(),
+            json={"raw": raw, "threadId": thread_id},
+        )
+        if resp.status_code >= 400:
+            raise GoogleHttpError("gmail_send_failed", status_code=resp.status_code)
+        mid = str(resp.json().get("id") or "")
+        if not mid:
+            raise GoogleHttpError("gmail_send_missing_id")
+        return mid

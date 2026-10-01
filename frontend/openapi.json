@@ -694,6 +694,114 @@
         }
       }
     },
+    "/api/v1/mail/drafts/{draft_id}/edit": {
+      "post": {
+        "tags": [
+          "mail"
+        ],
+        "summary": "Mail Draft Edit",
+        "operationId": "mail_draft_edit_api_v1_mail_drafts__draft_id__edit_post",
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftEditRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Mail Draft Edit Api V1 Mail Drafts  Draft Id  Edit Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mail/drafts/{draft_id}/approve": {
+      "post": {
+        "tags": [
+          "mail"
+        ],
+        "summary": "Mail Draft Approve",
+        "operationId": "mail_draft_approve_api_v1_mail_drafts__draft_id__approve_post",
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftApproveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Mail Draft Approve Api V1 Mail Drafts  Draft Id  Approve Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/oauth/google/start": {
       "get": {
         "tags": [
@@ -921,6 +1029,56 @@
         ],
         "title": "AskStreamRequest",
         "description": "Same body as AskRequest for POST /ask/stream."
+      },
+      "DraftApproveRequest": {
+        "properties": {
+          "payload_sha256": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Payload Sha256"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "payload_sha256"
+        ],
+        "title": "DraftApproveRequest"
+      },
+      "DraftEditRequest": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Body"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "subject",
+          "body"
+        ],
+        "title": "DraftEditRequest"
       },
       "EveningSummaryRequest": {
         "properties": {

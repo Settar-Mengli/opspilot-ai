@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, Navigate } from 'react-router-dom'
-import { getHealth, getTriage } from './api/client'
+import { getHealth, getTriage, editMailDraft, approveMailDraft } from './api/client'
 import { askOpsPilotStream } from './api/askStream'
 import type { AskDraftCard, AskMessage, AskToolStep } from './api/types'
 import { Brand } from './components/Brand'
@@ -239,7 +239,16 @@ function App() {
       setAskDraft((d) => (d ? { ...d, subject: value } : d)),
     onDraftBodyChange: (value: string) => setAskDraft((d) => (d ? { ...d, body: value } : d)),
     onApproveDraft: () => {
-      /* wired in C6 when ASK_APPROVE_ENABLED */
+      void (async () => {
+        if (!askDraft) return
+        try {
+          const edited = await editMailDraft(askDraft.draftId, askDraft.subject, askDraft.body)
+          await approveMailDraft(edited.id, edited.payload_sha256)
+          setAskDraft(null)
+        } catch (e) {
+          setAskError(e instanceof Error ? e.message : 'Approve failed.')
+        }
+      })()
     },
     input: askInput,
     loading: askLoading,

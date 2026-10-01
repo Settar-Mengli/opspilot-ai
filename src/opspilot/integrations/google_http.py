@@ -24,6 +24,7 @@ class GoogleTransport(Protocol):
         headers: dict[str, str] | None = None,
         params: dict[str, Any] | None = None,
         data: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
     ) -> httpx.Response: ...
 
 
@@ -39,11 +40,12 @@ class HttpxTransport:
         headers: dict[str, str] | None = None,
         params: dict[str, Any] | None = None,
         data: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
     ) -> httpx.Response:
         client = self._client or httpx.Client(timeout=30.0)
         owns = self._client is None
         try:
-            return client.request(method, url, headers=headers, params=params, data=data)
+            return client.request(method, url, headers=headers, params=params, data=data, json=json)
         finally:
             if owns:
                 client.close()

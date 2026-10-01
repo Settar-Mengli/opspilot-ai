@@ -312,3 +312,30 @@ export async function getCalendarWeek(start: string, end: string): Promise<Calen
   const payload = await requestJson<{ meetings?: CalendarMeeting[] }>(`/api/v1/calendar/week?${q}`)
   return Array.isArray(payload.meetings) ? payload.meetings : []
 }
+
+export async function editMailDraft(
+  draftId: string,
+  subject: string,
+  body: string,
+): Promise<{ id: string; subject: string; body: string; to_addrs: string; payload_sha256: string }> {
+  return requestJson(`/api/v1/mail/drafts/${encodeURIComponent(draftId)}/edit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subject, body }),
+  })
+}
+
+export async function approveMailDraft(
+  draftId: string,
+  payloadSha256: string,
+  idempotencyKey?: string,
+): Promise<{ status: string }> {
+  return requestJson(`/api/v1/mail/drafts/${encodeURIComponent(draftId)}/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      payload_sha256: payloadSha256,
+      idempotency_key: idempotencyKey,
+    }),
+  })
+}
