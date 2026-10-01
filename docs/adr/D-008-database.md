@@ -31,6 +31,10 @@ B1 uses **Docker Compose `postgres:16` locally** and a **GitHub Actions Postgres
 - No production path uses SQLite.
 - Free-tier Neon quotas labeled VERIFY AT DECISION TIME in B4/B7 plans.
 
+## Addendum (B4, 2026-09-30)
+
+Neon is the hosted SoT for encrypted Google refresh tokens and operator demo data (D-016). Local/CI continue to use Docker Compose `postgres:16`. Operator provisions Neon and applies Alembic through head `0007_gmail_calendar` for live smoke; free-tier limits remain **VERIFY AT DECISION TIME**.
+
 ## Consequences
 
 Need SQLAlchemy/Alembic (D-009). Operator owns Neon project and connection strings as secrets.

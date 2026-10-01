@@ -39,3 +39,14 @@ Operational burden: weekly re-auth. Brief may be stale if auth fails until opera
 ## Blocks
 
 B4, B6, B7.
+
+## Addendum (B4, 2026-09-30)
+
+Implementation locks for B4:
+
+- OAuth **authorization code + PKCE (S256)**; Google Cloud **Web** client.
+- Redirect URI (exact): `http://127.0.0.1:8000/api/v1/oauth/google/callback`.
+- Scopes: `openid`, `email`, `https://www.googleapis.com/auth/gmail.readonly`, `https://www.googleapis.com/auth/calendar.readonly` only.
+- Refresh token Fernet-encrypted in Postgres `bytea`; env key `TOKEN_ENCRYPTION_KEY`.
+- Operator session cookie: see D-030.
+- Testing forever; weekly re-auth runbook remains SoT for rotation steps.

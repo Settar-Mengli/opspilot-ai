@@ -169,15 +169,17 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B4 — Demo Google inbox/calendar (M5)
 
+- **Status:** Implemented on `b4/gmail-calendar` (awaiting owner live smoke + PR merge).
 - **Goal:** Live fictional inbox/calendar for operator demo.
 - **Workstream M5** — P1 + X1 + X3 + D-016
   - **Scope:** OAuth Testing forever; sync + idempotency (X1); replace JSON default path; WeekPanel from calendar; **DEMO_MODE** introduced (X3); encrypted refresh token in Neon; weekly re-auth runbook.
   - **Exit criteria:**
-    - **Tests:** Sync idempotency tests; DEMO_MODE flag tests; no visitor OAuth path.
+    - **Tests:** Sync idempotency tests; DEMO_MODE flag tests; no visitor OAuth path. **DONE** (hermetic).
     - **Evals:** n/a or reuse B3 corpus on synced fictional items.
-    - **Live smoke:** Live smoke on demo account; visitors never OAuth mail; re-auth runbook exercised once.
-    - **Docs:** PART appended; ROADMAP/ADRs/CHANGELOG; D-016 constraints recorded.
+    - **Live smoke:** Pending owner Google/Neon setup (`google setup done`) then UI Connect + Sync.
+    - **Docs:** PART 10; D-016 addendum; D-030; ROADMAP/CHANGELOG; re-auth runbook filled.
 - **Deps:** B1 persistence, B2 gateway, B3 before agent reads bodies · **Size:** XL · **Metric:** Live fictional inbox demo
+- **Next after merge:** B3.1 (CF/OR live rows only), then B5.
 
 ### B5 — Agentic Ask + approve & send (M6 + M7)
 

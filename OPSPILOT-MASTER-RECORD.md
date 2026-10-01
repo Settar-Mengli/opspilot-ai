@@ -902,3 +902,49 @@ Harness `b3-live/v2`, `observe=True`. Artifacts: `docs/evals/results/smoke-*-pre
 | `62329d5` | docs(b3): append closeout SHA CI row to PART 9 | [36786823619](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36786823619) |
 
 No red commits in `main..HEAD` (each SHAâ€™s recorded workflow conclusion = **success**). PR-tip CI for any subsequent docs-only SHA is verified via `gh pr checks` on the open PR.
+
+
+## PART 10 — B4 Real Gmail + Google Calendar — 2026-09-30
+
+**Branch:** `b4/gmail-calendar` · **Baseline:** `main` @ `da81fae` (CI run `36790968616` success).
+**Locks:** L1–L15 + A1 (CORS credentials, 127.0.0.1 FE/API) + owner decisions (D-007 re-defer, RUNS FE out, Meeting in 0007, fixed loopback, B3.1 after B4).
+
+### Schema
+
+Alembic `0007_gmail_calendar`: `work_items.provider_id`/`thread_id`, `oauth_credentials` (Fernet `bytea`), `sync_cursors`, `meetings`.
+
+### OAuth / session / DEMO
+
+- PKCE Web client; redirect `http://127.0.0.1:8000/api/v1/oauth/google/callback`.
+- Scopes: openid/email + gmail.readonly + calendar.readonly.
+- `TOKEN_ENCRYPTION_KEY` Fernet; `OPSPILOT_SESSION_SECRET` cookie; `OPSPILOT_DEMO_MODE`.
+- D-016 addendum; **D-030** operator session + CORS A1.
+- Sync via Connections UI (no curl cookie smoke).
+
+### UI
+
+F-INS, NB-4, NB-3/C13, Connections connect/sync, WeekPanel from `GET /calendar/week`, Settings demo/google rows.
+STOP VISUAL PNG set: connections*, connections-modal*, week-open*, settings*, settings-rail-active* (375 listed in C10 commit).
+
+### Live smoke
+
+**STOP LIVE pending owner** `google setup done` (Google Cloud Testing client + Neon + Fernet/session secrets). Hermetic tests cover PKCE/CORS/sync fakes.
+
+### Follow-ups
+
+B3.1 live days after B4 merge · B5 send · B7 public hardening.
+
+### CI (branch; tip row filled at PR open)
+
+| SHA | Subject | CI |
+|---|---|---|
+| `8d392c1` | chore(b4): Dependabot / D-007 / env placeholders | success |
+| `6cfb358` | feat(db): schema 0007 | success |
+| `f94395a` | feat(db): Fernet + repos | success |
+| `9ba9190` | feat(auth): OAuth PKCE + CORS A1 | failure (OpenAPI drift; fixed forward) |
+| `8b6043b` | feat(b4): sync + OpenAPI | success |
+| `cb7a22f` | fix(ui): F-INS + NB-4 | success |
+| `a3f6333` | feat(ui): Connections A1 | failure (visual; fixed by STOP VISUAL) |
+| `92f395c` | feat(ui): WeekPanel calendar | (batch visual) |
+| `9aa34b4` | feat(ui): Settings status | (batch visual) |
+| `09e635a` | chore(ui): STOP VISUAL baselines | CI run on PR checks |

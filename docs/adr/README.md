@@ -33,5 +33,6 @@ Index of ADRs for OpsPilot. Status values: Accepted | Superseded | Proposed.
 | [D-027](D-027-schema-conventions.md) | Schema conventions (timestamptz, IDs, money) | Accepted | B2+ |
 | [D-028](D-028-eval-harness.md) | Eval harness (pytest + CLI) | Accepted | B3 |
 | [D-029](D-029-prompt-injection-defenses.md) | Prompt injection defenses + red-team ASR | Accepted | B3 |
+| [D-030](D-030-operator-session-cookie.md) | Operator session cookie + CORS credentials (A1) | Accepted | B4+ |
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../../OPSPILOT-MASTER-RECORD.md).
