@@ -103,9 +103,17 @@ def create_run(
     req: RunPipelineRequest,
     session: Session = Depends(get_db_session),
 ) -> dict[str, object]:
-    result = execute_pipeline(req)
-    sample = RAW_INPUT_DIR / Path(req.input_file).name
-    run_id = persist_pipeline_result(session, result, sample_input=sample)
+    from opspilot.persistence.repositories import oauth_credentials, work_items
+
+    use_gmail = oauth_credentials.is_connected(session, provider="google")
+    if use_gmail:
+        raw = work_items.list_gmail_raw(session)
+        result = execute_pipeline(req, raw_items=raw)
+        run_id = persist_pipeline_result(session, result, sample_input=None)
+    else:
+        result = execute_pipeline(req)
+        sample = RAW_INPUT_DIR / Path(req.input_file).name
+        run_id = persist_pipeline_result(session, result, sample_input=sample)
     return {
         "status": "success",
         "stdout": f"OpsPilot AI run completed.\nrun_id: {run_id}",

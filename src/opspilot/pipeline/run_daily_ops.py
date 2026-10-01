@@ -52,14 +52,24 @@ class PipelineResult:
     work_items: list[dict[str, Any]]
 
 
-def run_pipeline(input_path: str, run_date: str, *, runs_root: Path | None = None) -> PipelineResult:
-    """Execute triage/briefing pipeline without writing files."""
+def run_pipeline(
+    input_path: str,
+    run_date: str,
+    *,
+    runs_root: Path | None = None,
+    raw_items: list[dict[str, Any]] | None = None,
+) -> PipelineResult:
+    """Execute triage/briefing pipeline without writing files.
+
+    When ``raw_items`` is provided, skip file load and triage those dicts instead.
+    """
     started_at = utc_now()
-    log_event(logger, "pipeline_start", input_path=input_path, run_date=run_date)
+    source_label = input_path if raw_items is None else "db:gmail"
+    log_event(logger, "pipeline_start", input_path=source_label, run_date=run_date)
 
     try:
-        raw_items = load_raw_items(input_path)
-        normalized_items = normalize_items(raw_items)
+        loaded = raw_items if raw_items is not None else load_raw_items(input_path)
+        normalized_items = normalize_items(loaded)
 
         triage_records = []
         action_items = []
@@ -111,7 +121,7 @@ def run_pipeline(input_path: str, run_date: str, *, runs_root: Path | None = Non
             "finished_at": to_iso_utc(finished_at),
             "duration_ms": duration_ms,
             "status": "success",
-            "input_file": input_path,
+            "input_file": source_label,
             "item_count": len(normalized_items),
             "triage_count": len(triage_records),
             "action_count": len(action_items),
@@ -138,7 +148,7 @@ def run_pipeline(input_path: str, run_date: str, *, runs_root: Path | None = Non
         )
         return PipelineResult(run_id=run_id, metadata=metadata, artifacts=artifacts, work_items=work_items)
     except InputValidationError:
-        log_event(logger, "pipeline_validation_failed", input_path=input_path)
+        log_event(logger, "pipeline_validation_failed", input_path=source_label)
         raise
     except Exception as exc:
         log_event(logger, "pipeline_failed", error_type=type(exc).__name__, message=str(exc))

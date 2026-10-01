@@ -73,3 +73,26 @@ def upsert_by_provider_id(
     session.flush()
     row = session.scalars(select(WorkItemRow).where(WorkItemRow.provider_id == provider_id)).one()
     return row.id
+
+
+def list_gmail_raw(session: Session) -> list[dict[str, Any]]:
+    """Return gmail work items as ingest-shaped dicts (existing row ids preserved)."""
+    rows = session.scalars(
+        select(WorkItemRow).where(WorkItemRow.source_type == "gmail").order_by(WorkItemRow.received_at.desc())
+    ).all()
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        received = row.received_at.isoformat() if hasattr(row.received_at, "isoformat") else str(row.received_at)
+        out.append(
+            {
+                "id": row.id,
+                "source_type": "gmail",
+                "subject_or_title": row.subject_or_title,
+                "body_or_description": row.body_or_description,
+                "sender_or_requester": row.sender_or_requester,
+                "received_at": received,
+                "tags": list(row.tags or []),
+                "provider_id": row.provider_id,
+            }
+        )
+    return out
