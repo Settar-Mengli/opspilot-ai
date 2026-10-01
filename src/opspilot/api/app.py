@@ -14,10 +14,10 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.responses import Response
 
 from opspilot.api.errors import register_exception_handlers
+from opspilot.api.v1.oauth_routes import router as oauth_router
 from opspilot.api.v1.routes import router as v1_router
 
 LOCAL_UI_ORIGINS = [
-    "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
 
@@ -88,13 +88,14 @@ def create_app() -> FastAPI:
     application.add_middleware(
         CORSMiddleware,
         allow_origins=LOCAL_UI_ORIGINS,
-        allow_credentials=False,
-        allow_methods=["GET", "POST"],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["Content-Type", "X-Request-ID"],
     )
     application.add_middleware(RequestIdMiddleware)
     register_exception_handlers(application)
     application.include_router(v1_router)
+    application.include_router(oauth_router, prefix="/api/v1")
     return application
 
 
