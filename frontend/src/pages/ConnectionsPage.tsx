@@ -39,7 +39,9 @@ export function ConnectionsPage() {
   const [capabilities, setCapabilities] = useState<Capability[]>(FALLBACK_CAPS)
   const [settings, setSettings] = useState<ApiSettings | null>(null)
   const [modalCap, setModalCap] = useState<Capability | null>(null)
-  const [syncMsg, setSyncMsg] = useState<string | null>(null)
+  const [syncMsg, setSyncMsg] = useState<string | null>(() =>
+    searchParams.get('oauth_error') === 'grant_required' ? GRANT_REQUIRED_MSG : null,
+  )
   const [syncing, setSyncing] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
@@ -59,12 +61,10 @@ export function ConnectionsPage() {
   }, [])
 
   useEffect(() => {
-    if (searchParams.get('oauth_error') === 'grant_required') {
-      setSyncMsg(GRANT_REQUIRED_MSG)
-      const next = new URLSearchParams(searchParams)
-      next.delete('oauth_error')
-      setSearchParams(next, { replace: true })
-    }
+    if (searchParams.get('oauth_error') !== 'grant_required') return
+    const next = new URLSearchParams(searchParams)
+    next.delete('oauth_error')
+    setSearchParams(next, { replace: true })
   }, [searchParams, setSearchParams])
 
   const demoMode = settings?.demo_mode === true
