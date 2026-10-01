@@ -13,6 +13,7 @@ from opspilot.api.deps import get_db_session
 from opspilot.api.schemas import safe_error
 from opspilot.integrations.google_oauth import (
     GoogleOAuthError,
+    IncompleteGrantError,
     complete_oauth,
     start_pkce,
 )
@@ -30,7 +31,9 @@ from opspilot.services.operator_session import (
 router = APIRouter(tags=["oauth"])
 
 _PKCE_COOKIE = "opspilot_pkce"
-_FE_AFTER_OAUTH = os.environ.get("OPSPILOT_FE_ORIGIN", "http://127.0.0.1:5173").rstrip("/") + "/connections"
+_FE_CONNECTIONS = os.environ.get("OPSPILOT_FE_ORIGIN", "http://127.0.0.1:5173").rstrip("/") + "/connections"
+_FE_AFTER_OAUTH = _FE_CONNECTIONS
+_FE_GRANT_REQUIRED = _FE_CONNECTIONS + "?oauth_error=grant_required"
 
 
 @router.get("/oauth/google/start")
@@ -83,6 +86,11 @@ def oauth_google_callback(
             scopes=bundle.scopes,
             refresh_token_plaintext=bundle.refresh_token,
         )
+    except IncompleteGrantError:
+        # Do not store a partial credential; send operator back to Connections with copy.
+        response = RedirectResponse(url=_FE_GRANT_REQUIRED, status_code=302)
+        response.delete_cookie(_PKCE_COOKIE, path="/")
+        return response
     except EncryptionUnavailableError as exc:
         raise safe_error(503, "encryption_unavailable", "Token encryption unavailable.") from exc
     except GoogleOAuthError as exc:

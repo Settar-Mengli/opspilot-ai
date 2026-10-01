@@ -105,7 +105,7 @@ def test_oauth_credential_encrypt_round_trip(db_session: Session, fernet_key: st
         db_session,
         provider="google",
         account_email="demo@example.com",
-        scopes="gmail.readonly calendar.readonly",
+        scopes=("https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly"),
         refresh_token_plaintext="refresh-not-real",
     )
     got = oauth_credentials.get_decrypted_refresh(db_session, provider="google")
@@ -114,3 +114,15 @@ def test_oauth_credential_encrypt_round_trip(db_session: Session, fernet_key: st
     assert email == "demo@example.com"
     assert token == "refresh-not-real"
     assert oauth_credentials.is_connected(db_session, provider="google")
+
+
+def test_is_connected_requires_gmail_and_calendar_scopes(db_session: Session, fernet_key: str) -> None:
+    _ = fernet_key
+    oauth_credentials.upsert_encrypted_refresh(
+        db_session,
+        provider="google",
+        account_email="partial@example.com",
+        scopes="openid email https://www.googleapis.com/auth/gmail.readonly",
+        refresh_token_plaintext="refresh-partial",
+    )
+    assert oauth_credentials.is_connected(db_session, provider="google") is False

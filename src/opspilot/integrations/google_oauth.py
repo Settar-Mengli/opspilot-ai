@@ -19,15 +19,28 @@ SCOPES = (
     "https://www.googleapis.com/auth/calendar.readonly",
 )
 
+REQUIRED_SCOPES = frozenset(
+    {
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/calendar.readonly",
+    }
+)
+
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
 
 DEFAULT_REDIRECT_URI = "http://127.0.0.1:8000/api/v1/oauth/google/callback"
 
+GRANT_REQUIRED_MESSAGE = "Grant Gmail and Calendar access to continue"
+
 
 class GoogleOAuthError(RuntimeError):
     """OAuth configuration or token exchange failure."""
+
+
+class IncompleteGrantError(GoogleOAuthError):
+    """Token response missing required Gmail/Calendar scopes (or omitted scope entirely)."""
 
 
 @dataclass(frozen=True)
@@ -152,6 +165,16 @@ class HttpTokenExchanger:
                 client.close()
 
 
+def parse_scopes(scopes: str) -> set[str]:
+    """Split a space- or comma-separated scope string into a set of tokens."""
+    return {part.strip() for part in scopes.replace(",", " ").split() if part.strip()}
+
+
+def has_required_scopes(scopes: str) -> bool:
+    """True when both gmail.readonly and calendar.readonly are present."""
+    return REQUIRED_SCOPES.issubset(parse_scopes(scopes))
+
+
 def complete_oauth(
     *,
     code: str,
@@ -164,6 +187,13 @@ def complete_oauth(
     access = str(payload.get("access_token") or "").strip()
     if not refresh or not access:
         raise GoogleOAuthError("missing_tokens")
-    scope = str(payload.get("scope") or " ".join(SCOPES))
+    # Never invent scopes when the token response omits `scope`.
+    if "scope" not in payload or payload.get("scope") is None:
+        raise IncompleteGrantError("missing_scope")
+    scope = str(payload.get("scope") or "").strip()
+    if not scope:
+        raise IncompleteGrantError("missing_scope")
+    if not has_required_scopes(scope):
+        raise IncompleteGrantError("incomplete_grant")
     email = ex.fetch_email(access_token=access)
     return TokenBundle(refresh_token=refresh, access_token=access, email=email, scopes=scope)

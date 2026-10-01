@@ -67,5 +67,11 @@ def get_decrypted_refresh(
 
 
 def is_connected(session: Session, *, provider: str = "google") -> bool:
-    stmt = select(OAuthCredentialRow.id).where(OAuthCredentialRow.provider == provider).limit(1)
-    return session.scalars(stmt).first() is not None
+    """True when a credential row exists and grants required Gmail+Calendar scopes."""
+    from opspilot.integrations.google_oauth import has_required_scopes
+
+    stmt = select(OAuthCredentialRow).where(OAuthCredentialRow.provider == provider)
+    row = session.scalars(stmt.order_by(OAuthCredentialRow.updated_at.desc())).first()
+    if row is None:
+        return False
+    return has_required_scopes(row.scopes)

@@ -1,11 +1,12 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getCapabilities, getApiSettings, postSync } from '../api/client'
 import type { ApiSettings, Capability } from '../api/types'
 import { Mail, MessageSquare, Calendar, FileText, Building2, CreditCard, Circle, Zap, ArrowLeft } from 'lucide-react'
 import { useOverlay } from '../hooks/useOverlay'
 
 const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') || 'http://127.0.0.1:8000'
+const GRANT_REQUIRED_MSG = 'Grant Gmail and Calendar access to continue'
 
 const CATEGORY_ICONS: Record<string, typeof Mail> = {
   email: Mail,
@@ -34,6 +35,7 @@ function statusLabel(status: Capability['status']): string {
 
 export function ConnectionsPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [capabilities, setCapabilities] = useState<Capability[]>(FALLBACK_CAPS)
   const [settings, setSettings] = useState<ApiSettings | null>(null)
   const [modalCap, setModalCap] = useState<Capability | null>(null)
@@ -55,6 +57,15 @@ export function ConnectionsPage() {
   useEffect(() => {
     refresh()
   }, [])
+
+  useEffect(() => {
+    if (searchParams.get('oauth_error') === 'grant_required') {
+      setSyncMsg(GRANT_REQUIRED_MSG)
+      const next = new URLSearchParams(searchParams)
+      next.delete('oauth_error')
+      setSearchParams(next, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   const demoMode = settings?.demo_mode === true
   const googleConnected = settings?.google_connected === true

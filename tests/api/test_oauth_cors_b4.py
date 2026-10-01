@@ -87,7 +87,11 @@ def test_oauth_callback_stores_encrypted_token(
             refresh_token="refresh-fixture",
             access_token="access-fixture",
             email="demo@example.com",
-            scopes="openid email https://www.googleapis.com/auth/gmail.readonly",
+            scopes=(
+                "openid email "
+                "https://www.googleapis.com/auth/gmail.readonly "
+                "https://www.googleapis.com/auth/calendar.readonly"
+            ),
         ),
     )
     client.cookies.set("opspilot_pkce", f"{state}:{verifier}")
@@ -98,7 +102,32 @@ def test_oauth_callback_stores_encrypted_token(
     )
     assert resp.status_code == 302
     assert "127.0.0.1:5173/connections" in resp.headers["location"]
+    assert "oauth_error" not in resp.headers["location"]
     assert "opspilot_operator" in resp.cookies
+
+
+def test_oauth_callback_incomplete_grant_redirects_without_cookie(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, db_session: Any
+) -> None:
+    from opspilot.integrations.google_oauth import IncompleteGrantError
+    from opspilot.persistence.repositories import oauth_credentials
+
+    verifier, _challenge = make_pkce_pair()
+    state = "state-incomplete"
+    monkeypatch.setattr(
+        "opspilot.api.v1.oauth_routes.complete_oauth",
+        lambda **kwargs: (_ for _ in ()).throw(IncompleteGrantError("incomplete_grant")),
+    )
+    client.cookies.set("opspilot_pkce", f"{state}:{verifier}")
+    resp = client.get(
+        "/api/v1/oauth/google/callback",
+        params={"code": "authcode", "state": state},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302
+    assert "oauth_error=grant_required" in resp.headers["location"]
+    assert "opspilot_operator" not in resp.cookies
+    assert oauth_credentials.is_connected(db_session, provider="google") is False
 
 
 def test_session_issue_verify(monkeypatch: pytest.MonkeyPatch) -> None:

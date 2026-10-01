@@ -117,7 +117,7 @@ def test_sync_idempotent(db_session: Session, sync_env: None) -> None:
         db_session,
         provider="google",
         account_email="demo@example.com",
-        scopes="gmail.readonly",
+        scopes=("https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly"),
         refresh_token_plaintext="rt",
     )
     tx = FakeTransport()
