@@ -266,6 +266,8 @@ class MailSendAuditRow(Base):
     operator_email: Mapped[str | None] = mapped_column(Text, nullable=True)
     demo_mode_blocked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     allowlist_denied: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    send_failed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

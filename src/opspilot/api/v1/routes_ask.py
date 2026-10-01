@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 from collections.abc import Iterator
@@ -13,7 +14,8 @@ from sqlalchemy import desc, select, update
 from sqlalchemy.orm import Session
 
 from opspilot.agent.events import event_dict
-from opspilot.agent.loop import run_ask_agent
+from opspilot.agent.loop import CancelCheck, run_ask_agent
+from opspilot.api.csrf import require_csrf_origin
 from opspilot.api.deps import get_db_session
 from opspilot.api.schemas import AskStreamRequest
 from opspilot.persistence.models import LlmCallRow, TriageDecisionRow, WorkItemRow
@@ -83,17 +85,48 @@ def _stamp_ttft(session: Session, request_id: str, ttft_ms: int) -> None:
     session.flush()
 
 
+def _disconnect_poller(http_request: Request) -> CancelCheck:
+    """Return a cancel_check that polls request.is_disconnected without awaiting in the loop."""
+
+    disconnected = {"v": False}
+
+    async def _watch() -> None:
+        try:
+            while True:
+                if await http_request.is_disconnected():
+                    disconnected["v"] = True
+                    return
+                await asyncio.sleep(0.05)
+        except Exception:  # noqa: BLE001
+            disconnected["v"] = True
+
+    # Schedule watcher when an event loop is running (ASGI); TestClient may lack one.
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            loop.create_task(_watch())
+    except RuntimeError:
+        pass
+
+    def cancel_check() -> bool:
+        return bool(disconnected["v"])
+
+    return cancel_check
+
+
 @router.post("/ask/stream")
 def ask_stream(
     payload: AskStreamRequest,
     http_request: Request,
     session: Session = Depends(get_db_session),
 ) -> StreamingResponse:
+    require_csrf_origin(http_request)
     rid = _request_id(http_request) or "ask"
     records = _latest_triage_records(session)
     gmail_only = _google_connected(session)
     operator_email = _operator_email(http_request)
     history = [{"role": h.role, "content": h.content} for h in payload.history]
+    cancel_check = _disconnect_poller(http_request)
 
     def event_gen() -> Iterator[str]:
         ttft_done = False
@@ -108,6 +141,7 @@ def ask_stream(
                 request_id=rid,
                 gmail_only=gmail_only,
                 operator_email=operator_email,
+                cancel_check=cancel_check,
             ):
                 if event.type == "token" and not ttft_done:
                     ttft_ms = int((time.perf_counter() - started) * 1000)

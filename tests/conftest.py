@@ -11,6 +11,8 @@ import pytest
 # CI already sets DATABASE_URL; load_dotenv() does not override existing keys.
 if not os.environ.get("DATABASE_URL", "").strip():
     os.environ["DATABASE_URL"] = "postgresql+psycopg://opspilot:opspilot@127.0.0.1:5432/opspilot"
+# Hermetic TestClient rarely sends Origin; dedicated CSRF tests unset this.
+os.environ.setdefault("OPSPILOT_CSRF_RELAX_DEV", "1")
 
 from sqlalchemy import create_engine as create_admin_engine
 from sqlalchemy import text

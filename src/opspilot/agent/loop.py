@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from collections.abc import Callable, Iterator
 from typing import Any
 
@@ -34,6 +35,16 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
+def _env_float(name: str, default: float) -> float:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return max(0.1, float(raw))
+    except ValueError:
+        return default
+
+
 def _history_messages(history: list[dict[str, str]] | None, *, max_turns: int = 10) -> list[Message]:
     if not history:
         return []
@@ -46,6 +57,15 @@ def _history_messages(history: list[dict[str, str]] | None, *, max_turns: int = 
             role = "user"
         out.append(Message(role=role, content=text))  # type: ignore[arg-type]
     return out
+
+
+def _tool_end_payload(tool_name: str, result: dict[str, Any]) -> dict[str, Any]:
+    """Minimized tool_end: name + ok + optional error code only (D-032)."""
+    payload: dict[str, Any] = {"tool": tool_name, "ok": bool(result.get("ok"))}
+    err = result.get("error")
+    if err is not None:
+        payload["error"] = str(err)[:64]
+    return payload
 
 
 def run_ask_agent(
@@ -65,6 +85,7 @@ def run_ask_agent(
     rid = (request_id or "ask").strip() or "ask"
     max_steps = _env_int("OPSPILOT_ASK_MAX_STEPS", 5)
     max_calls = _env_int("OPSPILOT_ASK_MAX_PROVIDER_CALLS", 8)
+    step_timeout_s = _env_float("OPSPILOT_ASK_STEP_TIMEOUT_S", 30.0)
 
     if not question or not question.strip():
         yield AgentEvent("final", rid, {"answer": "I didn't catch a question. What would you like to know?"})
@@ -77,10 +98,7 @@ def run_ask_agent(
             rid,
             {
                 "code": "no_provider",
-                "message": (
-                    "I need a free-tier LLM key to answer questions. "
-                    "Set GEMINI_API_KEY or GROQ_API_KEY (see .env.example) and I'll be ready."
-                ),
+                "message": "Ask unavailable: no free-tier provider configured.",
             },
         )
         return
@@ -120,6 +138,7 @@ def run_ask_agent(
             return
 
         provider_calls += 1
+        step_started = time.perf_counter()
         try:
             turn = gw.complete_json(
                 task="ask",
@@ -127,8 +146,16 @@ def run_ask_agent(
                 schema=AgentTurn,
                 max_tokens=800,
             )
-        except Exception as exc:  # noqa: BLE001 — soft boundary
-            yield AgentEvent("error", rid, {"code": type(exc).__name__, "message": "Ask failed."})
+        except Exception:  # noqa: BLE001 — soft boundary; never leak exception text
+            yield AgentEvent("error", rid, {"code": "ask_failed", "message": "Ask failed."})
+            return
+
+        if time.perf_counter() - step_started > step_timeout_s:
+            yield AgentEvent("error", rid, {"code": "step_timeout", "message": "Ask step timed out."})
+            return
+
+        if cancel_check and cancel_check():
+            yield AgentEvent("error", rid, {"code": "aborted", "message": "Ask cancelled."})
             return
 
         if turn.kind == "final":
@@ -152,7 +179,7 @@ def run_ask_agent(
             operator_email=operator_email,
             request_id=rid,
         )
-        yield AgentEvent("tool_end", rid, {"tool": tool_name, "ok": bool(result.get("ok")), "result": result})
+        yield AgentEvent("tool_end", rid, _tool_end_payload(tool_name, result))
         if tool_name == "draft_reply" and result.get("ok") and result.get("draft_id"):
             yield AgentEvent(
                 "draft",

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from opspilot.llm.prompt_safety import neutralize_text
 from opspilot.persistence.models import WorkItemRow
 from opspilot.persistence.repositories import mail_drafts
+from opspilot.services.mail_address import MailAddressError, assert_safe_subject, parse_single_addr_spec
 
 
 def run(
@@ -34,9 +35,11 @@ def run(
     if not row.thread_id or not row.provider_id:
         return {"ok": False, "error": "missing_thread_or_provider"}
     # Recipients server-derived from synced sender — never from model args.
-    to_addrs = neutralize_text(row.sender_or_requester).strip()
-    if not to_addrs or "@" not in to_addrs:
-        return {"ok": False, "error": "invalid_thread_recipient"}
+    try:
+        to_addrs = parse_single_addr_spec(row.sender_or_requester)
+        subject = assert_safe_subject(subject)
+    except MailAddressError as exc:
+        return {"ok": False, "error": exc.code}
     # Ignore any model-supplied to_addrs / thread / provider.
     draft = mail_drafts.create_draft(
         session,

@@ -6,7 +6,7 @@ import hashlib
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from opspilot.persistence.models import MailDraftRow
@@ -115,6 +115,23 @@ def set_status(session: Session, draft: MailDraftRow, status: str) -> MailDraftR
     draft.updated_at = datetime.now(UTC)
     session.flush()
     return draft
+
+
+def claim_for_approve(session: Session, draft_id: str) -> MailDraftRow | None:
+    """Atomic draft→approved transition. Returns row if claimed, else None."""
+    now = datetime.now(UTC)
+    result = session.execute(
+        update(MailDraftRow)
+        .where(MailDraftRow.id == draft_id)
+        .where(MailDraftRow.status == "draft")
+        .values(status="approved", updated_at=now)
+        .returning(MailDraftRow.id)
+    )
+    claimed_id = result.scalar_one_or_none()
+    session.flush()
+    if claimed_id is None:
+        return None
+    return session.get(MailDraftRow, claimed_id)
 
 
 def list_by_status(session: Session, status: str, *, limit: int = 50) -> list[MailDraftRow]:

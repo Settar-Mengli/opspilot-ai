@@ -1051,6 +1051,7 @@
             "title": "Idempotency Key"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "payload_sha256"

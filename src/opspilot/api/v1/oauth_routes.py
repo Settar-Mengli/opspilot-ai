@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
+from opspilot.api.csrf import require_csrf_origin
 from opspilot.api.deps import get_db_session
 from opspilot.api.schemas import safe_error
 from opspilot.integrations.google_http import GoogleHttpError
@@ -151,6 +152,7 @@ def post_sync(request: Request, session: Session = Depends(get_db_session)) -> d
 @router.delete("/oauth/google", response_class=JSONResponse)
 def disconnect_google(request: Request, session: Session = Depends(get_db_session)) -> JSONResponse:
     """Revoke Google token (best-effort), delete credential + cursors, clear cookie. Keeps synced data."""
+    require_csrf_origin(request)
     if demo_mode_enabled():
         raise safe_error(403, "demo_mode_blocks_oauth", "DEMO_MODE blocks Google OAuth.")
     sess = verify_session(request.cookies.get(COOKIE_NAME))

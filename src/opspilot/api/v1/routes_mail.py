@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from opspilot.api.csrf import require_csrf_origin
 from opspilot.api.deps import get_db_session
 from opspilot.api.schemas import safe_error
 from opspilot.services.mail_hitl import MailHitlError, approve_and_send, edit_draft
@@ -24,6 +25,8 @@ class DraftEditRequest(BaseModel):
 
 
 class DraftApproveRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
     payload_sha256: str = Field(..., min_length=64, max_length=64)
     idempotency_key: str | None = Field(default=None, max_length=128)
 
@@ -42,6 +45,10 @@ def _request_id(http_request: Request) -> str | None:
     return None
 
 
+def _map_hitl_error(exc: MailHitlError) -> None:
+    raise safe_error(exc.http_status, exc.code, exc.message) from exc
+
+
 @router.post("/mail/drafts/{draft_id}/edit")
 def mail_draft_edit(
     draft_id: str,
@@ -49,13 +56,13 @@ def mail_draft_edit(
     request: Request,
     session: Session = Depends(get_db_session),
 ) -> dict[str, Any]:
-    _require_operator(request)
-    # Reject if client smuggled forbidden fields via model_extra (extra=forbid by default in pydantic v2)
+    require_csrf_origin(request)
+    email = _require_operator(request)
     try:
-        return edit_draft(session, draft_id, payload.model_dump())
+        return edit_draft(session, draft_id, payload.model_dump(), operator_email=email)
     except MailHitlError as exc:
-        status = 404 if exc.code == "draft_not_found" else 400
-        raise safe_error(status, exc.code, exc.message) from exc
+        _map_hitl_error(exc)
+        raise  # pragma: no cover
 
 
 @router.post("/mail/drafts/{draft_id}/approve")
@@ -65,6 +72,7 @@ def mail_draft_approve(
     request: Request,
     session: Session = Depends(get_db_session),
 ) -> dict[str, Any]:
+    require_csrf_origin(request)
     email = _require_operator(request)
     try:
         return approve_and_send(
@@ -76,9 +84,7 @@ def mail_draft_approve(
             idempotency_key=payload.idempotency_key,
         )
     except MailHitlError as exc:
-        if exc.code == "demo_mode_blocks_send":
-            raise safe_error(403, exc.code, exc.message) from exc
-        if exc.code == "recipient_not_allowlisted":
-            raise safe_error(403, exc.code, exc.message) from exc
-        status = 404 if exc.code == "draft_not_found" else 400
-        raise safe_error(status, exc.code, exc.message) from exc
+        # Persist deny/fail audit rows written before the raise (D-027).
+        session.commit()
+        _map_hitl_error(exc)
+        raise  # pragma: no cover

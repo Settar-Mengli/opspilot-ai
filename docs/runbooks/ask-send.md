@@ -8,8 +8,12 @@ Operator path for agentic Ask (SSE) and approve-to-send Gmail replies.
 |----------|---------|
 | `OPSPILOT_ASK_MAX_STEPS` | Agent tool-loop steps (default **5**) |
 | `OPSPILOT_ASK_MAX_PROVIDER_CALLS` | Provider calls per Ask (default **8**) |
-| `OPSPILOT_SEND_RECIPIENT_ALLOWLIST` | Comma-separated emails; **unset/empty = deny all sends** |
+| `OPSPILOT_ASK_STEP_TIMEOUT_S` | Per-step wall timeout after provider return (default **30**) |
+| `OPSPILOT_SEND_RECIPIENT_ALLOWLIST` | Comma-separated emails (case-insensitive; display-name forms OK); **unset/empty = deny all sends** |
+| `OPSPILOT_SEND_MAX_PER_DAY` | Successful sends per UTC day (default **5**); exceed → **429** |
 | `OPSPILOT_DEMO_MODE` | `1` → approve/send returns **403** |
+| `OPSPILOT_CORS_ORIGINS` | Allowed Origin/Referer for cookie mutating routes (CSRF) |
+| `OPSPILOT_COOKIE_SECURE` | `1` in production → Secure cookie flag (SameSite=Lax always) |
 
 Never print allowlist contents or tokens in logs/chat.
 

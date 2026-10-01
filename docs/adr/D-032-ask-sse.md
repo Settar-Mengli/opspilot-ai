@@ -19,14 +19,14 @@ Ask UX needs progressive feedback (tokens, tool steps, drafts) without WebSocket
 |-------|---------|
 | `token` | Text delta (buffered-complete chunks acceptable for v1) |
 | `tool_start` | Tool name + args summary (no secrets) |
-| `tool_end` | Tool name + status + minimized result |
-| `draft` | Draft id + subject/body preview for HITL card |
+| `tool_end` | Tool name + `ok` + optional error **code** only (no draft body/subject) |
+| `draft` | Draft id + subject/body/`to_addrs` preview for HITL card (full content lives here) |
 | `final` | Terminal answer / completion |
-| `error` | Soft or hard failure; stream ends |
+| `error` | Soft or hard failure (`code` + `request_id` + fixed short message); stream ends |
 
-- Client disconnect / AbortController = **abort** in-flight loop; **no** auto-resume or replay of tools/sends.
+- Client disconnect / AbortController = **abort** in-flight loop via `cancel_check` (polls `request.is_disconnected`); stops before the next provider call; **no** auto-resume or replay of tools/sends.
 - Provider `stream()` may remain complete-then-one-chunk; SSE is the **agent event** stream, not necessarily true HTTP token streaming from the model vendor.
-- Keep non-stream `POST /api/v1/ask` as compat returning final text only.
+- Keep non-stream **`POST /api/v1/ask` as intentional compat** (non-agent final text only). Frontend uses **`/ask/stream`**.
 
 ## Acceptance criteria
 

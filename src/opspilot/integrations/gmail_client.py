@@ -163,6 +163,7 @@ class GmailClient:
         body: str,
     ) -> str:
         """Reply in-thread. Belt-and-suspenders DEMO_MODE + allowlist before HTTP."""
+        from opspilot.services.mail_address import MailAddressError, assert_safe_subject, format_to_header
         from opspilot.services.operator_session import demo_mode_enabled
         from opspilot.services.send_allowlist import recipients_allowed
 
@@ -172,15 +173,21 @@ class GmailClient:
             raise GoogleHttpError("recipient_not_allowlisted")
         if not thread_id or not in_reply_to_provider_id:
             raise GoogleHttpError("missing_thread_or_provider")
+        try:
+            to_header = format_to_header(to_addrs)
+            safe_subject = assert_safe_subject(subject)
+        except MailAddressError as exc:
+            raise GoogleHttpError(exc.code) from exc
 
         import email.message
 
         msg = email.message.EmailMessage()
-        msg["To"] = to_addrs
-        msg["Subject"] = subject
+        msg["To"] = to_header
+        msg["Subject"] = safe_subject
+        # Server-derived Gmail message id used as In-Reply-To / References (thread reply).
         msg["In-Reply-To"] = in_reply_to_provider_id
         msg["References"] = in_reply_to_provider_id
-        msg.set_content(body)
+        msg.set_content(body if isinstance(body, str) else str(body))
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode("ascii").rstrip("=")
         resp = self._transport.request(
             "POST",

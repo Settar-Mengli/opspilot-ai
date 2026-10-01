@@ -4,13 +4,24 @@ from __future__ import annotations
 
 import os
 
+from opspilot.services.mail_address import MailAddressError, parse_single_addr_spec
+
 
 def send_recipient_allowlist() -> frozenset[str] | None:
-    """Return allowlist set, or None when unset (deny-all)."""
+    """Return normalized allowlist set, or None when unset (deny-all)."""
     raw = os.environ.get("OPSPILOT_SEND_RECIPIENT_ALLOWLIST", "").strip()
     if not raw:
         return None
-    return frozenset(part.strip().lower() for part in raw.split(",") if part.strip())
+    out: set[str] = set()
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            out.add(parse_single_addr_spec(part))
+        except MailAddressError:
+            continue
+    return frozenset(out) if out else None
 
 
 def recipients_allowed(to_addrs: str) -> bool:
@@ -18,7 +29,8 @@ def recipients_allowed(to_addrs: str) -> bool:
     allow = send_recipient_allowlist()
     if allow is None:
         return False
-    addrs = [a.strip().lower() for a in to_addrs.replace(";", ",").split(",") if a.strip()]
-    if not addrs:
+    try:
+        addr = parse_single_addr_spec(to_addrs)
+    except MailAddressError:
         return False
-    return all(a in allow for a in addrs)
+    return addr in allow

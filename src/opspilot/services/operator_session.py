@@ -65,12 +65,13 @@ def verify_session(token: str | None) -> OperatorSession | None:
 
 def set_operator_cookie(response: Response, *, email: str) -> None:
     token = issue_session(email=email)
+    secure = os.environ.get("OPSPILOT_COOKIE_SECURE", "").strip().lower() in {"1", "true", "yes"}
     response.set_cookie(
         key=COOKIE_NAME,
         value=token,
         max_age=_MAX_AGE_SECONDS,
         httponly=True,
-        secure=False,
+        secure=secure,
         samesite="lax",
         path="/",
     )

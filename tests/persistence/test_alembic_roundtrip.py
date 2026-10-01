@@ -49,7 +49,7 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
         try:
             with engine.connect() as conn:
                 version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            assert version == "0008_ask_hitl_send"
+            assert version == "0009_mail_send_audit_failed"
             indexes = {idx["name"] for idx in inspect(engine).get_indexes("runs")}
             assert "ix_runs_finished_at" in indexes
             llm_indexes = {idx["name"] for idx in inspect(engine).get_indexes("llm_calls")}

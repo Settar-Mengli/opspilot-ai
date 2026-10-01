@@ -12,6 +12,15 @@ describe('askStream', () => {
     expect(rest).toBe('partial')
   })
 
+  it('parses minimized tool_end without draft body', () => {
+    const { events } = _parseSseChunkForTest(
+      'data: {"type":"tool_end","tool":"draft_reply","ok":true}\n\n' +
+        'data: {"type":"draft","draft_id":"md_1","subject":"S","body":"SECRET","to_addrs":"a@b.c"}\n\n',
+    )
+    expect(events[0]).toEqual({ type: 'tool_end', tool: 'draft_reply', ok: true })
+    expect(events[1]?.body).toBe('SECRET')
+  })
+
   it('enables Approve after HITL lands', () => {
     expect(ASK_APPROVE_ENABLED).toBe(true)
   })
