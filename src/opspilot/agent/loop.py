@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import os
-import time
 from collections.abc import Callable, Iterator
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -23,6 +24,10 @@ from opspilot.llm.types import Message
 from opspilot.services._llm import compact_triage_lines
 
 CancelCheck = Callable[[], bool]
+
+
+class StepTimeoutError(TimeoutError):
+    """Provider step exceeded OPSPILOT_ASK_STEP_TIMEOUT_S."""
 
 
 def _env_int(name: str, default: int) -> int:
@@ -66,6 +71,37 @@ def _tool_end_payload(tool_name: str, result: dict[str, Any]) -> dict[str, Any]:
     if err is not None:
         payload["error"] = str(err)[:64]
     return payload
+
+
+def _complete_json_with_timeout(
+    gw: BudgetAwareGateway,
+    *,
+    messages: list[Message],
+    timeout_s: float,
+) -> AgentTurn:
+    """Bound wall time for a sync gateway call without blocking on the abandoned worker.
+
+    Budget debit happens inside the gateway before the provider body runs; a timeout
+    after debit still counts as a consumed attempt. The worker is abandoned via
+    shutdown(wait=False) so the Ask loop is not blocked past timeout_s.
+    """
+    executor = ThreadPoolExecutor(max_workers=1)
+
+    def _call() -> AgentTurn:
+        return gw.complete_json(
+            task="ask",
+            messages=messages,
+            schema=AgentTurn,
+            max_tokens=800,
+        )
+
+    fut = executor.submit(_call)
+    try:
+        return fut.result(timeout=timeout_s)
+    except FuturesTimeoutError as exc:
+        raise StepTimeoutError("step_timeout") from exc
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
 
 
 def run_ask_agent(
@@ -138,20 +174,13 @@ def run_ask_agent(
             return
 
         provider_calls += 1
-        step_started = time.perf_counter()
         try:
-            turn = gw.complete_json(
-                task="ask",
-                messages=messages,
-                schema=AgentTurn,
-                max_tokens=800,
-            )
+            turn = _complete_json_with_timeout(gw, messages=messages, timeout_s=step_timeout_s)
+        except StepTimeoutError:
+            yield AgentEvent("error", rid, {"code": "step_timeout", "message": "Ask step timed out."})
+            return
         except Exception:  # noqa: BLE001 — soft boundary; never leak exception text
             yield AgentEvent("error", rid, {"code": "ask_failed", "message": "Ask failed."})
-            return
-
-        if time.perf_counter() - step_started > step_timeout_s:
-            yield AgentEvent("error", rid, {"code": "step_timeout", "message": "Ask step timed out."})
             return
 
         if cancel_check and cancel_check():

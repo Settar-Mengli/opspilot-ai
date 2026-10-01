@@ -141,13 +141,21 @@ def test_agent_abort_mid_loop_no_further_provider_or_draft(db_session: Session) 
 def test_agent_step_timeout(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
     import time
 
+    from sqlalchemy import text
+
     monkeypatch.setenv("OPSPILOT_ASK_STEP_TIMEOUT_S", "0.05")
+    monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_REQ_DAY", "100")
+    monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_TOK_DAY", "100000")
 
     class SlowFake(FakeProvider):
         def complete_json(self, **kwargs):  # type: ignore[no-untyped-def]
-            time.sleep(0.12)
+            time.sleep(0.25)
             return _json_result({"kind": "final", "final": "too late"})
 
+    before = db_session.execute(
+        text("SELECT COALESCE(SUM(req_count),0) FROM llm_budget_counters WHERE provider = 'gemini'")
+    ).scalar()
+    started = time.perf_counter()
     events = list(
         run_ask_agent(
             question="Hi",
@@ -156,8 +164,16 @@ def test_agent_step_timeout(db_session: Session, monkeypatch: pytest.MonkeyPatch
             providers=[SlowFake(name="gemini")],
         )
     )
+    elapsed = time.perf_counter() - started
     assert events[-1].type == "error"
     assert events[-1].data.get("code") == "step_timeout"
+    # Wall time bounded near timeout (not full 0.25s sleep on the calling thread).
+    assert elapsed < 0.2
+    after = db_session.execute(
+        text("SELECT COALESCE(SUM(req_count),0) FROM llm_budget_counters WHERE provider = 'gemini'")
+    ).scalar()
+    # Debit happens inside the gateway before/during the provider body; timeout still counts.
+    assert int(after or 0) >= int(before or 0) + 1
 
 
 @pytest.mark.usefixtures("allow_llm")
