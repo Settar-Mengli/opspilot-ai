@@ -2,17 +2,32 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { DashboardPage } from './DashboardPage'
-import { getTriage } from '../api/client'
+import { getApiSettings, getTriage } from '../api/client'
 
 vi.mock('../api/client', () => ({
   getTriage: vi.fn(),
+  getApiSettings: vi.fn(async () => ({
+    provider: 'anthropic',
+    model: 'x',
+    api_key_set: true,
+    demo_mode: false,
+    google_connected: false,
+  })),
 }))
 
 const getTriageMock = vi.mocked(getTriage)
+const getApiSettingsMock = vi.mocked(getApiSettings)
 
 describe('DashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getApiSettingsMock.mockResolvedValue({
+      provider: 'anthropic',
+      model: 'x',
+      api_key_set: true,
+      demo_mode: false,
+      google_connected: false,
+    })
   })
 
   it('clears error on successful triage load (success-path setError null)', async () => {

@@ -9,6 +9,8 @@ interface GreetingBlockProps {
   timeWindowLine?: string
   dayShapeLine?: string
   credibilityLine?: string
+  /** When false, omit the Sample badge (Google connected). Default true. */
+  showSampleBadge?: boolean
 }
 
 export function GreetingBlock({
@@ -20,6 +22,7 @@ export function GreetingBlock({
   timeWindowLine,
   dayShapeLine,
   credibilityLine,
+  showSampleBadge = true,
 }: GreetingBlockProps) {
   return (
     <section className="greeting-block">
@@ -38,7 +41,9 @@ export function GreetingBlock({
       )}
       {dayShapeLine ? (
         <p className="greeting-dayshape">
-          <span className="sample-badge" aria-label="Sample data">Sample</span>
+          {showSampleBadge ? (
+            <span className="sample-badge" aria-label="Sample data">Sample</span>
+          ) : null}
           {dayShapeLine}
         </p>
       ) : null}
