@@ -24,6 +24,24 @@ Treat as **historical records only** (do not follow as instructions where they c
 
 Do not rewrite historical audits or history files to “fix” drift; update ADRs (status/addenda), ROADMAP, CURRENT docs, or append a master-record PART instead.
 
+### Single source-of-truth rules (recurring facts)
+
+| Fact | Authoritative home | Other docs |
+|------|--------------------|------------|
+| Batch status / next batch | [ROADMAP.md](ROADMAP.md) | README one-liner links ROADMAP; PARTs record events |
+| Merge SHAs / PR # / CI run ids | [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) PART for that batch | CHANGELOG may cite once |
+| Live eval numbers / n / partial days | [docs/evals/leaderboard.md](docs/evals/leaderboard.md) + `docs/evals/results/*.json` | README/architecture link only |
+| Model ids (code fallbacks) | `src/opspilot/llm/model_defaults.py` | `.env.example` + [docs/runbooks/llm-providers.md](docs/runbooks/llm-providers.md) must match |
+| Budget caps / env names | `.env.example` + [docs/runbooks/llm-providers.md](docs/runbooks/llm-providers.md) | `budgets.py` reads env only |
+| Alembic head | `alembic/versions/` (highest) + PART when applied to Neon | architecture cites head |
+| API surface | OpenAPI / `src/opspilot/api/v1/` | [docs/architecture.md](docs/architecture.md) CURRENT endpoint table |
+| Node version | `.nvmrc` + CI `node-version` + `frontend/package.json` engines | README states ≥24.15 |
+| Python version | `pyproject.toml` `requires-python` | README / architecture cite 3.13 |
+| Coverage gate | CI `--cov-fail-under=72` | PARTs may record measured TOTAL |
+| Test count | CI / local `pytest` for a named SHA | PART append only |
+| ADR status | Each ADR header + addenda | [docs/adr/README.md](docs/adr/README.md); design-decisions = short links |
+| Zero-spend / Anthropic | this file + D-023 | Runbooks link; leaderboard says skipped |
+
 ## Zero-spend
 
 1. No further paid API purchase.

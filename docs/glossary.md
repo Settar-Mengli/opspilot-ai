@@ -45,7 +45,7 @@
 - Gateway: Hand-rolled LLM routing/metering/budget choke point (D-012).
 - Hermetic: Tests that do not call live LLMs or depend on ambient `.env` keys / shared `data/output`.
 - DEMO_MODE: Visitor-safe mode; blocks send and operator-only actions.
-- Neon: Hosted Postgres provider chosen for TARGET persistence (D-008).
+- Neon: Hosted Postgres (D-008); **CURRENT** for operator demo STOP LIVE; local Docker Postgres for hermetic/dev and B3.1 live evals.
 - Prepaid Anthropic gate: Opt-in allowlist + token/USD budget; never default/tests/CI (D-023).
 - LlmCall: Persisted metering row for tokens/latency/cost accounting.
 - X1: Sync idempotency (B4).

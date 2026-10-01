@@ -1035,3 +1035,73 @@ Red commits and fix-forward: `9ba9190` OpenAPI drift -> `8b6043b`; `a3f6333` / `
 | SHA | Subject | CI |
 |---|---|---|
 | _(tip)_ | final records commit -- CI run on PR checks | CI run on PR checks |
+
+## PART 12 -- B3.1 live remainder closeout -- 2026-10-01
+
+### Summary
+
+- Branch: `b3.1/live-remainder` (cut from `main` @ `6f56b37`).
+- Scope delivered: pre-live guards + docs truth + Cloudflare D5/combined + OpenRouter D6 only.
+- **Owner decision deviation -- D-B31-4 amended 2026-10-01:** OpenRouter stopped after D6 to unblock **B5**. D7-D9/D10 and the required OR combined artifact (`live-openrouter-combined.json`) are **CANCELLED** (not deferred inside B3.1). Remainder (triage 016-040 + red-team 20) recorded as **OPTIONAL** backlog with **no owner batch**.
+- Anthropic skipped (P7). No Neon writes during live days (`database host=127`). Eval-path freeze held vs `LAST_GUARD_SHA` `0a4f5d5` (empty `git diff` on `src/opspilot/evals`, `src/opspilot/llm`, `evals/datasets`).
+- **Next:** **B5** (Ask-mode delta pre-audit first).
+- **Merge SHA + merge CI run id:** intentionally **not** filled here (append-only). Record them in the **next batch first PART (B5)**.
+
+### PART 11 tip CI fill-in (was `_(tip)_` on main)
+
+| Item | Value |
+|---|---|
+| Docs tip SHA | `ba6c0c2` (`docs(b4): PART 11 merge closeout; ROADMAP/README next B3.1`) |
+| Merge to main | PR #38 -> `6f56b37` |
+| CI | [36826578995](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36826578995) **success** (on merge SHA `6f56b37`) |
+
+### S1 baseline / toolchain
+
+- Hermetic pytest after guards: **288** passed; coverage TOTAL **82%** (CI fail-under 72).
+- Collect-only at closeout: **288** tests.
+- Node local **v24.14.0** vs CI / `.nvmrc` **24.15** (known drift; not blocking docs-only closeout).
+
+### Guards
+
+- Five planned guard commits were **squashed into one** `0a4f5d5` (`feat(evals): B3.1 live guards...`); CI [36883926570](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36883926570) **success**.
+- Tests covering F1-F4 + ceiling: `test_checkpoint_preserves_rows_on_mid_run_error`, `test_atomic_write_roundtrip`, `test_missing_from_selects_remainder_ids`, `test_suite_redteam_only`, `test_require_local_database_refuses_neon`, `test_require_local_database_allows_localhost`, `test_on_after_case_commit_persists_budget`, `test_max_requests_ceiling_checkpoints`.
+
+### Live metrics (n on every published metric)
+
+| Day | Provider | Validity | Accepted-only F1 | Repair% | ASR | Blocked | Artifact |
+|---|---|---|---|---|---|---|---|
+| D5 | cloudflare | 100% (27/27) | 0.564 (n=7) | 0.0 | 0.150 (3/20) | 0 | `live-cloudflare-day5.json` |
+| CF combined | cloudflare | 100% (60/60) | 0.706 (n=40) | 0.0 | 0.150 (3/20) | 0 | `live-cloudflare-combined.json` |
+| D6 | openrouter | 100% (15/15) | 0.619 (n=15) | 0.0 (n=15) | N/A (n=0) | 0 (n=0) | `live-openrouter-day6.json` |
+
+- CF resume day: **not required** (D5 zero failures).
+- D10: **not required / cancelled** with D7-D9 under D-B31-4 amendment.
+- CF footnote SHAs: D4 @ `5fbe8f71c3dd0293716147d19d97f86e48548e47` + D5 @ `bae7c164ec0a38f0e096529c1aeef06057aa00a3`; harness `b3-live/v2`.
+- OR D6 artifact `git_sha` `633d88236cc292c5bc7a4688bfcd68ab71feced6`; model `nvidia/nemotron-3-super-120b-a12b:free`.
+
+### Deviations
+
+| ID | Note |
+|---|---|
+| Guard squash | Planned 5 CI-green guard pushes -> single commit `0a4f5d5` (APIs share `run_live`/CLI). |
+| D-B31-4 amended 2026-10-01 | OR stop at D6; D7-D9/D10 + OR combined cancelled; OPTIONAL backlog only. |
+| Architecture GREP1 | B2.1 bullet rephrased (`bae7c16`) so stale `Alembic 0005` pattern is empty. |
+
+### CI (branch commits)
+
+| SHA | Subject | CI |
+|---|---|---|
+| `0a4f5d5` | feat(evals): B3.1 live guards (checkpoint, selection, local-DB, ceiling) | success ([36883926570](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36883926570)) |
+| `6eeed06` | docs: B3.1 truth slice -- README, architecture, ROADMAP, SoT rules | success ([36885051568](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36885051568)) |
+| `bae7c16` | docs(architecture): rephrase B2.1 migration 0005 as historical | success ([36886871974](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36886871974)) |
+| `633d882` | docs(evals): Cloudflare D5 live + combined CF leaderboard | success ([36888069905](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36888069905)) |
+| `93ea59b` | docs(evals): OpenRouter D6 live triage 001-015 + leaderboard | success ([36889976709](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36889976709)) |
+| `d95de78` | docs(b3.1): PART 12 closeout; OR stop at D6; CURRENT bump; next B5 | success ([36896021342](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36896021342)) |
+| _(tip)_ | docs(b3.1): PART 12 tip fill (PR #39 + closeout CI) | CI run on PR checks |
+
+### PR
+
+- PR: [#39](https://github.com/Settar-Mengli/opspilot-ai/pull/39) on branch `b3.1/live-remainder`.
+- Closeout records SHA: `d95de78`. Tip-fill commit SHA = this tip row after push.
+- Agent does **not** merge; owner merges after CI green.
+- **Merge SHA + merge CI run id:** record in **B5** first PART (not here).

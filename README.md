@@ -4,14 +4,14 @@
 
 [![CI](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml)
 
-**CURRENT on `main`:** B0–B4 merged (gateway, evals, Gmail + Calendar). **Next:** **B3.1** live remainder, then **B5**. See:
+**CURRENT on `main`:** B0–B4 merged; **B3.1** live remainder complete on PR (CF combined + OpenRouter **partial** D6). **Next:** **B5**. See:
 
 - [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history, baseline, locked plan
 - [ROADMAP.md](ROADMAP.md) — batches **B0–B7** (+ B1.5 / B2.1 / B3.1)
-- [docs/evals/leaderboard.md](docs/evals/leaderboard.md) — live eval numbers (in-repo JSON only; CF partial / OpenRouter pending)
+- [docs/evals/leaderboard.md](docs/evals/leaderboard.md) — live eval numbers (in-repo JSON only; CF combined; OR partial D6)
 - [docs/architecture.md](docs/architecture.md) — CURRENT vs TARGET
 - [docs/design-decisions.md](docs/design-decisions.md) — portfolio ADR index
-- [docs/adr/](docs/adr/) — ADRs D-001–D-029
+- [docs/adr/](docs/adr/) — ADRs D-001–D-030
 
 Built with TypeScript, React, FastAPI, Postgres, and a **hand-rolled multi-provider LLM gateway** (free-tier Gemini → Groq → Mistral → Cloudflare → OpenRouter → Ollama → rules). Anthropic is prepaid-gated only (D-023; off by default).
 
@@ -33,16 +33,16 @@ Referenced from existing Playwright container baselines (not regenerated):
 
 ## What it does today (CURRENT)
 
-- Ingests fictional operational work items (JSON)
+- Ingests fictional operational work items (JSON) and operator **Gmail/Calendar** sync (OAuth Testing; DEMO_MODE)
 - Triages via free-tier gateway **or** deterministic rules when no key / `OPSPILOT_FORCE_RULES`
-- `/api/v1` briefing / ask / evening / insights from **Postgres** (D-025)
+- `/api/v1` briefing / ask / evening / insights from **Postgres** (D-025); Neon used for operator demo STOP LIVE
 - Mobile-first React dashboard + ≥1280 three-pane desktop shell
 - Settings GET-only (`provider`, `model`, `api_key_set`)
 - `LlmCall` traces + UTC-day budgets; `X-Request-ID` on requests
 
-**Eval metrics (B3 branch / post-merge):** published only in [docs/evals/leaderboard.md](docs/evals/leaderboard.md) + [docs/evals/results/](docs/evals/results/) (no invented README scores). Hermetic CI floor = rules macro-F1 ≥ **0.30**. Live: Gemini/Groq/Mistral 60/60; Cloudflare **partial 33/60**; OpenRouter **pending** (B3.1); Anthropic **skipped**.
+**Eval metrics:** published only in [docs/evals/leaderboard.md](docs/evals/leaderboard.md) + [docs/evals/results/](docs/evals/results/) (no invented README scores). Hermetic CI floor = rules macro-F1 ≥ **0.30**. Live: Gemini/Groq/Mistral 60/60; Cloudflare **combined 60/60** (F1 0.706 n=40); OpenRouter **partial** D6 triage n=15 F1 0.619 (ASR N/A; D7–D9 cancelled); Anthropic **skipped**.
 
-**Not yet:** public deploy, Neon hosted DB, Gmail sync, agentic tools, Telegram morning run.
+**Not yet:** public deploy, agentic tools, Telegram morning run.
 
 ---
 

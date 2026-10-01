@@ -8,7 +8,8 @@ import subprocess
 import time
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
-from typing import Any
+from pathlib import Path
+from typing import Any, Literal
 
 from sqlalchemy.orm import Session
 
@@ -20,6 +21,7 @@ from opspilot.evals.asr import (
     summarize_redteam_case,
 )
 from opspilot.evals.dataset import case_to_work_item, load_redteam_cases, load_triage_cases
+from opspilot.evals.report import write_eval_json
 from opspilot.evals.scorer import score_triage_fields, validity_rate
 from opspilot.llm.capabilities import json_mode_for
 from opspilot.llm.circuit import CircuitBreaker
@@ -36,6 +38,10 @@ from opspilot.llm.routing import build_providers
 from opspilot.llm.schemas.triage import TriagePayload
 from opspilot.llm.types import AttemptStatus, Message
 from opspilot.models.schemas import WorkItem
+from opspilot.persistence.db import database_host_label
+
+SuiteName = Literal["triage", "redteam", "both"]
+_LOCAL_DB_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
 
 HARNESS_VERSION = "b3-live/v2"
 
@@ -70,6 +76,14 @@ class LiveEvalError(ValueError):
     """Configuration / policy error for live evals."""
 
 
+class LiveCeilingReached(LiveEvalError):
+    """Run stopped because ``--max-requests`` was exhausted."""
+
+    def __init__(self, message: str, *, partial: dict[str, Any]) -> None:
+        super().__init__(message)
+        self.partial = partial
+
+
 def require_budget_caps(provider_name: str) -> tuple[int, int]:
     """Print req/tok caps; abort if either is unset (fail closed before provider calls)."""
     from opspilot.llm.budgets import req_cap, tok_cap
@@ -81,6 +95,91 @@ def require_budget_caps(provider_name: str) -> tuple[int, int]:
     if rc is None or tc is None:
         raise LiveEvalError(f"budget caps unset for {name}: req_cap={rc} tok_cap={tc}; abort without provider calls")
     return rc, tc
+
+
+def require_local_database_url() -> str:
+    """Fail closed unless DATABASE_URL host is loopback (D-B31-3). Never prints the URL."""
+    from sqlalchemy.engine import make_url
+
+    from opspilot.persistence.db import get_database_url
+
+    url = get_database_url()
+    host = (make_url(url).host or "").strip().lower()
+    label = database_host_label(url)
+    print(f"database host={label}")
+    allow_nonlocal = os.environ.get("OPSPILOT_LIVE_ALLOW_NONLOCAL_DB", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    if host in _LOCAL_DB_HOSTS:
+        return host
+    if "neon.tech" in host or host not in _LOCAL_DB_HOSTS:
+        if allow_nonlocal:
+            print(f"WARNING: non-local database host={label} allowed via OPSPILOT_LIVE_ALLOW_NONLOCAL_DB")
+            return host
+        raise LiveEvalError(
+            f"live eval refuses non-local DATABASE_URL host={label}; "
+            "use local Postgres (127.0.0.1/localhost) or set OPSPILOT_LIVE_ALLOW_NONLOCAL_DB=1 (emergency only)"
+        )
+    return host
+
+
+def parse_case_ids(raw: str | None) -> set[str] | None:
+    if raw is None:
+        return None
+    ids = {part.strip() for part in raw.split(",") if part.strip()}
+    return ids or None
+
+
+def ids_present_in_artifact(artifact: dict[str, Any]) -> set[str]:
+    present: set[str] = set()
+    for row in artifact.get("cases") or []:
+        present.add(str(row["id"]))
+    for row in artifact.get("redteam") or []:
+        present.add(str(row["id"]))
+    return present
+
+
+def missing_case_ids_from_artifact(artifact: dict[str, Any], *, suite: SuiteName = "both") -> set[str]:
+    """Corpus ids not yet present in a partial/prior live artifact."""
+    present = ids_present_in_artifact(artifact)
+    missing: set[str] = set()
+    if suite in {"triage", "both"}:
+        missing.update(str(c["id"]) for c in load_triage_cases() if str(c["id"]) not in present)
+    if suite in {"redteam", "both"}:
+        missing.update(str(c["id"]) for c in load_redteam_cases() if str(c["id"]) not in present)
+    return missing
+
+
+def print_budget_remaining(session: Session, provider_name: str) -> None:
+    """Print UTC-day remaining REQ/TOK after caps are known."""
+    from sqlalchemy import text
+
+    from opspilot.llm.budgets import req_cap, tok_cap, utc_budget_day
+
+    name = provider_name.strip().lower()
+    rc = req_cap(name)
+    tc = tok_cap(name)
+    day = utc_budget_day()
+    row = session.execute(
+        text(
+            """
+            SELECT req_count, tok_count FROM llm_budget_counters
+            WHERE provider = :provider AND day_utc = :day_utc
+            """
+        ),
+        {"provider": name, "day_utc": day},
+    ).first()
+    used_req = int(row[0]) if row is not None else 0
+    used_tok = int(row[1]) if row is not None else 0
+    rem_req = None if rc is None else max(0, rc - used_req)
+    rem_tok = None if tc is None else max(0, tc - used_tok)
+    print(
+        f"budget_remaining provider={name} day_utc={day.isoformat()} "
+        f"req_used={used_req} req_remaining={rem_req} tok_used={used_tok} tok_remaining={rem_tok}"
+    )
 
 
 def resolve_single_provider(provider_name: str, *, providers: Sequence[LlmProvider] | None = None) -> list[LlmProvider]:
@@ -357,12 +456,20 @@ def run_live(
     triage_limit: int | None = None,
     redteam_limit: int | None = None,
     case_ids: set[str] | None = None,
+    suite: SuiteName = "both",
     inter_case_sleep_s: float | None = None,
     sleeper: Callable[[float], None] = time.sleep,
+    checkpoint_path: Path | str | None = None,
+    on_after_case: Callable[[], None] | None = None,
+    max_requests: int | None = None,
 ) -> dict[str, Any]:
     """Run triage + red-team through BudgetAwareGateway with one provider."""
     if not llm_allowed():
         raise LiveEvalError("remote LLM disabled by policy (FORCE_RULES / LLM_DISABLE)")
+    if suite not in {"triage", "redteam", "both"}:
+        raise LiveEvalError(f"invalid suite={suite!r}; expected triage|redteam|both")
+    if max_requests is not None and max_requests <= 0:
+        raise LiveEvalError(f"--max-requests must be positive, got {max_requests}")
     require_budget_caps(provider_name)
     resolved = resolve_single_provider(provider_name, providers=providers)
     provider = resolved[0]
@@ -371,18 +478,27 @@ def run_live(
 
     rate_limit_events = 0
     last_retry_after: float | None = None
+    requests_used = 0
     db_recorder = session_attempt_recorder(session)
 
     def _recorder(**kwargs: Any) -> None:
-        nonlocal rate_limit_events, last_retry_after
+        nonlocal rate_limit_events, last_retry_after, requests_used
         db_recorder(**kwargs)
         result = kwargs.get("result")
         status = getattr(result, "status", None)
-        if status is AttemptStatus.RATE_LIMITED or getattr(result, "error_code", None) in {"429", "http_429"}:
-            rate_limit_events += 1
-            ra = getattr(result, "retry_after_s", None)
-            if ra is not None:
-                last_retry_after = float(ra)
+        error_code = getattr(result, "error_code", None)
+        # Count real provider attempts that consumed a request debit (not budget_denied).
+        if status is AttemptStatus.BUDGET_DENIED and error_code in {"req_cap", "tok_cap", "no_session"}:
+            pass
+        elif status is not None:
+            # Recorder is invoked after try_consume_request on structured attempts.
+            if status is AttemptStatus.RATE_LIMITED or error_code in {"429", "http_429"}:
+                rate_limit_events += 1
+                ra = getattr(result, "retry_after_s", None)
+                if ra is not None:
+                    last_retry_after = float(ra)
+            if status is not AttemptStatus.BUDGET_DENIED:
+                requests_used += 1
 
     circuit = CircuitBreaker()
     gw = BudgetAwareGateway(
@@ -395,21 +511,83 @@ def run_live(
         request_pacer=pacer.wait,
     )
 
-    triage_cases = load_triage_cases()
+    triage_cases = load_triage_cases() if suite in {"triage", "both"} else []
     if triage_limit is not None:
         triage_cases = triage_cases[:triage_limit]
-    redteam_cases = load_redteam_cases()
+    redteam_cases = load_redteam_cases() if suite in {"redteam", "both"} else []
     if redteam_limit is not None:
         redteam_cases = redteam_cases[:redteam_limit]
     if case_ids is not None:
         triage_cases = [c for c in triage_cases if str(c["id"]) in case_ids]
         redteam_cases = [c for c in redteam_cases if str(c["id"]) in case_ids]
+    if not triage_cases and not redteam_cases:
+        raise LiveEvalError("no cases selected for live run (check --case-ids / --missing-from / --suite)")
 
     latencies: list[float] = []
     case_rows: list[dict[str, Any]] = []
+    redteam_rows: list[dict[str, Any]] = []
     prompt_versions: list[str] = []
+    ceiling_hit = False
+
+    def _base_snapshot() -> dict[str, Any]:
+        model_id = DEFAULT_MODELS.get(provider.name.lower(), "")
+        model_attr = getattr(provider, "default_model", None) or getattr(provider, "_default_model", None)
+        if isinstance(model_attr, str) and model_attr:
+            model_id = model_attr
+        prompt_version = prompt_versions[-1] if prompt_versions else None
+        return {
+            "mode": "live",
+            "created_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            "provider": provider.name,
+            "anthropic": "skipped",
+            "harness_version": HARNESS_VERSION,
+            "git_sha": _git_sha(),
+            "model": model_id,
+            "json_mode": str(json_mode_for(provider.name, model_id or None)),
+            "max_tokens": TRIAGE_STRUCTURED_MAX_TOKENS,
+            "prompt_version": prompt_version,
+            "rate_limit_events": rate_limit_events,
+            "min_interval_s": min_interval,
+            "requests_used": requests_used,
+            "max_requests": max_requests,
+            "latency_ms": {
+                "p50": _percentile(latencies, 50),
+                "p95": _percentile(latencies, 95),
+                "mean": statistics.fmean(latencies) if latencies else None,
+            },
+            "cases": list(case_rows),
+            "redteam": list(redteam_rows),
+        }
+
+    def _checkpoint(*, partial: bool, status: str | None = None) -> dict[str, Any]:
+        snap = _base_snapshot()
+        snap["partial"] = partial
+        if status is not None:
+            snap["run_status"] = status
+        out = recompute_live_metrics(snap)
+        if checkpoint_path is not None:
+            write_eval_json(checkpoint_path, out)
+        return out
+
+    def _after_case() -> None:
+        _checkpoint(partial=True)
+        if on_after_case is not None:
+            on_after_case()
+
+    def _ensure_ceiling() -> None:
+        nonlocal ceiling_hit
+        if max_requests is None:
+            return
+        if requests_used >= max_requests:
+            ceiling_hit = True
+            partial = _checkpoint(partial=True, status="ceiling_reached")
+            raise LiveCeilingReached(
+                f"ceiling reached: requests_used={requests_used} max_requests={max_requests}",
+                partial=partial,
+            )
 
     for case in triage_cases:
+        _ensure_ceiling()
         circuit.reset(provider.name)
         item = _case_work_item(case, inject_payload=False)
         allowed = _allowed_ids_for_case(case)
@@ -435,18 +613,19 @@ def run_live(
             if status == "grounding_failed" and "error_class" not in row:
                 row["error_class"] = "grounding"
             case_rows.append(row)
-            continue
-        case_rows.append(
-            {
-                "id": case["id"],
-                "status": "accepted",
-                "pred": _pred_row(payload),
-                "repaired": repaired,
-            }
-        )
+        else:
+            case_rows.append(
+                {
+                    "id": case["id"],
+                    "status": "accepted",
+                    "pred": _pred_row(payload),
+                    "repaired": repaired,
+                }
+            )
+        _after_case()
 
-    redteam_rows: list[dict[str, Any]] = []
     for case in redteam_cases:
+        _ensure_ceiling()
         circuit.reset(provider.name)
         item = _case_work_item(case, inject_payload=True)
         allowed = _allowed_ids_for_case(case)
@@ -476,44 +655,20 @@ def run_live(
             if is_defense_blocked(status):
                 row["defense_blocked"] = True
             redteam_rows.append(row)
-            continue
-        row["pred"] = _pred_row(payload)
-        row["asr_success"] = attack_succeeded(
-            gold_labels=case["gold_labels"],
-            attack_targets=case["attack_targets"],
-            accepted=payload,
-        )
-        redteam_rows.append(row)
+        else:
+            row["pred"] = _pred_row(payload)
+            row["asr_success"] = attack_succeeded(
+                gold_labels=case["gold_labels"],
+                attack_targets=case["attack_targets"],
+                accepted=payload,
+            )
+            redteam_rows.append(row)
+        _after_case()
 
-    model_id = DEFAULT_MODELS.get(provider.name.lower(), "")
-    # Prefer provider-reported default if FakeProvider / override.
-    model_attr = getattr(provider, "default_model", None) or getattr(provider, "_default_model", None)
-    if isinstance(model_attr, str) and model_attr:
-        model_id = model_attr
-    prompt_version = prompt_versions[-1] if prompt_versions else None
-
-    result: dict[str, Any] = {
-        "mode": "live",
-        "created_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
-        "provider": provider.name,
-        "anthropic": "skipped",
-        "harness_version": HARNESS_VERSION,
-        "git_sha": _git_sha(),
-        "model": model_id,
-        "json_mode": str(json_mode_for(provider.name, model_id or None)),
-        "max_tokens": TRIAGE_STRUCTURED_MAX_TOKENS,
-        "prompt_version": prompt_version,
-        "rate_limit_events": rate_limit_events,
-        "min_interval_s": min_interval,
-        "latency_ms": {
-            "p50": _percentile(latencies, 50),
-            "p95": _percentile(latencies, 95),
-            "mean": statistics.fmean(latencies) if latencies else None,
-        },
-        "cases": case_rows,
-        "redteam": redteam_rows,
-    }
-    return recompute_live_metrics(result)
+    final = _checkpoint(partial=False, status="completed")
+    if ceiling_hit:
+        final["run_status"] = "ceiling_reached"
+    return final
 
 
 def merge_live_results(base: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:
@@ -544,6 +699,7 @@ def merge_live_results(base: dict[str, Any], patch: dict[str, Any]) -> dict[str,
             "json_mode": patch.get("json_mode") or base.get("json_mode"),
             "max_tokens": patch.get("max_tokens") or base.get("max_tokens") or TRIAGE_STRUCTURED_MAX_TOKENS,
             "prompt_version": patch.get("prompt_version") or base.get("prompt_version"),
+            "partial": False,
         }
     )
     # Always recompute F1/ASR/repair from rows — never keep stale base F1.
