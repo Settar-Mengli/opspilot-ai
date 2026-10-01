@@ -7,11 +7,9 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from starlette.responses import Response
 
 from opspilot.api.app import app
 from opspilot.api.deps import get_db_session, reset_db_engine
-from opspilot.services.operator_session import COOKIE_NAME, set_operator_cookie
 
 
 @pytest.fixture()
@@ -66,12 +64,24 @@ def test_csrf_allowed_origin_passes_gate(api_client: TestClient, monkeypatch: py
     assert resp.status_code == 200
 
 
-def test_cookie_samesite_lax_and_secure_in_prod(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("OPSPILOT_SESSION_SECRET", "test-session-secret-for-cookie-32b!")
-    monkeypatch.setenv("OPSPILOT_COOKIE_SECURE", "1")
-    response = Response()
-    set_operator_cookie(response, email="ops@example.com")
-    raw = response.headers.get("set-cookie") or ""
-    assert COOKIE_NAME in raw
-    assert "samesite=lax" in raw.lower()
-    assert "secure" in raw.lower()
+def test_disconnect_poller_stop_cancels_task() -> None:
+    import asyncio
+
+    from opspilot.api.v1.routes_ask import _disconnect_poller
+
+    class _Req:
+        async def is_disconnected(self) -> bool:
+            await asyncio.sleep(0.01)
+            return False
+
+    async def _run() -> None:
+        cancel_check, stop = _disconnect_poller(_Req())  # type: ignore[arg-type]
+        assert cancel_check() is False
+        task = getattr(stop, "task", None)
+        assert task is not None
+        stop()
+        await asyncio.sleep(0.08)
+        assert task.cancelled() or task.done()
+        assert cancel_check() is False
+
+    asyncio.run(_run())

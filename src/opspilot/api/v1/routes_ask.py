@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import Any
 
+import anyio
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import desc, select, update
@@ -23,6 +25,9 @@ from opspilot.persistence.repositories import oauth_credentials
 from opspilot.services.operator_session import COOKIE_NAME, verify_session
 
 router = APIRouter(tags=["ask"])
+_logger = logging.getLogger("opspilot.api.ask")
+
+PollerStop = Callable[[], None]
 
 
 def _request_id(http_request: Request) -> str | None:
@@ -85,10 +90,15 @@ def _stamp_ttft(session: Session, request_id: str, ttft_ms: int) -> None:
     session.flush()
 
 
-def _disconnect_poller(http_request: Request) -> CancelCheck:
-    """Return a cancel_check that polls request.is_disconnected without awaiting in the loop."""
+def _disconnect_poller(http_request: Request) -> tuple[CancelCheck, PollerStop]:
+    """Poll request.is_disconnected; return cancel_check + stop().
 
+    Sync StreamingResponse runs the generator in a worker thread; cancel_check uses
+    anyio.from_thread.run to probe disconnection on the event loop. stop() cancels
+    the background watcher task on every stream exit path.
+    """
     disconnected = {"v": False}
+    state: dict[str, Any] = {"task": None}
 
     async def _watch() -> None:
         try:
@@ -97,21 +107,72 @@ def _disconnect_poller(http_request: Request) -> CancelCheck:
                     disconnected["v"] = True
                     return
                 await asyncio.sleep(0.05)
-        except Exception:  # noqa: BLE001
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:  # noqa: BLE001 — narrow log; treat as disconnect
+            _logger.warning(
+                "ask_disconnect_poller_error error_code=%s",
+                type(exc).__name__,
+            )
             disconnected["v"] = True
 
-    # Schedule watcher when an event loop is running (ASGI); TestClient may lack one.
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            loop.create_task(_watch())
+        loop = asyncio.get_running_loop()
+        state["task"] = loop.create_task(_watch())
     except RuntimeError:
         pass
 
     def cancel_check() -> bool:
+        if disconnected["v"]:
+            return True
+        try:
+            if anyio.from_thread.run(http_request.is_disconnected):
+                disconnected["v"] = True
+                return True
+        except Exception as exc:  # noqa: BLE001
+            _logger.warning(
+                "ask_disconnect_probe_error error_code=%s",
+                type(exc).__name__,
+            )
         return bool(disconnected["v"])
 
-    return cancel_check
+    def stop() -> None:
+        task = state.get("task")
+        if task is None:
+            return
+        if not task.done():
+            task.cancel()
+
+        async def _drain() -> None:
+            try:
+                await task
+            except asyncio.CancelledError:
+                return
+            except Exception:  # noqa: BLE001 — drain only
+                return
+
+        try:
+            loop = task.get_loop()
+        except Exception:  # noqa: BLE001
+            return
+        if loop.is_closed():
+            return
+        try:
+            running = asyncio.get_running_loop()
+        except RuntimeError:
+            running = None
+        if running is loop:
+            # Same loop: schedule drain; do not block the loop thread.
+            loop.create_task(_drain())
+            return
+        try:
+            fut = asyncio.run_coroutine_threadsafe(_drain(), loop)
+            fut.result(timeout=1.0)
+        except Exception:  # noqa: BLE001 — best-effort drain
+            return
+
+    stop.task = state.get("task")  # type: ignore[attr-defined]
+    return cancel_check, stop
 
 
 @router.post("/ask/stream")
@@ -126,7 +187,7 @@ def ask_stream(
     gmail_only = _google_connected(session)
     operator_email = _operator_email(http_request)
     history = [{"role": h.role, "content": h.content} for h in payload.history]
-    cancel_check = _disconnect_poller(http_request)
+    cancel_check, stop_poller = _disconnect_poller(http_request)
 
     def event_gen() -> Iterator[str]:
         ttft_done = False
@@ -152,5 +213,7 @@ def ask_stream(
         except Exception:  # noqa: BLE001
             session.rollback()
             yield _sse_line({"type": "error", "request_id": rid, "code": "stream_failed", "message": "Ask failed."})
+        finally:
+            stop_poller()
 
     return StreamingResponse(event_gen(), media_type="text/event-stream")
