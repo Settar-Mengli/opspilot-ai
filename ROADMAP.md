@@ -169,7 +169,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B4 — Demo Google inbox/calendar (M5)
 
-- **Status:** Complete on `b4/gmail-calendar` — STOP LIVE passed (Neon); PR open / awaiting merge.
+- **Status:** Merged to `main` (PR #37 → `c6e677c`, 2026-10-01). STOP LIVE passed (Neon); PART 10 + PART 11 closeout.
 - **Goal:** Live fictional inbox/calendar for operator demo.
 - **Workstream M5** — P1 + X1 + X3 + D-016
   - **Scope:** OAuth Testing forever; sync + idempotency (X1); replace JSON default path; WeekPanel from calendar; **DEMO_MODE** introduced (X3); encrypted refresh token in Neon; weekly re-auth runbook.

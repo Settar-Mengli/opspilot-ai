@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml)
 
-**CURRENT on `main`:** B0–B2.1 merged (gateway + hardening). **Next:** B3 evals + red-team (PR), then **B3.1** live remainder. See:
+**CURRENT on `main`:** B0–B4 merged (gateway, evals, Gmail + Calendar). **Next:** **B3.1** live remainder, then **B5**. See:
 
 - [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history, baseline, locked plan
 - [ROADMAP.md](ROADMAP.md) — batches **B0–B7** (+ B1.5 / B2.1 / B3.1)

@@ -1018,3 +1018,20 @@ Red commits and fix-forward: `9ba9190` OpenAPI drift -> `8b6043b`; `a3f6333` / `
 | `283deb9` | fix(api): hide sample when connected (G7) | success ([36822031979](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36822031979)) |
 | `bf34298` | docs(b4): STOP LIVE closeout + Open findings | CI run on PR checks ([36822810661](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36822810661)) |
 | _(tip)_ | final records commit — CI run on PR checks | CI run on PR checks |
+
+## PART 11 -- B4 merge closeout + B3.1 (open) -- 2026-10-01
+
+### Summary
+
+- B4 merged to `main` via PR #37 at `c6e677c` (2026-10-01T06:29:51Z).
+- Merge push CI on `main`: run [36825083400](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36825083400) -- Backend / Frontend / Gitleaks / UI Tests **success**.
+- Neon schema head: Alembic **0007** (`0007_gmail_calendar`) -- applied during STOP LIVE; no further migration required post-merge.
+- Post-merge steps done (merge + main CI green + Neon at 0007).
+- **Next:** **B3.1** (CF D5 + OpenRouter D6-D7 live rows only), then **B5**.
+- PARTs 0-10 left byte-identical (append-only).
+
+### CI (this docs PR)
+
+| SHA | Subject | CI |
+|---|---|---|
+| _(tip)_ | final records commit -- CI run on PR checks | CI run on PR checks |

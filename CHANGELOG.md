@@ -9,6 +9,7 @@ and this project follows Semantic Versioning principles for release tags.
 
 ### Added
 
+- **B4 merged** to `main` (PR #37 → `c6e677c`, 2026-10-01); PART 11 closeout; next **B3.1** then **B5**.
 - **B4 Real Gmail + Google Calendar (branch `b4/gmail-calendar`):** OAuth PKCE loopback + Fernet refresh in `bytea`; SyncCursor; Meeting table; DEMO_MODE; operator session cookie + CORS credentials (A1 / D-030); hermetic Google fakes; Connections connect/sync/disconnect; WeekPanel from calendar; UI F-INS/NB-4/NB-3; STOP VISUAL baselines; PART 10. **STOP LIVE complete** on Neon (connect, incremental sync, capped triage 50/50; G1–G7). B3.1 remains after B4 merge.
 - **B3 evals + red-team (merge-ready on `b3/evals-redteam`):** hermetic corpus N=40 + red-team N=20; rules macro-F1 floor **0.30**; D-028/D-029; live single-provider leaderboard (Gemini/Groq/Mistral 60/60; Cloudflare D4 **partial 33/60**); D-LIVE-1..11 + D-GROQ/D-MISTRAL/D-CF-WRITE deviations in PART 9; pre-closeout CF/OR smokes (not merged into day artifacts). **B3.1** (planned): CF D5 (7 triage + 20 redteam) + OpenRouter D6–D7 (≤30 + ~30); no new product scope.
 - **B2.1 Hardening + truth:** register + Corrections; Node 24.15 / ubuntu-24.04 / Dependabot ignores; recursive meta redaction; OpenRouter `:free` runtime gate; X-Request-ID validation; redacted LLM service logs; dead adapter delete; shared HTTP/soft-deny helpers; OBS request_id (thread-safe) + access/500 logs; `0005` `ix_run_artifacts_name`; README proof pack; design-decisions + issue/PR templates; PART 8.
