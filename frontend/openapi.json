@@ -775,6 +775,26 @@
           }
         }
       }
+    },
+    "/api/v1/oauth/google": {
+      "delete": {
+        "tags": [
+          "oauth"
+        ],
+        "summary": "Disconnect Google",
+        "description": "Revoke Google token (best-effort), delete credential + cursors, clear cookie. Keeps synced data.",
+        "operationId": "disconnect_google_api_v1_oauth_google_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
