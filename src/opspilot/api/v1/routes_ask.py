@@ -155,7 +155,7 @@ def _disconnect_poller(http_request: Request) -> tuple[CancelCheck, PollerStop]:
             loop = task.get_loop()
         except Exception:  # noqa: BLE001
             return
-        if loop.is_closed():
+        if loop is None or loop.is_closed():
             return
         try:
             running = asyncio.get_running_loop()
