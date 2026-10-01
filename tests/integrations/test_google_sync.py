@@ -141,7 +141,9 @@ def test_sync_idempotent(db_session: Session, sync_env: None) -> None:
         db_session,
         provider="google",
         account_email="demo@example.com",
-        scopes=("https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly"),
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.readonly"
+        ),
         refresh_token_plaintext="rt",
     )
     tx = FakeTransport()
@@ -192,7 +194,9 @@ def test_calendar_410_triggers_full_resync(db_session: Session, sync_env: None) 
         db_session,
         provider="google",
         account_email="demo@example.com",
-        scopes=("https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly"),
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.readonly"
+        ),
         refresh_token_plaintext="rt",
     )
     sync_cursors.upsert_cursor(
@@ -218,7 +222,9 @@ def test_cancelled_incremental_deletes_meeting(db_session: Session, sync_env: No
         db_session,
         provider="google",
         account_email="demo@example.com",
-        scopes=("https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly"),
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.readonly"
+        ),
         refresh_token_plaintext="rt",
     )
     start = datetime(2026, 9, 30, 15, 0, tzinfo=UTC)

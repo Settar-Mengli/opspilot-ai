@@ -40,7 +40,9 @@ def _seed_oauth(db_session: Session) -> None:
         db_session,
         provider="google",
         account_email="demo@example.com",
-        scopes=("https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly"),
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.readonly"
+        ),
         refresh_token_plaintext="rt",
     )
     db_session.commit()

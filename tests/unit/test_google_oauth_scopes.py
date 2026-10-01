@@ -27,9 +27,7 @@ class _FakeExchanger:
         return "demo@example.com"
 
 
-FULL_SCOPES = (
-    "openid email https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly"
-)
+FULL_SCOPES = "openid email https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.readonly"
 
 
 def test_has_required_scopes() -> None:

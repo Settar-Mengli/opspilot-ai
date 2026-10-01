@@ -36,7 +36,9 @@ def test_disconnect_clears_credential_keeps_gmail(
         db_session,
         provider="google",
         account_email="demo@example.com",
-        scopes=("https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly"),
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.readonly"
+        ),
         refresh_token_plaintext="rt",
     )
     sync_cursors.upsert_cursor(

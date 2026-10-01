@@ -16,12 +16,14 @@ SCOPES = (
     "openid",
     "email",
     "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.send",
     "https://www.googleapis.com/auth/calendar.readonly",
 )
 
 REQUIRED_SCOPES = frozenset(
     {
         "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.send",
         "https://www.googleapis.com/auth/calendar.readonly",
     }
 )
@@ -172,7 +174,7 @@ def parse_scopes(scopes: str) -> set[str]:
 
 
 def has_required_scopes(scopes: str) -> bool:
-    """True when both gmail.readonly and calendar.readonly are present."""
+    """True when Gmail readonly+send and Calendar readonly are present."""
     return REQUIRED_SCOPES.issubset(parse_scopes(scopes))
 
 
