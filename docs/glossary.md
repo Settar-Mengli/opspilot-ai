@@ -55,4 +55,8 @@
 - X5: JSON→DB importer (B1).
 - X6: Anthropic guard in tests / network-block fixture (B1).
 - X7: OpenAPI-lite + checked FE types with `/api/v1` (B1).
-- X8: Panel lifecycle standardization (B5).
+- X8: Panel lifecycle standardization (Ask dock/chrome finished in B5).
+- Ask SSE: `POST /api/v1/ask/stream` event stream (D-032).
+- HITL send: Human-in-the-loop draft approve before Gmail reply (D-033).
+- Mail draft: `mail_drafts` row; subject/body editable; recipients server-owned.
+- Send allowlist: `OPSPILOT_SEND_RECIPIENT_ALLOWLIST`; unset = deny all.

@@ -1,6 +1,6 @@
 # OpsPilot Architecture
 
-**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B4** plus **B3.1** live leaderboard closeout (CF combined; OpenRouter partial D6). Sections labeled **TARGET** describe the remaining locked rebuild (**B5–B7** only). Do not present TARGET as shipped.
+**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B5** (agentic Ask + HITL send) plus **B3.1** live leaderboard closeout. Sections labeled **TARGET** describe the remaining locked rebuild (**B6–B7** only). Do not present TARGET as shipped.
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
@@ -17,9 +17,9 @@ Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs
 
 ---
 
-## CURRENT (B1–B4 on main; B3.1 live closeout)
+## CURRENT (B1–B5 on main path; B3.1 live closeout)
 
-Verified on `main` (B2 `0c71a4a`; B2.1 `7501b9e`; B3 `3eb7baf`; B4 `c6e677c`) with B3.1 live remainder on PR branch `b3.1/live-remainder`: hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, Alembic head **0007**, `/api/v1` with envelope, FE on `/api/v1`, coverage fail-under **72**, Node ≥24.15 / Python 3.13 / uv.
+Verified through **B5** branch (cut from `main` @ `1a6fe7d` after B3.1 merge): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, Alembic head **0008**, `/api/v1` with envelope, FE on `/api/v1`, coverage fail-under **72**, Node ≥24.15 / Python 3.13 / uv.
 
 **B1.5a:** Playwright visual/e2e/axe safety net with container-only `-linux` baselines; CSS partials; `useOverlay`; D-026/D-027.
 
@@ -27,13 +27,15 @@ Verified on `main` (B2 `0c71a4a`; B2.1 `7501b9e`; B3 `3eb7baf`; B4 `c6e677c`) wi
 
 **B2 (CURRENT):** hand-rolled `opspilot.llm` gateway; `llm_allowed()`; services; free-tier providers + D-023; `LlmCall` + UTC budgets; runs pagination; `X-Request-ID`; timestamptz.
 
-**B2.1 (CURRENT):** recursive meta redaction; OpenRouter `:free` gate; OBS request_id; dead-adapter delete; introduced migration 0005 in that batch (current head: 0007); toolchain pins.
+**B2.1 (CURRENT):** recursive meta redaction; OpenRouter `:free` gate; OBS request_id; dead-adapter delete; introduced migration 0005 in that batch (current head: 0008); toolchain pins.
 
 **B3 (CURRENT):** eval harness `b3-live/v2`; triage N=40 + red-team N=20; hermetic F1 floor 0.30; live D1–D3 full; CF D4 partial 33/60 (remainder in B3.1); Alembic `0006` confidence/evidence_refs.
 
-**B4 (CURRENT):** Gmail/Calendar OAuth PKCE + Fernet credentials; SyncCursor; Meeting; DEMO_MODE; operator session cookie (D-030); Connections/WeekPanel; Alembic **0007**.
+**B4 (CURRENT):** Gmail/Calendar OAuth PKCE + Fernet credentials; SyncCursor; Meeting; DEMO_MODE; operator session cookie (D-030); Connections/WeekPanel; Alembic **0007** (superseded by 0008).
 
-**B3.1 (CURRENT):** live guards (checkpoint / case-ids / local-DB / ceiling); CF D5 + CF combined 60/60 (F1 0.706 n=40); OpenRouter **partial** D6 triage n=15 F1 0.619 (ASR N/A); D7–D9/D10 cancelled (D-B31-4 amended 2026-10-01).
+**B3.1 (CURRENT):** live guards; CF D5 + CF combined 60/60; OpenRouter partial D6; merge SHA **`1a6fe7d`** (PR #39).
+
+**B5 (CURRENT):** `opspilot.agent` JSON-emulated tool loop (D-031); caps 5/8; `POST /ask/stream` SSE (D-032); HITL mail draft edit/approve + allowlist + DEMO_MODE (D-033); `gmail.send`; deleted-message sync; Alembic **0008** (`mail_drafts`, `mail_send_audit`); hermetic `ask_agent` + `redteam_agent` evals.
 
 ### Endpoints (CURRENT) — `/api/v1`
 
@@ -48,7 +50,8 @@ Primary surface is **`/api/v1/*`**. Legacy unversioned routes were removed in B1
 | GET | `/api/v1/triage` (includes AI-05 lite `subject_or_title`) |
 | GET | `/api/v1/briefing`, `/api/v1/ai-briefing` |
 | GET | `/api/v1/runs/{run_id}/triage`, `.../briefing`, `.../ai-briefing` |
-| POST | `/api/v1/ask`, `/api/v1/evening-summary`, `/api/v1/insights` |
+| POST | `/api/v1/ask`, `/api/v1/ask/stream`, `/api/v1/evening-summary`, `/api/v1/insights` |
+| POST | `/api/v1/mail/drafts/{id}/edit`, `/api/v1/mail/drafts/{id}/approve` |
 | GET | `/api/v1/inputs`, `/api/v1/capabilities`, `/api/v1/capabilities/{capability_id}` |
 | GET | `/api/v1/oauth/google/start`, `/api/v1/oauth/google/callback` |
 | DELETE | `/api/v1/oauth/google` |
@@ -62,7 +65,8 @@ Notable: **no** `PATCH` settings. Pipeline runs **in-process** (no CLI subproces
 | Path | Role |
 |------|------|
 | `src/opspilot/api/app.py` | FastAPI app + `/api/v1` |
-| `src/opspilot/api/v1/` | Versioned routes + `oauth_routes.py` |
+| `src/opspilot/api/v1/` | Versioned routes + `oauth_routes.py`, `routes_ask.py`, `routes_mail.py` |
+| `src/opspilot/agent/` | JSON-emulated Ask tool loop (D-031) |
 | `src/opspilot/persistence/` | SQLAlchemy models + engine |
 | `src/opspilot/jobs/import_json.py` | X5 importer |
 | `src/opspilot/pipeline/` | Daily ops orchestration (`run_daily_ops.py`) |
@@ -132,6 +136,8 @@ Full audit: [docs/audits/2026-09-25-baseline-audit.md](audits/2026-09-25-baselin
 ---
 
 ## TARGET
+
+Remaining locked rebuild after **B5**: **B6–B7** (morning job + public deploy). Agent Ask + HITL send are **CURRENT** (see above). Package layout notes below still guide B6+ prefs/admin splits.
 
 ### Package layout + dependency rules (D-024)
 

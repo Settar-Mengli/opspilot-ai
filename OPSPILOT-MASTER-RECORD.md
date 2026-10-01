@@ -1105,3 +1105,81 @@ Red commits and fix-forward: `9ba9190` OpenAPI drift -> `8b6043b`; `a3f6333` / `
 - Closeout records SHA: `d95de78`. Tip-fill commit SHA = this tip row after push.
 - Agent does **not** merge; owner merges after CI green.
 - **Merge SHA + merge CI run id:** record in **B5** first PART (not here).
+
+## PART 13 -- B5 Agentic Ask + HITL send -- 2026-10-01
+
+### Summary
+
+- Branch: `b5/agentic-ask` cut from `origin/main` @ `1a6fe7d` (B3.1 merged).
+- Scope: M6+M7 (JSON-emulated agent loop, SSE Ask, HITL approve/send, `gmail.send`), Gmail `messageDeleted` local removal, DM-09 `ttft_ms` on Ask, hermetic `ask_agent` + `redteam_agent`, Alembic **0008**.
+- SoT docs updated this batch (ROADMAP B5 DONE; OUT items reassigned; architecture CURRENT through B5; D-007 ? deps+U9).
+- **Next after merge:** **B6**.
+- Agent does **not** merge.
+
+### B3.1 merge facts (recorded here per PART 12 deferral)
+
+| Item | Value |
+|---|---|
+| PR | [#39](https://github.com/Settar-Mengli/opspilot-ai/pull/39) |
+| Merge SHA | `1a6fe7d` |
+| Merge CI | [36899500943](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36899500943) **success** |
+| PART 12 tip SHA | `840fc50` (fills PART 12 `_(tip)_` row) |
+
+### Neon 0008 (STOP LIVE)
+
+| Item | Value |
+|---|---|
+| Host label | `ep-withered-dew-b528cx5k-pooler.c-7.us-east-2.aws.neon.tech` |
+| Alembic head before | `0008_ask_hitl_send` (already applied) |
+| Alembic head after | `0008_ask_hitl_send` |
+| Expand-only | New tables `mail_drafts` / `mail_send_audit` present; pre-existing `work_items` count **63**, `llm_calls` **124** (no wipe) |
+
+### STOP VISUAL (owner gallery)
+
+Refreshed this batch (container CI actuals):
+
+- `ask-error-chromium-375-linux.png` (**375 — owner approval required**)
+- `ask-error-chromium-768-linux.png`
+- `ask-error-chromium-1280-linux.png`
+
+Unchanged but listed for gallery: `ask-empty` / `ask-with-messages` / `ask-docked-empty` / `ask-docked-messages` at 375/768/1280 as applicable.
+
+### Live smoke (counts only)
+
+- Neon head: **0008** (see above).
+- Allowlist at check time: **unset** (deny-all) — operator must set `OPSPILOT_SEND_RECIPIENT_ALLOWLIST` to demo recipient before real send.
+- Google reconnect for `gmail.send`: **owner action** (Testing consent).
+- Hermetic substitute: HITL/DEMO_MODE/allowlist/deleted-sync/ask_agent suites green in CI.
+- Anthropic unused for Ask (gateway allowlist + hermetic greps).
+
+### Deviations
+
+| ID | Note |
+|---|---|
+| OpenAPI/e2e lag | C3/C4/C5 red until generated.ts + SSE mocks + ask-error baselines fixed forward |
+| Neon 0008 | Already at head when STOP LIVE checked (no second upgrade needed) |
+| Live send | Deferred to owner reconnect + allowlist; hermetic gates cover DEMO_MODE/allowlist |
+
+### CI (branch commits)
+
+| SHA | Subject | CI |
+|---|---|---|
+| `50cc8f8` | docs(adr): B5 D-031/032/033 + D-014/016/029 addenda | success ([36901681631](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36901681631)) |
+| `d698f84` | feat(db): alembic 0008 mail_drafts + mail_send_audit | failure ([36902537522](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36902537522)) |
+| `bd8b53b` | fix(db): expect alembic head 0008 in roundtrip test | success ([36903561557](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36903561557)) |
+| `ebf58c3` | feat(agent): JSON-emulated tool loop + FakeProvider scripts | success ([36904384093](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36904384093)) |
+| `478c774` | feat(api): POST /ask/stream SSE + ask history | failure ([36905358107](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36905358107)) |
+| `576d6e6` | feat(ui): Ask SSE stream + tool timeline + draft card | failure ([36906286469](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36906286469)) |
+| `e94a7ec` | fix(test): truncate llm_budget and mail tables per test | failure ([36906734493](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36906734493)) |
+| `f30b5d2` | feat(oauth): require gmail.send scope | failure ([36908445166](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36908445166)) |
+| `6ce6cc6` | fix(ci): sync generated Ask stream types and e2e SSE mocks | failure ([36909573799](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36909573799)) |
+| `8a0620c` | test(ui): refresh ask-error linux baselines for SSE error path | success ([36910676800](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36910676800)) |
+| `f9a080a` | feat(mail): HITL approve + Gmail reply send + allowlist | success ([36911544352](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36911544352)) |
+| `a62171d` | fix(sync): remove deleted Gmail messages locally | success ([36912417530](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36912417530)) |
+| `d38b82e` | test(evals): hermetic ask_agent + agentic red-team | success ([36913317914](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36913317914)) |
+| `d46be56` | test(ui): vitest mail edit/approve client paths | success ([36914131594](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36914131594)) |
+| _(tip)_ | docs(b5): PART 13 closeout + ROADMAP/architecture | CI run on this push / PR |
+
+### PR
+
+- Open after this closeout commit; tip CI must be green before owner merge.
