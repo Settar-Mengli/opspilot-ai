@@ -128,6 +128,11 @@ def _sync_calendar(
         events, next_token = client.list_events(time_min=time_min, time_max=time_max, sync_token=None)
     upserted = 0
     for ev in events:
+        if ev.cancelled:
+            meetings.delete_by_provider_id(session, provider_id=ev.provider_id)
+            continue
+        if ev.start_at is None or ev.end_at is None:
+            continue
         meetings.upsert_by_provider_id(
             session,
             provider_id=ev.provider_id,

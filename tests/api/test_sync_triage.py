@@ -13,6 +13,7 @@ from tests.integrations.test_google_sync import FakeTransport
 
 from opspilot.api.app import create_app
 from opspilot.api.deps import reset_db_engine
+from opspilot.integrations.google_http import GoogleHttpError
 from opspilot.persistence.models import TriageDecisionRow
 from opspilot.persistence.repositories import oauth_credentials
 from opspilot.services import google_sync
@@ -63,3 +64,31 @@ def test_post_sync_returns_triaged_count(
     assert body["run_id"]
     decisions = db_session.scalars(select(TriageDecisionRow).where(TriageDecisionRow.run_id == body["run_id"])).all()
     assert len(decisions) == 2
+
+
+def test_post_sync_google_http_error_returns_envelope(
+    sync_client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    oauth_credentials.upsert_encrypted_refresh(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        scopes=("https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly"),
+        refresh_token_plaintext="rt",
+    )
+    db_session.commit()
+
+    def _boom(session: Any, **kwargs: Any) -> dict[str, Any]:
+        raise GoogleHttpError("calendar_list_failed", status_code=400)
+
+    monkeypatch.setattr("opspilot.api.v1.oauth_routes.google_sync.run_sync", _boom)
+    token = issue_session(email="demo@example.com")
+    sync_client.cookies.set("opspilot_operator", token)
+
+    resp = sync_client.post("/api/v1/sync")
+    assert resp.status_code == 502
+    body = resp.json()
+    assert body["error"]["code"] == "google_sync_failed"
+    assert body["error"]["details"]["status_code"] == 400
+    assert "Traceback" not in resp.text
+    assert "ya29" not in resp.text

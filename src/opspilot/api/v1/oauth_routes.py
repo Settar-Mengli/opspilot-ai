@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from opspilot.api.deps import get_db_session
 from opspilot.api.schemas import safe_error
+from opspilot.integrations.google_http import GoogleHttpError
 from opspilot.integrations.google_oauth import (
     GoogleOAuthError,
     IncompleteGrantError,
@@ -127,6 +128,21 @@ def post_sync(request: Request, session: Session = Depends(get_db_session)) -> d
         raise safe_error(503, "encryption_unavailable", "Token encryption unavailable.") from exc
     except google_sync.GoogleReauthRequired as exc:
         raise safe_error(401, "google_reauth_required", "Google re-auth required.") from exc
+    except GoogleHttpError as exc:
+        import logging
+
+        status = exc.status_code
+        logging.getLogger("opspilot.api.oauth").error(
+            "google_sync_failed status_code=%s message=%s",
+            status,
+            str(exc)[:200],
+        )
+        raise safe_error(
+            502,
+            "google_sync_failed",
+            "Google sync failed.",
+            details={"status_code": status},
+        ) from exc
 
 
 @router.delete("/oauth/google", response_class=JSONResponse)

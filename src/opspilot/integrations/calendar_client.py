@@ -15,8 +15,9 @@ CAL_API = "https://www.googleapis.com/calendar/v3"
 class CalendarEvent:
     provider_id: str
     title: str
-    start_at: datetime
-    end_at: datetime
+    start_at: datetime | None
+    end_at: datetime | None
+    cancelled: bool = False
 
 
 def _parse_dt(value: dict[str, Any] | None) -> datetime | None:
@@ -41,12 +42,26 @@ def parse_event(raw: dict[str, Any]) -> CalendarEvent | None:
     provider_id = str(raw.get("id") or "")
     if not provider_id:
         return None
+    if str(raw.get("status") or "").lower() == "cancelled":
+        return CalendarEvent(
+            provider_id=provider_id,
+            title=str(raw.get("summary") or ""),
+            start_at=None,
+            end_at=None,
+            cancelled=True,
+        )
     start = _parse_dt(raw.get("start") if isinstance(raw.get("start"), dict) else None)
     end = _parse_dt(raw.get("end") if isinstance(raw.get("end"), dict) else None)
     if start is None or end is None:
         return None
     title = str(raw.get("summary") or "(no title)")
-    return CalendarEvent(provider_id=provider_id, title=title, start_at=start, end_at=end)
+    return CalendarEvent(
+        provider_id=provider_id,
+        title=title,
+        start_at=start,
+        end_at=end,
+        cancelled=False,
+    )
 
 
 class CalendarClient:
@@ -63,14 +78,27 @@ class CalendarClient:
         time_min: datetime,
         time_max: datetime,
         sync_token: str | None = None,
+        page_token: str | None = None,
+        max_results: int | None = None,
     ) -> tuple[list[CalendarEvent], str | None]:
-        """Return (events, next_sync_token). next_sync_token None + empty means 410 → full resync."""
-        params: dict[str, Any] = {"singleEvents": "true", "showDeleted": "false"}
+        """Return (events, next_sync_token). next_sync_token None + empty means 410 → full resync.
+
+        With ``syncToken``, only that token is sent (+ optional pageToken/maxResults).
+        Google forbids combining syncToken with showDeleted=false / timeMin / timeMax / orderBy.
+        """
+        params: dict[str, Any] = {}
         if sync_token:
             params["syncToken"] = sync_token
         else:
+            # Full sync: time window only (never combine these with syncToken).
+            params["singleEvents"] = "true"
+            params["showDeleted"] = "false"
             params["timeMin"] = time_min.astimezone(UTC).isoformat().replace("+00:00", "Z")
             params["timeMax"] = time_max.astimezone(UTC).isoformat().replace("+00:00", "Z")
+        if page_token:
+            params["pageToken"] = page_token
+        if max_results is not None:
+            params["maxResults"] = max_results
         resp = self._transport.request(
             "GET",
             f"{CAL_API}/calendars/primary/events",

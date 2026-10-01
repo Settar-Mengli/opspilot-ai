@@ -968,6 +968,7 @@ Operator live smoke on Neon (post-OAuth sync succeeded; WeekPanel showed real Ca
 | G2 | OAuth callback did not require Gmail+Calendar scopes; missing `scope` in token response was invented as full `SCOPES` | Required-scope gate; never invent; incomplete → redirect `oauth_error=grant_required` |
 | G3 | `google_reauth_required` showed only an error string; no Reconnect/Disconnect | Reconnect (OAuth start) + `DELETE /oauth/google` (revoke, delete credential+cursors, clear cookie; keep synced rows) |
 | G4 | Sync now did not trigger triage | Post-sync `triage_connected_gmail`; UI `Synced N mail, M meetings — triaged K` |
+| G5 | Incremental Calendar sync sent `syncToken` with `showDeleted=false` (and window params); Google 400 `calendar_list_failed`; unhandled `GoogleHttpError` became bare 500 / CORS "Failed to fetch" | `list_events`: syncToken alone (+ pageToken/maxResults); cancelled -> delete meeting; `post_sync` maps `GoogleHttpError` -> 502 `google_sync_failed` with `details.status_code` |
 
 **Deviation — C5 default ingest reported done but not implemented:** B4 C5 docs/progress claimed connected default ingest; CURRENT code until this fix-forward still filed-ingested sample only. Corrected here.
 
