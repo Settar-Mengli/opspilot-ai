@@ -21,6 +21,7 @@ load_repo_dotenv()
 from opspilot.api.errors import register_exception_handlers  # noqa: E402
 from opspilot.api.v1.oauth_routes import router as oauth_router  # noqa: E402
 from opspilot.api.v1.routes import router as v1_router  # noqa: E402
+from opspilot.api.v1.routes_ask import router as ask_router  # noqa: E402
 from opspilot.persistence.db import log_active_database_host  # noqa: E402
 
 LOCAL_UI_ORIGINS = [
@@ -104,6 +105,7 @@ def create_app() -> FastAPI:
     application.add_middleware(RequestIdMiddleware)
     register_exception_handlers(application)
     application.include_router(v1_router)
+    application.include_router(ask_router, prefix="/api/v1")
     application.include_router(oauth_router, prefix="/api/v1")
     return application
 

@@ -39,6 +39,11 @@ class RunPipelineRequest(BaseModel):
     date: date
 
 
+class AskHistoryTurn(BaseModel):
+    role: str = Field(..., pattern=r"^(user|assistant|system)$")
+    content: str = Field(..., min_length=1, max_length=2000)
+
+
 class AskRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=2000)
     assistant_name: str = Field(
@@ -47,6 +52,11 @@ class AskRequest(BaseModel):
         max_length=60,
         pattern=r"^[A-Za-z0-9 .'\-]+$",
     )
+    history: list[AskHistoryTurn] = Field(default_factory=list, max_length=10)
+
+
+class AskStreamRequest(AskRequest):
+    """Same body as AskRequest for POST /ask/stream."""
 
 
 class EveningSummaryRequest(BaseModel):
