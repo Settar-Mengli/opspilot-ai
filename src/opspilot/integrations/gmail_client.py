@@ -129,10 +129,13 @@ class GmailClient:
             headers=self._headers(),
             params={
                 "startHistoryId": start_history_id,
-                "historyTypes": "messageAdded,messageDeleted",
+                # Repeated query params (not a comma-joined string) — Gmail rejects CSV as 400.
+                "historyTypes": ["messageAdded", "messageDeleted"],
             },
         )
-        if resp.status_code == 404:
+        # 404 = expired/unknown startHistoryId. 400 = invalid start id (post-reconnect) or
+        # malformed historyTypes; both require a full list resync rather than failing sync.
+        if resp.status_code in {400, 404}:
             return None
         if resp.status_code >= 400:
             raise GoogleHttpError("gmail_history_failed", status_code=resp.status_code)
