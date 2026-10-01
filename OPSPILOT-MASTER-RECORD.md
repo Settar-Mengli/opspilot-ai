@@ -1112,7 +1112,7 @@ Red commits and fix-forward: `9ba9190` OpenAPI drift -> `8b6043b`; `a3f6333` / `
 
 - Branch: `b5/agentic-ask` cut from `origin/main` @ `1a6fe7d` (B3.1 merged).
 - Scope: M6+M7 (JSON-emulated agent loop, SSE Ask, HITL approve/send, `gmail.send`), Gmail `messageDeleted` local removal, DM-09 `ttft_ms` on Ask, hermetic `ask_agent` + `redteam_agent`, Alembic **0008**.
-- SoT docs updated this batch (ROADMAP B5 DONE; OUT items reassigned; architecture CURRENT through B5; D-007 ? deps+U9).
+- SoT docs updated this batch (ROADMAP B5 DONE; OUT items reassigned; architecture CURRENT through B5; D-007 -> deps+U9).
 - **Next after merge:** **B6**.
 - Agent does **not** merge.
 
@@ -1138,7 +1138,7 @@ Red commits and fix-forward: `9ba9190` OpenAPI drift -> `8b6043b`; `a3f6333` / `
 
 Refreshed this batch (container CI actuals):
 
-- `ask-error-chromium-375-linux.png` (**375 — owner approval required**)
+- `ask-error-chromium-375-linux.png` (**375 - owner approval required**)
 - `ask-error-chromium-768-linux.png`
 - `ask-error-chromium-1280-linux.png`
 
@@ -1147,7 +1147,7 @@ Unchanged but listed for gallery: `ask-empty` / `ask-with-messages` / `ask-docke
 ### Live smoke (counts only)
 
 - Neon head: **0008** (see above).
-- Allowlist at check time: **unset** (deny-all) — operator must set `OPSPILOT_SEND_RECIPIENT_ALLOWLIST` to demo recipient before real send.
+- Allowlist at check time: **unset** (deny-all) - operator must set `OPSPILOT_SEND_RECIPIENT_ALLOWLIST` to demo recipient before real send.
 - Google reconnect for `gmail.send`: **owner action** (Testing consent).
 - Hermetic substitute: HITL/DEMO_MODE/allowlist/deleted-sync/ask_agent suites green in CI.
 - Anthropic unused for Ask (gateway allowlist + hermetic greps).
@@ -1178,8 +1178,9 @@ Unchanged but listed for gallery: `ask-empty` / `ask-with-messages` / `ask-docke
 | `a62171d` | fix(sync): remove deleted Gmail messages locally | success ([36912417530](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36912417530)) |
 | `d38b82e` | test(evals): hermetic ask_agent + agentic red-team | success ([36913317914](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36913317914)) |
 | `d46be56` | test(ui): vitest mail edit/approve client paths | success ([36914131594](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36914131594)) |
-| _(tip)_ | docs(b5): PART 13 closeout + ROADMAP/architecture | CI run on this push / PR |
+| `3f438da` | docs(b5): SoT closeout PART 13 + ROADMAP/architecture | failure (UTF-8 in PART; fixed forward) |
+| _(tip)_ | docs(b5): PART 13 UTF-8 fix + tip CI | CI run on this push / PR |
 
 ### PR
 
-- Open after this closeout commit; tip CI must be green before owner merge.
+- Open after tip CI green; agent does **not** merge.
