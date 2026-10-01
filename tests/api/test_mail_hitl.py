@@ -331,30 +331,36 @@ def test_approve_send_success_and_double_claim_409(
     assert resp2.json()["error"]["code"] == "draft_not_approvable"
 
 
-def test_approve_idempotent_replay(
+def test_approve_idempotent_replay_returns_prior_deny(
     api_client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("OPSPILOT_SEND_RECIPIENT_ALLOWLIST", "demo@example.com")
-    draft_id = _seed_draft(db_session, provider_id="msg_idem")
+    """Same idempotency key returns prior deny/fail outcome without re-send (D-033)."""
+    monkeypatch.setenv("OPSPILOT_DEMO_MODE", "0")
+    monkeypatch.delenv("OPSPILOT_SEND_RECIPIENT_ALLOWLIST", raising=False)
+    draft_id = _seed_draft(db_session, provider_id="msg_idem_deny")
     draft = mail_drafts.get_draft(db_session, draft_id)
     assert draft is not None
     mail_send_audit.insert_audit(
         db_session,
         draft_id=draft_id,
-        idempotency_key="idem-replay",
+        idempotency_key="idem-deny-replay",
         to_addrs=draft.to_addrs,
         payload_sha256=draft.payload_sha256,
-        gmail_message_id="gmail_replay",
         operator_email="ops@example.com",
+        allowlist_denied=True,
+        error_code="recipient_not_allowlisted",
     )
     db_session.commit()
     _auth_cookie(api_client)
     resp = api_client.post(
         f"/api/v1/mail/drafts/{draft_id}/approve",
-        json={"payload_sha256": draft.payload_sha256, "idempotency_key": "idem-replay"},
+        json={"payload_sha256": draft.payload_sha256, "idempotency_key": "idem-deny-replay"},
     )
     assert resp.status_code == 200
-    assert resp.json()["status"] == "idempotent_replay"
+    body = resp.json()
+    assert body["status"] == "idempotent_replay"
+    assert body.get("allowlist_denied") is True
+    assert body.get("send_failed") is False
 
 
 def test_failed_send_writes_audit_and_failed_status(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
