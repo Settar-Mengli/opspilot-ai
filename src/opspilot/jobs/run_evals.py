@@ -11,7 +11,7 @@ from typing import Any
 from dotenv import load_dotenv
 
 from opspilot.evals.dataset import REDTEAM_V1, TRIAGE_V1, load_redteam_cases, load_triage_cases
-from opspilot.evals.live import LiveEvalError, run_live
+from opspilot.evals.live import LiveCeilingReached, LiveEvalError, run_live
 from opspilot.evals.report import write_eval_json
 from opspilot.evals.rules_baseline import MACRO_F1_FLOOR, format_hit_report, run_rules_vs_labels
 
@@ -53,30 +53,92 @@ def run_live_cli(
     provider: str,
     out: Path | None = None,
     resume_from: Path | None = None,
+    missing_from: Path | None = None,
+    case_ids_raw: str | None = None,
+    suite: str = "both",
+    max_requests: int | None = None,
 ) -> dict[str, Any]:
     """Owner-gated live path: opens a DB session and runs single-provider eval."""
     import json
 
-    from opspilot.evals.live import failed_case_ids, merge_live_results
+    from opspilot.evals.live import (
+        failed_case_ids,
+        merge_live_results,
+        missing_case_ids_from_artifact,
+        parse_case_ids,
+        print_budget_remaining,
+        require_local_database_url,
+    )
     from opspilot.persistence.db import create_engine, create_session_factory, get_database_url
+
+    if suite not in {"triage", "redteam", "both"}:
+        raise LiveEvalError(f"invalid --suite {suite!r}")
+
+    require_local_database_url()
 
     case_ids: set[str] | None = None
     base: dict[str, Any] | None = None
+    explicit_ids = parse_case_ids(case_ids_raw)
+
+    if resume_from is not None and missing_from is not None:
+        raise LiveEvalError("use either --resume-from or --missing-from, not both")
+
     if resume_from is not None:
         base = json.loads(resume_from.read_text(encoding="utf-8"))
         case_ids = failed_case_ids(base)
         if not case_ids:
             raise LiveEvalError(f"no failed cases to resume in {resume_from}")
         print(f"resume_from={resume_from} failed_cases={len(case_ids)}")
+    elif missing_from is not None:
+        artifact = json.loads(missing_from.read_text(encoding="utf-8"))
+        case_ids = missing_case_ids_from_artifact(artifact, suite=suite)  # type: ignore[arg-type]
+        if not case_ids:
+            raise LiveEvalError(f"no missing cases in {missing_from} for suite={suite}")
+        print(f"missing_from={missing_from} missing_cases={len(case_ids)} suite={suite}")
+
+    if explicit_ids is not None:
+        case_ids = explicit_ids if case_ids is None else (case_ids & explicit_ids)
+        if not case_ids:
+            raise LiveEvalError("no cases left after applying --case-ids")
+        print(f"case_ids={len(case_ids)}")
+
+    target = out or _default_live_out(provider.strip().lower())
 
     engine = create_engine(get_database_url())
     factory = create_session_factory(engine)
     session = factory()
-    try:
-        payload = run_live(provider_name=provider, session=session, case_ids=case_ids)
+
+    def _commit_case() -> None:
         session.commit()
+
+    try:
+        print_budget_remaining(session, provider)
+        payload = run_live(
+            provider_name=provider,
+            session=session,
+            case_ids=case_ids,
+            suite=suite,  # type: ignore[arg-type]
+            checkpoint_path=target,
+            on_after_case=_commit_case,
+            max_requests=max_requests,
+        )
+        session.commit()
+    except LiveCeilingReached as exc:
+        session.commit()
+        payload = exc.partial
+        payload["_ceiling"] = True
+        if base is not None:
+            payload = merge_live_results(base, payload)
+            write_eval_json(target, payload)
+        payload["_out"] = str(target)
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return payload
     except Exception:
-        session.rollback()
+        # Do not roll back already-committed per-case debits; only abandon uncommitted work.
+        try:
+            session.rollback()
+        except Exception:  # noqa: BLE001 — best-effort
+            pass
         raise
     finally:
         session.close()
@@ -85,7 +147,6 @@ def run_live_cli(
     if base is not None:
         payload = merge_live_results(base, payload)
 
-    target = out or _default_live_out(provider.strip().lower())
     write_eval_json(target, payload)
     payload["_out"] = str(target)
     return payload
@@ -130,6 +191,29 @@ def build_parser() -> argparse.ArgumentParser:
         help="Re-run non-accepted and accepted-without-pred case ids from a prior live JSON and merge.",
     )
     p.add_argument(
+        "--missing-from",
+        type=Path,
+        default=None,
+        help="Run corpus case ids not present in a prior live JSON (remainder mode).",
+    )
+    p.add_argument(
+        "--case-ids",
+        default=None,
+        help="Comma-separated case ids to run (intersected with resume/missing filters when set).",
+    )
+    p.add_argument(
+        "--suite",
+        choices=("triage", "redteam", "both"),
+        default="both",
+        help="Which corpus suite to run (default both).",
+    )
+    p.add_argument(
+        "--max-requests",
+        type=int,
+        default=None,
+        help="Stop cleanly after this many provider requests (checkpoint + exit 3).",
+    )
+    p.add_argument(
         "--recompute-metrics",
         type=Path,
         default=None,
@@ -158,7 +242,15 @@ def main(argv: list[str] | None = None) -> int:
             print("ERROR: --live requires --provider <name>", file=sys.stderr)
             return 2
         try:
-            payload = run_live_cli(provider=args.provider, out=args.out, resume_from=args.resume_from)
+            payload = run_live_cli(
+                provider=args.provider,
+                out=args.out,
+                resume_from=args.resume_from,
+                missing_from=args.missing_from,
+                case_ids_raw=args.case_ids,
+                suite=args.suite,
+                max_requests=args.max_requests,
+            )
         except LiveEvalError as exc:
             print(f"ERROR: {exc}", file=sys.stderr)
             return 2
@@ -169,8 +261,12 @@ def main(argv: list[str] | None = None) -> int:
             f"asr={_format_asr(payload['asr'])} "
             f"blocked={payload.get('asr', {}).get('blocked_by_defenses')} "
             f"repair_pct={payload.get('repair_pct')} "
-            f"rate_limit_events={payload.get('rate_limit_events')} wrote {payload['_out']}"
+            f"rate_limit_events={payload.get('rate_limit_events')} "
+            f"partial={payload.get('partial')} run_status={payload.get('run_status')} "
+            f"wrote {payload['_out']}"
         )
+        if payload.get("_ceiling") or payload.get("run_status") == "ceiling_reached":
+            return 3
         return 0
     if args.provider:
         print("ERROR: --provider requires --live", file=sys.stderr)

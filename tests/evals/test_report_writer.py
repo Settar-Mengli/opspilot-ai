@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from opspilot.evals.report import write_eval_json
@@ -24,3 +25,12 @@ def test_write_eval_json_accepts_str_path(tmp_path: Path) -> None:
     text = out.read_text(encoding="utf-8")
     assert '"provider": "cloudflare"' in text
     assert written.parent.is_dir()
+
+
+def test_write_eval_json_is_atomic_no_tmp_left(tmp_path: Path) -> None:
+    out = tmp_path / "atomic.json"
+    write_eval_json(out, {"a": 1})
+    write_eval_json(out, {"a": 2, "partial": True})
+    assert json.loads(out.read_text(encoding="utf-8"))["a"] == 2
+    leftovers = list(tmp_path.glob(".atomic.json.*.tmp"))
+    assert leftovers == []
