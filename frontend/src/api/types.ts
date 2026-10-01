@@ -78,6 +78,19 @@ export interface AskMessage {
   timestamp: number
 }
 
+export interface AskToolStep {
+  id: string
+  tool: string
+  status: 'running' | 'done' | 'error'
+}
+
+export interface AskDraftCard {
+  draftId: string
+  subject: string
+  body: string
+  toAddrs: string
+}
+
 export interface EveningSummaryRequest {
   assistant_name: string
 }

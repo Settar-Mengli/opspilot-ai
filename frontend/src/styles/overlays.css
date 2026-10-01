@@ -674,3 +674,67 @@
 .voice-orb.listening {
   animation: orbPulse 2s ease-in-out infinite;
 }
+
+/* B5 Ask tool timeline + draft card */
+.ask-tool-timeline {
+  list-style: none;
+  margin: 8px 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ask-tool-step {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-2);
+  padding: 6px 8px;
+  border-left: 2px solid var(--border);
+}
+.ask-tool-step-running { border-left-color: var(--accent); }
+.ask-tool-step-done { border-left-color: var(--text-2); }
+.ask-tool-step-error { border-left-color: #b00020; }
+.ask-draft-card {
+  margin: 8px 0 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-1, transparent);
+}
+.ask-draft-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.ask-draft-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.ask-draft-input,
+.ask-draft-textarea {
+  font: inherit;
+  padding: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-1);
+}
+.ask-draft-meta {
+  font-size: 11px;
+  color: var(--text-2);
+  margin: 0 0 8px;
+}
+.ask-draft-approve {
+  font: inherit;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  background: var(--accent);
+  color: var(--text-1);
+  cursor: pointer;
+}
+.ask-draft-approve:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
