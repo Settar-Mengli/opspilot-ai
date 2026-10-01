@@ -1096,10 +1096,12 @@ Red commits and fix-forward: `9ba9190` OpenAPI drift -> `8b6043b`; `a3f6333` / `
 | `bae7c16` | docs(architecture): rephrase B2.1 migration 0005 as historical | success ([36886871974](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36886871974)) |
 | `633d882` | docs(evals): Cloudflare D5 live + combined CF leaderboard | success ([36888069905](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36888069905)) |
 | `93ea59b` | docs(evals): OpenRouter D6 live triage 001-015 + leaderboard | success ([36889976709](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36889976709)) |
-| _(tip)_ | S5 closeout records commit | CI run on PR checks |
+| `d95de78` | docs(b3.1): PART 12 closeout; OR stop at D6; CURRENT bump; next B5 | success ([36896021342](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36896021342)) |
+| _(tip)_ | docs(b3.1): PART 12 tip fill (PR #39 + closeout CI) | CI run on PR checks |
 
 ### PR
 
-- Branch tip at closeout commit: see tip row above after push.
-- PR number: filled after `gh pr create` (follow-up tip commit if needed).
+- PR: [#39](https://github.com/Settar-Mengli/opspilot-ai/pull/39) on branch `b3.1/live-remainder`.
+- Closeout records SHA: `d95de78`. Tip-fill commit SHA = this tip row after push.
 - Agent does **not** merge; owner merges after CI green.
+- **Merge SHA + merge CI run id:** record in **B5** first PART (not here).
