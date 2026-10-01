@@ -1223,7 +1223,7 @@ Unchanged but listed for gallery: `ask-empty` / `ask-with-messages` / `ask-docke
 | `4e12afa` | docs(adr): document idempotent approve replay semantics | success ([36932604409](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36932604409); PR [36932610019](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36932610019)) |
 | `8cf6ce2` | fix(ui): map HITL approve errors and Ask a11y alerts | success ([36933309509](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36933309509); PR [36933314224](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36933314224)) |
 | `a35ab1a` | docs(b5): Alembic 0009 SoT + corrected STOP LIVE runbook | success ([36934011695](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36934011695); PR [36934017175](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36934017175)) |
-| _(tip)_ | docs(b5): PART 13 final fix-forward closeout | _(after push)_ |
+| ß8eff\ | docs(b5): PART 13 final fix-forward SHAs + gallery evidence | success ([36934790242](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36934790242); PR [36934799018](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36934799018)) |
 
 ### PR
 
