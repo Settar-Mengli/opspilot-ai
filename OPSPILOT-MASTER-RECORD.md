@@ -1191,7 +1191,39 @@ Unchanged but listed for gallery: `ask-empty` / `ask-with-messages` / `ask-docke
 | `70cafed` | fix(docs): write PART 13 as UTF-8 | success ([36916317365](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36916317365)) |
 | `8875e75` | fix(b5): abort/timeout, HITL harden, CSRF, minimized tool_end | success ([36919502155](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36919502155); PR [36919507129](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36919507129)) |
 | `ebefac7` | docs(b5): fix-pass PART 13 deviations + CURRENT-after-B5 wording | success ([36920329136](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36920329136); PR [36920335099](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36920335099)) — PART body corrupted then fixed forward |
-| _(tip)_ | docs(b5): repair PART 13 duplicate + tip CI | _(after push)_ |
+| `87f9ff8` | docs(b5): repair PART 13 duplicate after bad splice | success ([36921147695](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36921147695); PR [36921152315](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36921152315)) |
+
+
+### Final pre-live fix-forward (post-audit) - hermetic only
+
+- Tip before this pass: `87f9ff8` (PR #40).
+- No live provider calls; no Google API; no Neon writes.
+- Visual baselines this pass: **no visual change** (approve-error copy mapping is runtime-only; existing ask-error `-linux` baselines unchanged).
+- Gallery evidence (from `1a6fe7d..87f9ff8`, for owner review — **not** claiming owner approval here):
+
+| File | % pixels changed (audit) | Delta |
+|------|--------------------------|-------|
+| `ask-error-chromium-375-linux.png` | 0.240% (731 px) | Text-only: `500: Ask fixture error` → `Ask fixture error` |
+| `ask-error-chromium-768-linux.png` | 0.093% (731 px) | Same text-only error-copy change |
+| `ask-error-chromium-1280-linux.png` | 0.072% (737 px) | Same text-only error-copy change |
+
+- Process notes: `8ebea9c` push/PR CI **cancelled** (ThreadPoolExecutor+Session hang); fixed forward in `8aa3920`. `4d4c986` / `260198f` mypy red; fixed forward in `023bde5`.
+
+#### CI (final fix-forward commits)
+
+| SHA | Subject | CI |
+|---|---|---|
+| `1641b92` | fix(api): CORS DELETE + shared OPSPILOT_CORS_ORIGINS | success ([36927521158](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36927521158); PR [36927527776](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36927527776)) |
+| `8ebea9c` | fix(agent): wall-clock step timeout around provider call | cancelled ([36928272104](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36928272104); PR [36928278899](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36928278899)) — hang; fixed forward |
+| `8aa3920` | fix(agent): timeout provider body only, not gateway session | success ([36929667658](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36929667658); PR [36929667281](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36929667281)) |
+| `6163e36` | fix(mail): atomic daily send cap via advisory lock | success ([36930366991](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36930366991); PR [36930372916](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36930372916)) |
+| `4d4c986` | fix(api): Ask disconnect poller drain + ASGI abort test | failure mypy ([36931104855](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36931104855); PR [36931109395](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36931109395)) |
+| `260198f` | fix(api): satisfy mypy on disconnect poller drain loop | failure mypy ([36931852585](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36931852585); PR [36931858452](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36931858452)) |
+| `023bde5` | fix(api): narrow disconnect drain same-loop branch for mypy | success ([36931885090](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36931885090); PR [36931889658](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36931889658)) |
+| `4e12afa` | docs(adr): document idempotent approve replay semantics | success ([36932604409](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36932604409); PR [36932610019](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36932610019)) |
+| `8cf6ce2` | fix(ui): map HITL approve errors and Ask a11y alerts | success ([36933309509](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36933309509); PR [36933314224](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36933314224)) |
+| `a35ab1a` | docs(b5): Alembic 0009 SoT + corrected STOP LIVE runbook | success ([36934011695](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36934011695); PR [36934017175](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36934017175)) |
+| _(tip)_ | docs(b5): PART 13 final fix-forward closeout | _(after push)_ |
 
 ### PR
 
