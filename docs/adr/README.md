@@ -34,5 +34,8 @@ Index of ADRs for OpsPilot. Status values: Accepted | Superseded | Proposed.
 | [D-028](D-028-eval-harness.md) | Eval harness (pytest + CLI) | Accepted | B3 |
 | [D-029](D-029-prompt-injection-defenses.md) | Prompt injection defenses + red-team ASR | Accepted | B3 |
 | [D-030](D-030-operator-session-cookie.md) | Operator session cookie + CORS credentials (A1) | Accepted | B4+ |
+| [D-031](D-031-ask-tool-contract.md) | Ask tool contract + JSON-emulated capability map | Accepted | B5 |
+| [D-032](D-032-ask-sse.md) | Ask SSE event stream | Accepted | B5 |
+| [D-033](D-033-hitl-approve-send.md) | HITL approve & send (reply-only) | Accepted | B5 |
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../../OPSPILOT-MASTER-RECORD.md).

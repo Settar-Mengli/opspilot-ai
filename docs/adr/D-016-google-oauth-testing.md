@@ -58,3 +58,9 @@ Implementation locks for B4:
 - Sync commits before capped untriaged triage (`OPSPILOT_SYNC_TRIAGE_CAP`, default 10); Calendar `syncToken` requests omit window/`showDeleted=false`.
 - Connected operator surfaces filter to `source_type=gmail` (G7); sample rows may remain in Neon but are not shown while connected.
 - Live smoke on Neon verified (counts in PART 10); visitors never connect Gmail; DEMO_MODE blocks OAuth/sync.
+
+## Addendum (B5, 2026-10-01) — gmail.send
+
+- Add `https://www.googleapis.com/auth/gmail.send` to **SCOPES** and **REQUIRED_SCOPES** (required at Connect / token exchange). No `gmail.compose`.
+- Operator must **Reconnect** (existing `prompt=consent` flow) to grant send; Testing mode forever unchanged.
+- Send path remains HITL-only (D-033); DEMO_MODE continues to block OAuth/sync and **blocks approve/send**.

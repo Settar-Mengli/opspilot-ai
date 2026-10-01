@@ -31,3 +31,14 @@ LangGraph; crew frameworks; single-shot Ask only.
 ## Consequences
 
 Complementary portfolio story; quota burn risk — gate with metering and evals (B3 before/with tools on real bodies).
+
+## Addendum (B5, 2026-10-01) — caps
+
+Locked env defaults (fail closed when exceeded):
+
+| Var | Default | Meaning |
+|-----|---------|---------|
+| `OPSPILOT_ASK_MAX_STEPS` | **5** | Max tool/LLM loop iterations per Ask |
+| `OPSPILOT_ASK_MAX_PROVIDER_CALLS` | **8** | Max provider HTTP attempts per Ask (steps + repair + failover) |
+
+Server-side multi-turn history: last **10** turns, each turn length-capped; tool outputs in history treated as UNTRUSTED (D-029). Daily UTC provider budgets unchanged (B2). Anthropic never on `ask` (D-023). SSE event set extended with `draft` (D-032).
