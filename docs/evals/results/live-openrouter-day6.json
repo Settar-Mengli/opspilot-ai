@@ -1,0 +1,217 @@
+{
+  "accepted": 15,
+  "anthropic": "skipped",
+  "asr": {
+    "accepted": 0,
+    "blocked_by_defenses": 0,
+    "n": 0,
+    "rate": null,
+    "successes": 0
+  },
+  "attempts": 15,
+  "cases": [
+    {
+      "id": "triage-v1-001",
+      "pred": {
+        "category": "incident",
+        "sentiment": "negative",
+        "urgency": "high"
+      },
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "id": "triage-v1-002",
+      "pred": {
+        "category": "follow_up",
+        "sentiment": "positive",
+        "urgency": "low"
+      },
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "id": "triage-v1-003",
+      "pred": {
+        "category": "incident",
+        "sentiment": "negative",
+        "urgency": "high"
+      },
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "id": "triage-v1-004",
+      "pred": {
+        "category": "request",
+        "sentiment": "neutral",
+        "urgency": "low"
+      },
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "id": "triage-v1-005",
+      "pred": {
+        "category": "request",
+        "sentiment": "neutral",
+        "urgency": "high"
+      },
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "id": "triage-v1-006",
+      "pred": {
+        "category": "admin",
+        "sentiment": "neutral",
+        "urgency": "low"
+      },
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "id": "triage-v1-007",
+      "pred": {
+        "category": "follow_up",
+        "sentiment": "neutral",
+        "urgency": "high"
+      },
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "id": "triage-v1-008",
+      "pred": {
+        "category": "incident",
+        "sentiment": "negative",
+        "urgency": "high"
+      },
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "id": "triage-v1-009",
+      "pred": {
+        "category": "request",
+        "sentiment": "neutral",
+        "urgency": "low"
+      },
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "id": "triage-v1-010",
+      "pred": {
+        "category": "request",
+        "sentiment": "neutral",
+        "urgency": "low"
+      },
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "id": "triage-v1-011",
+      "pred": {
+        "category": "incident",
+        "sentiment": "negative",
+        "urgency": "high"
+      },
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "id": "triage-v1-012",
+      "pred": {
+        "category": "follow_up",
+        "sentiment": "positive",
+        "urgency": "low"
+      },
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "id": "triage-v1-013",
+      "pred": {
+        "category": "request",
+        "sentiment": "neutral",
+        "urgency": "low"
+      },
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "id": "triage-v1-014",
+      "pred": {
+        "category": "request",
+        "sentiment": "negative",
+        "urgency": "high"
+      },
+      "repaired": false,
+      "status": "accepted"
+    },
+    {
+      "id": "triage-v1-015",
+      "pred": {
+        "category": "request",
+        "sentiment": "neutral",
+        "urgency": "medium"
+      },
+      "repaired": false,
+      "status": "accepted"
+    }
+  ],
+  "created_utc": "2026-10-01T16:09:20.822496Z",
+  "git_sha": "633d88236cc292c5bc7a4688bfcd68ab71feced6",
+  "harness_version": "b3-live/v2",
+  "json_mode": "json_object",
+  "latency_ms": {
+    "mean": 14053.20820666384,
+    "p50": 10383.004800009076,
+    "p95": 35651.84850001241
+  },
+  "max_requests": 30,
+  "max_tokens": 1024,
+  "metrics_recomputed_utc": "2026-10-01T16:09:20.878050Z",
+  "min_interval_s": 3.0,
+  "missing_pred_ids": [],
+  "mode": "live",
+  "model": "nvidia/nemotron-3-super-120b-a12b:free",
+  "n_redteam": 0,
+  "n_triage": 15,
+  "partial": false,
+  "prompt_version": "58d6a56ccf509d5f8c1a8ec581eeeeb936d4f9848d077b8caef38e7f77b47a27",
+  "provider": "openrouter",
+  "rate_limit_events": 0,
+  "redteam": [],
+  "repair_events": 0,
+  "repair_pct": 0.0,
+  "requests_used": 15,
+  "run_status": "completed",
+  "triage_fields": {
+    "category": {
+      "f1": 0.5254545454545455,
+      "hits": 10,
+      "n": 15
+    },
+    "sentiment": {
+      "f1": 0.8412698412698413,
+      "hits": 13,
+      "n": 15
+    },
+    "urgency": {
+      "f1": 0.4901515151515151,
+      "hits": 10,
+      "n": 15
+    }
+  },
+  "triage_macro_f1": 0.618958633958634,
+  "triage_macro_f1_attempted": 0.618958633958634,
+  "triage_macro_f1_attempted_n": 15,
+  "triage_macro_f1_n": 15,
+  "validity_n": {
+    "accepted": 15,
+    "attempts": 15
+  },
+  "validity_pct": 1.0
+}
