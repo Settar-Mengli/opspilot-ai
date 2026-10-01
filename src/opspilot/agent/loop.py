@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 from collections.abc import Callable, Iterator
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import TimeoutError as FuturesTimeoutError
 from typing import Any
 
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from opspilot.agent.events import AgentEvent
@@ -20,7 +20,7 @@ from opspilot.llm.prompt_safety import UNTRUSTED_SYSTEM_POLICY
 from opspilot.llm.providers.base import LlmProvider
 from opspilot.llm.routed import BudgetAwareGateway
 from opspilot.llm.routing import build_providers
-from opspilot.llm.types import Message
+from opspilot.llm.types import Message, ProviderResult, TaskName
 from opspilot.services._llm import compact_triage_lines
 
 CancelCheck = Callable[[], bool]
@@ -73,35 +73,82 @@ def _tool_end_payload(tool_name: str, result: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
-def _complete_json_with_timeout(
-    gw: BudgetAwareGateway,
-    *,
-    messages: list[Message],
-    timeout_s: float,
-) -> AgentTurn:
-    """Bound wall time for a sync gateway call without blocking on the abandoned worker.
+def _call_with_wall_timeout[T](fn: Callable[[], T], timeout_s: float) -> T:
+    """Run sync fn in a daemon thread; bound wall time without joining forever.
 
-    Budget debit happens inside the gateway before the provider body runs; a timeout
-    after debit still counts as a consumed attempt. The worker is abandoned via
-    shutdown(wait=False) so the Ask loop is not blocked past timeout_s.
+    Daemon threads do not block process/pytest exit. Only the provider body should
+    run here — never the SQLAlchemy session / budget path.
     """
-    executor = ThreadPoolExecutor(max_workers=1)
+    box: dict[str, Any] = {}
 
-    def _call() -> AgentTurn:
-        return gw.complete_json(
-            task="ask",
-            messages=messages,
-            schema=AgentTurn,
-            max_tokens=800,
+    def _target() -> None:
+        try:
+            box["ok"] = fn()
+        except Exception as exc:  # noqa: BLE001 — re-raised on caller thread
+            box["err"] = exc
+
+    thread = threading.Thread(target=_target, name="ask-step-timeout", daemon=True)
+    thread.start()
+    thread.join(timeout=timeout_s)
+    if thread.is_alive():
+        raise StepTimeoutError("step_timeout")
+    if "err" in box:
+        raise box["err"]
+    return box["ok"]  # type: ignore[no-any-return]
+
+
+class _TimeoutProvider:
+    """Wrap a provider so complete/complete_json honor a wall-clock timeout."""
+
+    def __init__(self, inner: LlmProvider, timeout_s: float) -> None:
+        self._inner = inner
+        self._timeout_s = timeout_s
+
+    @property
+    def name(self) -> str:
+        return self._inner.name
+
+    def complete(
+        self,
+        *,
+        task: TaskName,
+        messages: list[Message],
+        max_tokens: int,
+        model: str | None = None,
+    ) -> ProviderResult:
+        return _call_with_wall_timeout(
+            lambda: self._inner.complete(task=task, messages=messages, max_tokens=max_tokens, model=model),
+            self._timeout_s,
         )
 
-    fut = executor.submit(_call)
-    try:
-        return fut.result(timeout=timeout_s)
-    except FuturesTimeoutError as exc:
-        raise StepTimeoutError("step_timeout") from exc
-    finally:
-        executor.shutdown(wait=False, cancel_futures=True)
+    def complete_json(
+        self,
+        *,
+        task: TaskName,
+        messages: list[Message],
+        schema: type[BaseModel],
+        max_tokens: int,
+        model: str | None = None,
+        repair_hint: str | None = None,
+        force_json_object: bool = False,
+        temperature: float | None = None,
+    ) -> ProviderResult:
+        return _call_with_wall_timeout(
+            lambda: self._inner.complete_json(
+                task=task,
+                messages=messages,
+                schema=schema,
+                max_tokens=max_tokens,
+                model=model,
+                repair_hint=repair_hint,
+                force_json_object=force_json_object,
+                temperature=temperature,
+            ),
+            self._timeout_s,
+        )
+
+    def stream(self, **kwargs):  # type: ignore[no-untyped-def]
+        return self._inner.stream(**kwargs)
 
 
 def run_ask_agent(
@@ -139,6 +186,8 @@ def run_ask_agent(
         )
         return
 
+    timed_providers: list[LlmProvider] = [_TimeoutProvider(p, step_timeout_s) for p in provider_list]
+
     system = (
         f"You are {assistant_name}, OpsPilot chief of staff. Calm, concise, first person. "
         f"{UNTRUSTED_SYSTEM_POLICY} {TOOL_SYSTEM_FRAGMENT}\n"
@@ -152,7 +201,7 @@ def run_ask_agent(
 
     recorder = session_attempt_recorder(session)
     gw = BudgetAwareGateway(
-        provider_list,
+        timed_providers,
         session=session,
         recorder=recorder,
         observe=True,
@@ -175,7 +224,13 @@ def run_ask_agent(
 
         provider_calls += 1
         try:
-            turn = _complete_json_with_timeout(gw, messages=messages, timeout_s=step_timeout_s)
+            # Gateway (budget debit + record) stays on this thread; provider body is timed.
+            turn = gw.complete_json(
+                task="ask",
+                messages=messages,
+                schema=AgentTurn,
+                max_tokens=800,
+            )
         except StepTimeoutError:
             yield AgentEvent("error", rid, {"code": "step_timeout", "message": "Ask step timed out."})
             return
@@ -229,12 +284,7 @@ def run_ask_agent(
                 content=json.dumps({"kind": "tool", "tool": tool_name, "args": args}),
             )
         )
-        messages.append(
-            Message(
-                role="user",
-                content=tool_result_untrusted(tool_name, tool_blob),
-            )
-        )
+        messages.append(Message(role="user", content=tool_result_untrusted(tool_name, tool_blob)))
 
     yield AgentEvent(
         "error",
