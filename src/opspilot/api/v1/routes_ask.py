@@ -161,7 +161,7 @@ def _disconnect_poller(http_request: Request) -> tuple[CancelCheck, PollerStop]:
             running = asyncio.get_running_loop()
         except RuntimeError:
             running = None
-        if running is loop:
+        if running is not None and running is loop:
             # Same loop: schedule drain; do not block the loop thread.
             loop.create_task(_drain())
             return
