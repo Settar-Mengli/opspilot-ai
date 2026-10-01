@@ -84,7 +84,13 @@ def _sync_gmail(
 
     upserted = 0
     for mid in ids:
-        msg = client.get_message(mid)
+        try:
+            msg = client.get_message(mid)
+        except GoogleHttpError as exc:
+            # History/list can reference ids already gone (trash/expunge race) — skip.
+            if exc.status_code == 404:
+                continue
+            raise
         if not msg.provider_id:
             continue
         work_items.upsert_by_provider_id(

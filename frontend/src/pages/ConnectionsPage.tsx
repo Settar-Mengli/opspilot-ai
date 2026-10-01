@@ -99,7 +99,13 @@ export function ConnectionsPage() {
         setNeedsReauth(true)
         setSyncMsg('Google re-auth required. Reconnect to continue.')
       } else {
-        setSyncMsg(err instanceof Error ? err.message : 'Sync failed.')
+        const code = errorCode(err)
+        const rid =
+          err && typeof err === 'object' && 'requestId' in err && typeof (err as { requestId?: string }).requestId === 'string'
+            ? (err as { requestId: string }).requestId
+            : undefined
+        const parts = [code || 'sync_failed', rid ? `ref ${rid}` : null].filter(Boolean)
+        setSyncMsg(`Sync failed (${parts.join('; ')})`)
       }
     } finally {
       setSyncing(false)
@@ -146,8 +152,8 @@ export function ConnectionsPage() {
           <p className="cn-feat-head">Gmail + Calendar</p>
           <p className="cn-feat-sub">
             {googleConnected
-              ? 'Operator Google account linked (readonly). Sync pulls fictional demo mail and the week ahead.'
-              : 'Connect your Testing-mode Google account. Readonly Gmail and Calendar only.'}
+              ? 'Operator Google account linked. Sync pulls fictional demo mail and the week ahead; send requires your approval.'
+              : 'Connect your Testing-mode Google account. Gmail read + send-with-approval, and Calendar read.'}
           </p>
           {googleConnected && !needsReauth ? (
             <>

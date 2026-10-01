@@ -136,16 +136,21 @@ def post_sync(request: Request, session: Session = Depends(get_db_session)) -> d
         import logging
 
         status = exc.status_code
+        # Prefer specific upstream code (gmail_get_failed, gmail_history_failed, …).
+        code = str(exc.args[0]) if exc.args else "google_sync_failed"
+        if not code or code == "GoogleHttpError":
+            code = "google_sync_failed"
         logging.getLogger("opspilot.api.oauth").error(
-            "google_sync_failed status_code=%s message=%s",
+            "google_sync_failed request_id=%s error_code=%s upstream_status=%s",
+            getattr(request.state, "request_id", None) or "-",
+            code,
             status,
-            str(exc)[:200],
         )
         raise safe_error(
             502,
-            "google_sync_failed",
+            code,
             "Google sync failed.",
-            details={"status_code": status},
+            details={"upstream_status": status} if status is not None else None,
         ) from exc
 
 
