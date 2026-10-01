@@ -33,11 +33,19 @@ from opspilot.services.insights import generate_insights
 router = APIRouter(prefix="/api/v1")
 
 
-def _settings_payload() -> dict[str, object]:
+def _settings_payload(session: Session | None = None) -> dict[str, object]:
+    from opspilot.persistence.repositories import oauth_credentials
+    from opspilot.services.operator_session import demo_mode_enabled
+
+    google_connected = False
+    if session is not None:
+        google_connected = oauth_credentials.is_connected(session, provider="google")
     return {
         "provider": ai_settings.provider,
         "model": ai_settings.model,
         "api_key_set": bool(ai_settings.api_key),
+        "demo_mode": demo_mode_enabled(),
+        "google_connected": google_connected,
     }
 
 
@@ -86,8 +94,8 @@ def health() -> str:
 
 
 @router.get("/settings", response_class=JSONResponse)
-def get_settings() -> dict[str, object]:
-    return _settings_payload()
+def get_settings(session: Session = Depends(get_db_session)) -> dict[str, object]:
+    return _settings_payload(session)
 
 
 @router.post("/runs")
@@ -134,9 +142,21 @@ def get_run(run_id: str, session: Session = Depends(get_db_session)) -> dict[str
 
 
 @router.get("/triage", response_class=JSONResponse)
-def get_triage(session: Session = Depends(get_db_session)) -> list[dict[str, Any]]:
+def get_triage(
+    session: Session = Depends(get_db_session),
+    limit: int = 100,
+    cursor: str | None = None,
+) -> list[dict[str, Any]]:
     """Latest triage decisions with AI-05 lite subject_or_title from WorkItem."""
-    return _latest_triage_records(session)
+    page_size = max(1, min(limit, 100))
+    records = _latest_triage_records(session)
+    if cursor:
+        try:
+            idx = next(i for i, r in enumerate(records) if r.get("id") == cursor)
+            records = records[idx + 1 :]
+        except StopIteration:
+            records = []
+    return records[:page_size]
 
 
 @router.get("/runs/{run_id}/triage", response_class=JSONResponse)
@@ -268,13 +288,67 @@ def get_inputs() -> dict[str, object]:
 
 
 @router.get("/capabilities")
-def list_capabilities() -> list[Any]:
-    return get_all_capabilities()
+def list_capabilities(session: Session = Depends(get_db_session)) -> list[Any]:
+    from dataclasses import asdict, replace
+
+    from opspilot.capabilities.registry import CapabilityStatus
+    from opspilot.persistence.repositories import oauth_credentials
+
+    connected = oauth_credentials.is_connected(session, provider="google")
+    caps = []
+    for cap in get_all_capabilities():
+        if cap.id in {"email", "calendar"}:
+            status = CapabilityStatus.CONNECTED if connected else CapabilityStatus.AVAILABLE
+            caps.append(asdict(replace(cap, status=status)))
+        else:
+            caps.append(asdict(cap))
+    return caps
 
 
 @router.get("/capabilities/{capability_id}")
-def get_capability_by_id(capability_id: str) -> Any:
+def get_capability_by_id(capability_id: str, session: Session = Depends(get_db_session)) -> Any:
+    from dataclasses import asdict, replace
+
+    from opspilot.capabilities.registry import CapabilityStatus
+    from opspilot.persistence.repositories import oauth_credentials
+
     capability = get_capability(capability_id)
     if capability is None:
         raise safe_error(404, "capability_not_found", "Capability not found.")
-    return capability
+    if capability.id in {"email", "calendar"}:
+        connected = oauth_credentials.is_connected(session, provider="google")
+        status = CapabilityStatus.CONNECTED if connected else CapabilityStatus.AVAILABLE
+        return asdict(replace(capability, status=status))
+    return asdict(capability)
+
+
+@router.get("/calendar/week", response_class=JSONResponse)
+def get_calendar_week(
+    start: str,
+    end: str,
+    session: Session = Depends(get_db_session),
+) -> dict[str, Any]:
+    from datetime import datetime
+
+    from opspilot.persistence.repositories import meetings
+
+    try:
+        start_dt = datetime.fromisoformat(start)
+        end_dt = datetime.fromisoformat(end)
+    except ValueError as exc:
+        raise safe_error(400, "invalid_date_range", "start and end must be ISO datetimes.") from exc
+    if start_dt.tzinfo is None or end_dt.tzinfo is None:
+        raise safe_error(400, "invalid_date_range", "start and end must be timezone-aware.")
+    rows = meetings.list_in_range(session, start=start_dt, end=end_dt)
+    return {
+        "meetings": [
+            {
+                "id": row.id,
+                "provider_id": row.provider_id,
+                "title": row.title,
+                "start_at": row.start_at.isoformat(),
+                "end_at": row.end_at.isoformat(),
+            }
+            for row in rows
+        ]
+    }

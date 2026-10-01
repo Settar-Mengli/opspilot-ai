@@ -1,11 +1,12 @@
-"""OAuth API routes (B4 C3). Sync lands in C4."""
+"""OAuth + sync API routes (B4)."""
 
 from __future__ import annotations
 
 import os
+from typing import Any
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from opspilot.api.deps import get_db_session
@@ -17,10 +18,13 @@ from opspilot.integrations.google_oauth import (
 )
 from opspilot.persistence.crypto import EncryptionUnavailableError
 from opspilot.persistence.repositories import oauth_credentials
+from opspilot.services import google_sync
 from opspilot.services.operator_session import (
+    COOKIE_NAME,
     SessionUnavailableError,
     demo_mode_enabled,
     set_operator_cookie,
+    verify_session,
 )
 
 router = APIRouter(tags=["oauth"])
@@ -90,3 +94,18 @@ def oauth_google_callback(
     set_operator_cookie(response, email=bundle.email)
     response.delete_cookie(_PKCE_COOKIE, path="/")
     return response
+
+
+@router.post("/sync", response_class=JSONResponse)
+def post_sync(request: Request, session: Session = Depends(get_db_session)) -> dict[str, Any]:
+    if demo_mode_enabled():
+        raise safe_error(403, "demo_mode_blocks_sync", "DEMO_MODE blocks sync.")
+    sess = verify_session(request.cookies.get(COOKIE_NAME))
+    if sess is None:
+        raise safe_error(401, "operator_auth_required", "Operator session required.")
+    try:
+        return google_sync.run_sync(session)
+    except EncryptionUnavailableError as exc:
+        raise safe_error(503, "encryption_unavailable", "Token encryption unavailable.") from exc
+    except google_sync.GoogleReauthRequired as exc:
+        raise safe_error(401, "google_reauth_required", "Google re-auth required.") from exc
