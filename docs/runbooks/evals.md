@@ -1,4 +1,4 @@
-# Evals runbook (B3)
+# Evals runbook (B3 / B3.1)
 
 ## Hermetic (default / CI)
 
@@ -15,19 +15,52 @@ uv run python -m opspilot.jobs.run_evals
 
 **STOP LIVE:** before each UTC day, report remaining REQ/TOK counters and planned request count; wait for owner `go live day N`.
 
+### Pre-day freeze check (B3.1)
+
+After live guards land, record `LAST_GUARD_SHA`. Before **every** live day:
+
 ```powershell
-uv run python -m opspilot.jobs.run_evals --live --provider gemini
+git diff $LAST_GUARD_SHA..HEAD -- src/opspilot/evals src/opspilot/llm evals/datasets
+# MUST be empty. If non-empty → STOP. Do not run live.
+```
+
+### Process-only env (never edit `.env`)
+
+```powershell
+$env:DATABASE_URL = "postgresql+psycopg://opspilot:opspilot@127.0.0.1:5432/opspilot"
+# OPSPILOT_ANTHROPIC_ENABLED=false; OPSPILOT_OPENROUTER_ALLOW_PAID unset
+# OPENROUTER_MODEL must end with :free
+uv run python -m opspilot.jobs.db_host   # expect host=127 or localhost
+```
+
+Live CLI **refuses** non-local `DATABASE_URL` (including `neon.tech`) unless emergency `OPSPILOT_LIVE_ALLOW_NONLOCAL_DB=1` (never use during STOP LIVE).
+
+### Commands
+
+```powershell
+# Example remainder day (Cloudflare D5)
+uv run python -m opspilot.jobs.run_evals --live --provider cloudflare `
+  --missing-from docs/evals/results/live-cloudflare-day4.json `
+  --suite both --max-requests 60 `
+  --out docs/evals/results/live-cloudflare-day5.json
+
+# Resume failures only
+uv run python -m opspilot.jobs.run_evals --live --provider openrouter `
+  --resume-from docs/evals/results/live-openrouter-day6.json `
+  --max-requests 30 --out docs/evals/results/live-openrouter-day6-resume.json
 ```
 
 Rules:
 
-- Live CLI calls `load_dotenv()` (same as pipeline / `llm_discover`) before any budget/provider work.
-- Before the first provider request, prints `budget_preflight provider=… req_cap=… tok_cap=…`; **aborts if either cap is None** (no HTTP).
-- Exactly one provider per run (no failover). Built via `build_providers(order=[name])`.
-- `BudgetAwareGateway` + approved caps only.
+- Live CLI calls `load_dotenv()` then **local-DB guard** before provider work.
+- Before the first provider request, prints `budget_preflight` and `budget_remaining`; **aborts if caps unset**.
+- Exactly one provider per run (no failover).
+- Checkpoint: `--out` rewritten after **every** case with `partial=true`; final write clears it (atomic temp+replace).
+- `--max-requests N` stops cleanly (`run_status=ceiling_reached`, exit **3**).
+- Per-case `session.commit()` so budget/`llm_calls` match provider spend after crash.
 - Anthropic: **skipped** (P7); no Anthropic HTTP.
 - Results: `docs/evals/results/*.json` + `docs/evals/leaderboard.md` — no secrets, no prompt/body text beyond fictional corpus IDs.
-- Metrics include validity%, repair_events/repair%, latency p50/p95, live ASR (D-029).
+- Metrics include validity%, repair_events/repair%, latency p50/p95, live ASR (D-029) **with n**.
 
 ### ASR (see D-029 option A)
 

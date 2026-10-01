@@ -1,6 +1,6 @@
 # OpsPilot Architecture
 
-**Dualism:** Sections labeled **CURRENT** describe post-B2.1 behavior on `main` (gateway + hardening). Sections labeled **TARGET** describe the remaining locked rebuild (B3–B7). Do not present TARGET as shipped.
+**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B4** (gateway, evals harness, Gmail/Calendar). Sections labeled **TARGET** describe the remaining locked rebuild (**B3.1** live leaderboard rows + **B5–B7**). Do not present TARGET as shipped.
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
@@ -17,21 +17,25 @@ Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs
 
 ---
 
-## CURRENT (B1 + B1.5 + B2 + B2.1 on main)
+## CURRENT (B1–B4 on main)
 
-Verified on `main` (B2 merge `0c71a4a`; B2.1 merge `7501b9e`): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, `/api/v1` with envelope, in-process API pipeline (Postgres-only persist), Settings GET-only (`provider`/`model`/`api_key_set` — no key preview), FE on `/api/v1`, coverage fail-under **72**, Node ≥24.15 / Python 3.13 / uv.
+Verified on `main` (B2 `0c71a4a`; B2.1 `7501b9e`; B3 `3eb7baf`; B4 `c6e677c`): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, Alembic head **0007**, `/api/v1` with envelope, FE on `/api/v1`, coverage fail-under **72**, Node ≥24.15 / Python 3.13 / uv.
 
-**B1.5a:** Playwright visual/e2e/axe safety net with container-only `-linux` baselines; CSS partials under `frontend/src/styles/`; shared `useOverlay` overlay lifecycle; U4 hygiene fixes; D-026/D-027.
+**B1.5a:** Playwright visual/e2e/axe safety net with container-only `-linux` baselines; CSS partials; `useOverlay`; D-026/D-027.
 
-**B1.5b (CURRENT):** ≥1280 three-pane shell (`desktop.css` imported last): primary icon rail, content column, docked Ask 380px; Ask dual-mode (dock ≥1280 / modal &lt;1280); All Items list+detail; landmarks (skip link, `nav[aria-label=Primary]`, Ask `aside`).
+**B1.5b (CURRENT):** ≥1280 three-pane shell; Ask dual-mode; All Items list+detail.
 
-**B2 (CURRENT on `main`):** hand-rolled `opspilot.llm` gateway; `llm_allowed()` on all call sites; services for ask/evening/insights; free-tier providers + D-023 Anthropic gate; `LlmCall` + UTC budgets with owner-approved C11 caps; `GET /runs?limit=&cursor=`; `X-Request-ID`; timestamptz for run/work_item times.
+**B2 (CURRENT):** hand-rolled `opspilot.llm` gateway; `llm_allowed()`; services; free-tier providers + D-023; `LlmCall` + UTC budgets; runs pagination; `X-Request-ID`; timestamptz.
 
-**B2.1 (CURRENT on `main`):** recursive meta redaction; OpenRouter `:free` gate; request-id validation; OBS request_id; dead-adapter delete; Alembic `0005`; toolchain Node 24.15 / ubuntu-24.04; portfolio docs truth.
+**B2.1 (CURRENT):** recursive meta redaction; OpenRouter `:free` gate; OBS request_id; dead-adapter delete; Alembic `0005`; toolchain pins.
+
+**B3 (CURRENT):** eval harness `b3-live/v2`; triage N=40 + red-team N=20; hermetic F1 floor 0.30; live D1–D3 full; CF D4 partial 33/60; Alembic `0006` confidence/evidence_refs.
+
+**B4 (CURRENT):** Gmail/Calendar OAuth PKCE + Fernet credentials; SyncCursor; Meeting; DEMO_MODE; operator session cookie (D-030); Connections/WeekPanel; Alembic **0007**.
 
 ### Endpoints (CURRENT) — `/api/v1`
 
-Primary surface is **`/api/v1/*`**. Legacy unversioned routes were removed in B1 commit 9.
+Primary surface is **`/api/v1/*`**. Legacy unversioned routes were removed in B1.
 
 | Method | Path |
 |--------|------|
@@ -43,7 +47,11 @@ Primary surface is **`/api/v1/*`**. Legacy unversioned routes were removed in B1
 | GET | `/api/v1/briefing`, `/api/v1/ai-briefing` |
 | GET | `/api/v1/runs/{run_id}/triage`, `.../briefing`, `.../ai-briefing` |
 | POST | `/api/v1/ask`, `/api/v1/evening-summary`, `/api/v1/insights` |
-| GET | `/api/v1/inputs`, `/api/v1/capabilities` |
+| GET | `/api/v1/inputs`, `/api/v1/capabilities`, `/api/v1/capabilities/{capability_id}` |
+| GET | `/api/v1/oauth/google/start`, `/api/v1/oauth/google/callback` |
+| DELETE | `/api/v1/oauth/google` |
+| POST | `/api/v1/sync` |
+| GET | `/api/v1/calendar/week` |
 
 Notable: **no** `PATCH` settings. Pipeline runs **in-process** (no CLI subprocess).
 
@@ -52,11 +60,12 @@ Notable: **no** `PATCH` settings. Pipeline runs **in-process** (no CLI subproces
 | Path | Role |
 |------|------|
 | `src/opspilot/api/app.py` | FastAPI app + `/api/v1` |
-| `src/opspilot/api/v1/` | Versioned routes |
+| `src/opspilot/api/v1/` | Versioned routes + `oauth_routes.py` |
 | `src/opspilot/persistence/` | SQLAlchemy models + engine |
 | `src/opspilot/jobs/import_json.py` | X5 importer |
 | `src/opspilot/pipeline/` | Daily ops orchestration (`run_daily_ops.py`) |
-| `src/opspilot/adapters/` | rule_based, claude, conversation, evening, insights, briefing, factory, base |
+| `src/opspilot/adapters/` | `rule_based`, `gateway_triage`, `briefing_adapter`, `factory`, `base` |
+| `src/opspilot/evals/` | Hermetic + live eval harness |
 | `frontend/src/api/` | `/api/v1` client only |
 | `frontend/src/styles/` | CSS partials (`tokens`, `shell`, `mobile`, `desktop`, `overlays`, `dashboard`, `pages`) |
 | `frontend/src/components/PrimaryRail.tsx` | ≥1280 primary nav rail |
@@ -70,10 +79,11 @@ Notable: **no** `PATCH` settings. Pipeline runs **in-process** (no CLI subproces
 ### Data flow (CURRENT)
 
 ```
-API: sample_input.json → in-process pipeline → Postgres only (runs, artifacts, triage, work_items)
-CLI: run --output DIR → files under DIR only (no Postgres)
-X5:  import_json (sample / CLI export / history) → Postgres (idempotent)
-FE → /api/v1 → Postgres
+Disconnected: sample_input.json → in-process pipeline → Postgres (runs, artifacts, triage, work_items)
+Connected:    Gmail/Calendar sync → Postgres work_items/meetings → capped triage (gmail-only surfaces)
+CLI:          run --output DIR → files under DIR only (no Postgres)
+X5:           import_json (sample / CLI export / history) → Postgres (idempotent)
+FE → /api/v1 → Postgres (local or Neon for operator demo)
 ```
 
 ---

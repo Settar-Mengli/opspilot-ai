@@ -27,7 +27,9 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | **B6** | M8 + M9 | Morning run (in-runner) + Telegram + preferences → evals |
 | **B7** | M10 | Public free-tier deploy |
 
-**Order:** B0 → B1 → **B1.5a → B1.5b** → B2 → **B2.1** → B3 → **B3.1** → B4 → B5 → B6 → B7.
+**Order:** B0 → B1 → **B1.5a → B1.5b** → B2 → **B2.1** → B3 → B4 → **B3.1** → B5 → B6 → B7.
+
+*(Planned spine listed B3.1 before B4; **executed** order was B3 → B4 → B3.1 per owner lock.)*
 
 **X-item placement (one batch each):**
 
@@ -134,14 +136,14 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B2.1 — Hardening + truth
 
-- **Status:** Implemented on `b2.1/hardening` (PR pending owner `open PR`). PART 8 recorded.
+- **Status:** Merged to `main` (PR #32 → `7501b9e`, 2026-09-30). PART 8 recorded.
 - **Goal:** Post-B2 hardening: register truth-align, toolchain pins, security redaction/OpenRouter/:request-id, dead-code delete, observability, expand-only index, portfolio docs. API shapes unchanged; 0 PNG changes.
 - **Exit:** Full pytest ≥72% (baseline 81.19%); greps clean; PART 8; Dependabot ignores for TS7 / @types/node≥25 / Playwright until U9.
 - **Deps:** B2 · **Size:** L · **Metric:** Hardening + honest CURRENT docs
 
 ### B3 — Eval platform + injection red-team (M3 + M4) — one harness
 
-- **Status:** Merge-ready on `b3/evals-redteam` (locks P1–P13; Anthropic = `skipped`). Hermetic F1-FLOOR **0.30**; D1–D3 full + CF D4 **partial 33/60**; CF/OR pre-closeout smokes **passed**. Live remainder → **B3.1**. PART 9 complete.
+- **Status:** Merged to `main` (PR #36 → `3eb7baf`, 2026-09-30). Hermetic F1-FLOOR **0.30**; D1–D3 full + CF D4 **partial 33/60**; CF/OR pre-closeout smokes **passed**. Live remainder → **B3.1**. PART 9 complete.
 - **Goal:** Regression + jailbreak/injection defense on a single eval harness.
 - **Workstream M3** — A2 + P8 phase1 lite
   - **Scope:** Labeled fictional corpus; F1/confusion; item-ID grounding + confidence on triage; CI secret-free lane; Anthropic column documented `skipped` (P7; no Anthropic HTTP in B3).
@@ -156,16 +158,15 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
   - **Docs:** PART 9; ROADMAP/ADRs/CHANGELOG updated.
 - **Deps:** B2 · **Size:** XL · **Metric:** Triage F1 on golden set; red-team ASR live-reported
 
-### B3.1 — Live leaderboard remainder (CF D5 + OpenRouter D6–D7)
+### B3.1 — Live leaderboard remainder (CF D5 + OpenRouter D6–D9)
 
-- **Status:** Planned after B3 merge. **No new product scope** (no UI/API/schema/ADR locks beyond publishing remaining live rows).
+- **Status:** In progress on `b3.1/live-remainder` (**after B4 merge**). **No new product scope** (no UI/API/schema/ADR locks beyond publishing remaining live rows + pre-live guards).
 - **Scope:**
-  - **Cloudflare D5:** remaining **7 triage + 20 redteam** (~27) under 80 REQ/day (after D4 **66/80** stop).
-  - **OpenRouter D6:** ≤**30** cases (40 REQ/day cap).
-  - **OpenRouter D7:** remaining **~30** + resume fails.
+  - **Cloudflare D5:** remaining **7 triage + 20 redteam** (~27) under 80 REQ/day; combined CF artifact; conditional CF resume day if failures.
+  - **OpenRouter D6–D9:** ≤**15** cases/day (40 REQ/day cap, ≥25% margin @ ×2); conditional **D10** resume if failures.
   - Pre-closeout CF 3/3 + OR 5/5 smokes already done in B3 (not merged into day artifacts).
-- **Exit:** Leaderboard rows for D5–D7 committed under `docs/evals/`; PART append; CHANGELOG note.
-- **Deps:** B3 · **Size:** S · **Metric:** Complete free-tier live table (Anthropic still skipped)
+- **Exit:** Leaderboard rows for D5–D9[/D10] + combined artifacts under `docs/evals/`; PART 12; CHANGELOG note.
+- **Deps:** B3 · B4 · **Size:** S · **Metric:** Complete free-tier live table (Anthropic still skipped)
 
 ### B4 — Demo Google inbox/calendar (M5)
 
