@@ -18,16 +18,13 @@ from opspilot.config.env_load import load_repo_dotenv
 # Load repo .env before settings / DB resolve (existing process env wins).
 load_repo_dotenv()
 
+from opspilot.api.cors_origins import allowed_cors_origins  # noqa: E402
 from opspilot.api.errors import register_exception_handlers  # noqa: E402
 from opspilot.api.v1.oauth_routes import router as oauth_router  # noqa: E402
 from opspilot.api.v1.routes import router as v1_router  # noqa: E402
 from opspilot.api.v1.routes_ask import router as ask_router  # noqa: E402
 from opspilot.api.v1.routes_mail import router as mail_router  # noqa: E402
 from opspilot.persistence.db import log_active_database_host  # noqa: E402
-
-LOCAL_UI_ORIGINS = [
-    "http://127.0.0.1:5173",
-]
 
 request_id_ctx: contextvars.ContextVar[str | None] = contextvars.ContextVar("request_id", default=None)
 
@@ -98,9 +95,9 @@ def create_app() -> FastAPI:
     )
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=LOCAL_UI_ORIGINS,
+        allow_origins=allowed_cors_origins(),
         allow_credentials=True,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "X-Request-ID"],
     )
     application.add_middleware(RequestIdMiddleware)

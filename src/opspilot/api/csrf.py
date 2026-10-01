@@ -7,17 +7,8 @@ from urllib.parse import urlparse
 
 from fastapi import Request
 
+from opspilot.api.cors_origins import allowed_cors_origins_set
 from opspilot.api.schemas import safe_error
-
-# Keep in sync with opspilot.api.app.LOCAL_UI_ORIGINS
-_DEFAULT_UI_ORIGINS = frozenset({"http://127.0.0.1:5173"})
-
-
-def _allowed_origins() -> frozenset[str]:
-    raw = os.environ.get("OPSPILOT_CORS_ORIGINS", "").strip()
-    if raw:
-        return frozenset(part.strip().rstrip("/") for part in raw.split(",") if part.strip())
-    return _DEFAULT_UI_ORIGINS
 
 
 def _is_dev_relaxed() -> bool:
@@ -42,7 +33,7 @@ def require_csrf_origin(request: Request) -> None:
     """Fail closed when Origin/Referer missing or not allowlisted (unless relax-dev)."""
     if _is_dev_relaxed():
         return
-    allowed = _allowed_origins()
+    allowed = allowed_cors_origins_set()
     origin = _origin_from_request(request)
     if origin is None or origin not in allowed:
         raise safe_error(403, "csrf_origin_rejected", "Origin not allowed.")

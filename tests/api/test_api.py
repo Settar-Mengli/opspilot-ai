@@ -496,17 +496,30 @@ def test_settings_get_ok_patch_removed():
     assert patch.status_code in {404, 405, 422}
 
 
-def test_cors_preflight_allows_post_for_local_origin():
+def test_cors_preflight_allows_delete_for_local_origin():
     resp = client.options(
-        "/api/v1/runs",
+        "/api/v1/oauth/google",
         headers={
             "Origin": "http://127.0.0.1:5173",
-            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Method": "DELETE",
             "Access-Control-Request-Headers": "content-type",
         },
     )
     assert resp.status_code in {200, 204}
     assert resp.headers.get("access-control-allow-origin") == "http://127.0.0.1:5173"
+    allow = (resp.headers.get("access-control-allow-methods") or "").upper()
+    assert "DELETE" in allow
+
+
+def test_cors_and_csrf_origins_agree(monkeypatch: pytest.MonkeyPatch) -> None:
+    from opspilot.api.cors_origins import allowed_cors_origins, allowed_cors_origins_set
+
+    monkeypatch.setenv("OPSPILOT_CORS_ORIGINS", " http://127.0.0.1:5173 , http://example.test ")
+    expected = frozenset({"http://127.0.0.1:5173", "http://example.test"})
+    assert allowed_cors_origins_set() == expected
+    assert set(allowed_cors_origins()) == expected
+    monkeypatch.delenv("OPSPILOT_CORS_ORIGINS", raising=False)
+    assert allowed_cors_origins_set() == frozenset({"http://127.0.0.1:5173"})
 
 
 def test_cors_preflight_disallows_non_local_origin():
