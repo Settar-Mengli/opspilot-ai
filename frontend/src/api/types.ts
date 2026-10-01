@@ -129,4 +129,6 @@ export interface SyncResult {
   account_email: string
   gmail_upserted: number
   calendar_upserted: number
+  triaged: number
+  run_id?: string
 }

@@ -103,13 +103,12 @@ def create_run(
     req: RunPipelineRequest,
     session: Session = Depends(get_db_session),
 ) -> dict[str, object]:
-    from opspilot.persistence.repositories import oauth_credentials, work_items
+    from opspilot.api.services.gmail_triage import triage_connected_gmail
+    from opspilot.persistence.repositories import oauth_credentials
 
-    use_gmail = oauth_credentials.is_connected(session, provider="google")
-    if use_gmail:
-        raw = work_items.list_gmail_raw(session)
-        result = execute_pipeline(req, raw_items=raw)
-        run_id = persist_pipeline_result(session, result, sample_input=None)
+    if oauth_credentials.is_connected(session, provider="google"):
+        triaged = triage_connected_gmail(session, run_date=req.date)
+        run_id = str(triaged["run_id"])
     else:
         result = execute_pipeline(req)
         sample = RAW_INPUT_DIR / Path(req.input_file).name
