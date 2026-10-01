@@ -191,7 +191,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 - **Workstream M7** — P3 + X3 — **DONE**
   - `gmail.send` scope; HITL edit/approve; allowlist fail-closed; DEMO_MODE 403; Gmail reply-in-thread only; `mail_send_audit`.
 - **Also IN:** Gmail `messageDeleted` local removal; DM-09 `ttft_ms` on Ask SSE; hermetic `ask_agent` + `redteam_agent` evals.
-- **Batch exit:** hermetic gates green; ask-error visual refresh (owner gallery); Neon Alembic **0008**; PART 13.
+- **Batch exit:** hermetic gates green; ask-error visual refresh (owner gallery); Neon Alembic **0009**; PART 13.
 - **Deps:** B2–B4 · **Size:** XL · **Next after merge:** **B6**
 
 ### B6 — Morning run + preferences (M8 + M9)

@@ -9,7 +9,7 @@ and this project follows Semantic Versioning principles for release tags.
 
 ### Added
 
-- **B5 Agentic Ask + HITL send** (branch `b5/agentic-ask`): JSON-emulated tool loop (D-031); `POST /ask/stream` SSE (D-032); draft edit/approve + allowlist + DEMO_MODE (D-033); `gmail.send`; Alembic **0008**; Gmail deleted-message sync; hermetic `ask_agent` / `redteam_agent`; runbook `docs/runbooks/ask-send.md`; PART 13. **Next:** **B6**.
+- **B5 Agentic Ask + HITL send** (branch `b5/agentic-ask`): JSON-emulated tool loop (D-031); `POST /ask/stream` SSE (D-032); draft edit/approve + allowlist + DEMO_MODE (D-033); `gmail.send`; Alembic **0009** (via **0008** mail tables); Gmail deleted-message sync; hermetic `ask_agent` / `redteam_agent`; runbook `docs/runbooks/ask-send.md`; PART 13. **Next:** **B6**.
 - **B3.1 complete** (branch `b3.1/live-remainder`): live eval guards; docs truth; CF D5 + CF combined (60/60, F1 0.706 n=40); OpenRouter **partial** D6 (triage n=15, F1 0.619; ASR N/A). **D-B31-4 amended 2026-10-01:** OR D7–D9/D10 + OR combined **cancelled** to unblock **B5**. PART 12. Merged PR #39 → `1a6fe7d`.
 - **B4 merged** to `main` (PR #37 → `c6e677c`, 2026-10-01); PART 11 closeout; B3.1 then **B5**.
 - **B4 Real Gmail + Google Calendar (branch `b4/gmail-calendar`):** OAuth PKCE loopback + Fernet refresh in `bytea`; SyncCursor; Meeting table; DEMO_MODE; operator session cookie + CORS credentials (A1 / D-030); hermetic Google fakes; Connections connect/sync/disconnect; WeekPanel from calendar; UI F-INS/NB-4/NB-3; STOP VISUAL baselines; PART 10. **STOP LIVE complete** on Neon (connect, incremental sync, capped triage 50/50; G1–G7).
