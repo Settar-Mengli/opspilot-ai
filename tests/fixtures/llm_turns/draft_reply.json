@@ -1,0 +1,8 @@
+{
+  "kind": "tool",
+  "tool": "draft_reply",
+  "args": {
+    "work_item_id": "fx_wi_ffff666",
+    "body": "FIXTURE_BODY"
+  }
+}

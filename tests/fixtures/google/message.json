@@ -1,0 +1,22 @@
+{
+  "id": "fx_msg_aaa111",
+  "threadId": "fx_thr_aaa111",
+  "labelIds": ["INBOX"],
+  "snippet": "FIXTURE_BODY",
+  "payload": {
+    "headers": [
+      {"name": "From", "value": "sender@example.test"},
+      {"name": "To", "value": "ops@example.test"},
+      {"name": "Subject", "value": "FIXTURE_SUBJECT"},
+      {"name": "Message-ID", "value": "<fx_msg_aaa111@example.test>"},
+      {"name": "Date", "value": "Thu, 01 Oct 2026 12:00:00 +0000"}
+    ],
+    "body": {"data": ""},
+    "parts": [
+      {
+        "mimeType": "text/plain",
+        "body": {"data": "RklYVFVSRV9CT0RZ"}
+      }
+    ]
+  }
+}

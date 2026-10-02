@@ -1,0 +1,33 @@
+{
+  "historyId": "fx_hid_0001",
+  "history": [
+    {
+      "id": "fx_hid_0002",
+      "messagesAdded": [
+        {
+          "message": {
+            "id": "fx_msg_aaa111",
+            "threadId": "fx_thr_aaa111",
+            "labelIds": ["INBOX"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "fx_hid_0003",
+      "labelsAdded": [
+        {
+          "message": {"id": "fx_msg_bbb222", "threadId": "fx_thr_bbb222"},
+          "labelIds": ["SPAM"]
+        }
+      ]
+    },
+    {
+      "id": "fx_hid_0004",
+      "messagesDeleted": [
+        {"message": {"id": "fx_msg_ccc333", "threadId": "fx_thr_ccc333"}}
+      ]
+    }
+  ],
+  "nextPageToken": null
+}
