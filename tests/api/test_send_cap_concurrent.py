@@ -67,6 +67,14 @@ def test_concurrent_approves_at_cap_one_send(
         def request(self, method: str, url: str, **kwargs):  # type: ignore[no-untyped-def]
             if "oauth2.googleapis.com/token" in url:
                 return httpx.Response(200, json={"access_token": "tok"})
+            if method.upper() == "GET" and "/messages/" in url:
+                return httpx.Response(
+                    200,
+                    json={
+                        "id": "meta",
+                        "payload": {"headers": [{"name": "Message-ID", "value": "<cap@example.test>"}]},
+                    },
+                )
             with lock:
                 send_count["n"] += 1
                 n = send_count["n"]
