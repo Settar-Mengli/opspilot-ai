@@ -1291,3 +1291,34 @@ Gallery evidence (ask-error refresh for code+ref copy; % pixels from container u
 | `46e7cc9` | docs(llm): document GEMINI_MODEL_ASK override (flash-lite default) | success (push [36960542608](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36960542608); PR [36960545737](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36960545737)) |
 
 Visual baselines this pass: **unchanged** (no PNG refresh).
+
+### Ask model upgrade + tool_args_invalid failover (STOP LIVE 3d / 7ba96d6c…) — 2026-10-02
+
+#### models.list verification (CURRENT)
+
+- **When:** 2026-10-02
+- **Source:** `GET …/v1beta/models` (list only; no generateContent)
+- **Chosen Ask default:** `gemini-3.8-flash`
+- **Why:** strongest **non-Pro Flash**, **non-Lite**, supports `generateContent`, **not** preview/deprecated among listed ids (ahead of `gemini-3.7-flash` / `3.6` / `3.5` / `2.5-flash`). Pro / Lite / preview / image / TTS / live excluded.
+- **Shared default unchanged:** `gemini-3.5-flash-lite` for non-Ask tasks.
+
+#### Failover rule (CURRENT)
+
+After schema repair still yields `tool_args_invalid`, retry the step **once** on the next provider in routing order (`exclude_providers`; counts toward `OPSPILOT_ASK_MAX_PROVIDER_CALLS`). Log `ask_provider_failover` (codes only). D-031 updated.
+
+#### Coverage
+
+| Metric | Value |
+|--------|-------|
+| Local suite | **379** passed |
+| TOTAL | **82.23%** |
+
+#### Commits / CI
+
+| SHA | Subject | CI |
+|-----|---------|-----|
+| `d87fd0a` | feat(llm): Ask default gemini-3.8-flash from models.list | success (push [36962137433](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36962137433); PR [36962142953](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36962142953)) |
+| `652d39d` | feat(ask): failover next provider after tool_args_invalid repair | **failure** Backend (failover test lacked GROQ budget in CI) — fixed forward |
+| `705ddc3` | fix(ask): budget multi-provider FakeProvider ask loop tests | success (push [36963200586](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36963200586); PR [36963204087](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36963204087)) |
+
+Live Ask API check this pass: **skipped** (owner UI retry 3d). Visual baselines: **unchanged**.
