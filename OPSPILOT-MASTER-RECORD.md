@@ -1227,6 +1227,25 @@ Unchanged but listed for gallery: `ask-empty` / `ask-with-messages` / `ask-docke
 | `013e752` | docs(b5): fill PART 13 tip CI for 3378eff | success ([36935483133](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36935483133); PR [36935488595](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36935488595)) |
 | `0039233` | docs(b5): repair PART 13 tip SHA corruption | success ([36936195382](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36936195382); PR [36936199504](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36936199504)) |
 
+### STOP LIVE deviations (append — 2026-10-01/02, pre-merge)
+
+| ID | Note |
+|---|---|
+| FORCE_RULES inherited | STOP LIVE API inherited `OPSPILOT_FORCE_RULES=1` from agent shell; Ask soft-failed until unset. Startup config print previously missed FORCE_RULES (fixed forward). |
+| Sync historyTypes | Gmail history.list `historyTypes` as CSV → 400; fixed to list + 400 full-resync fallback. |
+| Sync messages.get 404 | Deleted/missing message aborted sync with 502; fixed to skip 404 gets. |
+| Ask id truncation | `compact_triage_lines` truncated `wi_` PKs to 32 chars (PKs are 35) → `draft_reply` `not_found` / `step_cap`; fixed to preserve full ids (cap 64). |
+| Connections baselines | Refreshed for send-with-approval copy (container-only). Gallery evidence recorded in Connections commit message / prior gallery table — **owner approval NOT claimed**. |
+| ask-error baselines | Refreshed after Ask error copy (`code; ref request_id`) at 375/768/1280 — **owner approval NOT claimed**. |
+
+Gallery evidence (ask-error refresh for code+ref copy; % pixels from container update run — descriptive only):
+
+| File | Description |
+|------|-------------|
+| `ask-error-chromium-375-linux.png` | Error copy now `Ask failed (ask_failed; ref e2e)` (375 — owner approval required) |
+| `ask-error-chromium-768-linux.png` | Same |
+| `ask-error-chromium-1280-linux.png` | Same |
+
 ### PR
 
 - Open after tip CI green; agent does **not** merge.
