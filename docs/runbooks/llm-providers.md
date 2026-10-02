@@ -41,10 +41,12 @@ Copied into `.env.example`. Apply the same lines to local `.env` (budget vars on
 
 ### Per-task model overrides (CURRENT)
 
-Resolution order (Gemini example): `GEMINI_MODEL_<TASK>` → `GEMINI_MODEL` → code default in `src/opspilot/llm/model_defaults.py`.
+Resolution order (Gemini):
 
-- **Ask:** `GEMINI_MODEL_ASK` (also `GROQ_MODEL_ASK`, `MISTRAL_MODEL_ASK`, …). Unset → same as provider default.
-- **Verified free Gemini id in-repo:** only `gemini-3.5-flash-lite` (`GEMINI_DEFAULT_MODEL`). No stronger free-tier Gemini id is recorded in `model_defaults` / this runbook / `.env.example` — **do not invent** a “Pro/Flash” default; leave Ask on flash-lite unless the owner sets an explicit override after verifying free-tier availability.
+- **Ask:** `GEMINI_MODEL_ASK` → code default `GEMINI_ASK_DEFAULT_MODEL` = **`gemini-3.8-flash`** (does **not** fall through to `GEMINI_MODEL`).
+- **Other tasks:** `GEMINI_MODEL_<TASK>` → `GEMINI_MODEL` → `GEMINI_DEFAULT_MODEL` = `gemini-3.5-flash-lite`.
+
+**Ask model verification (2026-10-02):** `GET https://generativelanguage.googleapis.com/v1beta/models` (`models.list`) with the project key. Chose strongest **non-Pro Flash**, **non-Lite**, `generateContent`-capable, **non-preview** id from that list: `gemini-3.8-flash` (vs `gemini-3.7-flash` / `3.6` / `3.5` / `2.5-flash`). Pro / Lite / preview / image / TTS / live aliases excluded.
 | cloudflare | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` | derived | 80 | 140000 | 10,000 neurons/day; 26,668 neurons/M input, 204,805 neurons/M output → ~177k tok/day at 5:1 in/out → `floor(0.8×177k)≈140000`; ~100 neurons/call → `floor(0.8×100)=80` REQ |
 | openrouter | `nvidia/nemotron-3-super-120b-a12b:free` | mix | 40 | 160000 | Free tier 50 req/day → `floor(0.8×50)=40`; 20 RPM; **TOK_DAY OWNER POLICY** 160000. Model **must** keep `:free` suffix. |
 | mistral | `ministral-3b-2512` | **OWNER POLICY** | 1000 | 1000000 | Headers: 750 RPM / 1,300,000 TPM only — **no daily quota**; policy caps (deviation from pure 80%) |

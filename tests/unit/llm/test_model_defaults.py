@@ -9,6 +9,7 @@ from opspilot.llm.capabilities import JsonMode, json_mode_for
 from opspilot.llm.model_defaults import (
     CLOUDFLARE_DEFAULT_MODEL,
     DEFAULT_MODELS,
+    GEMINI_ASK_DEFAULT_MODEL,
     GEMINI_DEFAULT_MODEL,
     GROQ_DEFAULT_MODEL,
     MISTRAL_DEFAULT_MODEL,
@@ -38,6 +39,7 @@ def clear_model_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_approved_defaults_match_c11(clear_model_env: None) -> None:
     assert DEFAULT_MODELS["gemini"] == "gemini-3.5-flash-lite"
+    assert GEMINI_ASK_DEFAULT_MODEL == "gemini-3.8-flash"
     assert DEFAULT_MODELS["groq"] == "openai/gpt-oss-20b"
     assert DEFAULT_MODELS["mistral"] == "ministral-3b-2512"
     assert DEFAULT_MODELS["openrouter"] == "nvidia/nemotron-3-super-120b-a12b:free"
@@ -45,8 +47,11 @@ def test_approved_defaults_match_c11(clear_model_env: None) -> None:
     assert OPENROUTER_DEFAULT_MODEL.endswith(":free")
 
 
-def test_gemini_resolves_approved_default_when_unset(clear_model_env: None) -> None:
-    assert resolve_gemini_model("ask") == GEMINI_DEFAULT_MODEL
+def test_gemini_ask_default_independent_of_shared_model(clear_model_env: None) -> None:
+    assert resolve_gemini_model("ask") == GEMINI_ASK_DEFAULT_MODEL
+    assert resolve_gemini_model("triage") == GEMINI_DEFAULT_MODEL
+    assert resolve_gemini_model("evening") == GEMINI_DEFAULT_MODEL
+    assert resolve_gemini_model("insights") == GEMINI_DEFAULT_MODEL
 
 
 def test_gemini_model_ask_override_only_affects_ask(clear_model_env: None, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -56,6 +61,12 @@ def test_gemini_model_ask_override_only_affects_ask(clear_model_env: None, monke
     assert resolve_gemini_model("triage") == "gemini-3.5-flash-lite"
     assert resolve_gemini_model("evening") == "gemini-3.5-flash-lite"
     assert resolve_gemini_model("insights") == "gemini-3.5-flash-lite"
+
+
+def test_gemini_ask_ignores_shared_model_when_ask_unset(clear_model_env: None, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    assert resolve_gemini_model("ask") == GEMINI_ASK_DEFAULT_MODEL
+    assert resolve_gemini_model("triage") == "gemini-3.5-flash-lite"
 
 
 def test_openai_compat_resolves_approved_defaults_when_unset(
