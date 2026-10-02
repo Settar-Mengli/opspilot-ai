@@ -147,6 +147,7 @@ class BudgetAwareGateway:
         schema: type[T],
         max_tokens: int = 1024,
         model: str | None = None,
+        exclude_providers: frozenset[str] | set[str] | None = None,
     ) -> T:
         """Structured complete with one repair; each provider/repair attempt debits budget."""
         if not llm_allowed():
@@ -161,9 +162,10 @@ class BudgetAwareGateway:
         self.last_success_text = None
 
         prompt_version = prompt_version_sha256(task=task, messages=messages)
-        candidates = filter_by_circuit(self._providers, self._circuit)
+        exclude = frozenset(exclude_providers or ())
+        candidates = [p for p in filter_by_circuit(self._providers, self._circuit) if p.name not in exclude]
         if not candidates:
-            raise LlmProvidersExhausted("circuit_open")
+            raise LlmProvidersExhausted("circuit_open" if not exclude else "providers_excluded")
         last_error: str | None = None
         for provider in candidates:
             attempt, used_force_json = self._structured_attempt(

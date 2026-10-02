@@ -367,6 +367,69 @@ def test_model_feedback_includes_trusted_hint(db_session: Session) -> None:
 
 
 @pytest.mark.usefixtures("allow_llm")
+def test_tool_args_invalid_failovers_to_next_provider(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    from opspilot.agent import loop as agent_loop
+
+    wi_id = work_items.upsert_by_provider_id(
+        db_session,
+        provider_id="msg_failover_1",
+        source_type="gmail",
+        subject_or_title="Project sync",
+        body_or_description="Friday?",
+        sender_or_requester="peer@example.com",
+        received_at=datetime(2026, 10, 1, 12, 0, tzinfo=UTC),
+        thread_id="thr_failover_1",
+    )
+    db_session.commit()
+    lines: list[str] = []
+
+    def _capture(msg: str, *args: object, **_kwargs: object) -> None:
+        lines.append(msg % args if args else msg)
+
+    monkeypatch.setattr(agent_loop._logger, "info", _capture)
+    empty = _json_result({"kind": "tool", "tool": "draft_reply", "args": {}})
+    prov_a = FakeProvider(
+        name="gemini",
+        json_results=[
+            empty,
+            empty,
+            _json_result({"kind": "final", "final": "Draft ready."}),
+        ],
+    )
+    prov_b = FakeProvider(
+        name="groq",
+        json_results=[
+            _json_result(
+                {
+                    "kind": "tool",
+                    "tool": "draft_reply",
+                    "args": {"work_item_id": wi_id, "body": "Friday works."},
+                }
+            ),
+        ],
+    )
+    events = list(
+        run_ask_agent(
+            question="Draft a reply",
+            session=db_session,
+            request_id="req-failover-1",
+            gmail_only=True,
+            providers=[prov_a, prov_b],
+        )
+    )
+    assert any(e.type == "draft" for e in events)
+    assert events[-1].type == "final"
+    assert events[-1].data.get("code") != "tool_args_invalid"
+    joined = "\n".join(lines)
+    assert "ask_provider_failover request_id=req-failover-1" in joined
+    assert "from=gemini" in joined
+    assert "reason=tool_args_invalid" in joined
+    from opspilot.persistence.models import MailDraftRow
+
+    assert db_session.query(MailDraftRow).count() == 1
+
+
+@pytest.mark.usefixtures("allow_llm")
 def test_empty_draft_args_repair_then_execute(db_session: Session) -> None:
     wi_id = work_items.upsert_by_provider_id(
         db_session,

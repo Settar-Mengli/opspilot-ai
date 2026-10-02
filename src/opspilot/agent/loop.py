@@ -468,38 +468,79 @@ def run_ask_agent(
             raw_text = getattr(gw, "last_success_text", None)
             _log_raw_turn_keys(request_id=rid, step=step + 1, raw_text=raw_text)
             turn, norm_err = _apply_normalized_args(turn, raw_text)
-            if norm_err or turn.kind != "tool" or (turn.tool or "") != tool_name:
+            args = dict(turn.args or {}) if turn.kind == "tool" else {}
+            repair_still_invalid = bool(
+                norm_err or turn.kind != "tool" or (turn.tool or "") != tool_name or validate_tool_args(tool_name, args)
+            )
+            if repair_still_invalid:
                 soft = (
                     "I could not build valid tool arguments after a repair attempt. "
                     "Please rephrase or name the item again."
                 )
-                for ev in _soft_final(
+                failed_provider = str(getattr(gw, "last_provider", None) or "")
+                next_names = [p.name for p in timed_providers if p.name != failed_provider]
+                if not failed_provider or not next_names or provider_calls >= max_calls:
+                    for ev in _soft_final(
+                        rid,
+                        code="tool_args_invalid",
+                        message=soft,
+                        steps=step + 1,
+                        provider_calls=provider_calls,
+                        first_token=first_token,
+                    ):
+                        yield ev
+                    return
+                provider_calls += 1
+                _logger.info(
+                    "ask_provider_failover request_id=%s step=%s from=%s reason=tool_args_invalid",
                     rid,
-                    code="tool_args_invalid",
-                    message=soft,
-                    steps=step + 1,
-                    provider_calls=provider_calls,
-                    first_token=first_token,
-                ):
-                    yield ev
-                return
-            args = dict(turn.args or {})
-            schema_errors = validate_tool_args(tool_name, args)
-            if schema_errors:
-                soft = (
-                    "I could not build valid tool arguments after a repair attempt. "
-                    "Please rephrase or name the item again."
+                    step + 1,
+                    failed_provider,
                 )
-                for ev in _soft_final(
-                    rid,
-                    code="tool_args_invalid",
-                    message=soft,
-                    steps=step + 1,
-                    provider_calls=provider_calls,
-                    first_token=first_token,
+                try:
+                    turn = gw.complete_json(
+                        task="ask",
+                        messages=messages,
+                        schema=AgentTurn,
+                        max_tokens=800,
+                        exclude_providers={failed_provider},
+                    )
+                except StepTimeoutError:
+                    yield AgentEvent("error", rid, {"code": "step_timeout", "message": "Ask step timed out."})
+                    return
+                except LlmPolicyDenied:
+                    yield AgentEvent(
+                        "error",
+                        rid,
+                        {
+                            "code": "llm_policy_denied",
+                            "message": "Ask unavailable: remote LLM disabled by policy.",
+                        },
+                    )
+                    return
+                except Exception:  # noqa: BLE001
+                    yield AgentEvent("error", rid, {"code": "ask_failed", "message": "Ask failed."})
+                    return
+                raw_text = getattr(gw, "last_success_text", None)
+                _log_raw_turn_keys(request_id=rid, step=step + 1, raw_text=raw_text)
+                turn, norm_err = _apply_normalized_args(turn, raw_text)
+                args = dict(turn.args or {}) if turn.kind == "tool" else {}
+                if (
+                    norm_err
+                    or turn.kind != "tool"
+                    or (turn.tool or "") != tool_name
+                    or validate_tool_args(tool_name, args)
                 ):
-                    yield ev
-                return
+                    for ev in _soft_final(
+                        rid,
+                        code="tool_args_invalid",
+                        message=soft,
+                        steps=step + 1,
+                        provider_calls=provider_calls,
+                        first_token=first_token,
+                    ):
+                        yield ev
+                    return
 
         yield AgentEvent("tool_start", rid, {"tool": tool_name, "args": args})
         result = execute_tool(
