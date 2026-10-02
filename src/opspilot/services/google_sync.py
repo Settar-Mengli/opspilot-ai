@@ -59,6 +59,14 @@ def run_sync(
         result["calendar_upserted"] = _sync_calendar(
             session, access_token=access, account_email=account_email, transport=tx
         )
+    from sqlalchemy import func, select
+
+    from opspilot.persistence.models import MeetingRow, WorkItemRow
+
+    result["gmail_total"] = int(
+        session.scalar(select(func.count()).select_from(WorkItemRow).where(WorkItemRow.source_type == "gmail")) or 0
+    )
+    result["meetings_total"] = int(session.scalar(select(func.count()).select_from(MeetingRow)) or 0)
     return result
 
 

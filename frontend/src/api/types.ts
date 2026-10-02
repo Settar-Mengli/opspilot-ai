@@ -147,6 +147,8 @@ export interface SyncResult {
   gmail_upserted: number
   gmail_removed?: number
   calendar_upserted: number
+  gmail_total?: number
+  meetings_total?: number
   triaged: number
   pending: number
   run_id?: string | null
