@@ -1249,3 +1249,45 @@ Gallery evidence (ask-error refresh for code+ref copy; % pixels from container u
 ### PR
 
 - Open after tip CI green; agent does **not** merge.
+
+### Empty-args model failure fix-forward (STOP LIVE 3d / request 219ad3f1…) — 2026-10-02
+
+#### Recon findings (CURRENT)
+
+| Item | Evidence |
+|------|----------|
+| Request | `219ad3f1…` (Ask SSE) |
+| Tip at recon | `165cbae` |
+| Failure mode | Model emitted `draft_reply` with **empty args** → tool executed → `missing_work_item_id` ×2 → `tool_repeat_failure` |
+| Tool path | Sound when args present (direct `draft_reply.run` ok under rolled-back txn) |
+| Provider/model | Gemini free path; in-repo default **`gemini-3.5-flash-lite`** only verified free id |
+| Arg shape | Empty `args` object (not an alternate bag under another key in the executed path); raw key logging added to confirm future turns |
+
+#### Fixes shipped (hermetic)
+
+1. **Raw-shape visibility:** `ask_turn_keys` logs top-level + nested KEY paths only (no values) on each model turn.
+2. **Turn parsing:** normalize `args` / `arguments` / `parameters` / `input` / flat top-level; conflicting non-identical bags → `tool_args_invalid`.
+3. **Per-tool schema (closes D-031 CURRENT gap):** validate before `execute_tool`; one content-free repair turn (counts toward provider-call cap); still invalid → soft final `tool_args_invalid`.
+4. **Few-shot:** `TOOL_SYSTEM_FRAGMENT` examples for `search_items` + `draft_reply` (placeholder ids only); D-031 updated.
+5. **Ask model routing:** `GEMINI_MODEL_ASK` override verified; **default left as `gemini-3.5-flash-lite`** (no stronger free Gemini id verified in-repo / runbook / `.env.example`).
+6. **Direct tool check (STOP LIVE DB, rolled back):** `draft_reply` with `work_item_id=wi_4ebc1679afc94db7a8003bd966e23db7` + body → `ok=True`, `draft_id` present, `to_addrs` equals demo sender; `args={}` → `missing_work_item_id`; `mail_drafts` count unchanged (0→0).
+
+#### Coverage
+
+| Metric | Value |
+|--------|-------|
+| Local suite after fix | **377** passed |
+| TOTAL | **82.27%** |
+| Prior PART 13 fix-pass | 333 passed / **82.46%** |
+| Recon cite | **82.09%** vs **82.45%** prior |
+
+**Explain (not restored to 82.46%):** new `turn_parse` + loop schema/repair branches added statements; hermetic tests cover the new paths but TOTAL is slightly below the earlier 82.46% tip. CI gate remains `--cov-fail-under=72`. No coverage regression relative to the informal 82% preflight bar.
+
+#### Commits / CI
+
+| SHA | Subject | CI |
+|-----|---------|-----|
+| `e277093` | feat(ask): normalize tool args, schema repair, raw key logging | success (push [36960054963](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36960054963); PR [36960058148](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36960058148)) |
+| `46e7cc9` | docs(llm): document GEMINI_MODEL_ASK override (flash-lite default) | success (push [36960542608](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36960542608); PR [36960545737](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36960545737)) |
+
+Visual baselines this pass: **unchanged** (no PNG refresh).
