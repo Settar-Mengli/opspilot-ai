@@ -163,17 +163,43 @@ class GmailClient:
         return parse_message(resp.json())
 
     def get_message_rfc_message_id(self, message_id: str) -> str | None:
-        """Return the RFC Message-ID header for a Gmail message, or None if absent."""
-        resp = request_with_backoff(
-            self._transport,
-            "GET",
-            f"{GMAIL_API}/users/me/messages/{message_id}",
-            headers=self._headers(),
-            params={"format": "metadata", "metadataHeaders": ["Message-ID"]},
-        )
+        """Return the RFC Message-ID header for a Gmail message, or None if absent.
+
+        Pre-send metadata only: transport/timeout and non-2xx (except 404 omit-header)
+        raise ``gmail_unavailable_not_sent`` / ``invalid_grant`` — never ambiguous send.
+        """
+        try:
+            resp = request_with_backoff(
+                self._transport,
+                "GET",
+                f"{GMAIL_API}/users/me/messages/{message_id}",
+                headers=self._headers(),
+                params={"format": "metadata", "metadataHeaders": ["Message-ID"]},
+            )
+        except (httpx.TimeoutException, httpx.TransportError) as exc:
+            raise GoogleHttpError("gmail_unavailable_not_sent") from exc
+        if resp.status_code == 404:
+            # Message gone or inaccessible — omit threading headers; still may send.
+            return None
         if resp.status_code >= 400:
-            raise GoogleHttpError("gmail_get_failed", status_code=resp.status_code)
-        payload = resp.json()
+            err_code: str | None = None
+            try:
+                payload = resp.json()
+                if isinstance(payload, dict):
+                    raw_err = payload.get("error")
+                    if isinstance(raw_err, str):
+                        err_code = raw_err
+                    elif isinstance(raw_err, dict) and isinstance(raw_err.get("status"), str):
+                        err_code = str(raw_err.get("status"))
+            except Exception:
+                err_code = None
+            if resp.status_code == 401 or err_code == "invalid_grant":
+                raise GoogleHttpError("invalid_grant", status_code=resp.status_code)
+            raise GoogleHttpError("gmail_unavailable_not_sent", status_code=resp.status_code)
+        try:
+            payload = resp.json()
+        except Exception as exc:
+            raise GoogleHttpError("gmail_unavailable_not_sent") from exc
         headers = (payload.get("payload") or {}).get("headers") or []
         for h in headers:
             if not isinstance(h, dict):
@@ -285,7 +311,17 @@ class GmailClient:
 
         import email.message
 
-        rfc_message_id = self.get_message_rfc_message_id(in_reply_to_provider_id)
+        # Tracks whether messages.send was invoked — used for unexpected-error classification.
+        self.send_post_issued = False
+        try:
+            rfc_message_id = self.get_message_rfc_message_id(in_reply_to_provider_id)
+        except GoogleHttpError:
+            raise
+        except (httpx.TimeoutException, httpx.TransportError) as exc:
+            raise GoogleHttpError("gmail_unavailable_not_sent") from exc
+        except Exception as exc:
+            raise GoogleHttpError("gmail_unavailable_not_sent") from exc
+
         msg = email.message.EmailMessage()
         msg["To"] = to_header
         msg["Subject"] = safe_subject
@@ -297,6 +333,9 @@ class GmailClient:
             _logger.info("missing_rfc_message_id provider_id=%s", in_reply_to_provider_id)
         msg.set_content(body if isinstance(body, str) else str(body))
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode("ascii").rstrip("=")
+
+        # Once the POST is issued, delivery cannot be ruled out on timeout/5xx/opaque 2xx.
+        self.send_post_issued = True
         try:
             resp = request_with_backoff(
                 self._transport,
@@ -306,6 +345,8 @@ class GmailClient:
                 json={"raw": raw, "threadId": thread_id},
             )
         except (httpx.TimeoutException, httpx.TransportError) as exc:
+            raise GoogleHttpError("send_outcome_unknown") from exc
+        except Exception as exc:
             raise GoogleHttpError("send_outcome_unknown") from exc
         if resp.status_code >= 400:
             err_code: str | None = None
@@ -324,9 +365,14 @@ class GmailClient:
             if resp.status_code in {408, 429} or resp.status_code >= 500:
                 raise GoogleHttpError("send_outcome_unknown", status_code=resp.status_code)
             raise GoogleHttpError("gmail_send_failed", status_code=resp.status_code)
-        mid = str(resp.json().get("id") or "")
+        try:
+            body_json = resp.json()
+            mid = str((body_json or {}).get("id") or "") if isinstance(body_json, dict) else ""
+        except Exception as exc:
+            raise GoogleHttpError("send_outcome_unknown") from exc
         if not mid:
-            raise GoogleHttpError("gmail_send_missing_id")
+            # 2xx without a message id — delivery may have succeeded.
+            raise GoogleHttpError("send_outcome_unknown")
         return mid
 
 

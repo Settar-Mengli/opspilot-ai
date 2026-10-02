@@ -137,6 +137,9 @@ export function formatMailHitlError(err: unknown): string {
   if (code === 'send_outcome_unknown') {
     return `Send may have gone through. Check the Sent folder before trying again.${suffix}`
   }
+  if (code === 'gmail_unavailable_not_sent') {
+    return `Gmail was unavailable. Nothing was sent — try again.${suffix}`
+  }
   if (code === 'google_reauth_required') {
     return `Google re-auth required. Reconnect to continue.${suffix}`
   }
@@ -392,10 +395,12 @@ export async function approveMailDraft(
       idempotency_key: idempotencyKey,
     }),
   })
-  if (body.send_failed || body.error_code === 'send_outcome_unknown') {
-    const err = Object.assign(new Error(body.error_code || 'send_failed'), {
-      status: body.error_code === 'send_outcome_unknown' ? 502 : 400,
-      code: body.error_code || 'send_failed',
+  if (body.send_failed || body.error_code === 'send_outcome_unknown' || body.error_code === 'gmail_unavailable_not_sent') {
+    const code = body.error_code || 'send_failed'
+    const status = code === 'send_outcome_unknown' ? 502 : code === 'gmail_unavailable_not_sent' ? 503 : 400
+    const err = Object.assign(new Error(code), {
+      status,
+      code,
     })
     throw err
   }

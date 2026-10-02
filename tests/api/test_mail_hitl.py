@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from opspilot.api.app import app
 from opspilot.api.deps import get_db_session, reset_db_engine
+from opspilot.integrations.gmail_client import GmailClient
 from opspilot.persistence.repositories import mail_drafts, mail_send_audit, oauth_credentials, work_items
 from opspilot.services import mail_hitl
 from opspilot.services.operator_session import issue_session
@@ -729,3 +730,229 @@ def test_unknown_outcome_counts_toward_daily_cap(db_session: Session, monkeypatc
         )
     assert exc2.value.code == "send_daily_cap"
     assert tx_deny.send_posts == 0
+
+
+class _MetaFailTransport:
+    """Token OK; metadata GET fails as configured; optional send POST responses."""
+
+    def __init__(
+        self,
+        *,
+        meta: httpx.Response | BaseException,
+        send_responses: list[httpx.Response | BaseException] | None = None,
+    ) -> None:
+        self._meta = meta
+        self._send = list(send_responses or [])
+        self.send_posts = 0
+        self.meta_gets = 0
+
+    def request(self, method: str, url: str, **kwargs):  # type: ignore[no-untyped-def]
+        if "oauth2.googleapis.com/token" in url:
+            return httpx.Response(200, json={"access_token": "tok"})
+        if method.upper() == "GET" and "/messages/" in url:
+            self.meta_gets += 1
+            if isinstance(self._meta, BaseException):
+                raise self._meta
+            return self._meta
+        if method.upper() == "POST" and url.endswith("/messages/send"):
+            self.send_posts += 1
+            if not self._send:
+                raise AssertionError("no send responses left")
+            item = self._send.pop(0)
+            if isinstance(item, BaseException):
+                raise item
+            return item
+        raise AssertionError(f"unexpected {method} {url}")
+
+
+def test_metadata_get_timeout_gmail_unavailable_not_sent(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    _oauth_ready(db_session, monkeypatch)
+    draft_id = _seed_draft(db_session, provider_id="msg_meta_to")
+    draft = mail_drafts.get_draft(db_session, draft_id)
+    assert draft is not None
+    tx = _MetaFailTransport(meta=httpx.TimeoutException("meta timed out"))
+    with pytest.raises(mail_hitl.MailHitlError) as exc:
+        mail_hitl.approve_and_send(
+            db_session,
+            draft_id,
+            expected_payload_sha256=draft.payload_sha256,
+            operator_email="ops@example.com",
+            request_id="req-meta-to",
+            idempotency_key="meta-to",
+            transport=tx,
+        )
+    assert exc.value.code == "gmail_unavailable_not_sent"
+    assert exc.value.http_status == 503
+    assert tx.send_posts == 0
+    assert tx.meta_gets == 1
+    refreshed = mail_drafts.get_draft(db_session, draft_id)
+    assert refreshed is not None
+    assert refreshed.status == "draft"
+    audit = mail_send_audit.get_by_idempotency_key(db_session, "meta-to")
+    assert audit is not None
+    assert audit.error_code == "gmail_unavailable_not_sent"
+    assert audit.send_failed is True
+
+
+def test_metadata_unavailable_not_counted_toward_cap_then_reapprove_succeeds(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _oauth_ready(db_session, monkeypatch)
+    monkeypatch.setenv("OPSPILOT_SEND_MAX_PER_DAY", "1")
+    draft_id = _seed_draft(db_session, provider_id="msg_meta_cap")
+    draft = mail_drafts.get_draft(db_session, draft_id)
+    assert draft is not None
+    tx_fail = _MetaFailTransport(meta=httpx.TimeoutException("meta timed out"))
+    with pytest.raises(mail_hitl.MailHitlError) as exc:
+        mail_hitl.approve_and_send(
+            db_session,
+            draft_id,
+            expected_payload_sha256=draft.payload_sha256,
+            operator_email="ops@example.com",
+            request_id="req-meta-cap1",
+            idempotency_key="meta-cap-1",
+            transport=tx_fail,
+        )
+    assert exc.value.code == "gmail_unavailable_not_sent"
+    assert tx_fail.send_posts == 0
+    # Cap still free — new key can send.
+    tx_ok = _SeqSendTransport([httpx.Response(200, json={"id": "sent_after_meta"})])
+    result = mail_hitl.approve_and_send(
+        db_session,
+        draft_id,
+        expected_payload_sha256=draft.payload_sha256,
+        operator_email="ops@example.com",
+        request_id="req-meta-cap2",
+        idempotency_key="meta-cap-2",
+        transport=tx_ok,
+    )
+    assert result["status"] == "sent"
+    assert tx_ok.send_posts == 1
+    refreshed = mail_drafts.get_draft(db_session, draft_id)
+    assert refreshed is not None
+    assert refreshed.status == "sent"
+
+
+def test_metadata_get_401_maps_google_reauth_required_zero_posts(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _oauth_ready(db_session, monkeypatch)
+    draft_id = _seed_draft(db_session, provider_id="msg_meta_401")
+    draft = mail_drafts.get_draft(db_session, draft_id)
+    assert draft is not None
+    tx = _MetaFailTransport(meta=httpx.Response(401, json={"error": "invalid_grant"}))
+    with pytest.raises(mail_hitl.MailHitlError) as exc:
+        mail_hitl.approve_and_send(
+            db_session,
+            draft_id,
+            expected_payload_sha256=draft.payload_sha256,
+            operator_email="ops@example.com",
+            request_id="req-meta-401",
+            idempotency_key="meta-401",
+            transport=tx,
+        )
+    assert exc.value.code == "google_reauth_required"
+    assert exc.value.http_status == 401
+    assert tx.send_posts == 0
+    refreshed = mail_drafts.get_draft(db_session, draft_id)
+    assert refreshed is not None
+    assert refreshed.status == "failed"
+
+
+def test_post_200_unparseable_body_send_outcome_unknown(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    _oauth_ready(db_session, monkeypatch)
+    draft_id = _seed_draft(db_session, provider_id="msg_opaque_200")
+    draft = mail_drafts.get_draft(db_session, draft_id)
+    assert draft is not None
+    # 2xx with no id → ambiguous (POST issued).
+    tx = _SeqSendTransport([httpx.Response(200, json={"threadId": "t1"})])
+    with pytest.raises(mail_hitl.MailHitlError) as exc:
+        mail_hitl.approve_and_send(
+            db_session,
+            draft_id,
+            expected_payload_sha256=draft.payload_sha256,
+            operator_email="ops@example.com",
+            request_id="req-opaque",
+            idempotency_key="opaque-200",
+            transport=tx,
+        )
+    assert exc.value.code == "send_outcome_unknown"
+    assert tx.send_posts == 1
+    refreshed = mail_drafts.get_draft(db_session, draft_id)
+    assert refreshed is not None
+    assert refreshed.status == "draft"
+    audit = mail_send_audit.get_by_idempotency_key(db_session, "opaque-200")
+    assert audit is not None
+    assert audit.error_code == "send_outcome_unknown"
+
+
+def test_unexpected_exception_after_claim_pre_post_not_approved(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Last-resort: unexpected error before POST → coded 503, draft not stuck approved."""
+    _oauth_ready(db_session, monkeypatch)
+    draft_id = _seed_draft(db_session, provider_id="msg_boom_pre")
+    draft = mail_drafts.get_draft(db_session, draft_id)
+    assert draft is not None
+
+    def _boom_send(self, **_kwargs):  # type: ignore[no-untyped-def]
+        self.send_post_issued = False
+        raise RuntimeError("unexpected pre-post boom")
+
+    monkeypatch.setattr(GmailClient, "send_reply", _boom_send)
+    tx = _SeqSendTransport([httpx.Response(200, json={"id": "x"})])
+    with pytest.raises(mail_hitl.MailHitlError) as exc:
+        mail_hitl.approve_and_send(
+            db_session,
+            draft_id,
+            expected_payload_sha256=draft.payload_sha256,
+            operator_email="ops@example.com",
+            request_id="req-boom",
+            idempotency_key="boom-pre",
+            transport=tx,
+        )
+    assert exc.value.code == "gmail_unavailable_not_sent"
+    assert exc.value.http_status == 503
+    assert tx.send_posts == 0
+    refreshed = mail_drafts.get_draft(db_session, draft_id)
+    assert refreshed is not None
+    assert refreshed.status == "draft"
+    assert refreshed.status != "approved"
+    audit = mail_send_audit.get_by_idempotency_key(db_session, "boom-pre")
+    assert audit is not None
+    assert audit.error_code == "gmail_unavailable_not_sent"
+
+
+def test_unexpected_exception_after_claim_post_issued_unknown(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Last-resort path: unexpected after POST flag → send_outcome_unknown."""
+    _oauth_ready(db_session, monkeypatch)
+    draft_id = _seed_draft(db_session, provider_id="msg_boom_post")
+    draft = mail_drafts.get_draft(db_session, draft_id)
+    assert draft is not None
+
+    def _boom_after_post(self, **_kwargs):  # type: ignore[no-untyped-def]
+        self.send_post_issued = True
+        raise RuntimeError("unexpected post-issued boom")
+
+    monkeypatch.setattr(GmailClient, "send_reply", _boom_after_post)
+    tx = _SeqSendTransport([httpx.Response(200, json={"id": "x"})])
+    with pytest.raises(mail_hitl.MailHitlError) as exc:
+        mail_hitl.approve_and_send(
+            db_session,
+            draft_id,
+            expected_payload_sha256=draft.payload_sha256,
+            operator_email="ops@example.com",
+            request_id="req-boom-post",
+            idempotency_key="boom-post",
+            transport=tx,
+        )
+    assert exc.value.code == "send_outcome_unknown"
+    assert tx.send_posts == 0  # boom before real POST; flag simulates issued
+    refreshed = mail_drafts.get_draft(db_session, draft_id)
+    assert refreshed is not None
+    assert refreshed.status == "draft"
+    audit = mail_send_audit.get_by_idempotency_key(db_session, "boom-post")
+    assert audit is not None
+    assert audit.error_code == "send_outcome_unknown"

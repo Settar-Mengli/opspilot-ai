@@ -242,6 +242,7 @@ def approve_and_send(
         raise MailHitlError(err, "Google re-auth required.", http_status=401) from None
 
     client = GmailClient(access_token=access, transport=tx)
+    client.send_post_issued = False
     try:
         message_id = client.send_reply(
             thread_id=draft.thread_id,
@@ -271,6 +272,25 @@ def approve_and_send(
                 "Send may have gone through. Check the Sent folder before trying again.",
                 http_status=502,
             ) from None
+        if code == "gmail_unavailable_not_sent":
+            # Nothing sent — re-approvable; does not count toward daily cap.
+            mail_drafts.set_status(session, draft, "draft")
+            mail_send_audit.insert_audit(
+                session,
+                draft_id=draft.id,
+                idempotency_key=key,
+                to_addrs=draft.to_addrs,
+                payload_sha256=draft.payload_sha256,
+                request_id=request_id,
+                operator_email=operator_email,
+                send_failed=True,
+                error_code="gmail_unavailable_not_sent",
+            )
+            raise MailHitlError(
+                "gmail_unavailable_not_sent",
+                "Gmail was unavailable. Nothing was sent — try again.",
+                http_status=503,
+            ) from None
         if code == "invalid_grant":
             mail_drafts.set_status(session, draft, "failed")
             mail_send_audit.insert_audit(
@@ -298,18 +318,80 @@ def approve_and_send(
             error_code=code,
         )
         raise MailHitlError("gmail_send_failed", "Send failed.") from None
+    except Exception:
+        # Last resort after claim: never leave draft stuck in approved / never bare 500.
+        post_issued = bool(getattr(client, "send_post_issued", False))
+        if post_issued:
+            mail_drafts.set_status(session, draft, "draft")
+            mail_send_audit.insert_audit(
+                session,
+                draft_id=draft.id,
+                idempotency_key=key,
+                to_addrs=draft.to_addrs,
+                payload_sha256=draft.payload_sha256,
+                request_id=request_id,
+                operator_email=operator_email,
+                send_failed=True,
+                error_code="send_outcome_unknown",
+            )
+            raise MailHitlError(
+                "send_outcome_unknown",
+                "Send may have gone through. Check the Sent folder before trying again.",
+                http_status=502,
+            ) from None
+        mail_drafts.set_status(session, draft, "draft")
+        mail_send_audit.insert_audit(
+            session,
+            draft_id=draft.id,
+            idempotency_key=key,
+            to_addrs=draft.to_addrs,
+            payload_sha256=draft.payload_sha256,
+            request_id=request_id,
+            operator_email=operator_email,
+            send_failed=True,
+            error_code="gmail_unavailable_not_sent",
+        )
+        raise MailHitlError(
+            "gmail_unavailable_not_sent",
+            "Gmail was unavailable. Nothing was sent — try again.",
+            http_status=503,
+        ) from None
 
-    mail_drafts.set_status(session, draft, "sent")
-    audit = mail_send_audit.insert_audit(
-        session,
-        draft_id=draft.id,
-        idempotency_key=key,
-        to_addrs=draft.to_addrs,
-        payload_sha256=draft.payload_sha256,
-        gmail_message_id=message_id,
-        request_id=request_id,
-        operator_email=operator_email,
-    )
+    try:
+        mail_drafts.set_status(session, draft, "sent")
+        audit = mail_send_audit.insert_audit(
+            session,
+            draft_id=draft.id,
+            idempotency_key=key,
+            to_addrs=draft.to_addrs,
+            payload_sha256=draft.payload_sha256,
+            gmail_message_id=message_id,
+            request_id=request_id,
+            operator_email=operator_email,
+        )
+    except Exception:
+        # POST succeeded but persistence failed — treat as ambiguous (may have sent).
+        mail_drafts.set_status(session, draft, "draft")
+        try:
+            mail_send_audit.insert_audit(
+                session,
+                draft_id=draft.id,
+                idempotency_key=key,
+                to_addrs=draft.to_addrs,
+                payload_sha256=draft.payload_sha256,
+                gmail_message_id=message_id,
+                request_id=request_id,
+                operator_email=operator_email,
+                send_failed=True,
+                error_code="send_outcome_unknown",
+            )
+        except Exception:
+            pass
+        raise MailHitlError(
+            "send_outcome_unknown",
+            "Send may have gone through. Check the Sent folder before trying again.",
+            http_status=502,
+        ) from None
     return {
         "status": "sent",
         "audit_id": audit.id,

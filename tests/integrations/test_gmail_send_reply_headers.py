@@ -77,11 +77,23 @@ def test_send_reply_omits_headers_when_rfc_message_id_missing(monkeypatch: pytes
     assert "gmail_opaque_2" not in (msg.as_string())
 
 
-def test_get_message_rfc_message_id_raises_on_http_error() -> None:
-    class Boom:
+def test_get_message_rfc_message_id_404_omits_header() -> None:
+    """404 on metadata → omit In-Reply-To (not a send failure)."""
+
+    class NotFound:
         def request(self, method: str, url: str, **kwargs):  # type: ignore[no-untyped-def]
             return httpx.Response(404, json={"error": "not found"})
 
-    client = GmailClient(access_token="tok", transport=Boom())  # type: ignore[arg-type]
-    with pytest.raises(GoogleHttpError):
-        client.get_message_rfc_message_id("missing")
+    client = GmailClient(access_token="tok", transport=NotFound())  # type: ignore[arg-type]
+    assert client.get_message_rfc_message_id("missing") is None
+
+
+def test_get_message_rfc_message_id_503_gmail_unavailable_not_sent() -> None:
+    class Unavailable:
+        def request(self, method: str, url: str, **kwargs):  # type: ignore[no-untyped-def]
+            return httpx.Response(503, json={"error": "unavailable"})
+
+    client = GmailClient(access_token="tok", transport=Unavailable())  # type: ignore[arg-type]
+    with pytest.raises(GoogleHttpError) as exc:
+        client.get_message_rfc_message_id("msg")
+    assert str(exc.value.args[0]) == "gmail_unavailable_not_sent"

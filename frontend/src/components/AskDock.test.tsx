@@ -154,4 +154,31 @@ describe('AskThreadBody draft card', () => {
       'Check Sent folder, then re-send',
     )
   })
+
+  it('AskDock_gmail_unavailable_shows_alert_and_normal_approve_label', () => {
+    render(
+      <AskThreadBody
+        assistantName="OpsPilot"
+        messages={[]}
+        draft={{
+          draftId: 'md_1',
+          subject: 'S',
+          body: 'B',
+          toAddrs: 'demo@example.com',
+          approveError: 'Gmail was unavailable. Nothing was sent — try again.',
+          sendOutcomeUnknown: false,
+          idempotencyKey: 'k3',
+        }}
+        input=""
+        loading={false}
+        error={null}
+        onInputChange={vi.fn()}
+        onSubmit={vi.fn()}
+        onApproveDraft={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent('Gmail was unavailable. Nothing was sent')
+    expect(screen.getByTestId('ask-draft-approve')).toHaveTextContent('Approve & send')
+    expect(screen.getByTestId('ask-draft-approve')).not.toHaveTextContent('Check Sent, then re-send')
+  })
 })

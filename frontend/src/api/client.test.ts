@@ -71,4 +71,9 @@ describe('api client', () => {
       'Send may have gone through. Check the Sent folder before trying again.',
     )
   })
+
+  it('formatMailHitlError_gmail_unavailable_not_sent_copy', () => {
+    const err = Object.assign(new Error('x'), { status: 503, code: 'gmail_unavailable_not_sent' })
+    expect(formatMailHitlError(err)).toBe('Gmail was unavailable. Nothing was sent — try again.')
+  })
 })
