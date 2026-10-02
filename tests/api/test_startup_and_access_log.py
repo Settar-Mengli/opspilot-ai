@@ -19,6 +19,11 @@ def test_log_startup_config_non_secret(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OPSPILOT_SEND_RECIPIENT_ALLOWLIST", "a@example.com,b@example.com")
     monkeypatch.setenv("OPSPILOT_ANTHROPIC_ENABLED", "false")
     monkeypatch.delenv("OPSPILOT_LLM_DISABLE", raising=False)
+    monkeypatch.delenv("OPSPILOT_CSRF_RELAX_DEV", raising=False)
+    monkeypatch.delenv("OPSPILOT_COOKIE_SECURE", raising=False)
+    monkeypatch.setenv("OPSPILOT_CORS_ORIGINS", "http://127.0.0.1:5173")
+    monkeypatch.setenv("OPSPILOT_ASK_MAX_STEPS", "5")
+    monkeypatch.setenv("OPSPILOT_ASK_MAX_PROVIDER_CALLS", "8")
     sink = MagicMock()
     line = log_startup_config(logger=sink)
     sink.info.assert_called()
@@ -26,6 +31,11 @@ def test_log_startup_config_non_secret(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "DEMO_MODE=0" in line
     assert "allowlist_count=2" in line
     assert "ANTHROPIC_ENABLED=0" in line
+    assert "CSRF_RELAX=0" in line
+    assert "COOKIE_SECURE=0" in line
+    assert "CORS_ORIGIN_HOST=127" in line
+    assert "ASK_MAX_STEPS=5" in line
+    assert "ASK_MAX_PROVIDER_CALLS=8" in line
     assert "sk-" not in line
     assert "@example.com" not in line
 
