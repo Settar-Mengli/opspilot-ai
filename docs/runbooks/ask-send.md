@@ -120,3 +120,25 @@ Owner approves ask-error `-linux.png` baselines (375 required) when reviewing th
 **7. Rollback**
 
 `alembic downgrade 0008_ask_hitl_send` drops the 0009 columns only (owner decision).
+
+## Automated live smoke script (owner-run only)
+
+`scripts/live_smoke_b5.py` — **do not run in CI** and was **not executed** in the B5 reality-gap fix-pass Build.
+
+```bash
+# Preconditions: allowlist exactly one address == connected operator Google email;
+# existing operator credential in DB; free LLM path available for Ask draft.
+uv run python scripts/live_smoke_b5.py
+```
+
+Behavior (process-only env; never writes `.env`):
+
+1. Refuse unless allowlist is exactly the operator account (prints match Y/N only).
+2. Mint operator cookie via `issue_session` (never prints cookie/token values).
+3. Start/stop uvicorn per phase on `127.0.0.1:8010`.
+4. Phase send (`DEMO_MODE=0` + allowlist): health → sync → Ask draft → **one** approve send → 409 re-approve → idempotent replay.
+5. Phase demo (`DEMO_MODE=1`): approve → 403.
+6. Phase allowlist empty: approve → 403.
+7. Teardown child processes; print host-label + COUNT deltas only.
+
+At most **one** real Gmail send for the entire run.
