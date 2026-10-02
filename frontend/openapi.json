@@ -913,9 +913,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Post Sync Api V1 Sync Post"
+                  "$ref": "#/components/schemas/SyncResponse"
                 }
               }
             }
@@ -1140,6 +1138,88 @@
           "date"
         ],
         "title": "RunPipelineRequest"
+      },
+      "SyncResponse": {
+        "properties": {
+          "account_email": {
+            "type": "string",
+            "title": "Account Email"
+          },
+          "gmail_upserted": {
+            "type": "integer",
+            "title": "Gmail Upserted"
+          },
+          "gmail_removed": {
+            "type": "integer",
+            "title": "Gmail Removed",
+            "default": 0
+          },
+          "calendar_upserted": {
+            "type": "integer",
+            "title": "Calendar Upserted"
+          },
+          "gmail_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gmail Total"
+          },
+          "meetings_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meetings Total"
+          },
+          "triaged": {
+            "type": "integer",
+            "title": "Triaged"
+          },
+          "pending": {
+            "type": "integer",
+            "title": "Pending"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "calendar_truncated": {
+            "type": "boolean",
+            "title": "Calendar Truncated",
+            "default": false
+          },
+          "gmail_truncated": {
+            "type": "boolean",
+            "title": "Gmail Truncated",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_email",
+          "gmail_upserted",
+          "calendar_upserted",
+          "triaged",
+          "pending"
+        ],
+        "title": "SyncResponse",
+        "description": "Typed POST /api/v1/sync response (must match run_sync + triage merge)."
       },
       "ValidationError": {
         "properties": {

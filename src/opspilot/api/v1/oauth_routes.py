@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -11,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from opspilot.api.csrf import require_csrf_origin
 from opspilot.api.deps import get_db_session
-from opspilot.api.schemas import safe_error
+from opspilot.api.schemas import SyncResponse, safe_error
 from opspilot.integrations.google_http import GoogleHttpError
 from opspilot.integrations.google_oauth import (
     GoogleOAuthError,
@@ -108,8 +107,8 @@ def oauth_google_callback(
     return response
 
 
-@router.post("/sync", response_class=JSONResponse)
-def post_sync(request: Request, session: Session = Depends(get_db_session)) -> dict[str, Any]:
+@router.post("/sync", response_model=SyncResponse)
+def post_sync(request: Request, session: Session = Depends(get_db_session)) -> SyncResponse:
     if demo_mode_enabled():
         raise safe_error(403, "demo_mode_blocks_sync", "DEMO_MODE blocks sync.")
     sess = verify_session(request.cookies.get(COOKIE_NAME))
@@ -122,12 +121,19 @@ def post_sync(request: Request, session: Session = Depends(get_db_session)) -> d
         from opspilot.api.services.gmail_triage import triage_connected_gmail_fresh
 
         triaged = triage_connected_gmail_fresh()
-        return {
-            **sync_result,
-            "triaged": triaged["triaged"],
-            "pending": triaged["pending"],
-            "run_id": triaged["run_id"],
-        }
+        return SyncResponse(
+            account_email=str(sync_result.get("account_email") or ""),
+            gmail_upserted=int(sync_result.get("gmail_upserted") or 0),
+            gmail_removed=int(sync_result.get("gmail_removed") or 0),
+            calendar_upserted=int(sync_result.get("calendar_upserted") or 0),
+            gmail_total=sync_result.get("gmail_total"),
+            meetings_total=sync_result.get("meetings_total"),
+            triaged=int(triaged["triaged"]),
+            pending=int(triaged["pending"]),
+            run_id=triaged.get("run_id"),
+            calendar_truncated=bool(sync_result.get("calendar_truncated") or False),
+            gmail_truncated=bool(sync_result.get("gmail_truncated") or False),
+        )
     except EncryptionUnavailableError as exc:
         raise safe_error(503, "encryption_unavailable", "Token encryption unavailable.") from exc
     except google_sync.GoogleReauthRequired as exc:

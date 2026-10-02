@@ -77,6 +77,22 @@ class InsightsRequest(BaseModel):
     )
 
 
+class SyncResponse(BaseModel):
+    """Typed POST /api/v1/sync response (must match run_sync + triage merge)."""
+
+    account_email: str
+    gmail_upserted: int
+    gmail_removed: int = 0
+    calendar_upserted: int
+    gmail_total: int | None = None
+    meetings_total: int | None = None
+    triaged: int
+    pending: int
+    run_id: str | None = None
+    calendar_truncated: bool = False
+    gmail_truncated: bool = False
+
+
 def safe_error(
     status_code: int,
     code: str,

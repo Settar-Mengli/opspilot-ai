@@ -90,9 +90,14 @@ export function ConnectionsPage() {
     setNeedsReauth(false)
     try {
       const result = await postSync()
-      setSyncMsg(
-        `Synced +${result.gmail_upserted} mail (−${result.gmail_removed ?? 0}), +${result.calendar_upserted} meetings this sync — totals ${result.gmail_total ?? '—'} mail, ${result.meetings_total ?? '—'} meetings — triaged ${result.triaged} (${result.pending} pending)`,
-      )
+      const base = `Synced +${result.gmail_upserted} mail (−${result.gmail_removed ?? 0}), +${result.calendar_upserted} meetings this sync — totals ${result.gmail_total ?? '—'} mail, ${result.meetings_total ?? '—'} meetings — triaged ${result.triaged} (${result.pending} pending)`
+      const calSuffix = result.calendar_truncated
+        ? ' — calendar sync incomplete; next Sync will full-refresh'
+        : ''
+      const gmailSuffix = result.gmail_truncated
+        ? ' — Gmail sync incomplete; next Sync will retry'
+        : ''
+      setSyncMsg(`${base}${calSuffix}${gmailSuffix}`)
       refresh()
     } catch (err) {
       if (errorCode(err) === 'google_reauth_required') {

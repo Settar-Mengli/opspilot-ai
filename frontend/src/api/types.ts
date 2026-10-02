@@ -154,4 +154,8 @@ export interface SyncResult {
   triaged: number
   pending: number
   run_id?: string | null
+  /** True when calendar list hit max pages (C2). */
+  calendar_truncated?: boolean
+  /** True when Gmail full-list hit max pages (C3/A5). */
+  gmail_truncated?: boolean
 }

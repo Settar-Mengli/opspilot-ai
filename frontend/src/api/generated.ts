@@ -508,6 +508,43 @@ export interface components {
              */
             date: string;
         };
+        /**
+         * SyncResponse
+         * @description Typed POST /api/v1/sync response (must match run_sync + triage merge).
+         */
+        SyncResponse: {
+            /** Account Email */
+            account_email: string;
+            /** Gmail Upserted */
+            gmail_upserted: number;
+            /**
+             * Gmail Removed
+             * @default 0
+             */
+            gmail_removed: number;
+            /** Calendar Upserted */
+            calendar_upserted: number;
+            /** Gmail Total */
+            gmail_total?: number | null;
+            /** Meetings Total */
+            meetings_total?: number | null;
+            /** Triaged */
+            triaged: number;
+            /** Pending */
+            pending: number;
+            /** Run Id */
+            run_id?: string | null;
+            /**
+             * Calendar Truncated
+             * @default false
+             */
+            calendar_truncated: boolean;
+            /**
+             * Gmail Truncated
+             * @default false
+             */
+            gmail_truncated: boolean;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -1228,9 +1265,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["SyncResponse"];
                 };
             };
         };
