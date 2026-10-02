@@ -111,6 +111,8 @@ def _sanitize_calendar(payload: dict) -> dict:
 def main() -> None:
     if os.environ.get("OPSPILOT_CAPTURE_FIXTURES", "").strip() != "1":
         _die("Refusing capture: set OPSPILOT_CAPTURE_FIXTURES=1 (never run in CI).")
+    if os.environ.get("CI", "").strip() or os.environ.get("PYTEST_CURRENT_TEST", "").strip():
+        _die("Refusing capture under CI or pytest (never run in CI).")
 
     # Local import only after gate so CI import of this file stays side-effect free.
     from opspilot.integrations.calendar_client import CalendarClient
