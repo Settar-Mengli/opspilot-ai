@@ -34,8 +34,8 @@ def run(
     request_id: str | None,
 ) -> dict[str, Any]:
     item_id = neutralize_text(str(args.get("work_item_id") or args.get("id") or ""))[:64]
-    subject_raw = args.get("subject")
-    subject = neutralize_text(str(subject_raw if subject_raw is not None else ""))[:500]
+    # Model-supplied subject is ignored (D-031): server always derives Re: <original>.
+    # Owner may edit subject later via HITL edit (D-033).
     body = neutralize_text(str(args.get("body") or ""))[:8000]
     if not item_id:
         return {"ok": False, "error": "missing_work_item_id"}
@@ -48,11 +48,10 @@ def run(
         return {"ok": False, "error": "not_found"}
     if not row.thread_id or not row.provider_id:
         return {"ok": False, "error": "missing_thread_or_provider"}
-    if not subject:
-        try:
-            subject = reply_subject_from_original(row.subject_or_title)
-        except MailAddressError as exc:
-            return {"ok": False, "error": exc.code}
+    try:
+        subject = reply_subject_from_original(row.subject_or_title)
+    except MailAddressError as exc:
+        return {"ok": False, "error": exc.code}
     # Recipients server-derived from synced sender — never from model args.
     # Reply-to-self (sender == operator) is allowed at draft time; allowlist is approve/send (D-033).
     try:

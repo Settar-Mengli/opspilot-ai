@@ -31,11 +31,11 @@ Emitted in `TOOL_SYSTEM_FRAGMENT` (code is authoritative):
 | `search_items` | `query:string`, `limit?:int<=20` |
 | `get_message` | `id:string` (work item PK) |
 | `get_calendar` | `days?:int<=14` |
-| `draft_reply` | `work_item_id\|id:string`, `body:string`, `subject?:string` |
+| `draft_reply` | `work_item_id\|id:string`, `body:string`, `subject?:string` (model `subject` **ignored**) |
 
 **Rule:** `draft_reply.work_item_id` must be the exact `id` from `search_items` / `get_message` or the triage context — **never** a Gmail provider/thread id. Work item ids in prompts are never truncated below PK length (String(64); `wi_{uuid4.hex}` is 35 chars).
 
-Optional `subject`: if omitted, server derives `Re: <original>` without stacking `Re:`. Body is required.
+**Subject (CURRENT):** model-supplied `subject` is **ignored**. Server always sets `Re: <original>` without stacking `Re:`. Owner may change subject only via HITL edit (D-033). Body is required.
 
 **Arg shape normalization (CURRENT):** accept `args` / `arguments` / `parameters` / `input` bags or flat top-level tool fields; conflicting non-identical bags → reject.
 

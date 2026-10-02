@@ -46,6 +46,33 @@ def test_draft_reply_derives_subject_when_absent(db_session: Session) -> None:
     assert result.get("subject") == "Re: Project sync"
 
 
+def test_draft_reply_ignores_model_subject(db_session: Session) -> None:
+    wi_id = work_items.upsert_by_provider_id(
+        db_session,
+        provider_id="gmail_msg_subj_ignore_1",
+        source_type="gmail",
+        subject_or_title="Project Sync",
+        body_or_description="Body",
+        sender_or_requester="other@example.com",
+        received_at=datetime(2026, 10, 1, 12, 0, tzinfo=UTC),
+        thread_id="thr_subj_ignore_1",
+    )
+    db_session.commit()
+    result = run(
+        session=db_session,
+        args={
+            "work_item_id": wi_id,
+            "subject": "Follow-up: Project Sync",
+            "body": "Friday works.",
+        },
+        gmail_only=True,
+        operator_email="ops@example.com",
+        request_id="req-subj-ignore-1",
+    )
+    assert result.get("ok") is True
+    assert result.get("subject") == "Re: Project Sync"
+
+
 def test_draft_reply_missing_body(db_session: Session) -> None:
     wi_id = work_items.upsert_by_provider_id(
         db_session,

@@ -67,6 +67,7 @@ TOOL_SYSTEM_FRAGMENT = (
     "get_message:{id:string}; "
     "get_calendar:{days?:int<=14}; "
     "draft_reply:{work_item_id|id:string, body:string, subject?:string}. "
+    "draft_reply.subject from the model is ignored; server sets Re: <original>. "
     "draft_reply.work_item_id must be the exact `id` from search_items/get_message "
     "or the triage context — never a Gmail provider/thread id. "
     "Examples (placeholder ids only): "
