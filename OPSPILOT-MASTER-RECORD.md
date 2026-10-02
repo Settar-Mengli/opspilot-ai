@@ -1509,8 +1509,9 @@ Ask-mode audit of tip `25cbdf8` → FIX-THEN-MERGE. Hermetic-only Build on `b5/a
 | `5c05d6d` | test(fixtures): wire sanitized… | 37024606824 | 37024615469 | success |
 | `af4add4` | test(ui): approve state survives… | 37025392373 | 37025396907 | success |
 | `42ce420` | feat(smoke): live_smoke_b5 enforces… | 37026241956 | 37026249204 | success |
-| `568d880` | fix(api): typed sync response… | 37027227572 | 37027235087 | _(pending C9)_ |
-| _(tip)_ | docs(b5): post-audit registry… | _(C9)_ | _(C9)_ | |
+| `568d880` | fix(api): typed sync response… | 37027227572 | 37027235087 | success |
+| `8f90806` | docs(b5): post-audit registry… | 37035246539 | 37035252111 | success |
+| _(tip)_ | docs(b5): post-audit tip CI row | _(this commit)_ | _(this commit)_ | |
 
 #### Process deviations (prior + this pass)
 
