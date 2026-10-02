@@ -39,6 +39,8 @@ Emitted in `TOOL_SYSTEM_FRAGMENT` (code is authoritative):
 
 **Arg shape normalization (CURRENT):** accept `args` / `arguments` / `parameters` / `input` bags or flat top-level tool fields; conflicting non-identical bags → reject.
 
+**Sticky final provider (CURRENT):** after a successful tool step, subsequent `complete_json` turns pass `prefer_provider` = last tool provider (then remaining order; still honors `exclude_providers` / circuit failover).
+
 **Schema enforcement (CURRENT):** validate required args **before** `execute_tool`. On violation, do not execute; send one content-free repair turn (counts toward provider-call cap). Still invalid → **one** failover retry on the next provider in Ask routing order (also counts toward the provider-call cap; logged as `ask_provider_failover` with codes only). If that also fails or no next provider → soft final `tool_args_invalid`.
 
 Few-shot examples in the system fragment use placeholder ids only (no live mail content).

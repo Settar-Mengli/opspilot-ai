@@ -25,8 +25,10 @@ Agentic Ask may draft replies, but mail must never leave the machine without exp
    - **FE (CURRENT):** mint one key per Approve attempt; reuse while in-flight (double-click). After settle (success / 403 / 409 / 429 / error), mint a **new** key so a deliberate retry after DEMO_MODE/allowlist fix can succeed. Disable Approve while pending and after Sent.
    - Atomic daily send cap (`OPSPILOT_SEND_MAX_PER_DAY`, UTC day) via transaction advisory lock + draft claim before send.
    - Gmail **reply-in-thread only** (no arbitrary compose; no calendar writes).
+   - Threading headers: fetch RFC `Message-ID` via metadata; set `In-Reply-To` / `References` only when present — **never synthesize** from Gmail provider id (omit headers; rely on `threadId`).
 5. **No undo window** after send.
 6. Gmail send client asserts DEMO_MODE off + allowlist before token refresh / HTTP.
+7. Refresh `invalid_grant` → `google_reauth_required` (401) reconnect UX; Gmail/Calendar HTTP retries 429/502/503 with ≤15s sleep wall.
 
 ### Non-goals
 

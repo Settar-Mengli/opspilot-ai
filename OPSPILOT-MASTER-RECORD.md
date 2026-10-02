@@ -1419,3 +1419,65 @@ Computed vs parent commit (exact pixel inequality; descriptive only):
 | `cbbf3ed` | docs(b5): PART 13 STOP LIVE closeout sections 4-7 and post-STOP fixes | success (push [36969502285](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36969502285); PR [36969506612](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36969506612)) |
 
 Hermetic: **388** passed after A+B (local). Agent does **not** merge; PR [#40](https://github.com/Settar-Mengli/opspilot-ai/pull/40).
+
+### Reality-gap fix-pass (full §4) — 2026-10-02
+
+Owner-locked consolidated pass on tip after `249ef19`. **B5 complete pending merge** (not claimed DONE on main).
+
+#### Owner decisions recorded
+
+| Topic | Decision |
+|-------|----------|
+| Scope | Full audit §4 (F1–F11, F3, F14, F16–F17, fixtures, docs); F4 inbox cleanup **not** merge gate (clean before B7) |
+| F1 subject | Force `Re:` original; ignore model `draft_reply.subject` |
+| F2 idempotency | FE per-attempt key; new key after settle; same-key → prior outcome (D-033) |
+| F6/F7 pagination | Required; on truncate **do not** advance Gmail history cursor / Calendar `nextSyncToken` |
+| F9 Message-ID | RFC header or omit — never synthesize |
+| F10 backoff | 429/502/503 with ≤15s wall sleep cap; `invalid_grant` → reconnect |
+| F14 live smoke | Ship `scripts/live_smoke_b5.py` + runbook; **not executed** this pass |
+| F15 gallery | Pending owner (prior STOP LIVE rows for `a0cf7d7` / `ec383a0` remain) |
+| F5 host-label | Process note only; `database_host_label` already safe |
+| F19 meetings | No action if no NOT NULL children (verified N/A this pass) |
+
+#### Fix-pass commits (`249ef19..HEAD`)
+
+| SHA | Subject | CI (PR) |
+|-----|---------|---------|
+| `a3700c7` | fix(ask): ignore model draft subject; always Re: original | (see earlier S1 green) |
+| `b4675d8` | fix(mail): FE per-attempt idempotency + in-flight approve lock | failure → fixed `1f414c9` |
+| `1f414c9` | fix(ui): narrow Ask approve snapshot for TypeScript | success ([36973403750](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36973403750)) |
+| `43d2bcf` | fix(sync): paginate Gmail history/list; safe cursor on truncate | success ([36974107528](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36974107528)) |
+| `73fbdcb` | fix(sync): paginate Calendar; syncToken only after final page | success ([36974640700](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36974640700)) |
+| `8a55b47` | fix(sync): remove work items on SPAM labelAdded | failure → fixed `c6d05e9` |
+| `c6d05e9` | fix(sync): keep SPAM/TRASH check inside labelsAdded loop | success ([36975860243](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36975860243)) |
+| `22b6e9e` | fix(mail): In-Reply-To from RFC Message-ID or omit | failure → fixed `4d4a842` |
+| `4d4a842` | fix(test): count only Gmail send POSTs in concurrent cap | success ([36977104051](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36977104051)) |
+| `4e7d4b6` | fix(google): invalid_grant reconnect + bounded 429/5xx backoff | failure → fixed `f0f7a3e`/`d1e4c4e` |
+| `f0f7a3e` | fix(google): omit None kwargs in request_with_backoff | failure (sticky test) → `d1e4c4e` |
+| `2ba4a08` | fix(ask): prefer same provider for final after tools | (included under `f0f7a3e` tip) |
+| `d1e4c4e` | fix(test): groq supplies final after sticky tool failover | success ([36978679716](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36978679716)) |
+| `2c963ca` | test(fixtures): sanitized Google + LLM-turn fixtures + safety gate | success ([36979280791](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36979280791)) |
+| `e57c701` | feat(smoke): add live_smoke_b5 script and runbook | success ([36979870145](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36979870145)) |
+| `bb1caa2` | fix(ui): sync status shows this-sync vs totals | success ([36980431415](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36980431415)) |
+| `29ac4f7` | fix(api): expand startup_config non-secret flags | success ([36981001892](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36981001892)) |
+
+Local hermetic tip measure: **411** passed, **TOTAL coverage 82.24%** (≥82% gate).
+
+#### Fixtures
+
+- `tests/fixtures/google/`: 4 JSON files (history, message, calendar, token_error) — counts only; sanitized `fx_` ids + `@example.test` + `FIXTURE_*`.
+- `tests/fixtures/llm_turns/`: 2 JSON files (empty_args, draft_reply).
+- Capture script gated (`OPSPILOT_CAPTURE_FIXTURES=1`); **never CI**. Safety gate: `tests/unit/test_fixture_safety.py`.
+
+#### Deviations
+
+- Live smoke **not run** (owner gate after gallery).
+- Gallery **not claimed**.
+- F4 deferred to pre-B7 cleanup.
+- Visual baselines: no PNG refresh in this pass unless tip CI shows drift (S14).
+
+#### STOP for owner
+
+1. Gallery sign-off (ask-error / Connections if drifted).
+2. Run `uv run python scripts/live_smoke_b5.py` (allowlist = operator only; max one send).
+3. Merge PR [#40](https://github.com/Settar-Mengli/opspilot-ai/pull/40) when green — agent never merges.

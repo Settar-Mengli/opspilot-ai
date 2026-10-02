@@ -183,15 +183,15 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 - **Deps:** B1 persistence, B2 gateway, B3 before agent reads bodies · **Size:** XL · **Metric:** Live fictional inbox demo
 - **Next after merge:** B3.1 (done — see above), then **B5** (done — see B5), then **B6**.
 
-### B5 — Agentic Ask + approve & send (M6 + M7) — **DONE**
+### B5 — Agentic Ask + approve & send (M6 + M7) — **complete pending merge**
 
 - **Goal:** Tool-using Ask with HITL send.
-- **Workstream M6** — P2 + X8 — **DONE**
+- **Workstream M6** — P2 + X8 — **DONE** (on branch; pending merge to main)
   - Bounded JSON-emulated tool loop (D-031); caps 5/8 (D-014); `POST /ask/stream` SSE (D-032); read tools + `draft_reply`; Ask dock/timeline/draft card.
-- **Workstream M7** — P3 + X3 — **DONE**
+- **Workstream M7** — P3 + X3 — **DONE** (on branch; pending merge to main)
   - `gmail.send` scope; HITL edit/approve; allowlist fail-closed; DEMO_MODE 403; Gmail reply-in-thread only; `mail_send_audit`.
-- **Also IN:** Gmail `messageDeleted` local removal; DM-09 `ttft_ms` on Ask SSE; hermetic `ask_agent` + `redteam_agent` evals.
-- **Batch exit:** hermetic gates green; ask-error visual refresh (owner gallery); Neon Alembic **0009**; PART 13.
+- **Also IN:** Gmail `messageDeleted` + SPAM/TRASH label removal; history/list + Calendar pagination with safe cursors; DM-09 `ttft_ms` on Ask SSE; hermetic `ask_agent` + `redteam_agent` evals; reality-gap fix-pass (PART 13).
+- **Batch exit:** hermetic gates green; ask-error visual refresh (owner gallery); Neon Alembic **0009**; PART 13; **live_smoke_b5 not run this pass**; gallery pending owner.
 - **Deps:** B2–B4 · **Size:** XL · **Next after merge:** **B6**
 
 ### B6 — Morning run + preferences (M8 + M9)
