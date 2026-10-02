@@ -19,8 +19,9 @@ from opspilot.persistence.repositories import work_items
 def allow_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("OPSPILOT_FORCE_RULES", raising=False)
     monkeypatch.delenv("OPSPILOT_LLM_DISABLE", raising=False)
-    monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_REQ_DAY", "100")
-    monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_TOK_DAY", "100000")
+    for provider in ("GEMINI", "GROQ", "MISTRAL", "CLOUDFLARE", "OPENROUTER"):
+        monkeypatch.setenv(f"OPSPILOT_BUDGET_{provider}_REQ_DAY", "100")
+        monkeypatch.setenv(f"OPSPILOT_BUDGET_{provider}_TOK_DAY", "100000")
     monkeypatch.setenv("OPSPILOT_ASK_MAX_STEPS", "5")
     monkeypatch.setenv("OPSPILOT_ASK_MAX_PROVIDER_CALLS", "8")
 
