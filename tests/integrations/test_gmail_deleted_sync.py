@@ -143,6 +143,18 @@ def test_sync_removes_on_label_added_trash(db_session: Session, sync_env: None) 
     )
 
 
+def test_sync_removes_on_label_added_spam(db_session: Session, sync_env: None) -> None:
+    _seed(db_session, "spam_msg")
+    tx = _HistoryTransport([{"labelsAdded": [{"message": {"id": "spam_msg"}, "labelIds": ["SPAM"]}]}])
+    result = google_sync.run_sync(db_session, transport=tx, providers=["gmail"])
+    db_session.commit()
+    assert result["gmail_removed"] == 1
+    assert (
+        db_session.scalar(select(func.count()).select_from(WorkItemRow).where(WorkItemRow.provider_id == "spam_msg"))
+        == 0
+    )
+
+
 def test_sync_removes_on_label_removed_inbox(db_session: Session, sync_env: None) -> None:
     _seed(db_session, "archive_msg")
     tx = _HistoryTransport([{"labelsRemoved": [{"message": {"id": "archive_msg"}, "labelIds": ["INBOX"]}]}])

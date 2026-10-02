@@ -209,8 +209,8 @@ class GmailClient:
                         continue
                     labels = {str(x) for x in (lab.get("labelIds") or []) if x}
                     mid = _history_message_id(lab)
-                    if mid and "TRASH" in labels:
-                        removed.append(mid)
+                if mid and ("TRASH" in labels or "SPAM" in labels):
+                    removed.append(mid)
                 for lab in entry.get("labelsRemoved") or []:
                     if not isinstance(lab, dict):
                         continue
