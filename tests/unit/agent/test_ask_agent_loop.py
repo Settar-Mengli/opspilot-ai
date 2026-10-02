@@ -224,6 +224,78 @@ def test_tool_end_payload_minimized(db_session: Session) -> None:
     assert "SECRET_BODY_CONTENT" in str(drafts[0].data.get("body"))
 
 
+@pytest.mark.usefixtures("allow_llm")
+@pytest.mark.parametrize(
+    "final_text",
+    [
+        "Draft sent to Nytherra AI…",
+        "Draft sent. Notes will follow…",
+        "I've sent it",
+        "Here is a short summary of the draft.",
+    ],
+)
+def test_final_always_replaced_after_draft(db_session: Session, final_text: str) -> None:
+    wi = work_items.upsert_by_provider_id(
+        db_session,
+        provider_id=f"msg_false_sent_{hash(final_text) & 0xFFFF:04x}",
+        source_type="gmail",
+        subject_or_title="Hello",
+        body_or_description="Hi",
+        sender_or_requester="ops@example.com",
+        received_at=datetime(2026, 10, 1, 12, 0, tzinfo=UTC),
+        thread_id=f"thr_false_sent_{hash(final_text) & 0xFFFF:04x}",
+    )
+    db_session.commit()
+    expected = "Draft ready — review and approve in the UI to send."
+    fake = FakeProvider(
+        name="gemini",
+        json_results=[
+            _json_result(
+                {
+                    "kind": "tool",
+                    "tool": "draft_reply",
+                    "args": {"work_item_id": wi, "subject": "Re: Hello", "body": "Thanks"},
+                }
+            ),
+            _json_result({"kind": "final", "final": final_text}),
+        ],
+    )
+    events = list(
+        run_ask_agent(
+            question="Draft",
+            session=db_session,
+            request_id="req-false-sent-1",
+            gmail_only=True,
+            providers=[fake],
+        )
+    )
+    finals = [e for e in events if e.type == "final"]
+    assert finals
+    assert finals[0].data.get("answer") == expected
+    tokens = [e.data.get("text") for e in events if e.type == "token"]
+    assert tokens[-1] == expected
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_final_untouched_when_no_draft(db_session: Session) -> None:
+    fake = FakeProvider(
+        name="gemini",
+        json_results=[_json_result({"kind": "final", "final": "Three items need attention today."})],
+    )
+    events = list(
+        run_ask_agent(
+            question="What needs attention?",
+            session=db_session,
+            request_id="req-no-draft-1",
+            gmail_only=True,
+            providers=[fake],
+        )
+    )
+    finals = [e for e in events if e.type == "final"]
+    assert finals
+    assert finals[0].data.get("answer") == "Three items need attention today."
+
+
 def test_force_rules_yields_llm_policy_denied(db_session: Session) -> None:
     """STOP LIVE regression: FORCE_RULES must not soft-map to bare ask_failed."""
     events = list(

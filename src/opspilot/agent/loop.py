@@ -37,6 +37,16 @@ from opspilot.services._llm import compact_triage_lines
 CancelCheck = Callable[[], bool]
 _logger = logging.getLogger("opspilot.api.ask")
 
+_DRAFT_AWAITING_APPROVAL_FINAL = "Draft ready — review and approve in the UI to send."
+
+
+def _sanitize_final_after_draft(*, answer: str, draft_created: bool, request_id: str) -> str:
+    """After any draft event, replace the model final entirely (HITL only; ignore wording)."""
+    if not draft_created:
+        return answer
+    _logger.info("ask_final_sanitized request_id=%s reason=draft_created", request_id)
+    return _DRAFT_AWAITING_APPROVAL_FINAL
+
 
 def _args_hash(args: dict[str, Any]) -> str:
     blob = json.dumps(args, sort_keys=True, default=str, ensure_ascii=False)
@@ -348,6 +358,7 @@ def run_ask_agent(
     first_token = True
     last_fail_key: tuple[str, str, str] | None = None
     fail_streak = 0
+    draft_created = False
 
     for step in range(max_steps):
         if cancel_check and cancel_check():
@@ -408,7 +419,12 @@ def run_ask_agent(
             return
 
         if turn.kind == "final":
-            answer = (turn.final or "").strip() or "I did not get a response. Please try again."
+            raw_answer = (turn.final or "").strip() or "I did not get a response. Please try again."
+            answer = _sanitize_final_after_draft(
+                answer=raw_answer,
+                draft_created=draft_created,
+                request_id=rid,
+            )
             if first_token:
                 yield AgentEvent("token", rid, {"text": answer, "ttft": True})
                 first_token = False
@@ -562,6 +578,7 @@ def run_ask_agent(
         )
         yield AgentEvent("tool_end", rid, _tool_end_payload(tool_name, result))
         if tool_name == "draft_reply" and result.get("ok") and result.get("draft_id"):
+            draft_created = True
             yield AgentEvent(
                 "draft",
                 rid,
