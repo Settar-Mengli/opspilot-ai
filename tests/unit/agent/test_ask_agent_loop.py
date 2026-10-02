@@ -466,7 +466,6 @@ def test_tool_args_invalid_failovers_to_next_provider(db_session: Session, monke
         json_results=[
             empty,
             empty,
-            _json_result({"kind": "final", "final": "Draft ready."}),
         ],
     )
     prov_b = FakeProvider(
@@ -479,6 +478,8 @@ def test_tool_args_invalid_failovers_to_next_provider(db_session: Session, monke
                     "args": {"work_item_id": wi_id, "body": "Friday works."},
                 }
             ),
+            # Sticky prefer after tool keeps groq for the final turn.
+            _json_result({"kind": "final", "final": "Draft ready."}),
         ],
     )
     events = list(
