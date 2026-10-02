@@ -1580,3 +1580,43 @@ python -c "… parts(origin/main)[12] == parts(HEAD)[12] …"
 - `pytest`: **463 passed**, 0 skipped, 0 xfail, 1 warning (pytest-socket blocked non-local); **TOTAL 82.39%** (≥72).
 - FE: eslint ok; `tsc -p tsconfig.app.json --noEmit` ok; vitest **35** passed / 12 files.
 - PNG diff vs `2665b7c`: **0 files**. Alembic head: `0009_mail_send_audit_failed`.
+
+### STOP VISUAL closed — owner gallery approval — 2026-10-02
+
+Owner quote (exact): `gallery approved` — 2026-10-02.
+
+**Live smoke NOT run. PR NOT merged.**
+
+| Fact | Record |
+|------|--------|
+| Workflow | UI Baselines (`workflow_dispatch`); container `mcr.microsoft.com/playwright:v1.55.1-jammy` |
+| Before run | **37053916564** — `main` @ `1a6fe7d`; artifact `b5-gallery-before-main` |
+| Compare run | **37054725997** — tip `ff321df`; artifact `b5-gallery-compare-ff321df` |
+| Approved baselines (8; all differ from main) | see rows below |
+| 375 explicitly approved | `ask-error-chromium-375-linux.png`, `connections-chromium-375-linux.png` |
+| Unchanged vs main | `connections-modal-chromium-375-linux.png` |
+| All other baselines | pass / 0-diff vs main in compare run |
+| `MAX_DIFF_PIXELS` | unchanged vs main |
+| Unattributed diffs | **0** |
+| Owner cosmetic follow-up (not a defect; not a merge gate) | At 768, Gmail card subtitle wraps with a single orphan word on the second line — owner batch **OD** |
+
+| Baseline | 375? | Cause |
+|----------|------|-------|
+| `ask-error-chromium-375-linux.png` | **yes** | `ec383a0` — error copy only |
+| `ask-error-chromium-768-linux.png` | no | `ec383a0` — error copy only |
+| `ask-error-chromium-1280-linux.png` | no | `ec383a0` — error copy only |
+| `connections-chromium-375-linux.png` | **yes** | `69245e8` copy (baselines refreshed in `a0cf7d7`) |
+| `connections-chromium-768-linux.png` | no | `69245e8` / `a0cf7d7`; 768 vertical reflow — Gmail card +20px (one extra subtitle line) |
+| `connections-chromium-1280-linux.png` | no | `69245e8` / `a0cf7d7` |
+| `connections-modal-chromium-768-linux.png` | no | `69245e8` / `a0cf7d7`; 768 vertical reflow behind modal (same +20px card) |
+| `connections-modal-chromium-1280-linux.png` | no | `69245e8` / `a0cf7d7` |
+
+**Supersession:** This approval supersedes every earlier “owner approval NOT claimed” note in PART 13 for these 8 files. Those earlier notes are left unchanged (historical); this subsection is authoritative for STOP VISUAL status.
+
+Prior tip `ff321df` CI (filled here; row above left as historical placeholder): push **37046865527**, PR **37046870784**, success.
+
+#### Per-commit CI (gallery approval records)
+
+| SHA | Subject | Push run | PR run | Result |
+|-----|---------|----------|--------|--------|
+| _(tip)_ | docs(b5): record owner gallery approval (STOP VISUAL closed) | final records commit — CI run on PR checks | final records commit — CI run on PR checks | |

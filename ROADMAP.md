@@ -191,7 +191,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 - **Workstream M7** — P3 + X3 — **DONE** (on branch; pending merge to main)
   - `gmail.send` scope; HITL edit/approve; allowlist fail-closed; DEMO_MODE 403; Gmail reply-in-thread only; `mail_send_audit`.
 - **Also IN:** Gmail `messageDeleted` + SPAM/TRASH label removal; history/list + Calendar pagination with safe cursors; DM-09 `ttft_ms` on Ask SSE; hermetic `ask_agent` + `redteam_agent` evals; reality-gap fix-pass (PART 13).
-- **Batch exit:** hermetic gates green; ask-error visual refresh (owner gallery); Neon Alembic **0009**; PART 13; **live_smoke_b5 not run this pass**; gallery pending owner.
+- **Batch exit:** hermetic gates green; ask-error visual refresh (**gallery approved** 2026-10-02); Neon Alembic **0009**; PART 13; **live_smoke_b5 not run this pass**.
 - **Deps:** B2–B4 · **Size:** XL · **Next after merge:** **B6**
 
 ### B6 — Morning run + preferences (M8 + M9)
@@ -246,6 +246,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | DM-09 `ttft_ms` / `usd_estimate` / LlmCall links | **partial** | **ttft_ms on Ask SSE in B5**; USD with F-05 / B7 |
 | F-05 Anthropic USD debit on LlmCall | **B7** | Precondition before Anthropic ever enabled (P7 off) |
 | Definitive mail send failures leave draft `failed` (not re-approvable); `send_outcome_unknown` returns to `draft`; `gmail_unavailable_not_sent` returns to `draft` (not capped) | **B6** | Post-audit A3 / fix-pass 2 D1; reopen-failed UX out of B5 |
+| Connections 768 Gmail card subtitle orphan word (cosmetic) | **OD** | Owner-noted after gallery approval 2026-10-02; not a defect; not a merge gate |
 
 ---
 
