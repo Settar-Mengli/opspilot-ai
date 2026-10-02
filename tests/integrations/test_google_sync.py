@@ -169,9 +169,10 @@ def test_sync_idempotent(db_session: Session, sync_env: None) -> None:
     assert "singleEvents" not in incr
 
 
-def test_calendar_truncate_holds_sync_token_then_remainder(
+def test_calendar_truncated_incremental_clears_token_next_full_stores_token(
     db_session: Session, sync_env: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Google-faithful: same syncToken without pageToken always returns page 1."""
     monkeypatch.setenv("OPSPILOT_CALENDAR_LIST_MAX_PAGES", "1")
     oauth_credentials.upsert_encrypted_refresh(
         db_session,
@@ -193,9 +194,9 @@ def test_calendar_truncate_holds_sync_token_then_remainder(
     )
     db_session.commit()
 
-    class _PagedCal:
+    class _GoogleFaithfulCal:
         def __init__(self) -> None:
-            self.calls = 0
+            self.full_calls = 0
 
         def request(
             self,
@@ -217,9 +218,24 @@ def test_calendar_truncate_holds_sync_token_then_remainder(
             if url.endswith("/users/me/messages"):
                 return httpx.Response(200, json={"messages": []})
             if "/calendars/primary/events" in url:
-                self.calls += 1
                 p = dict(params or {})
-                if p.get("syncToken") == "cal-prior" and not p.get("pageToken"):
+                # Incremental: same syncToken without pageToken → always page 1 (Google).
+                if p.get("syncToken") == "cal-prior":
+                    if p.get("pageToken"):
+                        return httpx.Response(
+                            200,
+                            json={
+                                "items": [
+                                    {
+                                        "id": "ev_page2",
+                                        "summary": "Two",
+                                        "start": {"dateTime": "2026-10-03T15:00:00Z"},
+                                        "end": {"dateTime": "2026-10-03T16:00:00Z"},
+                                    }
+                                ],
+                                "nextSyncToken": "cal-from-incr",
+                            },
+                        )
                     return httpx.Response(
                         200,
                         json={
@@ -234,37 +250,38 @@ def test_calendar_truncate_holds_sync_token_then_remainder(
                             "nextPageToken": "calpage2",
                         },
                     )
-                if p.get("pageToken") == "calpage2" or (
-                    p.get("syncToken") == "cal-prior" and self.calls > 1 and not p.get("pageToken")
-                ):
-                    # After truncate, prior token kept; next sync may re-request with same token
-                    # and we serve page2 when max pages allows.
-                    if p.get("pageToken") == "calpage2" or self.calls >= 2:
-                        return httpx.Response(
-                            200,
-                            json={
-                                "items": [
-                                    {
-                                        "id": "ev_page2",
-                                        "summary": "Two",
-                                        "start": {"dateTime": "2026-10-03T15:00:00Z"},
-                                        "end": {"dateTime": "2026-10-03T16:00:00Z"},
-                                    }
-                                ],
-                                "nextSyncToken": "cal-next",
-                            },
-                        )
-                return httpx.Response(200, json={"items": [], "nextSyncToken": "cal-next"})
+                # Full window (no syncToken): complete in one page for second sync.
+                if "timeMin" in p:
+                    self.full_calls += 1
+                    return httpx.Response(
+                        200,
+                        json={
+                            "items": [
+                                {
+                                    "id": "ev_page1",
+                                    "summary": "One",
+                                    "start": {"dateTime": "2026-10-02T15:00:00Z"},
+                                    "end": {"dateTime": "2026-10-02T16:00:00Z"},
+                                },
+                                {
+                                    "id": "ev_full2",
+                                    "summary": "FullTwo",
+                                    "start": {"dateTime": "2026-10-03T15:00:00Z"},
+                                    "end": {"dateTime": "2026-10-03T16:00:00Z"},
+                                },
+                            ],
+                            "nextSyncToken": "cal-after-full",
+                        },
+                    )
+                return httpx.Response(200, json={"items": [], "nextSyncToken": "cal-empty"})
             return httpx.Response(500, json={"error": "unexpected"})
 
-    tx = _PagedCal()
-    google_sync.run_sync(db_session, transport=tx, providers=["calendar"])
+    tx = _GoogleFaithfulCal()
+    r1 = google_sync.run_sync(db_session, transport=tx, providers=["calendar"])
     db_session.commit()
+    assert r1.get("calendar_truncated") is True
     assert (
         db_session.scalar(select(func.count()).select_from(MeetingRow).where(MeetingRow.provider_id == "ev_page1")) == 1
-    )
-    assert (
-        db_session.scalar(select(func.count()).select_from(MeetingRow).where(MeetingRow.provider_id == "ev_page2")) == 0
     )
     cur = sync_cursors.get_cursor(
         db_session,
@@ -272,13 +289,394 @@ def test_calendar_truncate_holds_sync_token_then_remainder(
         account_email="demo@example.com",
         cursor_kind=sync_cursors.CURSOR_CALENDAR_SYNC,
     )
-    assert cur == "cal-prior"
+    assert cur is None
 
     monkeypatch.setenv("OPSPILOT_CALENDAR_LIST_MAX_PAGES", "20")
-    google_sync.run_sync(db_session, transport=tx, providers=["calendar"])
+    r2 = google_sync.run_sync(db_session, transport=tx, providers=["calendar"])
+    db_session.commit()
+    assert r2.get("calendar_truncated") is False
+    assert (
+        db_session.scalar(select(func.count()).select_from(MeetingRow).where(MeetingRow.provider_id == "ev_full2")) == 1
+    )
+    cur2 = sync_cursors.get_cursor(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        cursor_kind=sync_cursors.CURSOR_CALENDAR_SYNC,
+    )
+    assert cur2 == "cal-after-full"
+    assert tx.full_calls >= 1
+
+
+def test_calendar_full_window_truncated_no_token_flag_true(
+    db_session: Session, sync_env: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OPSPILOT_CALENDAR_LIST_MAX_PAGES", "1")
+    oauth_credentials.upsert_encrypted_refresh(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly "
+            "https://www.googleapis.com/auth/gmail.send "
+            "https://www.googleapis.com/auth/calendar.readonly"
+        ),
+        refresh_token_plaintext="rt",
+    )
+    db_session.commit()
+
+    class _TruncFull:
+        def request(
+            self,
+            method: str,
+            url: str,
+            *,
+            headers: dict[str, str] | None = None,
+            params: dict[str, Any] | None = None,
+            data: dict[str, Any] | None = None,
+            json: dict[str, Any] | None = None,
+        ) -> httpx.Response:
+            del method, headers, data, json
+            if "oauth2.googleapis.com/token" in url:
+                return httpx.Response(200, json={"access_token": "ya29.fake"})
+            if "/calendars/primary/events" in url:
+                return httpx.Response(
+                    200,
+                    json={
+                        "items": [
+                            {
+                                "id": "ev_only",
+                                "summary": "Only",
+                                "start": {"dateTime": "2026-10-02T12:00:00Z"},
+                                "end": {"dateTime": "2026-10-02T13:00:00Z"},
+                            }
+                        ],
+                        "nextPageToken": "more",
+                    },
+                )
+            return httpx.Response(500, json={"error": "unexpected"})
+
+    r = google_sync.run_sync(db_session, transport=_TruncFull(), providers=["calendar"])
+    db_session.commit()
+    assert r.get("calendar_truncated") is True
+    assert (
+        sync_cursors.get_cursor(
+            db_session,
+            provider="google",
+            account_email="demo@example.com",
+            cursor_kind=sync_cursors.CURSOR_CALENDAR_SYNC,
+        )
+        is None
+    )
+
+
+def test_calendar_cancelled_removed_on_full_resync(db_session: Session, sync_env: None) -> None:
+    oauth_credentials.upsert_encrypted_refresh(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly "
+            "https://www.googleapis.com/auth/gmail.send "
+            "https://www.googleapis.com/auth/calendar.readonly"
+        ),
+        refresh_token_plaintext="rt",
+    )
+    now = datetime.now(UTC)
+    meetings.upsert_by_provider_id(
+        db_session,
+        provider_id="ev_cancel_me",
+        title="Cancel",
+        start_at=now + timedelta(hours=2),
+        end_at=now + timedelta(hours=3),
+    )
+    db_session.commit()
+
+    class _CancelTx:
+        def request(
+            self,
+            method: str,
+            url: str,
+            *,
+            headers: dict[str, str] | None = None,
+            params: dict[str, Any] | None = None,
+            data: dict[str, Any] | None = None,
+            json: dict[str, Any] | None = None,
+        ) -> httpx.Response:
+            del method, headers, data, json
+            if "oauth2.googleapis.com/token" in url:
+                return httpx.Response(200, json={"access_token": "ya29.fake"})
+            if "/calendars/primary/events" in url:
+                p = dict(params or {})
+                assert p.get("showDeleted") == "true"
+                return httpx.Response(
+                    200,
+                    json={
+                        "items": [{"id": "ev_cancel_me", "status": "cancelled"}],
+                        "nextSyncToken": "cal-c",
+                    },
+                )
+            return httpx.Response(500, json={"error": "unexpected"})
+
+    google_sync.run_sync(db_session, transport=_CancelTx(), providers=["calendar"])
     db_session.commit()
     assert (
-        db_session.scalar(select(func.count()).select_from(MeetingRow).where(MeetingRow.provider_id == "ev_page2")) == 1
+        db_session.scalar(select(func.count()).select_from(MeetingRow).where(MeetingRow.provider_id == "ev_cancel_me"))
+        == 0
+    )
+
+
+def test_calendar_hard_deleted_absent_from_complete_full_window_removed(db_session: Session, sync_env: None) -> None:
+    oauth_credentials.upsert_encrypted_refresh(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly "
+            "https://www.googleapis.com/auth/gmail.send "
+            "https://www.googleapis.com/auth/calendar.readonly"
+        ),
+        refresh_token_plaintext="rt",
+    )
+    now = datetime.now(UTC)
+    meetings.upsert_by_provider_id(
+        db_session,
+        provider_id="ev_gone",
+        title="Gone",
+        start_at=now + timedelta(hours=4),
+        end_at=now + timedelta(hours=5),
+    )
+    meetings.upsert_by_provider_id(
+        db_session,
+        provider_id="ev_keep",
+        title="Keep",
+        start_at=now + timedelta(hours=6),
+        end_at=now + timedelta(hours=7),
+    )
+    db_session.commit()
+
+    class _AbsentTx:
+        def request(
+            self,
+            method: str,
+            url: str,
+            *,
+            headers: dict[str, str] | None = None,
+            params: dict[str, Any] | None = None,
+            data: dict[str, Any] | None = None,
+            json: dict[str, Any] | None = None,
+        ) -> httpx.Response:
+            del method, headers, data, json
+            if "oauth2.googleapis.com/token" in url:
+                return httpx.Response(200, json={"access_token": "ya29.fake"})
+            if "/calendars/primary/events" in url:
+                return httpx.Response(
+                    200,
+                    json={
+                        "items": [
+                            {
+                                "id": "ev_keep",
+                                "summary": "Keep",
+                                "start": {"dateTime": (now + timedelta(hours=6)).isoformat().replace("+00:00", "Z")},
+                                "end": {"dateTime": (now + timedelta(hours=7)).isoformat().replace("+00:00", "Z")},
+                            }
+                        ],
+                        "nextSyncToken": "cal-abs",
+                    },
+                )
+            return httpx.Response(500, json={"error": "unexpected"})
+
+    google_sync.run_sync(db_session, transport=_AbsentTx(), providers=["calendar"])
+    db_session.commit()
+    assert (
+        db_session.scalar(select(func.count()).select_from(MeetingRow).where(MeetingRow.provider_id == "ev_gone")) == 0
+    )
+    assert (
+        db_session.scalar(select(func.count()).select_from(MeetingRow).where(MeetingRow.provider_id == "ev_keep")) == 1
+    )
+
+
+def test_calendar_event_outside_window_untouched(db_session: Session, sync_env: None) -> None:
+    oauth_credentials.upsert_encrypted_refresh(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly "
+            "https://www.googleapis.com/auth/gmail.send "
+            "https://www.googleapis.com/auth/calendar.readonly"
+        ),
+        refresh_token_plaintext="rt",
+    )
+    now = datetime.now(UTC)
+    meetings.upsert_by_provider_id(
+        db_session,
+        provider_id="ev_outside",
+        title="Outside",
+        start_at=now + timedelta(days=30),
+        end_at=now + timedelta(days=30, hours=1),
+    )
+    db_session.commit()
+
+    class _EmptyWindow:
+        def request(
+            self,
+            method: str,
+            url: str,
+            *,
+            headers: dict[str, str] | None = None,
+            params: dict[str, Any] | None = None,
+            data: dict[str, Any] | None = None,
+            json: dict[str, Any] | None = None,
+        ) -> httpx.Response:
+            del method, headers, data, json, params
+            if "oauth2.googleapis.com/token" in url:
+                return httpx.Response(200, json={"access_token": "ya29.fake"})
+            if "/calendars/primary/events" in url:
+                return httpx.Response(200, json={"items": [], "nextSyncToken": "cal-empty"})
+            return httpx.Response(500, json={"error": "unexpected"})
+
+    google_sync.run_sync(db_session, transport=_EmptyWindow(), providers=["calendar"])
+    db_session.commit()
+    assert (
+        db_session.scalar(select(func.count()).select_from(MeetingRow).where(MeetingRow.provider_id == "ev_outside"))
+        == 1
+    )
+
+
+def test_calendar_truncated_full_window_skips_absence_reconcile(
+    db_session: Session, sync_env: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OPSPILOT_CALENDAR_LIST_MAX_PAGES", "1")
+    oauth_credentials.upsert_encrypted_refresh(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly "
+            "https://www.googleapis.com/auth/gmail.send "
+            "https://www.googleapis.com/auth/calendar.readonly"
+        ),
+        refresh_token_plaintext="rt",
+    )
+    now = datetime.now(UTC)
+    meetings.upsert_by_provider_id(
+        db_session,
+        provider_id="ev_should_stay",
+        title="Stay",
+        start_at=now + timedelta(hours=2),
+        end_at=now + timedelta(hours=3),
+    )
+    db_session.commit()
+
+    class _TruncNoReconcile:
+        def request(
+            self,
+            method: str,
+            url: str,
+            *,
+            headers: dict[str, str] | None = None,
+            params: dict[str, Any] | None = None,
+            data: dict[str, Any] | None = None,
+            json: dict[str, Any] | None = None,
+        ) -> httpx.Response:
+            del method, headers, data, json
+            if "oauth2.googleapis.com/token" in url:
+                return httpx.Response(200, json={"access_token": "ya29.fake"})
+            if "/calendars/primary/events" in url:
+                return httpx.Response(
+                    200,
+                    json={
+                        "items": [
+                            {
+                                "id": "ev_other",
+                                "summary": "Other",
+                                "start": {"dateTime": (now + timedelta(hours=5)).isoformat().replace("+00:00", "Z")},
+                                "end": {"dateTime": (now + timedelta(hours=6)).isoformat().replace("+00:00", "Z")},
+                            }
+                        ],
+                        "nextPageToken": "more",
+                    },
+                )
+            return httpx.Response(500, json={"error": "unexpected"})
+
+    r = google_sync.run_sync(db_session, transport=_TruncNoReconcile(), providers=["calendar"])
+    db_session.commit()
+    assert r.get("calendar_truncated") is True
+    assert (
+        db_session.scalar(
+            select(func.count()).select_from(MeetingRow).where(MeetingRow.provider_id == "ev_should_stay")
+        )
+        == 1
+    )
+
+
+def test_calendar_untruncated_incremental_unchanged(db_session: Session, sync_env: None) -> None:
+    oauth_credentials.upsert_encrypted_refresh(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly "
+            "https://www.googleapis.com/auth/gmail.send "
+            "https://www.googleapis.com/auth/calendar.readonly"
+        ),
+        refresh_token_plaintext="rt",
+    )
+    sync_cursors.upsert_cursor(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        cursor_kind=sync_cursors.CURSOR_CALENDAR_SYNC,
+        cursor_value="cal-prior",
+    )
+    db_session.commit()
+
+    class _IncrOk:
+        def request(
+            self,
+            method: str,
+            url: str,
+            *,
+            headers: dict[str, str] | None = None,
+            params: dict[str, Any] | None = None,
+            data: dict[str, Any] | None = None,
+            json: dict[str, Any] | None = None,
+        ) -> httpx.Response:
+            del method, headers, data, json
+            if "oauth2.googleapis.com/token" in url:
+                return httpx.Response(200, json={"access_token": "ya29.fake"})
+            if "/calendars/primary/events" in url:
+                p = dict(params or {})
+                assert p.get("syncToken") == "cal-prior"
+                assert "showDeleted" not in p
+                return httpx.Response(
+                    200,
+                    json={
+                        "items": [
+                            {
+                                "id": "ev_incr",
+                                "summary": "Incr",
+                                "start": {"dateTime": "2026-10-02T18:00:00Z"},
+                                "end": {"dateTime": "2026-10-02T19:00:00Z"},
+                            }
+                        ],
+                        "nextSyncToken": "cal-next-incr",
+                    },
+                )
+            return httpx.Response(500, json={"error": "unexpected"})
+
+    r = google_sync.run_sync(db_session, transport=_IncrOk(), providers=["calendar"])
+    db_session.commit()
+    assert r.get("calendar_truncated") is False
+    assert (
+        sync_cursors.get_cursor(
+            db_session,
+            provider="google",
+            account_email="demo@example.com",
+            cursor_kind=sync_cursors.CURSOR_CALENDAR_SYNC,
+        )
+        == "cal-next-incr"
     )
 
 
@@ -297,13 +695,21 @@ def test_fake_transport_400_when_sync_token_combined_with_window() -> None:
         "https://www.googleapis.com/calendar/v3/calendars/primary/events",
         params={
             "syncToken": "x",
-            "showDeleted": "false",
+            "showDeleted": "true",
             "timeMin": "2026-01-01T00:00:00Z",
             "timeMax": "2026-01-08T00:00:00Z",
             "orderBy": "startTime",
         },
     )
     assert resp.status_code == 400
+
+
+def test_full_window_sends_show_deleted_true() -> None:
+    tx = FakeTransport()
+    client = CalendarClient(access_token="t", transport=tx)
+    now = datetime.now(UTC)
+    client.list_events(time_min=now, time_max=now + timedelta(days=7), sync_token=None)
+    assert tx.calendar_params[-1].get("showDeleted") == "true"
 
 
 def test_calendar_410_triggers_full_resync(db_session: Session, sync_env: None) -> None:

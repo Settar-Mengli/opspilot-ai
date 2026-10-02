@@ -56,9 +56,11 @@ def run_sync(
         result["gmail_upserted"] = upserted
         result["gmail_removed"] = removed
     if "calendar" in wanted:
-        result["calendar_upserted"] = _sync_calendar(
+        cal_upserted, cal_truncated = _sync_calendar(
             session, access_token=access, account_email=account_email, transport=tx
         )
+        result["calendar_upserted"] = cal_upserted
+        result["calendar_truncated"] = cal_truncated
     from sqlalchemy import func, select
 
     from opspilot.persistence.models import MeetingRow, WorkItemRow
@@ -209,9 +211,10 @@ def _sync_calendar(
     access_token: str,
     account_email: str,
     transport: GoogleTransport,
-) -> int:
+) -> tuple[int, bool]:
     client = CalendarClient(access_token=access_token, transport=transport)
     now = datetime.now(UTC)
+    # Same bounds for API list and absence reconcile — must not diverge.
     time_min = now - timedelta(days=1)
     time_max = now + timedelta(days=7)
     sync_token = sync_cursors.get_cursor(
@@ -220,13 +223,17 @@ def _sync_calendar(
         account_email=account_email,
         cursor_kind=sync_cursors.CURSOR_CALENDAR_SYNC,
     )
+    full_window = sync_token is None
     listed = client.list_events(time_min=time_min, time_max=time_max, sync_token=sync_token)
     if listed.gone:
         # 410 path: full window resync
+        full_window = True
         listed = client.list_events(time_min=time_min, time_max=time_max, sync_token=None)
     events = listed.events
     upserted = 0
+    seen_ids: set[str] = set()
     for ev in events:
+        seen_ids.add(ev.provider_id)
         if ev.cancelled:
             meetings.delete_by_provider_id(session, provider_id=ev.provider_id)
             continue
@@ -240,8 +247,23 @@ def _sync_calendar(
             end_at=ev.end_at,
         )
         upserted += 1
-    # Only persist nextSyncToken after a complete (non-truncated) page walk.
-    if listed.next_sync_token and not listed.truncated:
+
+    calendar_truncated = bool(listed.truncated)
+    if listed.truncated:
+        # Never keep a syncToken after truncate — Google restarts at page 1 under the same token.
+        sync_cursors.delete_cursor(
+            session,
+            provider="google",
+            account_email=account_email,
+            cursor_kind=sync_cursors.CURSOR_CALENDAR_SYNC,
+        )
+        _cal_logger.warning(
+            "calendar_sync truncated=1 events=%s upserted=%s full_window=%s",
+            len(events),
+            upserted,
+            int(full_window),
+        )
+    elif listed.next_sync_token:
         sync_cursors.upsert_cursor(
             session,
             provider="google",
@@ -249,9 +271,13 @@ def _sync_calendar(
             cursor_kind=sync_cursors.CURSOR_CALENDAR_SYNC,
             cursor_value=listed.next_sync_token,
         )
-    elif listed.truncated:
-        _cal_logger.info(
-            "calendar_sync truncated=1 prior_token_kept=%s",
-            "1" if sync_token else "0",
-        )
-    return upserted
+        if full_window:
+            # Absence reconcile: hard-deleted / moved-out events are not returned.
+            removed_absent = 0
+            for row in meetings.list_starting_in_window(session, time_min=time_min, time_max=time_max):
+                if row.provider_id not in seen_ids:
+                    if meetings.delete_by_provider_id(session, provider_id=row.provider_id):
+                        removed_absent += 1
+            if removed_absent:
+                _cal_logger.info("calendar_sync absence_removed=%s", removed_absent)
+    return upserted, calendar_truncated

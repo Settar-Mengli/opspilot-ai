@@ -69,6 +69,17 @@ def list_in_range(session: Session, *, start: datetime, end: datetime) -> list[M
     return list(session.scalars(stmt).all())
 
 
+def list_starting_in_window(session: Session, *, time_min: datetime, time_max: datetime) -> list[MeetingRow]:
+    """Meetings whose start_at is in [time_min, time_max)."""
+    stmt = (
+        select(MeetingRow)
+        .where(MeetingRow.start_at >= time_min)
+        .where(MeetingRow.start_at < time_max)
+        .order_by(MeetingRow.start_at.asc())
+    )
+    return list(session.scalars(stmt).all())
+
+
 def delete_by_provider_id(session: Session, *, provider_id: str) -> bool:
     """Delete a meeting by Google event id. Returns True if a row was deleted."""
     row = session.scalars(select(MeetingRow).where(MeetingRow.provider_id == provider_id)).one_or_none()

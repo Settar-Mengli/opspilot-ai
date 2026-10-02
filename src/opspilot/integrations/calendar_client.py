@@ -117,7 +117,7 @@ class CalendarClient:
                 params["syncToken"] = sync_token
             else:
                 params["singleEvents"] = "true"
-                params["showDeleted"] = "false"
+                params["showDeleted"] = "true"
                 params["timeMin"] = time_min.astimezone(UTC).isoformat().replace("+00:00", "Z")
                 params["timeMax"] = time_max.astimezone(UTC).isoformat().replace("+00:00", "Z")
             if page_token:
