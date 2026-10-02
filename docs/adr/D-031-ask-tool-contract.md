@@ -37,6 +37,12 @@ Emitted in `TOOL_SYSTEM_FRAGMENT` (code is authoritative):
 
 Optional `subject`: if omitted, server derives `Re: <original>` without stacking `Re:`. Body is required.
 
+**Arg shape normalization (CURRENT):** accept `args` / `arguments` / `parameters` / `input` bags or flat top-level tool fields; conflicting non-identical bags → reject.
+
+**Schema enforcement (CURRENT):** validate required args **before** `execute_tool`. On violation, do not execute; send one content-free repair turn (counts toward provider-call cap). Still invalid → soft final `tool_args_invalid`.
+
+Few-shot examples in the system fragment use placeholder ids only (no live mail content).
+
 ### Transport
 
 - **JSON-emulated tool calls for ALL providers** in B5 (uniform across failover).

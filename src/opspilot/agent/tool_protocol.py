@@ -69,5 +69,9 @@ TOOL_SYSTEM_FRAGMENT = (
     "draft_reply:{work_item_id|id:string, body:string, subject?:string}. "
     "draft_reply.work_item_id must be the exact `id` from search_items/get_message "
     "or the triage context — never a Gmail provider/thread id. "
+    "Examples (placeholder ids only): "
+    '{"kind":"tool","tool":"search_items","args":{"query":"project sync","limit":5}}; '
+    '{"kind":"tool","tool":"draft_reply","args":{"work_item_id":"<exact id from search_items>",'
+    '"body":"..."}}. '
     "Never invent a send tool. Under 200 words for final."
 )

@@ -17,6 +17,13 @@ from opspilot.agent.events import AgentEvent
 from opspilot.agent.safety import tool_result_untrusted
 from opspilot.agent.tool_protocol import TOOL_SYSTEM_FRAGMENT, AgentTurn, tool_error_hint
 from opspilot.agent.tools import execute_tool
+from opspilot.agent.turn_parse import (
+    collect_key_paths,
+    normalize_tool_args,
+    parse_raw_turn_dict,
+    schema_repair_message,
+    validate_tool_args,
+)
 from opspilot.llm.errors import LlmPolicyDenied
 from opspilot.llm.gateway import session_attempt_recorder
 from opspilot.llm.policy import llm_allowed
@@ -58,6 +65,39 @@ def _model_tool_feedback(tool_name: str, result: dict[str, Any]) -> str:
     return wrapped
 
 
+def _log_raw_turn_keys(*, request_id: str, step: int, raw_text: str | None) -> None:
+    data = parse_raw_turn_dict(raw_text)
+    if data is None:
+        _logger.info(
+            "ask_turn_keys request_id=%s step=%s top= parse=failed nested=",
+            request_id,
+            step,
+        )
+        return
+    paths = collect_key_paths(data)
+    top = ",".join(sorted(str(k) for k in data.keys()))
+    nested = ",".join(p for p in paths if "." in p or "[" in p)
+    _logger.info(
+        "ask_turn_keys request_id=%s step=%s top=%s nested=%s",
+        request_id,
+        step,
+        top or "-",
+        nested or "-",
+    )
+
+
+def _apply_normalized_args(turn: AgentTurn, raw_text: str | None) -> tuple[AgentTurn, str | None]:
+    data = parse_raw_turn_dict(raw_text)
+    if data is None:
+        return turn, None
+    args, err = normalize_tool_args(data)
+    if err:
+        return turn, err
+    if args is None:
+        return turn, "args_normalize_failed"
+    return turn.model_copy(update={"args": args}), None
+
+
 def _log_ask_tool(
     *,
     request_id: str,
@@ -83,6 +123,32 @@ def _log_ask_tool(
         bool(result.get("ok")),
         str(err)[:64] if err is not None else "-",
     )
+
+
+def _soft_final(
+    rid: str,
+    *,
+    code: str,
+    message: str,
+    steps: int,
+    provider_calls: int,
+    first_token: bool,
+) -> list[AgentEvent]:
+    events: list[AgentEvent] = [
+        AgentEvent("error", rid, {"code": code, "message": message}),
+    ]
+    if first_token:
+        events.append(AgentEvent("token", rid, {"text": message, "ttft": True}))
+    else:
+        events.append(AgentEvent("token", rid, {"text": message}))
+    events.append(
+        AgentEvent(
+            "final",
+            rid,
+            {"answer": message, "code": code, "steps": steps, "provider_calls": provider_calls},
+        )
+    )
+    return events
 
 
 class StepTimeoutError(TimeoutError):
@@ -325,6 +391,22 @@ def run_ask_agent(
             yield AgentEvent("error", rid, {"code": "aborted", "message": "Ask cancelled."})
             return
 
+        raw_text = getattr(gw, "last_success_text", None)
+        _log_raw_turn_keys(request_id=rid, step=step + 1, raw_text=raw_text)
+        turn, norm_err = _apply_normalized_args(turn, raw_text)
+        if norm_err:
+            soft = "I could not read the tool arguments. Please try again."
+            for ev in _soft_final(
+                rid,
+                code="tool_args_invalid",
+                message=soft,
+                steps=step + 1,
+                provider_calls=provider_calls,
+                first_token=first_token,
+            ):
+                yield ev
+            return
+
         if turn.kind == "final":
             answer = (turn.final or "").strip() or "I did not get a response. Please try again."
             if first_token:
@@ -336,7 +418,89 @@ def run_ask_agent(
             return
 
         tool_name = turn.tool or ""
-        args = turn.args or {}
+        args = dict(turn.args or {})
+        schema_errors = validate_tool_args(tool_name, args)
+        if schema_errors:
+            # One repair attempt (counts as another provider call).
+            messages.append(
+                Message(
+                    role="assistant",
+                    content=json.dumps({"kind": "tool", "tool": tool_name, "args": args}),
+                )
+            )
+            messages.append(Message(role="user", content=schema_repair_message(tool=tool_name, errors=schema_errors)))
+            if provider_calls >= max_calls:
+                soft = "Tool arguments were invalid and the Ask call budget is exhausted."
+                for ev in _soft_final(
+                    rid,
+                    code="tool_args_invalid",
+                    message=soft,
+                    steps=step + 1,
+                    provider_calls=provider_calls,
+                    first_token=first_token,
+                ):
+                    yield ev
+                return
+            provider_calls += 1
+            try:
+                turn = gw.complete_json(
+                    task="ask",
+                    messages=messages,
+                    schema=AgentTurn,
+                    max_tokens=800,
+                )
+            except StepTimeoutError:
+                yield AgentEvent("error", rid, {"code": "step_timeout", "message": "Ask step timed out."})
+                return
+            except LlmPolicyDenied:
+                yield AgentEvent(
+                    "error",
+                    rid,
+                    {
+                        "code": "llm_policy_denied",
+                        "message": "Ask unavailable: remote LLM disabled by policy.",
+                    },
+                )
+                return
+            except Exception:  # noqa: BLE001
+                yield AgentEvent("error", rid, {"code": "ask_failed", "message": "Ask failed."})
+                return
+            raw_text = getattr(gw, "last_success_text", None)
+            _log_raw_turn_keys(request_id=rid, step=step + 1, raw_text=raw_text)
+            turn, norm_err = _apply_normalized_args(turn, raw_text)
+            if norm_err or turn.kind != "tool" or (turn.tool or "") != tool_name:
+                soft = (
+                    "I could not build valid tool arguments after a repair attempt. "
+                    "Please rephrase or name the item again."
+                )
+                for ev in _soft_final(
+                    rid,
+                    code="tool_args_invalid",
+                    message=soft,
+                    steps=step + 1,
+                    provider_calls=provider_calls,
+                    first_token=first_token,
+                ):
+                    yield ev
+                return
+            args = dict(turn.args or {})
+            schema_errors = validate_tool_args(tool_name, args)
+            if schema_errors:
+                soft = (
+                    "I could not build valid tool arguments after a repair attempt. "
+                    "Please rephrase or name the item again."
+                )
+                for ev in _soft_final(
+                    rid,
+                    code="tool_args_invalid",
+                    message=soft,
+                    steps=step + 1,
+                    provider_calls=provider_calls,
+                    first_token=first_token,
+                ):
+                    yield ev
+                return
+
         yield AgentEvent("tool_start", rid, {"tool": tool_name, "args": args})
         result = execute_tool(
             tool_name,
@@ -381,30 +545,15 @@ def run_ask_agent(
                     "I could not complete that tool call after repeating the same failure. "
                     "Try again with the exact work item id from search, or rephrase."
                 )
-                yield AgentEvent(
-                    "error",
+                for ev in _soft_final(
                     rid,
-                    {
-                        "code": "tool_repeat_failure",
-                        "message": soft,
-                        "tool": tool_name,
-                        "error": str(result.get("error") or "")[:64],
-                    },
-                )
-                if first_token:
-                    yield AgentEvent("token", rid, {"text": soft, "ttft": True})
-                else:
-                    yield AgentEvent("token", rid, {"text": soft})
-                yield AgentEvent(
-                    "final",
-                    rid,
-                    {
-                        "answer": soft,
-                        "code": "tool_repeat_failure",
-                        "steps": step + 1,
-                        "provider_calls": provider_calls,
-                    },
-                )
+                    code="tool_repeat_failure",
+                    message=soft,
+                    steps=step + 1,
+                    provider_calls=provider_calls,
+                    first_token=first_token,
+                ):
+                    yield ev
                 return
         else:
             last_fail_key = None

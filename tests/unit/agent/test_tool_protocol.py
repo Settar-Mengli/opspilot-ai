@@ -12,6 +12,10 @@ def test_tool_system_fragment_has_per_tool_schemas() -> None:
     assert "draft_reply:{work_item_id|id:string, body:string, subject?:string}" in TOOL_SYSTEM_FRAGMENT
     assert "never a Gmail provider/thread id" in TOOL_SYSTEM_FRAGMENT
     assert "exact `id` from search_items/get_message" in TOOL_SYSTEM_FRAGMENT
+    assert '"tool":"search_items"' in TOOL_SYSTEM_FRAGMENT
+    assert '"query":"project sync"' in TOOL_SYSTEM_FRAGMENT
+    assert '"work_item_id":"<exact id from search_items>"' in TOOL_SYSTEM_FRAGMENT
+    assert "wi_4ebc" not in TOOL_SYSTEM_FRAGMENT
 
 
 def test_tool_error_hint_content_free() -> None:

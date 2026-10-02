@@ -49,6 +49,15 @@ def test_gemini_resolves_approved_default_when_unset(clear_model_env: None) -> N
     assert resolve_gemini_model("ask") == GEMINI_DEFAULT_MODEL
 
 
+def test_gemini_model_ask_override_only_affects_ask(clear_model_env: None, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    monkeypatch.setenv("GEMINI_MODEL_ASK", "gemini-ask-override-test")
+    assert resolve_gemini_model("ask") == "gemini-ask-override-test"
+    assert resolve_gemini_model("triage") == "gemini-3.5-flash-lite"
+    assert resolve_gemini_model("evening") == "gemini-3.5-flash-lite"
+    assert resolve_gemini_model("insights") == "gemini-3.5-flash-lite"
+
+
 def test_openai_compat_resolves_approved_defaults_when_unset(
     clear_model_env: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -367,6 +367,154 @@ def test_model_feedback_includes_trusted_hint(db_session: Session) -> None:
 
 
 @pytest.mark.usefixtures("allow_llm")
+def test_empty_draft_args_repair_then_execute(db_session: Session) -> None:
+    wi_id = work_items.upsert_by_provider_id(
+        db_session,
+        provider_id="msg_repair_1",
+        source_type="gmail",
+        subject_or_title="Project sync",
+        body_or_description="Friday?",
+        sender_or_requester="peer@example.com",
+        received_at=datetime(2026, 10, 1, 12, 0, tzinfo=UTC),
+        thread_id="thr_repair_1",
+    )
+    db_session.commit()
+    fake = FakeProvider(
+        name="gemini",
+        json_results=[
+            _json_result({"kind": "tool", "tool": "draft_reply", "args": {}}),
+            _json_result(
+                {
+                    "kind": "tool",
+                    "tool": "draft_reply",
+                    "args": {"work_item_id": wi_id, "body": "Friday works."},
+                }
+            ),
+            _json_result({"kind": "final", "final": "Draft ready."}),
+        ],
+    )
+    events = list(
+        run_ask_agent(
+            question="Draft a reply",
+            session=db_session,
+            request_id="req-repair-1",
+            gmail_only=True,
+            providers=[fake],
+        )
+    )
+    assert any(e.type == "draft" for e in events)
+    assert events[-1].type == "final"
+    assert events[-1].data.get("code") != "tool_args_invalid"
+    from opspilot.persistence.models import MailDraftRow
+
+    assert db_session.query(MailDraftRow).count() == 1
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_empty_draft_args_still_invalid_soft_final(db_session: Session) -> None:
+    fake = FakeProvider(
+        name="gemini",
+        json_results=[
+            _json_result({"kind": "tool", "tool": "draft_reply", "args": {}}),
+            _json_result({"kind": "tool", "tool": "draft_reply", "args": {}}),
+        ],
+    )
+    events = list(
+        run_ask_agent(
+            question="Draft",
+            session=db_session,
+            request_id="req-invalid-1",
+            gmail_only=True,
+            providers=[fake],
+        )
+    )
+    finals = [e for e in events if e.type == "final"]
+    assert finals
+    assert finals[-1].data.get("code") == "tool_args_invalid"
+    assert not any(e.type == "tool_end" for e in events)
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_args_conflict_soft_final(db_session: Session) -> None:
+    raw = json.dumps(
+        {
+            "kind": "tool",
+            "tool": "draft_reply",
+            "args": {"work_item_id": "wi_a", "body": "x"},
+            "arguments": {"work_item_id": "wi_b", "body": "x"},
+        }
+    )
+    fake = FakeProvider(
+        name="gemini",
+        json_results=[_json_result_raw(raw)],
+    )
+    events = list(
+        run_ask_agent(
+            question="Draft",
+            session=db_session,
+            request_id="req-conflict-1",
+            gmail_only=True,
+            providers=[fake],
+        )
+    )
+    finals = [e for e in events if e.type == "final"]
+    assert finals
+    assert finals[-1].data.get("code") == "tool_args_invalid"
+    assert not any(e.type == "tool_end" for e in events)
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_arguments_bag_normalized_before_execute(db_session: Session) -> None:
+    wi_id = work_items.upsert_by_provider_id(
+        db_session,
+        provider_id="msg_args_bag_1",
+        source_type="gmail",
+        subject_or_title="S",
+        body_or_description="B",
+        sender_or_requester="a@example.com",
+        received_at=datetime(2026, 10, 1, 12, 0, tzinfo=UTC),
+        thread_id="thr_args_bag_1",
+    )
+    db_session.commit()
+    # AgentTurn ignores unknown fields; raw text still carries arguments bag.
+    raw = json.dumps(
+        {
+            "kind": "tool",
+            "tool": "draft_reply",
+            "arguments": {"work_item_id": wi_id, "body": "ok"},
+        }
+    )
+    fake = FakeProvider(
+        name="gemini",
+        json_results=[
+            _json_result_raw(raw),
+            _json_result({"kind": "final", "final": "done"}),
+        ],
+    )
+    events = list(
+        run_ask_agent(
+            question="Draft",
+            session=db_session,
+            request_id="req-args-bag-1",
+            gmail_only=True,
+            providers=[fake],
+        )
+    )
+    assert any(e.type == "draft" for e in events)
+
+
+def _json_result_raw(text: str) -> ProviderResult:
+    return ProviderResult(
+        status=AttemptStatus.SUCCESS,
+        text=text,
+        model="fake-v1",
+        input_tokens=10,
+        output_tokens=10,
+        latency_ms=1,
+    )
+
+
+@pytest.mark.usefixtures("allow_llm")
 def test_ask_tool_structured_log(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
     from opspilot.agent import loop as agent_loop
 
@@ -412,9 +560,11 @@ def test_ask_tool_structured_log(db_session: Session, monkeypatch: pytest.Monkey
     assert any(e.type == "tool_end" for e in events)
     joined = "\n".join(lines)
     assert "ask_tool request_id=req-log-1" in joined
+    assert "ask_turn_keys request_id=req-log-1" in joined
     assert "tool=get_message" in joined or "get_message" in joined
     assert "arg_keys=id" in joined or "id" in joined
     assert f"id_len={len(wi_id)}" in joined or str(len(wi_id)) in joined
     assert "ok=True" in joined
     assert "Friday" not in joined
     assert "Project" not in joined
+    assert "SECRET" not in joined
