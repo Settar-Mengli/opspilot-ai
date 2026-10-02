@@ -56,6 +56,7 @@ class _Get404Transport:
                 json={
                     "id": mid,
                     "threadId": "thr",
+                    "labelIds": ["INBOX"],
                     "payload": {
                         "headers": [
                             {"name": "Subject", "value": "S"},

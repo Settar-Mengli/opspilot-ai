@@ -44,9 +44,8 @@ class _HistoryParamTransport:
             # Simulate Gmail: comma-joined string → 400; proper list → 200.
             if isinstance(types, str) and "," in types:
                 return httpx.Response(400, json={"error": {"code": 400, "message": "Invalid historyTypes"}})
-            if types == ["messageAdded", "messageDeleted"] or (
-                isinstance(types, list) and set(types) == {"messageAdded", "messageDeleted"}
-            ):
+            wanted = {"messageAdded", "messageDeleted", "labelAdded", "labelRemoved"}
+            if isinstance(types, list) and set(types) == wanted:
                 return httpx.Response(200, json={"history": []})
             return httpx.Response(400, json={"error": {"code": 400, "message": "bad historyTypes"}})
         if url.endswith("/users/me/messages"):
@@ -59,6 +58,7 @@ class _HistoryParamTransport:
                 json={
                     "id": mid,
                     "threadId": "thr",
+                    "labelIds": ["INBOX"],
                     "payload": {
                         "headers": [
                             {"name": "Subject", "value": "S"},
@@ -89,7 +89,7 @@ class _StaleHistoryTransport:
         data: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
     ) -> httpx.Response:
-        del method, headers, params, data, json
+        del method, headers, data, json
         if "oauth2.googleapis.com/token" in url:
             return httpx.Response(200, json={"access_token": "ya29.fake"})
         if url.endswith("/users/me/profile"):
@@ -98,6 +98,9 @@ class _StaleHistoryTransport:
             return httpx.Response(400, json={"error": {"code": 400, "message": "Invalid startHistoryId"}})
         if url.endswith("/users/me/messages"):
             self.list_calls += 1
+            q = str((params or {}).get("q") or "")
+            if "trash" in q:
+                return httpx.Response(200, json={"messages": []})
             return httpx.Response(200, json={"messages": [{"id": "full_resync_1"}]})
         if "/users/me/messages/" in url:
             mid = url.rsplit("/", 1)[-1]
@@ -106,6 +109,7 @@ class _StaleHistoryTransport:
                 json={
                     "id": mid,
                     "threadId": "thr",
+                    "labelIds": ["INBOX"],
                     "payload": {
                         "headers": [
                             {"name": "Subject", "value": "S"},
@@ -155,7 +159,8 @@ def test_history_types_sent_as_list_not_csv(db_session: Session, sync_env: None)
     google_sync.run_sync(db_session, transport=tx, providers=["gmail"])
     assert tx.history_params, "expected history.list call"
     types = tx.history_params[0].get("historyTypes")
-    assert types == ["messageAdded", "messageDeleted"]
+    assert isinstance(types, list)
+    assert set(types) == {"messageAdded", "messageDeleted", "labelAdded", "labelRemoved"}
     assert not isinstance(types, str)
 
 
@@ -164,7 +169,7 @@ def test_history_400_falls_back_to_full_list_resync(db_session: Session, sync_en
     tx = _StaleHistoryTransport()
     result = google_sync.run_sync(db_session, transport=tx, providers=["gmail"])
     db_session.commit()
-    assert tx.list_calls == 1
+    assert tx.list_calls == 2
     assert result["gmail_upserted"] == 1
     assert (
         db_session.scalar(

@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import exists, func, select
+from sqlalchemy import delete, exists, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
@@ -76,13 +76,14 @@ def upsert_by_provider_id(
 
 
 def delete_by_provider_id(session: Session, *, provider_id: str) -> bool:
-    """Delete a work item by Gmail message id. Returns True if a row was deleted."""
-    row = session.scalars(select(WorkItemRow).where(WorkItemRow.provider_id == provider_id)).one_or_none()
-    if row is None:
-        return False
-    session.delete(row)
+    """Delete a work item by Gmail message id. Returns True if a row was deleted.
+
+    Uses a Core DELETE so Postgres ON DELETE CASCADE clears triage_decisions
+    (ORM ``session.delete`` would NULL the NOT NULL FK without passive_deletes).
+    """
+    result = session.execute(delete(WorkItemRow).where(WorkItemRow.provider_id == provider_id))
     session.flush()
-    return True
+    return int(getattr(result, "rowcount", 0) or 0) > 0
 
 
 def _gmail_untriaged_filter() -> Any:

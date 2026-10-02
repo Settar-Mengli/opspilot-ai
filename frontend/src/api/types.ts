@@ -141,6 +141,7 @@ export interface CalendarMeeting {
 export interface SyncResult {
   account_email: string
   gmail_upserted: number
+  gmail_removed?: number
   calendar_upserted: number
   triaged: number
   pending: number

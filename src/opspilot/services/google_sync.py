@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -12,6 +13,8 @@ from opspilot.integrations.gmail_client import GmailClient
 from opspilot.integrations.google_http import GoogleHttpError, GoogleTransport, HttpxTransport, refresh_access_token
 from opspilot.integrations.google_oauth import client_id, client_secret
 from opspilot.persistence.repositories import meetings, oauth_credentials, sync_cursors, work_items
+
+_logger = logging.getLogger("opspilot.sync.gmail")
 
 
 class GoogleReauthRequired(RuntimeError):
@@ -43,10 +46,13 @@ def run_sync(
     result: dict[str, Any] = {
         "account_email": account_email,
         "gmail_upserted": 0,
+        "gmail_removed": 0,
         "calendar_upserted": 0,
     }
     if "gmail" in wanted:
-        result["gmail_upserted"] = _sync_gmail(session, access_token=access, account_email=account_email, transport=tx)
+        upserted, removed = _sync_gmail(session, access_token=access, account_email=account_email, transport=tx)
+        result["gmail_upserted"] = upserted
+        result["gmail_removed"] = removed
     if "calendar" in wanted:
         result["calendar_upserted"] = _sync_calendar(
             session, access_token=access, account_email=account_email, transport=tx
@@ -60,7 +66,7 @@ def _sync_gmail(
     access_token: str,
     account_email: str,
     transport: GoogleTransport,
-) -> int:
+) -> tuple[int, int]:
     client = GmailClient(access_token=access_token, transport=transport)
     cursor = sync_cursors.get_cursor(
         session,
@@ -69,29 +75,55 @@ def _sync_gmail(
         cursor_kind=sync_cursors.CURSOR_GMAIL_HISTORY,
     )
     ids: list[str]
-    deleted_ids: list[str] = []
+    removed_ids: list[str] = []
+    mode = "full"
     if cursor:
         hist = client.history_message_ids(start_history_id=cursor)
         if hist is None:
-            ids = client.list_message_ids(max_results=50)
+            mode = "full_resync"
+            ids = client.list_message_ids(max_results=50, query="in:inbox")
+            removed_ids = client.list_message_ids(max_results=50, query="in:trash")
         else:
-            ids, deleted_ids = hist
+            mode = "incremental"
+            ids, removed_ids = hist
     else:
-        ids = client.list_message_ids(max_results=50)
+        ids = client.list_message_ids(max_results=50, query="in:inbox")
+        removed_ids = client.list_message_ids(max_results=50, query="in:trash")
 
-    for mid in deleted_ids:
-        work_items.delete_by_provider_id(session, provider_id=mid)
+    # Deduplicate while preserving order.
+    seen_rm: set[str] = set()
+    uniq_removed: list[str] = []
+    for mid in removed_ids:
+        if mid not in seen_rm:
+            seen_rm.add(mid)
+            uniq_removed.append(mid)
+
+    removed = 0
+    for mid in uniq_removed:
+        if work_items.delete_by_provider_id(session, provider_id=mid):
+            removed += 1
 
     upserted = 0
+    skipped_non_inbox = 0
     for mid in ids:
+        if mid in seen_rm:
+            continue
         try:
             msg = client.get_message(mid)
         except GoogleHttpError as exc:
-            # History/list can reference ids already gone (trash/expunge race) — skip.
+            # History/list can reference ids already gone (trash/expunge race) — skip/remove.
             if exc.status_code == 404:
+                if work_items.delete_by_provider_id(session, provider_id=mid):
+                    removed += 1
                 continue
             raise
         if not msg.provider_id:
+            continue
+        labels = set(msg.label_ids)
+        if "TRASH" in labels or "INBOX" not in labels:
+            skipped_non_inbox += 1
+            if work_items.delete_by_provider_id(session, provider_id=mid):
+                removed += 1
             continue
         work_items.upsert_by_provider_id(
             session,
@@ -104,6 +136,7 @@ def _sync_gmail(
             thread_id=msg.thread_id,
         )
         upserted += 1
+
     new_history = client.profile_history_id()
     sync_cursors.upsert_cursor(
         session,
@@ -112,7 +145,19 @@ def _sync_gmail(
         cursor_kind=sync_cursors.CURSOR_GMAIL_HISTORY,
         cursor_value=new_history,
     )
-    return upserted
+    _logger.info(
+        "gmail_sync mode=%s history_start=%s added_candidates=%s removed_candidates=%s "
+        "upserted=%s removed_local=%s skipped_non_inbox=%s history_end=%s",
+        mode,
+        cursor or "-",
+        len(ids),
+        len(uniq_removed),
+        upserted,
+        removed,
+        skipped_non_inbox,
+        new_history,
+    )
+    return upserted, removed
 
 
 def _sync_calendar(

@@ -87,6 +87,7 @@ class FakeTransport:
                 json={
                     "id": mid,
                     "threadId": "thr",
+                    "labelIds": ["INBOX"],
                     "payload": {
                         "headers": [
                             {"name": "Subject", "value": f"Subj {mid}"},
@@ -99,6 +100,9 @@ class FakeTransport:
                 },
             )
         if url.endswith("/users/me/messages"):
+            q = str((params or {}).get("q") or "")
+            if "trash" in q:
+                return httpx.Response(200, json={"messages": []})
             return httpx.Response(200, json={"messages": [{"id": "m1"}, {"id": "m2"}]})
         if "/users/me/history" in url:
             return httpx.Response(404, json={"error": "expired"})

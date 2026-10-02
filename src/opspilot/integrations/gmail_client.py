@@ -22,6 +22,7 @@ class GmailMessage:
     sender: str
     body: str
     received_at: datetime
+    label_ids: tuple[str, ...] = ()
 
 
 def _decode_b64(data: str) -> str:
@@ -71,6 +72,7 @@ def parse_message(raw: dict[str, Any]) -> GmailMessage:
             pass
     body = _walk_parts(payload if isinstance(payload, dict) else {})
     body = re.sub(r"\s+", " ", body).strip()
+    labels = tuple(str(x) for x in (raw.get("labelIds") or []) if x)
     return GmailMessage(
         provider_id=str(raw.get("id") or ""),
         thread_id=str(raw.get("threadId") or "") or None,
@@ -78,6 +80,7 @@ def parse_message(raw: dict[str, Any]) -> GmailMessage:
         sender=sender,
         body=body,
         received_at=received,
+        label_ids=labels,
     )
 
 
@@ -98,12 +101,15 @@ class GmailClient:
             raise GoogleHttpError("gmail_missing_history_id")
         return hid
 
-    def list_message_ids(self, *, max_results: int = 50) -> list[str]:
+    def list_message_ids(self, *, max_results: int = 50, query: str | None = None) -> list[str]:
+        params: dict[str, Any] = {"maxResults": max_results}
+        if query:
+            params["q"] = query
         resp = self._transport.request(
             "GET",
             f"{GMAIL_API}/users/me/messages",
             headers=self._headers(),
-            params={"maxResults": max_results},
+            params=params,
         )
         if resp.status_code >= 400:
             raise GoogleHttpError("gmail_list_failed", status_code=resp.status_code)
@@ -122,15 +128,18 @@ class GmailClient:
         return parse_message(resp.json())
 
     def history_message_ids(self, *, start_history_id: str) -> tuple[list[str], list[str]] | None:
-        """Return (added_ids, deleted_ids), or None if history expired (caller should full sync)."""
+        """Return (added_ids, removed_ids), or None if history expired (caller should full sync).
+
+        removed_ids includes messagesDeleted plus trash / leave-INBOX label changes.
+        """
         resp = self._transport.request(
             "GET",
             f"{GMAIL_API}/users/me/history",
             headers=self._headers(),
             params={
                 "startHistoryId": start_history_id,
-                # Repeated query params (not a comma-joined string) — Gmail rejects CSV as 400.
-                "historyTypes": ["messageAdded", "messageDeleted"],
+                # Repeated query params (not CSV) — Gmail rejects comma-joined historyTypes.
+                "historyTypes": ["messageAdded", "messageDeleted", "labelAdded", "labelRemoved"],
             },
         )
         # 404 = expired/unknown startHistoryId. 400 = invalid start id (post-reconnect) or
@@ -140,21 +149,33 @@ class GmailClient:
         if resp.status_code >= 400:
             raise GoogleHttpError("gmail_history_failed", status_code=resp.status_code)
         added: list[str] = []
-        deleted: list[str] = []
+        removed: list[str] = []
         for entry in resp.json().get("history") or []:
             if not isinstance(entry, dict):
                 continue
             for added_entry in entry.get("messagesAdded") or []:
-                if isinstance(added_entry, dict):
-                    msg = added_entry.get("message") or {}
-                    if isinstance(msg, dict) and msg.get("id"):
-                        added.append(str(msg["id"]))
+                mid = _history_message_id(added_entry)
+                if mid:
+                    added.append(mid)
             for deleted_entry in entry.get("messagesDeleted") or []:
-                if isinstance(deleted_entry, dict):
-                    msg = deleted_entry.get("message") or {}
-                    if isinstance(msg, dict) and msg.get("id"):
-                        deleted.append(str(msg["id"]))
-        return added, deleted
+                mid = _history_message_id(deleted_entry)
+                if mid:
+                    removed.append(mid)
+            for lab in entry.get("labelsAdded") or []:
+                if not isinstance(lab, dict):
+                    continue
+                labels = {str(x) for x in (lab.get("labelIds") or []) if x}
+                mid = _history_message_id(lab)
+                if mid and "TRASH" in labels:
+                    removed.append(mid)
+            for lab in entry.get("labelsRemoved") or []:
+                if not isinstance(lab, dict):
+                    continue
+                labels = {str(x) for x in (lab.get("labelIds") or []) if x}
+                mid = _history_message_id(lab)
+                if mid and "INBOX" in labels:
+                    removed.append(mid)
+        return added, removed
 
     def send_reply(
         self,
@@ -204,3 +225,12 @@ class GmailClient:
         if not mid:
             raise GoogleHttpError("gmail_send_missing_id")
         return mid
+
+
+def _history_message_id(entry: object) -> str | None:
+    if not isinstance(entry, dict):
+        return None
+    msg = entry.get("message") or {}
+    if isinstance(msg, dict) and msg.get("id"):
+        return str(msg["id"])
+    return None

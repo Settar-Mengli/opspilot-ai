@@ -44,7 +44,10 @@ class WorkItemRow(Base):
     provider_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     thread_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
-    triage_decisions: Mapped[list[TriageDecisionRow]] = relationship(back_populates="work_item")
+    triage_decisions: Mapped[list[TriageDecisionRow]] = relationship(
+        back_populates="work_item",
+        passive_deletes=True,
+    )
 
 
 class RunRow(Base):
