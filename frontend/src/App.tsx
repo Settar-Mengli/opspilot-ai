@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, Navigate } from 'react-router-dom'
-import { getHealth, getTriage, askOpsPilot } from './api/client'
-import type { AskMessage } from './api/types'
+import { getHealth, getTriage, editMailDraft, approveMailDraft, formatMailHitlError } from './api/client'
+import { askOpsPilotStream } from './api/askStream'
+import type { AskDraftCard, AskMessage, AskToolStep } from './api/types'
 import { Brand } from './components/Brand'
 import { AssistantPill } from './components/AssistantPill'
 import { HealthBell } from './components/HealthBell'
@@ -44,38 +45,117 @@ function App() {
   const [askLoading, setAskLoading] = useState(false)
   const [askError, setAskError] = useState<string | null>(null)
   const [askFocusToken, setAskFocusToken] = useState(0)
+  const [askToolSteps, setAskToolSteps] = useState<AskToolStep[]>([])
+  const [askDraft, setAskDraft] = useState<AskDraftCard | null>(null)
   const dockInputRef = useRef<HTMLInputElement>(null)
+  const askAbortRef = useRef<AbortController | null>(null)
 
   const sendAsk = useCallback(
     async (question: string) => {
       const clean = question.trim()
       if (!clean) return
       setAskError(null)
+      setAskToolSteps([])
+      setAskDraft(null)
       const userMsg: AskMessage = {
         id: `u-${Date.now()}`,
         role: 'user',
         text: clean,
         timestamp: Date.now(),
       }
+      const history = askMessages.slice(-10).map((m) => ({
+        role: m.role,
+        content: m.text,
+      }))
       setAskMessages((m) => [...m, userMsg])
       setAskInput('')
       setAskLoading(true)
+      askAbortRef.current?.abort()
+      const ac = new AbortController()
+      askAbortRef.current = ac
+      let streamed = ''
+      const assistantId = `a-${Date.now()}`
       try {
-        const answer = await askOpsPilot(clean, assistantName)
-        const assistantMsg: AskMessage = {
-          id: `a-${Date.now()}`,
-          role: 'assistant',
-          text: answer || 'I did not get a response. Please try again.',
-          timestamp: Date.now(),
-        }
-        setAskMessages((m) => [...m, assistantMsg])
+        await askOpsPilotStream(
+          clean,
+          assistantName,
+          history,
+          {
+            onToken: (text) => {
+              streamed = text
+              setAskMessages((msgs) => {
+                const without = msgs.filter((x) => x.id !== assistantId)
+                return [
+                  ...without,
+                  {
+                    id: assistantId,
+                    role: 'assistant',
+                    text: streamed,
+                    timestamp: Date.now(),
+                  },
+                ]
+              })
+            },
+            onToolStart: (tool) => {
+              setAskToolSteps((steps) => [
+                ...steps,
+                { id: `t-${Date.now()}-${tool}`, tool, status: 'running' },
+              ])
+            },
+            onToolEnd: (tool, ok) => {
+              setAskToolSteps((steps) => {
+                const copy = [...steps]
+                for (let i = copy.length - 1; i >= 0; i -= 1) {
+                  if (copy[i]?.tool === tool && copy[i]?.status === 'running') {
+                    copy[i] = { ...copy[i]!, status: ok ? 'done' : 'error' }
+                    break
+                  }
+                }
+                return copy
+              })
+            },
+            onDraft: (d) => {
+              setAskDraft({
+                draftId: d.draft_id,
+                subject: d.subject,
+                body: d.body,
+                toAddrs: d.to_addrs,
+                sentAt: null,
+                approveError: null,
+                idempotencyKey: crypto.randomUUID(),
+                approving: false,
+                sendOutcomeUnknown: false,
+              })
+            },
+            onFinal: (answer) => {
+              streamed = answer || streamed
+              setAskMessages((msgs) => {
+                const without = msgs.filter((x) => x.id !== assistantId)
+                return [
+                  ...without,
+                  {
+                    id: assistantId,
+                    role: 'assistant',
+                    text: streamed || 'I did not get a response. Please try again.',
+                    timestamp: Date.now(),
+                  },
+                ]
+              })
+            },
+            onError: (message) => {
+              setAskError(message)
+            },
+          },
+          ac.signal,
+        )
       } catch (e) {
+        if ((e as Error).name === 'AbortError') return
         setAskError(e instanceof Error ? e.message : 'Something went wrong.')
       } finally {
         setAskLoading(false)
       }
     },
-    [assistantName],
+    [assistantName, askMessages],
   )
 
   const handleAskSubmit = useCallback(() => {
@@ -158,6 +238,64 @@ function App() {
   const askThread = {
     assistantName,
     messages: askMessages,
+    toolSteps: askToolSteps,
+    draft: askDraft,
+    onDraftSubjectChange: (value: string) =>
+      setAskDraft((d) => (d ? { ...d, subject: value } : d)),
+    onDraftBodyChange: (value: string) => setAskDraft((d) => (d ? { ...d, body: value } : d)),
+    onApproveDraft: () => {
+      void (async () => {
+        const hold: {
+          key: string
+          draft: Pick<AskDraftCard, 'draftId' | 'subject' | 'body'> | null
+        } = { key: '', draft: null }
+        setAskDraft((d) => {
+          if (!d || d.sentAt || d.approving) return d
+          hold.key = d.idempotencyKey || crypto.randomUUID()
+          hold.draft = { draftId: d.draftId, subject: d.subject, body: d.body }
+          return {
+            ...d,
+            approveError: null,
+            approving: true,
+            idempotencyKey: hold.key,
+          }
+        })
+        if (!hold.draft || !hold.key) return
+        try {
+          const edited = await editMailDraft(hold.draft.draftId, hold.draft.subject, hold.draft.body)
+          await approveMailDraft(edited.id, edited.payload_sha256, hold.key)
+          setAskDraft((d) =>
+            d
+              ? {
+                  ...d,
+                  sentAt: Date.now(),
+                  approveError: null,
+                  approving: false,
+                  sendOutcomeUnknown: false,
+                }
+              : d,
+          )
+        } catch (e) {
+          const message = formatMailHitlError(e)
+          const code =
+            typeof e === 'object' && e && 'code' in e && typeof (e as { code?: string }).code === 'string'
+              ? (e as { code: string }).code
+              : undefined
+          const unknown = code === 'send_outcome_unknown'
+          setAskDraft((d) =>
+            d
+              ? {
+                  ...d,
+                  approveError: message,
+                  approving: false,
+                  idempotencyKey: crypto.randomUUID(),
+                  sendOutcomeUnknown: unknown,
+                }
+              : d,
+          )
+        }
+      })()
+    },
     input: askInput,
     loading: askLoading,
     error: askError,

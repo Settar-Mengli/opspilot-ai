@@ -7,6 +7,9 @@ Must match ``.env.example`` / PART 7 C11. OpenRouter must keep ``:free``.
 from __future__ import annotations
 
 GEMINI_DEFAULT_MODEL = "gemini-3.5-flash-lite"
+# Ask-only code default when GEMINI_MODEL_ASK unset (models.list 2026-10-02: strongest
+# non-Pro Flash non-Lite with generateContent, non-preview). Other tasks keep GEMINI_DEFAULT_MODEL.
+GEMINI_ASK_DEFAULT_MODEL = "gemini-3.8-flash"
 GROQ_DEFAULT_MODEL = "openai/gpt-oss-20b"
 MISTRAL_DEFAULT_MODEL = "ministral-3b-2512"
 OPENROUTER_DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"

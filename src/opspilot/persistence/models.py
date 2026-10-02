@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import (
     CHAR,
     BigInteger,
+    Boolean,
     Date,
     DateTime,
     Float,
@@ -43,7 +44,10 @@ class WorkItemRow(Base):
     provider_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     thread_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
-    triage_decisions: Mapped[list[TriageDecisionRow]] = relationship(back_populates="work_item")
+    triage_decisions: Mapped[list[TriageDecisionRow]] = relationship(
+        back_populates="work_item",
+        passive_deletes=True,
+    )
 
 
 class RunRow(Base):
@@ -211,6 +215,63 @@ class MeetingRow(Base):
     start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+
+class MailDraftRow(Base):
+    """HITL reply draft (D-033). Recipients/thread ids are server-owned."""
+
+    __tablename__ = "mail_drafts"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    work_item_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("work_items.id", ondelete="SET NULL"), nullable=True
+    )
+    thread_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    gmail_provider_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    to_addrs: Mapped[str] = mapped_column(Text, nullable=False)
+    subject: Mapped[str] = mapped_column(Text, nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    payload_sha256: Mapped[str] = mapped_column(CHAR(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
+    operator_email: Mapped[str | None] = mapped_column(Text, nullable=True)
+    request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+
+class MailSendAuditRow(Base):
+    """Immutable send attempt audit (D-027: no CASCADE erase)."""
+
+    __tablename__ = "mail_send_audit"
+    __table_args__ = (UniqueConstraint("idempotency_key", name="uq_mail_send_audit_idempotency_key"),)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    draft_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("mail_drafts.id", ondelete="SET NULL"), nullable=True
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    to_addrs: Mapped[str] = mapped_column(Text, nullable=False)
+    payload_sha256: Mapped[str] = mapped_column(CHAR(64), nullable=False)
+    gmail_message_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    operator_email: Mapped[str | None] = mapped_column(Text, nullable=True)
+    demo_mode_blocked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    allowlist_denied: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    send_failed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(UTC),

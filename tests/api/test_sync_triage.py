@@ -40,7 +40,9 @@ def _seed_oauth(db_session: Session) -> None:
         db_session,
         provider="google",
         account_email="demo@example.com",
-        scopes=("https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly"),
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.readonly"
+        ),
         refresh_token_plaintext="rt",
     )
     db_session.commit()
@@ -91,8 +93,9 @@ def test_post_sync_google_http_error_returns_envelope(
     resp = sync_client.post("/api/v1/sync")
     assert resp.status_code == 502
     body = resp.json()
-    assert body["error"]["code"] == "google_sync_failed"
-    assert body["error"]["details"]["status_code"] == 400
+    assert body["error"]["code"] == "calendar_list_failed"
+    assert body["error"]["details"]["upstream_status"] == 400
+    assert "request_id" in body["error"]
     assert "Traceback" not in resp.text
     assert "ya29" not in resp.text
 

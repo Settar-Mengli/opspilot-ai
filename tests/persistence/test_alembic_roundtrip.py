@@ -27,6 +27,8 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
                 "oauth_credentials",
                 "sync_cursors",
                 "meetings",
+                "mail_drafts",
+                "mail_send_audit",
                 "alembic_version",
             }.issubset(tables)
         finally:
@@ -47,7 +49,7 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
         try:
             with engine.connect() as conn:
                 version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            assert version == "0007_gmail_calendar"
+            assert version == "0009_mail_send_audit_failed"
             indexes = {idx["name"] for idx in inspect(engine).get_indexes("runs")}
             assert "ix_runs_finished_at" in indexes
             llm_indexes = {idx["name"] for idx in inspect(engine).get_indexes("llm_calls")}
@@ -67,7 +69,12 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
             assert "thread_id" in work_cols
             oauth_cols = {c["name"] for c in inspect(engine).get_columns("oauth_credentials")}
             assert "refresh_token_enc" in oauth_cols
-
+            draft_cols = {c["name"] for c in inspect(engine).get_columns("mail_drafts")}
+            assert "payload_sha256" in draft_cols
+            assert "to_addrs" in draft_cols
+            audit_cols = {c["name"] for c in inspect(engine).get_columns("mail_send_audit")}
+            assert "idempotency_key" in audit_cols
+            assert "demo_mode_blocked" in audit_cols
         finally:
             engine.dispose()
     finally:

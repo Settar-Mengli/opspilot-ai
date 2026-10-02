@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml)
 
-**CURRENT on `main`:** B0–B4 merged; **B3.1** live remainder complete on PR (CF combined + OpenRouter **partial** D6). **Next:** **B5**. See:
+**CURRENT on `main`:** B0–B4 merged; **B3.1** live remainder merged (PR #39 → `1a6fe7d`); **B5** Agentic Ask + HITL send on branch (PR #40; Alembic **0009** on branch — **CURRENT after B5 merge**). **Next after B5 merge:** **B6**. See:
 
 - [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history, baseline, locked plan
 - [ROADMAP.md](ROADMAP.md) — batches **B0–B7** (+ B1.5 / B2.1 / B3.1)

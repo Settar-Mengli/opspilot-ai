@@ -16,5 +16,8 @@ Short links to key ADRs. Full text lives under [docs/adr/](adr/).
 | Run history | [D-025](adr/D-025-run-history-postgres.md) | Postgres-only API runs; CLI files optional |
 | Responsive layout | [D-026](adr/D-026-responsive-layout-policy.md) | Mobile-first + ≥1280 three-pane |
 | Operator session | [D-030](adr/D-030-operator-session-cookie.md) | Cookie + CORS credentials (A1) |
+| Ask tool contract | [D-031](adr/D-031-ask-tool-contract.md) | JSON-emulated tools; no send tool |
+| Ask SSE | [D-032](adr/D-032-ask-sse.md) | `POST /ask/stream` event set |
+| HITL approve/send | [D-033](adr/D-033-hitl-approve-send.md) | Subject/body edit; allowlist; DEMO_MODE |
 
-See also: [architecture.md](architecture.md) · [ROADMAP.md](../ROADMAP.md) · [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md)
+See also: [architecture.md](architecture.md) · [ROADMAP.md](../ROADMAP.md) · [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · [ask-send runbook](runbooks/ask-send.md)

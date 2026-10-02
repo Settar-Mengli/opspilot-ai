@@ -39,6 +39,11 @@ class RunPipelineRequest(BaseModel):
     date: date
 
 
+class AskHistoryTurn(BaseModel):
+    role: str = Field(..., pattern=r"^(user|assistant|system)$")
+    content: str = Field(..., min_length=1, max_length=2000)
+
+
 class AskRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=2000)
     assistant_name: str = Field(
@@ -47,6 +52,11 @@ class AskRequest(BaseModel):
         max_length=60,
         pattern=r"^[A-Za-z0-9 .'\-]+$",
     )
+    history: list[AskHistoryTurn] = Field(default_factory=list, max_length=10)
+
+
+class AskStreamRequest(AskRequest):
+    """Same body as AskRequest for POST /ask/stream."""
 
 
 class EveningSummaryRequest(BaseModel):
@@ -65,6 +75,22 @@ class InsightsRequest(BaseModel):
         max_length=60,
         pattern=r"^[A-Za-z0-9 .'\-]+$",
     )
+
+
+class SyncResponse(BaseModel):
+    """Typed POST /api/v1/sync response (must match run_sync + triage merge)."""
+
+    account_email: str
+    gmail_upserted: int
+    gmail_removed: int = 0
+    calendar_upserted: int
+    gmail_total: int | None = None
+    meetings_total: int | None = None
+    triaged: int
+    pending: int
+    run_id: str | None = None
+    calendar_truncated: bool = False
+    gmail_truncated: bool = False
 
 
 def safe_error(

@@ -181,24 +181,18 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
     - **Live smoke:** **DONE** — Connect + Sync + capped triage 50/50; WeekPanel live meetings; G1–G7 fixed forward.
     - **Docs:** PART 10; D-016/D-030 final; ROADMAP Open findings; CHANGELOG.
 - **Deps:** B1 persistence, B2 gateway, B3 before agent reads bodies · **Size:** XL · **Metric:** Live fictional inbox demo
-- **Next after merge:** B3.1 (done — see above), then **B5**.
+- **Next after merge:** B3.1 (done — see above), then **B5** (done — see B5), then **B6**.
 
-### B5 — Agentic Ask + approve & send (M6 + M7)
+### B5 — Agentic Ask + approve & send (M6 + M7) — **complete pending merge**
 
 - **Goal:** Tool-using Ask with HITL send.
-- **Workstream M6** — P2 + X8
-  - **Scope:** Bounded tool loop; multi-turn caps; SSE; **read-only tools first**; finish X8 agent Ask surfaces on the **B1.5b** desktop layout (overlay primitive already landed in B1.5a).
-  - **Exit criteria (M6):** Smoke ask → tool → grounded answer; quota budget enforced.
-- **Workstream M7** — P3 + X3 enforce
-  - **Scope:** Draft UI; approval; Gmail send; audit row; **DEMO_MODE blocks send** for visitors.
-  - **Exit criteria (M7):** Cannot send without approval; DEMO visitors blocked from send.
-- **Commit sequence inside batch:** read-only tools → then approval boundary + send.
-- **Batch exit criteria:**
-  - **Tests:** Tool loop + approval + DEMO_MODE send denial.
-  - **Evals:** Regression suite still green.
-  - **Live smoke:** Tool-using Ask with streaming; HITL send on operator account only.
-  - **Docs:** PART appended; ROADMAP/ADRs/CHANGELOG updated.
-- **Deps:** B2–B4 · **Size:** XL · **Metric:** Tool-using Ask with streaming; HITL send path
+- **Workstream M6** — P2 + X8 — **DONE** (on branch; pending merge to main)
+  - Bounded JSON-emulated tool loop (D-031); caps 5/8 (D-014); `POST /ask/stream` SSE (D-032); read tools + `draft_reply`; Ask dock/timeline/draft card.
+- **Workstream M7** — P3 + X3 — **DONE** (on branch; pending merge to main)
+  - `gmail.send` scope; HITL edit/approve; allowlist fail-closed; DEMO_MODE 403; Gmail reply-in-thread only; `mail_send_audit`.
+- **Also IN:** Gmail `messageDeleted` + SPAM/TRASH label removal; history/list + Calendar pagination with safe cursors; DM-09 `ttft_ms` on Ask SSE; hermetic `ask_agent` + `redteam_agent` evals; reality-gap fix-pass (PART 13).
+- **Batch exit:** hermetic gates green; ask-error visual refresh (**gallery approved** 2026-10-02); Neon Alembic **0009**; PART 13; **live_smoke_b5 PASS** 2026-10-02 (1 real send). **Complete pending merge** — only owner merge of PR #40 remains.
+- **Deps:** B2–B4 · **Size:** XL · **Next after merge:** **B6**
 
 ### B6 — Morning run + preferences (M8 + M9)
 
@@ -242,16 +236,18 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | OpenRouter leaderboard completion (triage 016–040 + red-team 20) | **OPTIONAL** | Unassigned; D-B31-4 amended 2026-10-01 (OR stopped at D6 to unblock B5) |
 | Dependabot majors: Playwright 1.63, lucide, TypeScript 7, Vitest 5 | **deps+U9** | Dedicated baseline refresh batch |
 | OD-1 / OD-2 / OD-3 / OD-5 / OD-6 (contrast, focus rings, fonts, axe) | **OD** | Owner-approved OD batch with U9 |
-| D-007 `?run_id=` deep-link + RUNS FE paging | **B5** | Agent/Ask surfaces + history UX |
-| `generated.ts` unused (hand-written client) | **B5** | Wire when API surface grows |
-| Duplicate `getTriage` fetches | **B5** | FE data-loading cleanup |
-| FE code splitting | **B5** | |
-| `complete_json` path split / dual gateway loops | **B5** | Keep intentional until Ask streaming needs unify |
-| CQ-04 soft-deny user-visible copy unification | **B5** | Per-surface strings today |
-| F-11 token cap ≤1-call overshoot | **B5** | Documented; 80% margin |
-| DM-09 `ttft_ms` / `usd_estimate` / LlmCall links | **B5** | ttft with SSE; USD with F-05 |
+| D-007 `?run_id=` deep-link + RUNS FE paging | **deps+U9** | OUT of B5; D-007 status updated |
+| `generated.ts` unused (hand-written client) | **deps+U9** | OUT of B5 |
+| Duplicate `getTriage` fetches | **OD** | OUT of B5 |
+| FE code splitting | **deps+U9** | OUT of B5 |
+| `complete_json` path split / dual gateway loops | **deps+U9** | OUT of B5; agent uses BudgetAwareGateway |
+| CQ-04 soft-deny user-visible copy unification | **OD** | OUT of B5 |
+| F-11 token cap ≤1-call overshoot | **deps+U9** | OUT of B5 |
+| DM-09 `ttft_ms` / `usd_estimate` / LlmCall links | **partial** | **ttft_ms on Ask SSE in B5**; USD with F-05 / B7 |
 | F-05 Anthropic USD debit on LlmCall | **B7** | Precondition before Anthropic ever enabled (P7 off) |
-| Gmail deleted messages not removed on sync | **B5** | History/list does not delete local rows today |
+| Definitive mail send failures leave draft `failed` (not re-approvable); `send_outcome_unknown` returns to `draft`; `gmail_unavailable_not_sent` returns to `draft` (not capped) | **B6** | Post-audit A3 / fix-pass 2 D1; reopen-failed UX out of B5 |
+| Connections 768 Gmail card subtitle orphan word (cosmetic) | **OD** | Owner-noted after gallery approval 2026-10-02; not a defect; not a merge gate |
+| Ask chose a non-latest, third-party item when asked for “the latest inbox mail” (observed in live smoke Run 2) — add an Ask eval case | **B6** | Smoke script fixed (`6eef4c4`); product Ask targeting quality deferred to eval |
 
 ---
 

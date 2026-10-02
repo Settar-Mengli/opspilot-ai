@@ -11,11 +11,14 @@ import pytest
 # CI already sets DATABASE_URL; load_dotenv() does not override existing keys.
 if not os.environ.get("DATABASE_URL", "").strip():
     os.environ["DATABASE_URL"] = "postgresql+psycopg://opspilot:opspilot@127.0.0.1:5432/opspilot"
+# Hermetic TestClient rarely sends Origin; dedicated CSRF tests unset this.
+os.environ.setdefault("OPSPILOT_CSRF_RELAX_DEV", "1")
 
 from sqlalchemy import create_engine as create_admin_engine
 from sqlalchemy import text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
+from tests.db_host_guard import assert_pytest_database_host_is_local
 from tests.db_support import alembic_upgrade as _alembic_upgrade
 
 from opspilot.persistence.db import DEFAULT_DATABASE_URL, create_engine, create_session_factory, to_sync_url
@@ -26,9 +29,21 @@ DEFAULT_ADMIN_URL = "postgresql+psycopg://opspilot:opspilot@127.0.0.1:5432/postg
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Hermetic guard: keep tests on local Postgres if DATABASE_URL was unset."""
+    """Hermetic guard: abort unless DATABASE_URL host is local (D4)."""
     if not os.environ.get("DATABASE_URL", "").strip():
         os.environ["DATABASE_URL"] = DEFAULT_DATABASE_URL
+    try:
+        assert_pytest_database_host_is_local(os.environ["DATABASE_URL"])
+    except RuntimeError as exc:
+        # Fail the session before any DB fixture connects.
+        pytest.exit(str(exc), returncode=2)
+
+
+# Also refuse at import time when a non-local URL is already in the environment.
+try:
+    assert_pytest_database_host_is_local(os.environ.get("DATABASE_URL", "").strip() or DEFAULT_DATABASE_URL)
+except RuntimeError as exc:
+    raise SystemExit(f"conftest: {exc}") from exc
 
 
 @pytest.fixture(autouse=True)
@@ -123,7 +138,8 @@ def db_session(test_database_url: str) -> Iterator[Session]:
         conn.execute(
             text(
                 "TRUNCATE TABLE triage_decisions, run_artifacts, runs, work_items, "
-                "oauth_credentials, sync_cursors, meetings RESTART IDENTITY CASCADE"
+                "oauth_credentials, sync_cursors, meetings, llm_calls, llm_budget_counters, "
+                "mail_drafts, mail_send_audit RESTART IDENTITY CASCADE"
             )
         )
     with factory() as session:

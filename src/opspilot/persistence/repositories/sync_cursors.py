@@ -57,6 +57,28 @@ def upsert_cursor(
     session.flush()
 
 
+def delete_cursor(
+    session: Session,
+    *,
+    provider: str,
+    account_email: str,
+    cursor_kind: str,
+) -> bool:
+    """Delete one sync cursor row. Returns True if a row was deleted."""
+    row = session.scalars(
+        select(SyncCursorRow).where(
+            SyncCursorRow.provider == provider,
+            SyncCursorRow.account_email == account_email,
+            SyncCursorRow.cursor_kind == cursor_kind,
+        )
+    ).one_or_none()
+    if row is None:
+        return False
+    session.delete(row)
+    session.flush()
+    return True
+
+
 def delete_for_account(session: Session, *, provider: str, account_email: str) -> int:
     """Delete all sync cursors for provider+email. Returns deleted count."""
     rows = list(

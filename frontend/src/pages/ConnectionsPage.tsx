@@ -90,16 +90,27 @@ export function ConnectionsPage() {
     setNeedsReauth(false)
     try {
       const result = await postSync()
-      setSyncMsg(
-        `Synced ${result.gmail_upserted} mail, ${result.calendar_upserted} meetings — triaged ${result.triaged} (${result.pending} pending)`,
-      )
+      const base = `Synced +${result.gmail_upserted} mail (−${result.gmail_removed ?? 0}), +${result.calendar_upserted} meetings this sync — totals ${result.gmail_total ?? '—'} mail, ${result.meetings_total ?? '—'} meetings — triaged ${result.triaged} (${result.pending} pending)`
+      const calSuffix = result.calendar_truncated
+        ? ' — calendar sync incomplete; next Sync will full-refresh'
+        : ''
+      const gmailSuffix = result.gmail_truncated
+        ? ' — Gmail sync incomplete; next Sync will retry'
+        : ''
+      setSyncMsg(`${base}${calSuffix}${gmailSuffix}`)
       refresh()
     } catch (err) {
       if (errorCode(err) === 'google_reauth_required') {
         setNeedsReauth(true)
         setSyncMsg('Google re-auth required. Reconnect to continue.')
       } else {
-        setSyncMsg(err instanceof Error ? err.message : 'Sync failed.')
+        const code = errorCode(err)
+        const rid =
+          err && typeof err === 'object' && 'requestId' in err && typeof (err as { requestId?: string }).requestId === 'string'
+            ? (err as { requestId: string }).requestId
+            : undefined
+        const parts = [code || 'sync_failed', rid ? `ref ${rid}` : null].filter(Boolean)
+        setSyncMsg(`Sync failed (${parts.join('; ')})`)
       }
     } finally {
       setSyncing(false)
@@ -146,8 +157,8 @@ export function ConnectionsPage() {
           <p className="cn-feat-head">Gmail + Calendar</p>
           <p className="cn-feat-sub">
             {googleConnected
-              ? 'Operator Google account linked (readonly). Sync pulls fictional demo mail and the week ahead.'
-              : 'Connect your Testing-mode Google account. Readonly Gmail and Calendar only.'}
+              ? 'Operator Google account linked. Sync pulls fictional demo mail and the week ahead; send requires your approval.'
+              : 'Connect your Testing-mode Google account. Gmail read + send-with-approval, and Calendar read.'}
           </p>
           {googleConnected && !needsReauth ? (
             <>

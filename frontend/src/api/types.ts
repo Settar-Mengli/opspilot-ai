@@ -78,6 +78,25 @@ export interface AskMessage {
   timestamp: number
 }
 
+export interface AskToolStep {
+  id: string
+  tool: string
+  status: 'running' | 'done' | 'error'
+}
+
+export interface AskDraftCard {
+  draftId: string
+  subject: string
+  body: string
+  toAddrs: string
+  sentAt?: number | null
+  approveError?: string | null
+  idempotencyKey?: string
+  approving?: boolean
+  /** Last approve settled as ambiguous send; show deliberate re-send label. */
+  sendOutcomeUnknown?: boolean
+}
+
 export interface EveningSummaryRequest {
   assistant_name: string
 }
@@ -128,8 +147,15 @@ export interface CalendarMeeting {
 export interface SyncResult {
   account_email: string
   gmail_upserted: number
+  gmail_removed?: number
   calendar_upserted: number
+  gmail_total?: number
+  meetings_total?: number
   triaged: number
   pending: number
   run_id?: string | null
+  /** True when calendar list hit max pages (C2). */
+  calendar_truncated?: boolean
+  /** True when Gmail full-list hit max pages (C3/A5). */
+  gmail_truncated?: boolean
 }

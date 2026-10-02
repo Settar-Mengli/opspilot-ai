@@ -300,6 +300,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ask/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask Stream */
+        post: operations["ask_stream_api_v1_ask_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/drafts/{draft_id}/edit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mail Draft Edit */
+        post: operations["mail_draft_edit_api_v1_mail_drafts__draft_id__edit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/drafts/{draft_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mail Draft Approve */
+        post: operations["mail_draft_approve_api_v1_mail_drafts__draft_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/oauth/google/start": {
         parameters: {
             query?: never;
@@ -375,6 +426,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AskHistoryTurn */
+        AskHistoryTurn: {
+            /** Role */
+            role: string;
+            /** Content */
+            content: string;
+        };
         /** AskRequest */
         AskRequest: {
             /** Question */
@@ -384,6 +442,37 @@ export interface components {
              * @default OpsPilot
              */
             assistant_name: string;
+            /** History */
+            history?: components["schemas"]["AskHistoryTurn"][];
+        };
+        /**
+         * AskStreamRequest
+         * @description Same body as AskRequest for POST /ask/stream.
+         */
+        AskStreamRequest: {
+            /** Question */
+            question: string;
+            /**
+             * Assistant Name
+             * @default OpsPilot
+             */
+            assistant_name: string;
+            /** History */
+            history?: components["schemas"]["AskHistoryTurn"][];
+        };
+        /** DraftApproveRequest */
+        DraftApproveRequest: {
+            /** Payload Sha256 */
+            payload_sha256: string;
+            /** Idempotency Key */
+            idempotency_key?: string | null;
+        };
+        /** DraftEditRequest */
+        DraftEditRequest: {
+            /** Subject */
+            subject: string;
+            /** Body */
+            body: string;
         };
         /** EveningSummaryRequest */
         EveningSummaryRequest: {
@@ -418,6 +507,43 @@ export interface components {
              * Format: date
              */
             date: string;
+        };
+        /**
+         * SyncResponse
+         * @description Typed POST /api/v1/sync response (must match run_sync + triage merge).
+         */
+        SyncResponse: {
+            /** Account Email */
+            account_email: string;
+            /** Gmail Upserted */
+            gmail_upserted: number;
+            /**
+             * Gmail Removed
+             * @default 0
+             */
+            gmail_removed: number;
+            /** Calendar Upserted */
+            calendar_upserted: number;
+            /** Gmail Total */
+            gmail_total?: number | null;
+            /** Meetings Total */
+            meetings_total?: number | null;
+            /** Triaged */
+            triaged: number;
+            /** Pending */
+            pending: number;
+            /** Run Id */
+            run_id?: string | null;
+            /**
+             * Calendar Truncated
+             * @default false
+             */
+            calendar_truncated: boolean;
+            /**
+             * Gmail Truncated
+             * @default false
+             */
+            gmail_truncated: boolean;
         };
         /** ValidationError */
         ValidationError: {
@@ -964,6 +1090,113 @@ export interface operations {
             };
         };
     };
+    ask_stream_api_v1_ask_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskStreamRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mail_draft_edit_api_v1_mail_drafts__draft_id__edit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftEditRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mail_draft_approve_api_v1_mail_drafts__draft_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftApproveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     oauth_google_start_api_v1_oauth_google_start_get: {
         parameters: {
             query?: never;
@@ -1032,9 +1265,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["SyncResponse"];
                 };
             };
         };

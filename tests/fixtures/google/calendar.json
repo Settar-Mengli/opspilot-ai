@@ -1,0 +1,15 @@
+{
+  "items": [
+    {
+      "id": "fx_evt_ddd444",
+      "status": "confirmed",
+      "summary": "FIXTURE_SUBJECT",
+      "description": "FIXTURE_BODY",
+      "start": {"dateTime": "2026-10-01T15:00:00Z"},
+      "end": {"dateTime": "2026-10-01T16:00:00Z"},
+      "attendees": [{"email": "peer@example.test", "responseStatus": "accepted"}]
+    }
+  ],
+  "nextPageToken": null,
+  "nextSyncToken": "fx_sync_eeee5555"
+}

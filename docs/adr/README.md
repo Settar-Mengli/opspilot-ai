@@ -10,7 +10,7 @@ Index of ADRs for OpsPilot. Status values: Accepted | Superseded | Proposed.
 | [D-004](D-004-adapter-seam.md) | Adapter seam for future models | Accepted | B2 |
 | [D-005](D-005-explicit-validation.md) | Explicit validation and error boundaries | Accepted | — |
 | [D-006](D-006-immutable-run-history.md) | Immutable run history with latest compatibility | Superseded (D-025) | B1 |
-| [D-007](D-007-url-query-run-context.md) | URL query param as frontend run context | Accepted (deferred FE; re-deferred past B4) | post-B4 UI |
+| [D-007](D-007-url-query-run-context.md) | URL query param as frontend run context | Accepted (deferred FE; OUT B5 → deps+U9) | deps+U9 |
 | [D-008](D-008-database.md) | Database = Neon Postgres | Accepted | B1, B4, B7 |
 | [D-009](D-009-orm-migrations.md) | SQLAlchemy 2 + Alembic; Postgres in tests | Accepted | B1 |
 | [D-010](D-010-async-fastapi.md) | Async FastAPI | Accepted | B1, B5 |
@@ -34,5 +34,8 @@ Index of ADRs for OpsPilot. Status values: Accepted | Superseded | Proposed.
 | [D-028](D-028-eval-harness.md) | Eval harness (pytest + CLI) | Accepted | B3 |
 | [D-029](D-029-prompt-injection-defenses.md) | Prompt injection defenses + red-team ASR | Accepted | B3 |
 | [D-030](D-030-operator-session-cookie.md) | Operator session cookie + CORS credentials (A1) | Accepted | B4+ |
+| [D-031](D-031-ask-tool-contract.md) | Ask tool contract + JSON-emulated capability map | Accepted | B5 |
+| [D-032](D-032-ask-sse.md) | Ask SSE event stream | Accepted | B5 |
+| [D-033](D-033-hitl-approve-send.md) | HITL approve & send (reply-only) | Accepted | B5 |
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../../OPSPILOT-MASTER-RECORD.md).

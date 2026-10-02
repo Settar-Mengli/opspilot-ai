@@ -1,0 +1,6 @@
+{
+  "id": "redteam_agent/v1",
+  "description": "Hermetic agentic red-team cases for Ask tool loop (B5 / D-029 addendum).",
+  "n_cases": 5,
+  "notes": "FakeProvider only; tool-ASR not a live CI gate"
+}

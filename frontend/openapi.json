@@ -655,6 +655,153 @@
         }
       }
     },
+    "/api/v1/ask/stream": {
+      "post": {
+        "tags": [
+          "ask"
+        ],
+        "summary": "Ask Stream",
+        "operationId": "ask_stream_api_v1_ask_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskStreamRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mail/drafts/{draft_id}/edit": {
+      "post": {
+        "tags": [
+          "mail"
+        ],
+        "summary": "Mail Draft Edit",
+        "operationId": "mail_draft_edit_api_v1_mail_drafts__draft_id__edit_post",
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftEditRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Mail Draft Edit Api V1 Mail Drafts  Draft Id  Edit Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mail/drafts/{draft_id}/approve": {
+      "post": {
+        "tags": [
+          "mail"
+        ],
+        "summary": "Mail Draft Approve",
+        "operationId": "mail_draft_approve_api_v1_mail_drafts__draft_id__approve_post",
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftApproveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Mail Draft Approve Api V1 Mail Drafts  Draft Id  Approve Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/oauth/google/start": {
       "get": {
         "tags": [
@@ -766,9 +913,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Post Sync Api V1 Sync Post"
+                  "$ref": "#/components/schemas/SyncResponse"
                 }
               }
             }
@@ -799,6 +944,27 @@
   },
   "components": {
     "schemas": {
+      "AskHistoryTurn": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "pattern": "^(user|assistant|system)$",
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "AskHistoryTurn"
+      },
       "AskRequest": {
         "properties": {
           "question": {
@@ -814,6 +980,14 @@
             "pattern": "^[A-Za-z0-9 .'\\-]+$",
             "title": "Assistant Name",
             "default": "OpsPilot"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/AskHistoryTurn"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "History"
           }
         },
         "type": "object",
@@ -821,6 +995,89 @@
           "question"
         ],
         "title": "AskRequest"
+      },
+      "AskStreamRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Question"
+          },
+          "assistant_name": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9 .'\\-]+$",
+            "title": "Assistant Name",
+            "default": "OpsPilot"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/AskHistoryTurn"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "History"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "AskStreamRequest",
+        "description": "Same body as AskRequest for POST /ask/stream."
+      },
+      "DraftApproveRequest": {
+        "properties": {
+          "payload_sha256": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Payload Sha256"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "payload_sha256"
+        ],
+        "title": "DraftApproveRequest"
+      },
+      "DraftEditRequest": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Body"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "subject",
+          "body"
+        ],
+        "title": "DraftEditRequest"
       },
       "EveningSummaryRequest": {
         "properties": {
@@ -881,6 +1138,88 @@
           "date"
         ],
         "title": "RunPipelineRequest"
+      },
+      "SyncResponse": {
+        "properties": {
+          "account_email": {
+            "type": "string",
+            "title": "Account Email"
+          },
+          "gmail_upserted": {
+            "type": "integer",
+            "title": "Gmail Upserted"
+          },
+          "gmail_removed": {
+            "type": "integer",
+            "title": "Gmail Removed",
+            "default": 0
+          },
+          "calendar_upserted": {
+            "type": "integer",
+            "title": "Calendar Upserted"
+          },
+          "gmail_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gmail Total"
+          },
+          "meetings_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meetings Total"
+          },
+          "triaged": {
+            "type": "integer",
+            "title": "Triaged"
+          },
+          "pending": {
+            "type": "integer",
+            "title": "Pending"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "calendar_truncated": {
+            "type": "boolean",
+            "title": "Calendar Truncated",
+            "default": false
+          },
+          "gmail_truncated": {
+            "type": "boolean",
+            "title": "Gmail Truncated",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_email",
+          "gmail_upserted",
+          "calendar_upserted",
+          "triaged",
+          "pending"
+        ],
+        "title": "SyncResponse",
+        "description": "Typed POST /api/v1/sync response (must match run_sync + triage merge)."
       },
       "ValidationError": {
         "properties": {

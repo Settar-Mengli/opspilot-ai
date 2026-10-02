@@ -58,3 +58,14 @@ Implementation locks for B4:
 - Sync commits before capped untriaged triage (`OPSPILOT_SYNC_TRIAGE_CAP`, default 10); Calendar `syncToken` requests omit window/`showDeleted=false`.
 - Connected operator surfaces filter to `source_type=gmail` (G7); sample rows may remain in Neon but are not shown while connected.
 - Live smoke on Neon verified (counts in PART 10); visitors never connect Gmail; DEMO_MODE blocks OAuth/sync.
+
+## Addendum (B5, 2026-10-01) — gmail.send
+
+- Add `https://www.googleapis.com/auth/gmail.send` to **SCOPES** and **REQUIRED_SCOPES** (required at Connect / token exchange). No `gmail.compose`.
+- Operator must **Reconnect** (existing `prompt=consent` flow) to grant send; Testing mode forever unchanged.
+- Send path remains HITL-only (D-033); DEMO_MODE continues to block OAuth/sync and **blocks approve/send**.
+
+## Addendum (post-audit fix-pass, 2026-10-02) — truncation
+
+- **Calendar:** on truncated incremental list, **clear** stored `syncToken` (do not keep prior). Next sync is full window with `showDeleted=true`. After a **complete** (non-truncated) full-window walk, absence-reconcile deletes local meetings whose `start_at` is in the same `[time_min, time_max)` window and whose `provider_id` was not returned. Truncated full window sets `calendar_truncated` and skips absence reconcile.
+- **Gmail:** history truncate without a usable `last_hid` falls back to full list. If full list itself truncates, set `gmail_truncated`, keep prior cursor, do not claim a complete profile history id. Each sync remains bounded by max-pages env.

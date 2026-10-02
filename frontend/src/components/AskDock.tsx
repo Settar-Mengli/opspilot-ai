@@ -1,9 +1,15 @@
 import { useEffect, useRef } from 'react'
-import type { AskMessage } from '../api/types'
+import type { AskDraftCard, AskMessage, AskToolStep } from '../api/types'
+import { ASK_APPROVE_ENABLED } from '../api/askStream'
 
 export interface AskThreadProps {
   assistantName: string
   messages: AskMessage[]
+  toolSteps?: AskToolStep[]
+  draft?: AskDraftCard | null
+  onDraftSubjectChange?: (value: string) => void
+  onDraftBodyChange?: (value: string) => void
+  onApproveDraft?: () => void
   input: string
   loading: boolean
   error: string | null
@@ -17,6 +23,11 @@ export interface AskThreadProps {
 export function AskThreadBody({
   assistantName,
   messages,
+  toolSteps = [],
+  draft = null,
+  onDraftSubjectChange,
+  onDraftBodyChange,
+  onApproveDraft,
   input,
   loading,
   error,
@@ -32,7 +43,7 @@ export function AskThreadBody({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, loading])
+  }, [messages, loading, toolSteps, draft])
 
   useEffect(() => {
     if (focusToken > 0) {
@@ -51,7 +62,7 @@ export function AskThreadBody({
   return (
     <>
       <div className={variant === 'dock' ? 'desk-ask-body' : 'ask-panel-messages'}>
-        {messages.length === 0 && !loading && (
+        {messages.length === 0 && !loading && toolSteps.length === 0 && !draft && (
           <div className={variant === 'dock' ? 'desk-ask-empty' : 'ask-panel-empty'}>
             {variant === 'dock' ? (
               <>
@@ -73,6 +84,82 @@ export function AskThreadBody({
             <div className="ask-msg-bubble">{msg.text}</div>
           </div>
         ))}
+        {toolSteps.length > 0 && (
+          <ol className="ask-tool-timeline" aria-label="Tool steps">
+            {toolSteps.map((step) => (
+              <li key={step.id} className={`ask-tool-step ask-tool-step-${step.status}`}>
+                <span className="ask-tool-name">{step.tool}</span>
+                <span className="ask-tool-status">{step.status}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+        {draft && (
+          <div className="ask-draft-card" data-testid="ask-draft-card">
+            <div className="ask-draft-title">Draft reply</div>
+            <label className="ask-draft-label">
+              Subject
+              <input
+                className="ask-draft-input"
+                value={draft.subject}
+                onChange={(e) => onDraftSubjectChange?.(e.target.value)}
+                aria-label="Draft subject"
+                disabled={Boolean(draft.sentAt)}
+              />
+            </label>
+            <label className="ask-draft-label">
+              Body
+              <textarea
+                className="ask-draft-textarea"
+                value={draft.body}
+                onChange={(e) => onDraftBodyChange?.(e.target.value)}
+                rows={4}
+                aria-label="Draft body"
+                disabled={Boolean(draft.sentAt)}
+              />
+            </label>
+            <p className="ask-draft-meta" aria-live="polite">
+              To: {draft.toAddrs} (server-managed)
+              {draft.sentAt ? (
+                <>
+                  {' '}
+                  · Sent ✓{' '}
+                  {new Date(draft.sentAt).toLocaleTimeString(undefined, {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}
+                </>
+              ) : null}
+            </p>
+            {draft.approveError ? (
+              <div className="ask-draft-approve-error" role="alert">
+                {draft.approveError}
+              </div>
+            ) : null}
+            <button
+              type="button"
+              className="ask-draft-approve"
+              data-testid="ask-draft-approve"
+              disabled={!ASK_APPROVE_ENABLED || Boolean(draft.sentAt) || Boolean(draft.approving)}
+              title={
+                draft.sentAt
+                  ? 'Already sent'
+                  : draft.approving
+                    ? 'Sending…'
+                    : draft.sendOutcomeUnknown
+                      ? 'Check Sent folder, then re-send'
+                      : ASK_APPROVE_ENABLED
+                        ? 'Approve and send'
+                        : 'Approve available after mail HITL lands'
+              }
+              onClick={() => {
+                if (ASK_APPROVE_ENABLED && !draft.sentAt && !draft.approving) onApproveDraft?.()
+              }}
+            >
+              {draft.sendOutcomeUnknown ? 'Check Sent, then re-send' : 'Approve & send'}
+            </button>
+          </div>
+        )}
         {loading && (
           <div className="ask-msg ask-msg-assistant">
             <div className="ask-msg-bubble ask-msg-thinking">
@@ -82,7 +169,11 @@ export function AskThreadBody({
             </div>
           </div>
         )}
-        {error && <div className="ask-panel-error">{error}</div>}
+        {error && (
+          <div className="ask-panel-error" role="alert">
+            {error}
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
       <div className={variant === 'dock' ? 'desk-ask-footer' : 'ask-panel-input-row'}>

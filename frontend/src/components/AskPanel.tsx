@@ -1,5 +1,5 @@
 import { useId, useRef } from 'react'
-import type { AskMessage } from '../api/types'
+import type { AskDraftCard, AskMessage, AskToolStep } from '../api/types'
 import { useOverlay } from '../hooks/useOverlay'
 import { AskThreadBody } from './AskDock'
 
@@ -7,6 +7,11 @@ interface Props {
   open: boolean
   assistantName: string
   messages: AskMessage[]
+  toolSteps?: AskToolStep[]
+  draft?: AskDraftCard | null
+  onDraftSubjectChange?: (value: string) => void
+  onDraftBodyChange?: (value: string) => void
+  onApproveDraft?: () => void
   input: string
   loading: boolean
   error: string | null
@@ -19,6 +24,11 @@ export function AskPanel({
   open,
   assistantName,
   messages,
+  toolSteps,
+  draft,
+  onDraftSubjectChange,
+  onDraftBodyChange,
+  onApproveDraft,
   input,
   loading,
   error,
@@ -61,6 +71,11 @@ export function AskPanel({
         <AskThreadBody
           assistantName={assistantName}
           messages={messages}
+          toolSteps={toolSteps}
+          draft={draft}
+          onDraftSubjectChange={onDraftSubjectChange}
+          onDraftBodyChange={onDraftBodyChange}
+          onApproveDraft={onApproveDraft}
           input={input}
           loading={loading}
           error={error}

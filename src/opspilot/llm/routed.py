@@ -80,6 +80,9 @@ class BudgetAwareGateway:
         self.last_repair_used: bool = False
         self.last_parse_error_class: str | None = None
         self.last_parse_output_head: str | None = None
+        self.last_provider: str | None = None
+        self.last_model: str | None = None
+        self.last_success_text: str | None = None
 
     def complete(
         self,
@@ -144,6 +147,8 @@ class BudgetAwareGateway:
         schema: type[T],
         max_tokens: int = 1024,
         model: str | None = None,
+        exclude_providers: frozenset[str] | set[str] | None = None,
+        prefer_provider: str | None = None,
     ) -> T:
         """Structured complete with one repair; each provider/repair attempt debits budget."""
         if not llm_allowed():
@@ -155,11 +160,18 @@ class BudgetAwareGateway:
         self.last_repair_used = False
         self.last_parse_error_class = None
         self.last_parse_output_head = None
+        self.last_success_text = None
 
         prompt_version = prompt_version_sha256(task=task, messages=messages)
-        candidates = filter_by_circuit(self._providers, self._circuit)
+        exclude = frozenset(exclude_providers or ())
+        candidates = [p for p in filter_by_circuit(self._providers, self._circuit) if p.name not in exclude]
+        prefer = (prefer_provider or "").strip()
+        if prefer:
+            preferred = [p for p in candidates if p.name == prefer]
+            rest = [p for p in candidates if p.name != prefer]
+            candidates = preferred + rest
         if not candidates:
-            raise LlmProvidersExhausted("circuit_open")
+            raise LlmProvidersExhausted("circuit_open" if not exclude else "providers_excluded")
         last_error: str | None = None
         for provider in candidates:
             attempt, used_force_json = self._structured_attempt(
@@ -218,6 +230,9 @@ class BudgetAwareGateway:
             )
             parsed, errors, error_class = self._try_parse(schema, attempt.text)
             if parsed is not None:
+                self.last_provider = provider.name
+                self.last_model = attempt.model or "unknown"
+                self.last_success_text = attempt.text
                 self._record(task=task, provider=provider.name, result=attempt, prompt_version=prompt_version)
                 self._circuit.reset(provider.name)
                 return parsed
@@ -275,6 +290,9 @@ class BudgetAwareGateway:
             parsed_repair, repair_errors, repair_class = self._try_parse(schema, repair.text)
             if parsed_repair is not None:
                 self.last_repair_used = True
+                self.last_provider = provider.name
+                self.last_model = repair.model or "unknown"
+                self.last_success_text = repair.text
                 self._record(task=task, provider=provider.name, result=repair, prompt_version=repair_pv)
                 self._circuit.reset(provider.name)
                 return parsed_repair

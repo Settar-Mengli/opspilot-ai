@@ -14,6 +14,8 @@ def test_run_hermetic_writes_json(tmp_path: Path) -> None:
     assert payload["mode"] == "hermetic"
     assert payload["n_triage"] == 40
     assert payload["n_redteam"] == 20
+    assert payload["n_ask_agent"] == 6
+    assert payload["n_redteam_agent"] == 5
     assert payload["gate_passed"] is True
     assert "confusion" in payload
 

@@ -1,7 +1,7 @@
 # D-007: URL Query Param As Frontend Run Context
 
 - **Date:** 2026-05-29
-- **Status:** Accepted (deferred FE) — FE `?run_id=` not implemented; re-deferred past B4
+- **Status:** Accepted (deferred FE) — FE `?run_id=` not implemented; **OUT of B5** → reassigned **deps+U9** (ROADMAP Open findings)
 - **Blocks:** —
 
 ## Context

@@ -11,7 +11,7 @@ import httpx
 from pydantic import BaseModel
 
 from opspilot.llm.capabilities import JsonMode, json_mode_for
-from opspilot.llm.model_defaults import GEMINI_DEFAULT_MODEL
+from opspilot.llm.model_defaults import GEMINI_ASK_DEFAULT_MODEL, GEMINI_DEFAULT_MODEL
 from opspilot.llm.providers.http import default_timeout, map_http_provider_result
 from opspilot.llm.schema_convert import gemini_response_schema, schema_prompt_fragment
 from opspilot.llm.types import AttemptStatus, Message, ProviderResult, StreamChunk, TaskName
@@ -32,8 +32,13 @@ def gemini_models_list_url() -> str:
 def resolve_gemini_model(task: TaskName, override: str | None = None) -> str:
     if override:
         return override
-    task_key = f"GEMINI_MODEL_{task.upper()}"
-    return os.environ.get(task_key) or os.environ.get("GEMINI_MODEL") or GEMINI_DEFAULT_MODEL
+    task_env = os.environ.get(f"GEMINI_MODEL_{task.upper()}")
+    if task_env:
+        return task_env
+    # Ask uses a stronger Flash default independent of GEMINI_MODEL (triage/etc keep lite).
+    if task == "ask":
+        return GEMINI_ASK_DEFAULT_MODEL
+    return os.environ.get("GEMINI_MODEL") or GEMINI_DEFAULT_MODEL
 
 
 class GeminiProvider:
