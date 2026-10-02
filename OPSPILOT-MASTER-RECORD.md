@@ -1322,3 +1322,99 @@ After schema repair still yields `tool_args_invalid`, retry the step **once** on
 | `705ddc3` | fix(ask): budget multi-provider FakeProvider ask loop tests | success (push [36963200586](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36963200586); PR [36963204087](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36963204087)) |
 
 Live Ask API check this pass: **skipped** (owner UI retry 3d). Visual baselines: **unchanged**.
+
+### STOP LIVE closeout (§4–§7) — 2026-10-02
+
+#### Gallery evidence (STOP LIVE baseline refreshes — owner approval NOT claimed)
+
+Computed vs parent commit (exact pixel inequality; descriptive only):
+
+**`a0cf7d7` — Connections copy (send-with-approval; no longer “readonly”)**
+
+| File | % pixels changed | Description |
+|------|------------------|-------------|
+| `connections-chromium-375-linux.png` | **0.824%** (2508 / 304500) | Card copy; **375 — owner approval required** |
+| `connections-chromium-768-linux.png` | **23.016%** (181003 / 786432) | Layout/copy refresh at 768 |
+| `connections-chromium-1280-linux.png` | **0.238%** (2437 / 1024000) | Card copy |
+| `connections-modal-chromium-768-linux.png` | **20.910%** (164446 / 786432) | Modal copy/layout at 768 |
+| `connections-modal-chromium-1280-linux.png` | **0.034%** (349 / 1024000) | Modal copy |
+
+**`ec383a0` — ask-error (`code` + `ref request_id`)**
+
+| File | % pixels changed | Description |
+|------|------------------|-------------|
+| `ask-error-chromium-375-linux.png` | **0.275%** (837 / 304500) | Error copy; **375 — owner approval required** |
+| `ask-error-chromium-768-linux.png` | **0.106%** (837 / 786432) | Same error-copy change |
+| `ask-error-chromium-1280-linux.png` | **0.082%** (843 / 1024000) | Same error-copy change |
+
+#### Deviations (STOP LIVE)
+
+| ID | Note |
+|---|---|
+| FORCE_RULES inheritance | STOP LIVE API inherited `OPSPILOT_FORCE_RULES=1` from the agent shell; Ask soft-failed / mapped incorrectly until unset. Startup config print previously missed FORCE_RULES (fixed forward in `ec383a0` era). |
+| §8 allowlist restore | Process restored to **deny-all** (`allowlist_count=0` after clearing shell override). Owner sets `OPSPILOT_SEND_RECIPIENT_ALLOWLIST` in `.env` if further live sends needed (do not paste values). |
+| Demo inbox third-party mail | Connected demo inbox contains **real third-party** mail (Groq, Levi's, Neon, Google notices, etc.). **Owner must clean** before **B7** (public backend). |
+
+#### §7 DB verification (after `e722a8e` removal sync)
+
+| Check | Result |
+|-------|--------|
+| `wi_c11b47da99b741259d32a6dc72dff363` | **absent** |
+| Gmail provider `1a0f50c4b148db4f` | **absent** |
+| `triage_decisions` for that work item | **0** (cascade) |
+| `work_items` total | **66** (was **67** pre-removal) |
+| `work_items_gmail` | **53** (was **54**) |
+| Digest title “Weekly digest…” | **0** rows |
+| Gmail history cursor | **13756** |
+
+#### §7 sync timeline (API logs — counts only)
+
+| request_id | history_start | removed_candidates | removed_local | notes |
+|------------|---------------|--------------------|---------------|-------|
+| `b8012908-edf9-4f5c-979c-22794f8279d1` | **13748** | **1** | **1** | POST `/api/v1/sync` **200** — removed test digest item |
+| `7ccc4684-7d97-4f8e-ad52-c98d7338d274` | 13756 | 0 | 0 | no-op incremental (cursor already past removal) |
+| `8bd3fc5c-77a5-403b-90fb-74e5f5892512` | 13756 | 0 | 0 | same |
+
+**UI “Synced 0 mail, removed 0”:** matches the **last** sync response, not a display bug. First post-fix sync should show **removed 1**; later syncs correctly show **removed 0**.
+
+#### §7 pre-fix failure (record)
+
+- Trash / leave-INBOX: history lacked `labelAdded`/`labelRemoved` → no local delete.
+- Permanent delete: `messagesDeleted` path hit ORM `session.delete` → triage `NotNullViolation` despite DB `ON DELETE CASCADE`.
+
+#### Fix C — sync removal + UI count (`e722a8e`)
+
+- History: trash + INBOX removal + `messagesDeleted`; core `DELETE` for local removal (CASCADE triage); `gmail_removed` in sync result + Connections status string (`removed ${gmail_removed ?? 0}`).
+- CI: push [36966822665](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36966822665); PR [36966827774](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36966827774) **success**.
+
+#### §4–§6 audit snapshot (read-only re-check 2026-10-02)
+
+| Table / metric | Count |
+|----------------|-------|
+| `mail_send_audit` | **6** |
+| `demo_mode_blocked` | **4** |
+| `allowlist_denied` | **1** |
+| rows with `gmail_message_id` | **1** (successful live send, §4) |
+| Calendar meetings in UI | **4** (unchanged vs pre-§4 note) |
+
+#### UI bugs found (fix-forward after STOP)
+
+| ID | Symptom | Status |
+|----|---------|--------|
+| **A** | Ask **final** after any `draft` event must be replaced entirely with fixed “Draft ready — review and approve in the UI to send.” (no model wording / no “sent” pattern match) | `fix(ask): replace Ask final after draft with fixed HITL copy` |
+| **B** | Draft card cleared on approve success; no persistent **Sent ✓**; approve errors only in panel error | `fix(ui): persist draft sent state and surface approve errors on card` |
+| **C** | Sync removed count / trash-delete | **shipped `e722a8e`** (verified above) |
+
+#### §8 env restore (operator)
+
+- Unset shell `OPSPILOT_SEND_RECIPIENT_ALLOWLIST` override; `OPSPILOT_DEMO_MODE=0`; `FORCE_RULES=0` / `LLM_DISABLE=0`.
+- **Observed after restart (2026-10-02):** `startup_config … allowlist_count=0` — **deny-all** restored. Owner may set allowlist in `.env` for further live send (do not paste values in PART).
+
+#### Post-STOP fix commits (A/B)
+
+| SHA | Subject | CI |
+|-----|---------|-----|
+| `90177ff` | fix(ask): replace Ask final after draft with fixed HITL copy | _(fill after push)_ |
+| `48e4963` | fix(ui): persist draft sent state and surface approve errors on card | _(fill after push)_ |
+
+Hermetic: **388** passed after A+B (local).
