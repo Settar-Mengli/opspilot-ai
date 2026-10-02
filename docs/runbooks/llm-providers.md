@@ -8,7 +8,7 @@ Free-tier order via `INFERENCE_PROVIDER_ORDER` (default `gemini,groq,mistral,clo
 
 | Provider | Env |
 |----------|-----|
-| Gemini | `GEMINI_API_KEY`, `GEMINI_MODEL`, optional `GEMINI_MODEL_<TASK>` |
+| Gemini | `GEMINI_API_KEY`, `GEMINI_MODEL`, optional `GEMINI_MODEL_<TASK>` (e.g. `GEMINI_MODEL_ASK`) |
 | Groq | `GROQ_API_KEY`, `GROQ_MODEL`, optional `GROQ_MODEL_<TASK>` |
 | Mistral | `MISTRAL_API_KEY`, `MISTRAL_MODEL`, … |
 | Cloudflare | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_MODEL` |
@@ -38,6 +38,13 @@ Copied into `.env.example`. Apply the same lines to local `.env` (budget vars on
 |----------|-------|----------|---------|---------|-----------------|
 | groq | `openai/gpt-oss-20b` | `floor(0.8 × measured)` | 800 | 160000 | Headers: 1,000 RPD, 8,000 TPM; published 200,000 TPD → `floor(0.8×1000)=800`, `floor(0.8×200000)=160000` |
 | gemini | `gemini-3.5-flash-lite` | mix | 400 | 800000 | AI Studio free 500 RPD → `floor(0.8×500)=400`; **TOK_DAY OWNER POLICY** = 400 × ~2,000 tokens |
+
+### Per-task model overrides (CURRENT)
+
+Resolution order (Gemini example): `GEMINI_MODEL_<TASK>` → `GEMINI_MODEL` → code default in `src/opspilot/llm/model_defaults.py`.
+
+- **Ask:** `GEMINI_MODEL_ASK` (also `GROQ_MODEL_ASK`, `MISTRAL_MODEL_ASK`, …). Unset → same as provider default.
+- **Verified free Gemini id in-repo:** only `gemini-3.5-flash-lite` (`GEMINI_DEFAULT_MODEL`). No stronger free-tier Gemini id is recorded in `model_defaults` / this runbook / `.env.example` — **do not invent** a “Pro/Flash” default; leave Ask on flash-lite unless the owner sets an explicit override after verifying free-tier availability.
 | cloudflare | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` | derived | 80 | 140000 | 10,000 neurons/day; 26,668 neurons/M input, 204,805 neurons/M output → ~177k tok/day at 5:1 in/out → `floor(0.8×177k)≈140000`; ~100 neurons/call → `floor(0.8×100)=80` REQ |
 | openrouter | `nvidia/nemotron-3-super-120b-a12b:free` | mix | 40 | 160000 | Free tier 50 req/day → `floor(0.8×50)=40`; 20 RPM; **TOK_DAY OWNER POLICY** 160000. Model **must** keep `:free` suffix. |
 | mistral | `ministral-3b-2512` | **OWNER POLICY** | 1000 | 1000000 | Headers: 750 RPM / 1,300,000 TPM only — **no daily quota**; policy caps (deviation from pure 80%) |
