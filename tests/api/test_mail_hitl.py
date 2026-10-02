@@ -419,3 +419,63 @@ def test_error_body_has_code_and_request_id_no_leak(api_client: TestClient, db_s
     assert err.get("request_id") == "req-hygiene-1"
     blob = resp.text.lower()
     assert "traceback" not in blob
+
+
+def test_approve_same_idempotency_key_demo_replays(
+    api_client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OPSPILOT_DEMO_MODE", "1")
+    monkeypatch.setenv("OPSPILOT_SEND_RECIPIENT_ALLOWLIST", "demo@example.com")
+    draft_id = _seed_draft(db_session, provider_id="msg_idem_demo")
+    draft = mail_drafts.get_draft(db_session, draft_id)
+    assert draft is not None
+    _auth_cookie(api_client)
+    body = {"payload_sha256": draft.payload_sha256, "idempotency_key": "demo-attempt-1"}
+    r1 = api_client.post(f"/api/v1/mail/drafts/{draft_id}/approve", json=body)
+    assert r1.status_code == 403
+    r2 = api_client.post(f"/api/v1/mail/drafts/{draft_id}/approve", json=body)
+    assert r2.status_code == 200
+    assert r2.json()["status"] == "idempotent_replay"
+    assert r2.json().get("demo_mode_blocked") is True
+    from sqlalchemy import text
+
+    n = db_session.execute(
+        text("SELECT COUNT(*) FROM mail_send_audit WHERE idempotency_key = 'demo-attempt-1'")
+    ).scalar()
+    assert int(n or 0) == 1
+
+
+def test_approve_new_key_after_demo_deny_then_send(
+    api_client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OPSPILOT_DEMO_MODE", "1")
+    monkeypatch.setenv("OPSPILOT_SEND_RECIPIENT_ALLOWLIST", "demo@example.com")
+    monkeypatch.setenv("GOOGLE_OAUTH_CLIENT_ID", "cid")
+    monkeypatch.setenv("GOOGLE_OAUTH_CLIENT_SECRET", "csec")
+    monkeypatch.setenv("TOKEN_ENCRYPTION_KEY", Fernet.generate_key().decode())
+    oauth_credentials.upsert_encrypted_refresh(
+        db_session,
+        provider="google",
+        account_email="ops@example.com",
+        refresh_token_plaintext="refresh-tok",
+        scopes="https://www.googleapis.com/auth/gmail.send",
+    )
+    db_session.commit()
+    draft_id = _seed_draft(db_session, provider_id="msg_idem_retry")
+    draft = mail_drafts.get_draft(db_session, draft_id)
+    assert draft is not None
+    _auth_cookie(api_client)
+    deny = api_client.post(
+        f"/api/v1/mail/drafts/{draft_id}/approve",
+        json={"payload_sha256": draft.payload_sha256, "idempotency_key": "key-a"},
+    )
+    assert deny.status_code == 403
+    monkeypatch.setenv("OPSPILOT_DEMO_MODE", "0")
+    tx = _CaptureTransport()
+    monkeypatch.setattr(mail_hitl, "HttpxTransport", lambda: tx)
+    ok = api_client.post(
+        f"/api/v1/mail/drafts/{draft_id}/approve",
+        json={"payload_sha256": draft.payload_sha256, "idempotency_key": "key-b"},
+    )
+    assert ok.status_code == 200
+    assert ok.json()["status"] == "sent"

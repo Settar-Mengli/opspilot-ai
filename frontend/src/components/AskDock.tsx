@@ -139,16 +139,19 @@ export function AskThreadBody({
             <button
               type="button"
               className="ask-draft-approve"
-              disabled={!ASK_APPROVE_ENABLED || Boolean(draft.sentAt)}
+              data-testid="ask-draft-approve"
+              disabled={!ASK_APPROVE_ENABLED || Boolean(draft.sentAt) || Boolean(draft.approving)}
               title={
                 draft.sentAt
                   ? 'Already sent'
-                  : ASK_APPROVE_ENABLED
-                    ? 'Approve and send'
-                    : 'Approve available after mail HITL lands'
+                  : draft.approving
+                    ? 'Sending…'
+                    : ASK_APPROVE_ENABLED
+                      ? 'Approve and send'
+                      : 'Approve available after mail HITL lands'
               }
               onClick={() => {
-                if (ASK_APPROVE_ENABLED && !draft.sentAt) onApproveDraft?.()
+                if (ASK_APPROVE_ENABLED && !draft.sentAt && !draft.approving) onApproveDraft?.()
               }}
             >
               Approve & send

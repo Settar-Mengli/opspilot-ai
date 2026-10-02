@@ -91,6 +91,8 @@ export interface AskDraftCard {
   toAddrs: string
   sentAt?: number | null
   approveError?: string | null
+  idempotencyKey?: string
+  approving?: boolean
 }
 
 export interface EveningSummaryRequest {

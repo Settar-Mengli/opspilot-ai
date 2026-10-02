@@ -39,13 +39,13 @@ describe('api client', () => {
       json: async () => ({ status: 'sent' }),
     })
     vi.stubGlobal('fetch', fetchMock)
-    const result = await approveMailDraft('md_1', hash)
+    const result = await approveMailDraft('md_1', hash, 'idem-1')
     expect(result.status).toBe('sent')
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
     expect(url).toContain('/api/v1/mail/drafts/md_1/approve')
     expect(JSON.parse(String(init.body))).toEqual({
       payload_sha256: hash,
-      idempotency_key: undefined,
+      idempotency_key: 'idem-1',
     })
   })
 

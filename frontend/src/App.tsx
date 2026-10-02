@@ -122,6 +122,8 @@ function App() {
                 toAddrs: d.to_addrs,
                 sentAt: null,
                 approveError: null,
+                idempotencyKey: crypto.randomUUID(),
+                approving: false,
               })
             },
             onFinal: (answer) => {
@@ -242,15 +244,49 @@ function App() {
     onDraftBodyChange: (value: string) => setAskDraft((d) => (d ? { ...d, body: value } : d)),
     onApproveDraft: () => {
       void (async () => {
-        if (!askDraft || askDraft.sentAt) return
-        setAskDraft((d) => (d ? { ...d, approveError: null } : d))
+        let attemptKey = ''
+        let snapshot: {
+          draftId: string
+          subject: string
+          body: string
+        } | null = null
+        setAskDraft((d) => {
+          if (!d || d.sentAt || d.approving) return d
+          attemptKey = d.idempotencyKey || crypto.randomUUID()
+          snapshot = { draftId: d.draftId, subject: d.subject, body: d.body }
+          return {
+            ...d,
+            approveError: null,
+            approving: true,
+            idempotencyKey: attemptKey,
+          }
+        })
+        if (!snapshot || !attemptKey) return
         try {
-          const edited = await editMailDraft(askDraft.draftId, askDraft.subject, askDraft.body)
-          await approveMailDraft(edited.id, edited.payload_sha256)
-          setAskDraft((d) => (d ? { ...d, sentAt: Date.now(), approveError: null } : d))
+          const edited = await editMailDraft(snapshot.draftId, snapshot.subject, snapshot.body)
+          await approveMailDraft(edited.id, edited.payload_sha256, attemptKey)
+          setAskDraft((d) =>
+            d
+              ? {
+                  ...d,
+                  sentAt: Date.now(),
+                  approveError: null,
+                  approving: false,
+                }
+              : d,
+          )
         } catch (e) {
           const message = formatMailHitlError(e)
-          setAskDraft((d) => (d ? { ...d, approveError: message } : d))
+          setAskDraft((d) =>
+            d
+              ? {
+                  ...d,
+                  approveError: message,
+                  approving: false,
+                  idempotencyKey: crypto.randomUUID(),
+                }
+              : d,
+          )
         }
       })()
     },
