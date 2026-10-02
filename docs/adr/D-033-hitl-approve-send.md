@@ -32,10 +32,18 @@ Agentic Ask may draft replies, but mail must never leave the machine without exp
 
 ### Addendum (post-audit fix-pass, 2026-10-02)
 
-- Ambiguous send outcomes (timeout, connection error, 408/429/5xx after single POST) → audit `error_code=send_outcome_unknown`, draft returned to `draft`, API `502` `send_outcome_unknown`. FE copy: check Sent folder; button label `Check Sent, then re-send`.
+- Ambiguous send outcomes (timeout, connection error, 408/429/5xx after single POST, or 2xx without parseable message id) → audit `error_code=send_outcome_unknown`, draft returned to `draft`, API `502` `send_outcome_unknown`. FE copy: check Sent folder; button label `Check Sent, then re-send`.
 - `send_outcome_unknown` rows **count toward** the daily send cap (same advisory-lock section as successes).
-- Definitive 4xx (other than 408/429) and reauth paths leave draft `failed` (not re-approvable) — known limitation (ROADMAP OD).
+- Definitive 4xx (other than 408/429) and reauth paths leave draft `failed` (not re-approvable) — known limitation (ROADMAP **B6**).
 - Send-path `invalid_grant` / 401 → `google_reauth_required` (no retry).
+
+### Addendum (post-audit fix-pass 2, 2026-10-02) — pre-POST vs post-POST
+
+- The send path tracks whether `messages.send` POST was issued (`GmailClient.send_post_issued`).
+- Failure **before** POST (metadata GET transport/timeout/non-2xx other than 404-omit-header): `gmail_unavailable_not_sent` → audit `send_failed`, draft `draft` (re-approvable), **does not** count toward daily cap, API **503**. Metadata 401/`invalid_grant` → `google_reauth_required` as elsewhere.
+- Failure **after** POST where delivery cannot be ruled out → `send_outcome_unknown` (unchanged).
+- HITL last-resort: any unexpected exception after claim writes an audit row and returns coded `MailHitlError` (pre-POST → `gmail_unavailable_not_sent` / draft; post-POST → `send_outcome_unknown` / draft) — never bare 500, never leave draft stuck `approved`.
+- FE: `gmail_unavailable_not_sent` → “Gmail was unavailable. Nothing was sent — try again.”; normal Approve label; `sendOutcomeUnknown` stays false.
 
 
 ### Non-goals

@@ -48,6 +48,18 @@ Scopes now require `gmail.readonly` + **`gmail.send`** + `calendar.readonly` (D-
 4. Server sends **reply-in-thread** only; recipients from synced thread; allowlist + DEMO_MODE gates; `mail_send_audit` row.
 5. Daily send cap + draft claim are serialized with a UTC-day advisory lock.
 
+### Approve / send error codes (CURRENT)
+
+| Failure class | Audit `error_code` | API code / HTTP | Draft status | Re-approvable | Counts toward daily cap |
+|---------------|--------------------|-----------------|--------------|---------------|-------------------------|
+| Pre-POST Gmail unavailable (metadata timeout/5xx/…) | `gmail_unavailable_not_sent` | same / **503** | `draft` | Yes | **No** |
+| Ambiguous after POST (timeout/408/429/5xx/opaque 2xx) | `send_outcome_unknown` | same / **502** | `draft` | Yes (new key; check Sent) | **Yes** |
+| Reauth (`invalid_grant` / 401) | `google_reauth_required` | same / **401** | `failed` | No | No |
+| Definitive send 4xx (other) | original / mapped | `gmail_send_failed` / 400 | `failed` | No | No |
+| Daily cap | `send_daily_cap` | same / **429** | unchanged | — | No (deny row) |
+
+FE: unknown → “Check Sent, then re-send”; unavailable → “Gmail was unavailable. Nothing was sent — try again.” (normal Approve label).
+
 ## Corrected STOP LIVE (ordered, counts only)
 
 **Preconditions**

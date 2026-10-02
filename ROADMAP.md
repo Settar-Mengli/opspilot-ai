@@ -245,7 +245,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | F-11 token cap ≤1-call overshoot | **deps+U9** | OUT of B5 |
 | DM-09 `ttft_ms` / `usd_estimate` / LlmCall links | **partial** | **ttft_ms on Ask SSE in B5**; USD with F-05 / B7 |
 | F-05 Anthropic USD debit on LlmCall | **B7** | Precondition before Anthropic ever enabled (P7 off) |
-| Definitive mail send failures leave draft `failed` (not re-approvable); `send_outcome_unknown` returns to `draft` | **OD** | Post-audit A3; reopen-failed UX out of B5 |
+| Definitive mail send failures leave draft `failed` (not re-approvable); `send_outcome_unknown` returns to `draft`; `gmail_unavailable_not_sent` returns to `draft` (not capped) | **B6** | Post-audit A3 / fix-pass 2 D1; reopen-failed UX out of B5 |
 
 ---
 

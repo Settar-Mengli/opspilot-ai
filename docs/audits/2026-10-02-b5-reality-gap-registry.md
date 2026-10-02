@@ -13,16 +13,16 @@ Unsourced items = **NOT-DEFINED** (never invented).
 | F6 | Gmail pagination + cursor safety | DONE; C3 adds truncate-without-hid → full list + `gmail_truncated` | history tests |
 | F7 | Calendar pagination + syncToken safety | DONE; C2 clears token + absence reconcile | calendar tests |
 | F8 | SPAM label removal | DONE (prior) | gmail_client history |
-| F9 | RFC Message-ID or omit | DONE (prior) | send_reply metadata |
-| F10 | invalid_grant + capped backoff | DONE; C1 send single-attempt + outcome classify | mail/http tests |
+| F9 | RFC Message-ID or omit | DONE; metadata failure before send → `gmail_unavailable_not_sent` (fix-pass 2) | send_reply metadata |
+| F10 | invalid_grant + capped backoff | DONE; C1 send single-attempt + outcome classify; fix-pass 2 pre/post POST split | mail/http tests |
 | F11 | Sticky final provider | DONE (prior) | loop prefer_provider |
 | F12 | Fixed Ask final after draft | DONE (`90177ff` era) | — |
 | F13 | Alias of F2 | DONE | — |
-| F14 | Live smoke script + sanitized fixtures | Script shipped `e57c701` but **called non-existent** `/api/v1/oauth/google/sync` and `/api/v1/oauth/google/status` — **could not have passed as written**. C6 rewrote guards/`--send`/correct sync path. Fixtures wired C4. **Live smoke NOT run.** | C4, C6 |
+| F14 | Live smoke script + sanitized fixtures | Script shipped `e57c701` but **called non-existent** `/api/v1/oauth/google/sync` and `/api/v1/oauth/google/status` — **could not have passed as written**. C6 rewrote guards/`--send`/correct sync path. Fixtures wired C4; token_error + llm_turns behavioural in fix-pass 2. **Live smoke NOT run.** | C4, C6, D3 |
 | F15 | Owner gallery approval | **NOT approved** | — |
-| F16 | Docs (ROADMAP/CHANGELOG/PART/ADRs) | Updated this pass (C8) | PART 13 subsection |
+| F16 | Docs (ROADMAP/CHANGELOG/PART/ADRs) | Updated post-audit + fix-pass 2 | PART 13 subsections |
 | F17 | startup_config expansion | DONE (prior `29ac4f7`) | — |
 
 ## Known limitation (A3)
 
-Definitive mail send failures leave draft status `failed` (not re-approvable). Ambiguous `send_outcome_unknown` returns draft to `draft` for deliberate re-send. Reopen-failed path deferred — see ROADMAP Open findings (OD).
+Definitive mail send failures leave draft status `failed` (not re-approvable). Ambiguous `send_outcome_unknown` returns draft to `draft` for deliberate re-send. Pre-POST `gmail_unavailable_not_sent` also returns to `draft` (not capped). Reopen-failed path deferred — see ROADMAP Open findings (**B6**).

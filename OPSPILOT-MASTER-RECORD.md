@@ -1105,7 +1105,6 @@ Red commits and fix-forward: `9ba9190` OpenAPI drift -> `8b6043b`; `a3f6333` / `
 - Closeout records SHA: `d95de78`. Tip-fill commit SHA = this tip row after push.
 - Agent does **not** merge; owner merges after CI green.
 - **Merge SHA + merge CI run id:** record in **B5** first PART (not here).
-
 ## PART 13 -- B5 Agentic Ask + HITL send -- 2026-10-01
 
 ### Summary
@@ -1511,7 +1510,7 @@ Ask-mode audit of tip `25cbdf8` → FIX-THEN-MERGE. Hermetic-only Build on `b5/a
 | `42ce420` | feat(smoke): live_smoke_b5 enforces… | 37026241956 | 37026249204 | success |
 | `568d880` | fix(api): typed sync response… | 37027227572 | 37027235087 | success |
 | `8f90806` | docs(b5): post-audit registry… | 37035246539 | 37035252111 | success |
-| _(tip)_ | docs(b5): post-audit tip CI row | _(this commit)_ | _(this commit)_ | |
+| `2665b7c` | docs(b5): post-audit tip CI row | 37036001921 | 37036007508 | success |
 
 #### Process deviations (prior + this pass)
 
@@ -1521,3 +1520,63 @@ Ask-mode audit of tip `25cbdf8` → FIX-THEN-MERGE. Hermetic-only Build on `b5/a
 #### Registry
 
 See [docs/audits/2026-10-02-b5-reality-gap-registry.md](docs/audits/2026-10-02-b5-reality-gap-registry.md).
+
+### Post-audit fix pass 2 — 2026-10-02
+
+Ask verification of `25cbdf8..2665b7c` → second fix-pass on `b5/agentic-ask` (PR #40). Hermetic only. **Gallery NOT approved. Live smoke NOT run. PR NOT merged.**
+
+#### Verification findings → disposition
+
+| Id | Finding | Disposition |
+|----|---------|-------------|
+| F-C1-500 | Metadata GET timeout/transport escaped as bare 500 | **D1:** pre-POST → `gmail_unavailable_not_sent` (503, draft, not capped); post-POST ambiguous → `send_outcome_unknown`; HITL last-resort coded |
+| F-C5 | Remount tests only `rerender` AskThreadBody | **D2:** real AskDock↔AskPanel across 1280 breakpoint (App-level approve shell); wire key stable while pending |
+| F-C9 | Tip CI row left as `_(this commit)_` for `2665b7c` | **D5:** filled 37036001921 / 37036007508 |
+| F-C4 | token_error / llm_turns structural only | **D3:** behavioural refresh/sync/approve + agent loop; PYTEST_CURRENT_TEST-only capture refuse |
+| F-PART12 | PART 12 +1 trailing newline vs `origin/main` | **D5:** restored byte-identical (proof below) |
+| F-C3-TEST | Full-list truncate lacked second sync | **D4:** second sync asserts flag + cursor hold |
+
+#### Post-claim failure table (CURRENT after D1)
+
+| Failure class | Audit `error_code` | API / HTTP | Draft | Re-approvable | Cap |
+|---------------|--------------------|------------|-------|---------------|-----|
+| Pre-POST Gmail unavailable | `gmail_unavailable_not_sent` | 503 | `draft` | Yes | No |
+| Post-POST ambiguous | `send_outcome_unknown` | 502 | `draft` | Yes | Yes |
+| Reauth | `google_reauth_required` | 401 | `failed` | No | No |
+| Definitive send 4xx | original → API `gmail_send_failed` | 400 | `failed` | No | No |
+| Daily cap deny | `send_daily_cap` | 429 | unchanged | — | No |
+
+#### Process deviations (records)
+
+- **Prior fix-pass PART 13 in-place edit (not append-only):** STOP item 2 before → `Run uv run python scripts/live_smoke_b5.py (allowlist = operator only; max one send).` after → added `--send` wording / dual-mode note (plus hostname cell redaction, which was permitted).
+- **C5 tests did not remount surfaces** in the first fix-pass; Build summary omitted its report contract (Ask audit).
+- **D2 harness note:** full `App` + mocked `editMailDraft`/`approveMailDraft` did not intercept Approve clicks (0 calls); tests use `AppAskApproveShell` mirroring App.tsx AskDock/AskPanel + approve state with real surfaces.
+
+#### D4 database-safety statement
+
+- **CURRENT:** `tests/conftest.py` pins local URL only when `DATABASE_URL` unset (`:12–13`); if the shell/.env already points at a non-local host, `_base_url_from_env` (`:55–58`) previously derived `opspilot_test` on that host; `db_session` truncates tables (`:124–130`).
+- **Fix:** `tests/db_host_guard.py` + import-time / `pytest_configure` abort unless host is `localhost` / `127.0.0.1` / `::1` / `postgres`.
+- **Prior pass `25cbdf8..2665b7c`:** Ask audit forced `DATABASE_URL=…@127.0.0.1…` before pytest (`host_label=127`). Process env without override resolved to Neon first-label `ep-withered-dew-b528cx5k-pooler`. **CANNOT-VERIFY** whether any Build pytest in that range ran without the override (no surviving command log proving every invocation); with the override, tests used local Docker only.
+
+#### Per-commit CI (fix-pass 2)
+
+| SHA | Subject | Push run | PR run | Result |
+|-----|---------|----------|--------|--------|
+| `e87da88` | fix(mail): classify pre-POST… | 37043520940 | 37043527166 | success |
+| `4f12005` | test(ui): remount AskDock… | 37044309909 | 37044317489 | success |
+| `83263f1` | test(fixtures): drive token_error… | 37045116028 | 37045122436 | success |
+| `567b430` | test(sync): second truncate… | 37045818226 | 37045828185 | success |
+| _(tip)_ | docs(b5): post-audit fix-pass 2 records | final records commit — CI run on PR checks | final records commit — CI run on PR checks | |
+
+#### PART 12 restore proof
+
+```text
+python -c "… parts(origin/main)[12] == parts(HEAD)[12] …"
+# PARTs 0–12 identical=True after restore (lens PART12=4946/4946)
+```
+
+#### Tests / coverage (hermetic, local Docker Postgres, tip before this docs commit)
+
+- `pytest`: **463 passed**, 0 skipped, 0 xfail, 1 warning (pytest-socket blocked non-local); **TOTAL 82.39%** (≥72).
+- FE: eslint ok; `tsc -p tsconfig.app.json --noEmit` ok; vitest **35** passed / 12 files.
+- PNG diff vs `2665b7c`: **0 files**. Alembic head: `0009_mail_send_audit_failed`.
