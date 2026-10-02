@@ -221,3 +221,39 @@ def test_tool_end_payload_minimized(db_session: Session) -> None:
     drafts = [e for e in events if e.type == "draft"]
     assert drafts
     assert "SECRET_BODY_CONTENT" in str(drafts[0].data.get("body"))
+
+
+def test_force_rules_yields_llm_policy_denied(db_session: Session) -> None:
+    """STOP LIVE regression: FORCE_RULES must not soft-map to bare ask_failed."""
+    events = list(
+        run_ask_agent(
+            question="Draft a reply confirming Friday works.",
+            session=db_session,
+            request_id="req-policy-1",
+            gmail_only=True,
+        )
+    )
+    assert len(events) == 1
+    assert events[0].type == "error"
+    assert events[0].data.get("code") == "llm_policy_denied"
+    assert events[0].request_id == "req-policy-1"
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_injected_provider_still_maps_policy_denied(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Gateway policy deny (injected providers) maps to llm_policy_denied, not ask_failed."""
+    monkeypatch.setenv("OPSPILOT_FORCE_RULES", "1")
+    fake = FakeProvider(
+        name="gemini",
+        json_results=[_json_result({"kind": "final", "final": "should not run"})],
+    )
+    events = list(
+        run_ask_agent(
+            question="Hi",
+            session=db_session,
+            request_id="req-policy-2",
+            providers=[fake],
+        )
+    )
+    assert events[-1].type == "error"
+    assert events[-1].data.get("code") == "llm_policy_denied"

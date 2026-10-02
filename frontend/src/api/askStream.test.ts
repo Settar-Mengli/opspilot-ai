@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { _parseSseChunkForTest, ASK_APPROVE_ENABLED } from './askStream'
+import { _parseSseChunkForTest, ASK_APPROVE_ENABLED, formatAskStreamError } from './askStream'
 
 describe('askStream', () => {
   it('parses SSE data lines', () => {
@@ -19,6 +19,20 @@ describe('askStream', () => {
     )
     expect(events[0]).toEqual({ type: 'tool_end', tool: 'draft_reply', ok: true })
     expect(events[1]?.body).toBe('SECRET')
+  })
+
+  it('formats SSE errors with code and ref request_id', () => {
+    expect(
+      formatAskStreamError({
+        code: 'llm_policy_denied',
+        request_id: 'req-abc',
+        message: 'Ask unavailable: remote LLM disabled by policy.',
+      }),
+    ).toBe('Ask failed (llm_policy_denied; ref req-abc)')
+    expect(formatAskStreamError({ message: 'Ask failed.' })).toBe('Ask failed (ask_failed)')
+    expect(formatAskStreamError({ code: 'stream_failed', request_id: 'rid-1' })).toBe(
+      'Ask failed (stream_failed; ref rid-1)',
+    )
   })
 
   it('enables Approve after HITL lands', () => {

@@ -175,7 +175,7 @@ test.describe('visual baselines', () => {
     await input.fill('Hello')
     await page.locator('.ask-panel-send:visible').first().click()
     await expect(
-      page.locator('.ask-panel:visible, .desk-ask:visible').getByText(/Ask fixture error|500/i),
+      page.locator('.ask-panel:visible, .desk-ask:visible').getByText(/Ask failed \(ask_failed; ref e2e\)/i),
     ).toBeVisible()
     await settle(page)
     await expect(page).toHaveScreenshot('ask-error.png', screenshotOpts('ask-error'))

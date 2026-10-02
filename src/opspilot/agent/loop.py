@@ -15,7 +15,9 @@ from opspilot.agent.events import AgentEvent
 from opspilot.agent.safety import tool_result_untrusted
 from opspilot.agent.tool_protocol import TOOL_SYSTEM_FRAGMENT, AgentTurn
 from opspilot.agent.tools import execute_tool
+from opspilot.llm.errors import LlmPolicyDenied
 from opspilot.llm.gateway import session_attempt_recorder
+from opspilot.llm.policy import llm_allowed
 from opspilot.llm.prompt_safety import UNTRUSTED_SYSTEM_POLICY
 from opspilot.llm.providers.base import LlmProvider
 from opspilot.llm.routed import BudgetAwareGateway
@@ -174,6 +176,18 @@ def run_ask_agent(
         yield AgentEvent("final", rid, {"answer": "I didn't catch a question. What would you like to know?"})
         return
 
+    # Default path respects FORCE_RULES / LLM_DISABLE before constructing providers.
+    if providers is None and not llm_allowed():
+        yield AgentEvent(
+            "error",
+            rid,
+            {
+                "code": "llm_policy_denied",
+                "message": "Ask unavailable: remote LLM disabled by policy.",
+            },
+        )
+        return
+
     provider_list = providers if providers is not None else build_providers()
     if not provider_list:
         yield AgentEvent(
@@ -233,6 +247,16 @@ def run_ask_agent(
             )
         except StepTimeoutError:
             yield AgentEvent("error", rid, {"code": "step_timeout", "message": "Ask step timed out."})
+            return
+        except LlmPolicyDenied:
+            yield AgentEvent(
+                "error",
+                rid,
+                {
+                    "code": "llm_policy_denied",
+                    "message": "Ask unavailable: remote LLM disabled by policy.",
+                },
+            )
             return
         except Exception:  # noqa: BLE001 — soft boundary; never leak exception text
             yield AgentEvent("error", rid, {"code": "ask_failed", "message": "Ask failed."})
