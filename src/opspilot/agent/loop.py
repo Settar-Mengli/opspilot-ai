@@ -359,6 +359,7 @@ def run_ask_agent(
     last_fail_key: tuple[str, str, str] | None = None
     fail_streak = 0
     draft_created = False
+    tool_provider: str | None = None
 
     for step in range(max_steps):
         if cancel_check and cancel_check():
@@ -380,6 +381,7 @@ def run_ask_agent(
                 messages=messages,
                 schema=AgentTurn,
                 max_tokens=800,
+                prefer_provider=tool_provider,
             )
         except StepTimeoutError:
             yield AgentEvent("error", rid, {"code": "step_timeout", "message": "Ask step timed out."})
@@ -464,6 +466,7 @@ def run_ask_agent(
                     messages=messages,
                     schema=AgentTurn,
                     max_tokens=800,
+                    prefer_provider=tool_provider,
                 )
             except StepTimeoutError:
                 yield AgentEvent("error", rid, {"code": "step_timeout", "message": "Ask step timed out."})
@@ -577,6 +580,10 @@ def run_ask_agent(
             result=result,
         )
         yield AgentEvent("tool_end", rid, _tool_end_payload(tool_name, result))
+        if result.get("ok"):
+            last = str(getattr(gw, "last_provider", None) or "").strip()
+            if last:
+                tool_provider = last
         if tool_name == "draft_reply" and result.get("ok") and result.get("draft_id"):
             draft_created = True
             yield AgentEvent(

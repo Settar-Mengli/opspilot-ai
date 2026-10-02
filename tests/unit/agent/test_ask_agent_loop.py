@@ -704,3 +704,132 @@ def test_ask_tool_structured_log(db_session: Session, monkeypatch: pytest.Monkey
     assert "Friday" not in joined
     assert "Project" not in joined
     assert "SECRET" not in joined
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_prefer_provider_sticky_after_tool_then_failover(db_session: Session) -> None:
+    """After a tool on gemini, final prefers gemini first even if groq is listed first."""
+    wi_id = work_items.upsert_by_provider_id(
+        db_session,
+        provider_id="msg_sticky_1",
+        source_type="gmail",
+        subject_or_title="Project sync",
+        body_or_description="Friday?",
+        sender_or_requester="peer@example.com",
+        received_at=datetime(2026, 10, 1, 12, 0, tzinfo=UTC),
+        thread_id="thr_sticky_1",
+    )
+    db_session.commit()
+    order: list[str] = []
+
+    class TrackingFake(FakeProvider):
+        def complete_json(self, **kwargs):  # type: ignore[no-untyped-def]
+            order.append(self.name)
+            return super().complete_json(**kwargs)
+
+    groq = TrackingFake(
+        name="groq",
+        json_results=[
+            ProviderResult(
+                status=AttemptStatus.ERROR,
+                text="",
+                model="groq-v1",
+                input_tokens=1,
+                output_tokens=0,
+                latency_ms=1,
+                error_code="boom",
+            ),
+            # If tried first on the final turn (no sticky), this wrong final would win.
+            _json_result({"kind": "final", "final": "WRONG_PROVIDER_FIRST"}),
+        ],
+    )
+    gemini = TrackingFake(
+        name="gemini",
+        json_results=[
+            _json_result(
+                {
+                    "kind": "tool",
+                    "tool": "get_message",
+                    "args": {"id": wi_id},
+                }
+            ),
+            _json_result({"kind": "final", "final": "Sticky preferred."}),
+        ],
+    )
+    events = list(
+        run_ask_agent(
+            question="Show message",
+            session=db_session,
+            request_id="req-sticky-1",
+            gmail_only=True,
+            providers=[groq, gemini],
+        )
+    )
+    assert events[-1].type == "final"
+    assert events[-1].data.get("answer") == "Sticky preferred."
+    # Turn 1: groq error → gemini tool. Turn 2: prefer gemini → final (skip groq wrong final).
+    assert order[0] == "groq"
+    assert order[1] == "gemini"
+    assert order[2] == "gemini"
+    assert "WRONG_PROVIDER_FIRST" not in str(events[-1].data)
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_prefer_provider_failover_when_sticky_errors(db_session: Session) -> None:
+    """Sticky prefer tries gemini first; on error falls through to groq."""
+    order: list[str] = []
+
+    class TrackingFake(FakeProvider):
+        def complete_json(self, **kwargs):  # type: ignore[no-untyped-def]
+            order.append(self.name)
+            return super().complete_json(**kwargs)
+
+    wi_id = work_items.upsert_by_provider_id(
+        db_session,
+        provider_id="msg_sticky_2",
+        source_type="gmail",
+        subject_or_title="Project sync",
+        body_or_description="Friday?",
+        sender_or_requester="peer@example.com",
+        received_at=datetime(2026, 10, 1, 12, 0, tzinfo=UTC),
+        thread_id="thr_sticky_2",
+    )
+    db_session.commit()
+    gemini = TrackingFake(
+        name="gemini",
+        json_results=[
+            _json_result(
+                {
+                    "kind": "tool",
+                    "tool": "get_message",
+                    "args": {"id": wi_id},
+                }
+            ),
+            ProviderResult(
+                status=AttemptStatus.ERROR,
+                text="",
+                model="gemini-v1",
+                input_tokens=1,
+                output_tokens=0,
+                latency_ms=1,
+                error_code="boom",
+            ),
+        ],
+    )
+    groq = TrackingFake(
+        name="groq",
+        json_results=[_json_result({"kind": "final", "final": "Failover ok."})],
+    )
+    events = list(
+        run_ask_agent(
+            question="Show message",
+            session=db_session,
+            request_id="req-sticky-2",
+            gmail_only=True,
+            providers=[gemini, groq],
+        )
+    )
+    assert events[-1].type == "final"
+    assert events[-1].data.get("answer") == "Failover ok."
+    # Turn 1 gemini tool; turn 2 prefer gemini (error) then groq.
+    assert order == ["gemini", "gemini", "groq"]
