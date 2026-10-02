@@ -14,6 +14,7 @@ Agentic Ask may draft replies, but mail must never leave the machine without exp
 ### Flow
 
 1. `draft_reply` tool (or equivalent) creates `mail_drafts` with **server-derived** `to_addrs`, `thread_id`, `gmail_provider_id`, `work_item_id`.
+   - Recipients come from the synced work item's `sender_or_requester` (single addr-spec). **Reply-to-self is allowed** when the operator was the original sender; that yields `to_addrs` = operator address. **Allowlist is still enforced at approve/send** (unset allowlist = deny all sends).
 2. Owner may **edit subject and body only** via API. Payloads containing `to_addrs`, `thread_id`, `gmail_provider_id`, `work_item_id`, or other identity/recipient fields → **4xx reject**.
 3. Recompute `payload_sha256` over server-owned identity fields + current subject/body.
 4. `POST /api/v1/mail/drafts/{id}/approve` (operator session required):

@@ -22,6 +22,21 @@ B5 Agentic Ask needs a bounded, allowlisted tool surface without LangGraph/MCP a
 
 **Send is not a tool.** The LLM cannot invoke send. Approve & send is HITL only (D-033).
 
+### Arg schemas (prompt contract)
+
+Emitted in `TOOL_SYSTEM_FRAGMENT` (code is authoritative):
+
+| Tool | Args |
+|------|------|
+| `search_items` | `query:string`, `limit?:int<=20` |
+| `get_message` | `id:string` (work item PK) |
+| `get_calendar` | `days?:int<=14` |
+| `draft_reply` | `work_item_id\|id:string`, `body:string`, `subject?:string` |
+
+**Rule:** `draft_reply.work_item_id` must be the exact `id` from `search_items` / `get_message` or the triage context — **never** a Gmail provider/thread id. Work item ids in prompts are never truncated below PK length (String(64); `wi_{uuid4.hex}` is 35 chars).
+
+Optional `subject`: if omitted, server derives `Re: <original>` without stacking `Re:`. Body is required.
+
 ### Transport
 
 - **JSON-emulated tool calls for ALL providers** in B5 (uniform across failover).

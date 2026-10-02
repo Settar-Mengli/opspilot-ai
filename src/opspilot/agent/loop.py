@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import logging
 import os
 import threading
 from collections.abc import Callable, Iterator
@@ -13,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from opspilot.agent.events import AgentEvent
 from opspilot.agent.safety import tool_result_untrusted
-from opspilot.agent.tool_protocol import TOOL_SYSTEM_FRAGMENT, AgentTurn
+from opspilot.agent.tool_protocol import TOOL_SYSTEM_FRAGMENT, AgentTurn, tool_error_hint
 from opspilot.agent.tools import execute_tool
 from opspilot.llm.errors import LlmPolicyDenied
 from opspilot.llm.gateway import session_attempt_recorder
@@ -26,6 +28,61 @@ from opspilot.llm.types import Message, ProviderResult, TaskName
 from opspilot.services._llm import compact_triage_lines
 
 CancelCheck = Callable[[], bool]
+_logger = logging.getLogger("opspilot.api.ask")
+
+
+def _args_hash(args: dict[str, Any]) -> str:
+    blob = json.dumps(args, sort_keys=True, default=str, ensure_ascii=False)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
+
+
+def _id_prefix_len(args: dict[str, Any]) -> tuple[int, str]:
+    raw = str(args.get("work_item_id") or args.get("id") or "")
+    if not raw:
+        return 0, ""
+    return len(raw), raw[:8]
+
+
+def _model_tool_feedback(tool_name: str, result: dict[str, Any]) -> str:
+    """UNTRUSTED tool JSON plus optional trusted hint line (content-free)."""
+    payload = dict(result)
+    hint = None
+    if not payload.get("ok"):
+        hint = tool_error_hint(str(payload.get("error") or "") or None)
+        if hint:
+            payload["hint"] = hint
+    blob = json.dumps(payload, ensure_ascii=False)[:2000]
+    wrapped = tool_result_untrusted(tool_name, blob)
+    if hint:
+        return f"{wrapped}\nHint (trusted): {hint}"
+    return wrapped
+
+
+def _log_ask_tool(
+    *,
+    request_id: str,
+    step: int,
+    provider: str | None,
+    model: str | None,
+    tool: str,
+    args: dict[str, Any],
+    result: dict[str, Any],
+) -> None:
+    id_len, id_prefix = _id_prefix_len(args)
+    err = result.get("error")
+    _logger.info(
+        "ask_tool request_id=%s step=%s provider=%s model=%s tool=%s arg_keys=%s id_len=%s id_prefix=%s ok=%s error=%s",
+        request_id,
+        step,
+        provider or "-",
+        model or "-",
+        tool,
+        ",".join(sorted(str(k) for k in args.keys())),
+        id_len,
+        id_prefix or "-",
+        bool(result.get("ok")),
+        str(err)[:64] if err is not None else "-",
+    )
 
 
 class StepTimeoutError(TimeoutError):
@@ -223,6 +280,8 @@ def run_ask_agent(
     )
     provider_calls = 0
     first_token = True
+    last_fail_key: tuple[str, str, str] | None = None
+    fail_streak = 0
 
     for step in range(max_steps):
         if cancel_check and cancel_check():
@@ -287,6 +346,15 @@ def run_ask_agent(
             operator_email=operator_email,
             request_id=rid,
         )
+        _log_ask_tool(
+            request_id=rid,
+            step=step + 1,
+            provider=getattr(gw, "last_provider", None),
+            model=getattr(gw, "last_model", None),
+            tool=tool_name,
+            args=args,
+            result=result,
+        )
         yield AgentEvent("tool_end", rid, _tool_end_payload(tool_name, result))
         if tool_name == "draft_reply" and result.get("ok") and result.get("draft_id"):
             yield AgentEvent(
@@ -301,14 +369,54 @@ def run_ask_agent(
                 },
             )
 
-        tool_blob = json.dumps(result, ensure_ascii=False)[:2000]
+        if not result.get("ok"):
+            fail_key = (tool_name, _args_hash(args), str(result.get("error") or ""))
+            if fail_key == last_fail_key:
+                fail_streak += 1
+            else:
+                last_fail_key = fail_key
+                fail_streak = 1
+            if fail_streak >= 2:
+                soft = (
+                    "I could not complete that tool call after repeating the same failure. "
+                    "Try again with the exact work item id from search, or rephrase."
+                )
+                yield AgentEvent(
+                    "error",
+                    rid,
+                    {
+                        "code": "tool_repeat_failure",
+                        "message": soft,
+                        "tool": tool_name,
+                        "error": str(result.get("error") or "")[:64],
+                    },
+                )
+                if first_token:
+                    yield AgentEvent("token", rid, {"text": soft, "ttft": True})
+                else:
+                    yield AgentEvent("token", rid, {"text": soft})
+                yield AgentEvent(
+                    "final",
+                    rid,
+                    {
+                        "answer": soft,
+                        "code": "tool_repeat_failure",
+                        "steps": step + 1,
+                        "provider_calls": provider_calls,
+                    },
+                )
+                return
+        else:
+            last_fail_key = None
+            fail_streak = 0
+
         messages.append(
             Message(
                 role="assistant",
                 content=json.dumps({"kind": "tool", "tool": tool_name, "args": args}),
             )
         )
-        messages.append(Message(role="user", content=tool_result_untrusted(tool_name, tool_blob)))
+        messages.append(Message(role="user", content=_model_tool_feedback(tool_name, result)))
 
     yield AgentEvent(
         "error",

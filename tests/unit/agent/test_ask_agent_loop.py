@@ -257,3 +257,164 @@ def test_injected_provider_still_maps_policy_denied(db_session: Session, monkeyp
     )
     assert events[-1].type == "error"
     assert events[-1].data.get("code") == "llm_policy_denied"
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_agent_loop_draft_then_search_uses_search_id(db_session: Session) -> None:
+    wi_id = work_items.upsert_by_provider_id(
+        db_session,
+        provider_id="msg_search_draft_1",
+        source_type="gmail",
+        subject_or_title="Project sync",
+        body_or_description="Friday?",
+        sender_or_requester="peer@example.com",
+        received_at=datetime(2026, 10, 1, 12, 0, tzinfo=UTC),
+        thread_id="thr_search_draft_1",
+    )
+    db_session.commit()
+    truncated = wi_id[:32]
+    assert truncated != wi_id
+
+    fake = FakeProvider(
+        name="gemini",
+        json_results=[
+            _json_result(
+                {
+                    "kind": "tool",
+                    "tool": "draft_reply",
+                    "args": {"work_item_id": truncated, "body": "Friday works."},
+                }
+            ),
+            _json_result({"kind": "tool", "tool": "search_items", "args": {"query": "project", "limit": 5}}),
+            _json_result(
+                {
+                    "kind": "tool",
+                    "tool": "draft_reply",
+                    "args": {"work_item_id": wi_id, "body": "Friday works."},
+                }
+            ),
+            _json_result({"kind": "final", "final": "Draft ready."}),
+        ],
+    )
+    events = list(
+        run_ask_agent(
+            question="Draft a reply confirming Friday",
+            session=db_session,
+            request_id="req-search-id-1",
+            gmail_only=True,
+            providers=[fake],
+        )
+    )
+    tool_ends = [e for e in events if e.type == "tool_end"]
+    assert tool_ends[0].data.get("ok") is False
+    assert tool_ends[0].data.get("error") == "not_found"
+    assert tool_ends[1].data.get("ok") is True
+    assert tool_ends[2].data.get("ok") is True
+    assert any(e.type == "draft" for e in events)
+    from opspilot.persistence.models import MailDraftRow
+
+    assert db_session.query(MailDraftRow).count() == 1
+    assert events[-1].type == "final"
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_tool_repeat_failure_soft_final(db_session: Session) -> None:
+    fake = FakeProvider(
+        name="gemini",
+        json_results=[
+            _json_result(
+                {
+                    "kind": "tool",
+                    "tool": "draft_reply",
+                    "args": {"work_item_id": "wi_missing", "body": "x"},
+                }
+            ),
+            _json_result(
+                {
+                    "kind": "tool",
+                    "tool": "draft_reply",
+                    "args": {"work_item_id": "wi_missing", "body": "x"},
+                }
+            ),
+            _json_result({"kind": "final", "final": "should-not-reach"}),
+        ],
+    )
+    events = list(
+        run_ask_agent(
+            question="Draft",
+            session=db_session,
+            request_id="req-repeat-1",
+            gmail_only=True,
+            providers=[fake],
+        )
+    )
+    codes = [e.data.get("code") for e in events if e.type == "error"]
+    assert "tool_repeat_failure" in codes
+    assert "step_cap" not in codes
+    finals = [e for e in events if e.type == "final"]
+    assert finals
+    assert finals[-1].data.get("code") == "tool_repeat_failure"
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_model_feedback_includes_trusted_hint(db_session: Session) -> None:
+    from opspilot.agent.loop import _model_tool_feedback
+
+    text = _model_tool_feedback("draft_reply", {"ok": False, "error": "not_found"})
+    assert "<<<UNTRUSTED" in text
+    assert '"error": "not_found"' in text or '"error":"not_found"' in text
+    assert "Hint (trusted): use the exact id from search_items or get_message" in text
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_ask_tool_structured_log(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    from opspilot.agent import loop as agent_loop
+
+    wi_id = work_items.upsert_by_provider_id(
+        db_session,
+        provider_id="msg_log_1",
+        source_type="gmail",
+        subject_or_title="S",
+        body_or_description="B",
+        sender_or_requester="a@example.com",
+        received_at=datetime(2026, 10, 1, 12, 0, tzinfo=UTC),
+        thread_id="thr_log_1",
+    )
+    db_session.commit()
+    lines: list[str] = []
+
+    def _capture(msg: str, *args: object, **_kwargs: object) -> None:
+        lines.append(msg % args if args else msg)
+
+    monkeypatch.setattr(agent_loop._logger, "info", _capture)
+    fake = FakeProvider(
+        name="gemini",
+        json_results=[
+            _json_result(
+                {
+                    "kind": "tool",
+                    "tool": "get_message",
+                    "args": {"id": wi_id},
+                }
+            ),
+            _json_result({"kind": "final", "final": "ok"}),
+        ],
+    )
+    events = list(
+        run_ask_agent(
+            question="Show message",
+            session=db_session,
+            request_id="req-log-1",
+            gmail_only=True,
+            providers=[fake],
+        )
+    )
+    assert any(e.type == "tool_end" for e in events)
+    joined = "\n".join(lines)
+    assert "ask_tool request_id=req-log-1" in joined
+    assert "tool=get_message" in joined or "get_message" in joined
+    assert "arg_keys=id" in joined or "id" in joined
+    assert f"id_len={len(wi_id)}" in joined or str(len(wi_id)) in joined
+    assert "ok=True" in joined
+    assert "Friday" not in joined
+    assert "Project" not in joined

@@ -80,6 +80,8 @@ class BudgetAwareGateway:
         self.last_repair_used: bool = False
         self.last_parse_error_class: str | None = None
         self.last_parse_output_head: str | None = None
+        self.last_provider: str | None = None
+        self.last_model: str | None = None
 
     def complete(
         self,
@@ -218,6 +220,8 @@ class BudgetAwareGateway:
             )
             parsed, errors, error_class = self._try_parse(schema, attempt.text)
             if parsed is not None:
+                self.last_provider = provider.name
+                self.last_model = attempt.model or "unknown"
                 self._record(task=task, provider=provider.name, result=attempt, prompt_version=prompt_version)
                 self._circuit.reset(provider.name)
                 return parsed
@@ -275,6 +279,8 @@ class BudgetAwareGateway:
             parsed_repair, repair_errors, repair_class = self._try_parse(schema, repair.text)
             if parsed_repair is not None:
                 self.last_repair_used = True
+                self.last_provider = provider.name
+                self.last_model = repair.model or "unknown"
                 self._record(task=task, provider=provider.name, result=repair, prompt_version=repair_pv)
                 self._circuit.reset(provider.name)
                 return parsed_repair

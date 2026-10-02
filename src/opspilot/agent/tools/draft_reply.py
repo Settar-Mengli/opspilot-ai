@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -10,6 +11,18 @@ from opspilot.llm.prompt_safety import neutralize_text
 from opspilot.persistence.models import WorkItemRow
 from opspilot.persistence.repositories import mail_drafts
 from opspilot.services.mail_address import MailAddressError, assert_safe_subject, parse_single_addr_spec
+
+_RE_PREFIX = re.compile(r"(?i)^re:\s*")
+
+
+def reply_subject_from_original(original: str | None) -> str:
+    """Build a CR/LF-safe Re: subject without stacking Re: prefixes."""
+    text = neutralize_text(str(original or "")).strip()
+    while text and _RE_PREFIX.match(text):
+        text = _RE_PREFIX.sub("", text, count=1).strip()
+    if not text:
+        text = "(no subject)"
+    return assert_safe_subject(f"Re: {text[:490]}")
 
 
 def run(
@@ -21,12 +34,13 @@ def run(
     request_id: str | None,
 ) -> dict[str, Any]:
     item_id = neutralize_text(str(args.get("work_item_id") or args.get("id") or ""))[:64]
-    subject = neutralize_text(str(args.get("subject") or ""))[:500]
+    subject_raw = args.get("subject")
+    subject = neutralize_text(str(subject_raw if subject_raw is not None else ""))[:500]
     body = neutralize_text(str(args.get("body") or ""))[:8000]
     if not item_id:
         return {"ok": False, "error": "missing_work_item_id"}
-    if not subject or not body:
-        return {"ok": False, "error": "missing_subject_or_body"}
+    if not body:
+        return {"ok": False, "error": "missing_body"}
     row = session.get(WorkItemRow, item_id)
     if row is None:
         return {"ok": False, "error": "not_found"}
@@ -34,7 +48,13 @@ def run(
         return {"ok": False, "error": "not_found"}
     if not row.thread_id or not row.provider_id:
         return {"ok": False, "error": "missing_thread_or_provider"}
+    if not subject:
+        try:
+            subject = reply_subject_from_original(row.subject_or_title)
+        except MailAddressError as exc:
+            return {"ok": False, "error": exc.code}
     # Recipients server-derived from synced sender — never from model args.
+    # Reply-to-self (sender == operator) is allowed at draft time; allowlist is approve/send (D-033).
     try:
         to_addrs = parse_single_addr_spec(row.sender_or_requester)
         subject = assert_safe_subject(subject)
