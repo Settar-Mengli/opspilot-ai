@@ -123,22 +123,27 @@ Owner approves ask-error `-linux.png` baselines (375 required) when reviewing th
 
 ## Automated live smoke script (owner-run only)
 
-`scripts/live_smoke_b5.py` — **do not run in CI** and was **not executed** in the B5 reality-gap fix-pass Build.
+`scripts/live_smoke_b5.py` — **do not run in CI** and was **not executed** in the B5 post-audit fix-pass Build.
 
 ```bash
 # Preconditions: allowlist exactly one address == connected operator Google email;
+# gmail.send on stored scopes; Alembic head matches repo; Anthropic off; FORCE_RULES/LLM_DISABLE unset;
 # existing operator credential in DB; free LLM path available for Ask draft.
-uv run python scripts/live_smoke_b5.py
+# Default = NO real send. Real send requires --send (still capped at one).
+uv run python scripts/live_smoke_b5.py          # default: preflight + sync + Ask + demo/allowlist 403
+uv run python scripts/live_smoke_b5.py --send   # + one real approve send + 409 + idempotent replay
 ```
 
-Behavior (process-only env; never writes `.env`):
+Behavior (process-only env; never writes `.env`; DB access = read-only counts + API writes only):
 
-1. Refuse unless allowlist is exactly the operator account (prints match Y/N only).
-2. Mint operator cookie via `issue_session` (never prints cookie/token values).
-3. Start/stop uvicorn per phase on `127.0.0.1:8010`.
-4. Phase send (`DEMO_MODE=0` + allowlist): health → sync → Ask draft → **one** approve send → 409 re-approve → idempotent replay.
-5. Phase demo (`DEMO_MODE=1`): approve → 403.
-6. Phase allowlist empty: approve → 403.
-7. Teardown child processes; print host-label + COUNT deltas only.
+1. Print `mode=` and `database_host=` (first label only).
+2. Hard preflight (non-zero exit, codes only): Anthropic enabled; FORCE_RULES/LLM_DISABLE set; allowlist ≠ exactly operator; Alembic head mismatch (revision ids); `gmail_send_scope=N`.
+3. Mint operator cookie via `issue_session` (never prints cookie/token values).
+4. Start/stop uvicorn per phase on `127.0.0.1:8010`.
+5. Sync via `POST /api/v1/sync` (status code only); Ask draft (LLM asks capped at 3 per run; prints `llm_asks_used`).
+6. Default mode: print `expect_409=skipped`; no real send. `--send`: one approve send (unknown outcome counts as the one send and stops further sends) → 409 re-approve → idempotent replay.
+7. Phase demo (`DEMO_MODE=1`): approve → 403.
+8. Phase allowlist empty: approve → 403.
+9. Teardown child processes; print COUNT deltas only.
 
-At most **one** real Gmail send for the entire run.
+At most **one** real Gmail send for the entire `--send` run; default mode must print `real_sends_total=0`.
