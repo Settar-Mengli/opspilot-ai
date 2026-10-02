@@ -41,6 +41,13 @@ def _log_llm_failure(task: TaskName, exc: BaseException) -> None:
 
 _MAX_ITEMS = 20
 _MAX_REASON_CHARS = 120
+# Work item PKs are String(64); wi_{uuid4.hex} is 35 chars — never truncate below that.
+_WORK_ITEM_ID_MAX = 64
+
+
+def format_work_item_id_for_prompt(raw: object) -> str:
+    """Neutralize a work-item id for prompts without chopping the PK."""
+    return neutralize_text(str(raw if raw is not None else "?"))[:_WORK_ITEM_ID_MAX] or "?"
 
 
 def compact_triage_lines(records: list[dict[str, Any]], *, include_title: bool = False) -> str:
@@ -49,7 +56,7 @@ def compact_triage_lines(records: list[dict[str, Any]], *, include_title: bool =
         return wrap_untrusted("queue", "queue: empty")
     lines = [f"queue: {min(len(records), _MAX_ITEMS)} items"]
     for record in records[:_MAX_ITEMS]:
-        item_id = neutralize_text(str(record.get("id", "?")))[:32]
+        item_id = format_work_item_id_for_prompt(record.get("id", "?"))
         urgency = neutralize_text(str(record.get("urgency", "?")))[:16]
         category = neutralize_text(str(record.get("category", "?")))[:24]
         reason = neutralize_text(str(record.get("urgency_reason", "")))[:_MAX_REASON_CHARS]

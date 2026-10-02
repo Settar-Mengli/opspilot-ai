@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from opspilot.llm.policy import llm_allowed
 from opspilot.llm.prompt_safety import UNTRUSTED_SYSTEM_POLICY, neutralize_text, wrap_untrusted
-from opspilot.services._llm import complete_prose, providers_or_empty
+from opspilot.services._llm import complete_prose, format_work_item_id_for_prompt, providers_or_empty
 
 logger = logging.getLogger("opspilot.adapters.briefing")
 
@@ -56,7 +56,9 @@ def generate_ai_briefing(
         )
         top_3_lines = []
         for record, item in sorted_records[:3]:
-            rec_id = str(record.get("id", "") if isinstance(record, dict) else getattr(record, "id", ""))[:32]
+            rec_id = format_work_item_id_for_prompt(
+                record.get("id", "") if isinstance(record, dict) else getattr(record, "id", "")
+            )
             urg = record.get("urgency", "") if isinstance(record, dict) else getattr(record, "urgency", "")
             cat = record.get("category", "") if isinstance(record, dict) else getattr(record, "category", "")
             if isinstance(item, dict):
@@ -69,9 +71,9 @@ def generate_ai_briefing(
         for action in action_items[:10]:
             deadline = action.get("deadline", None) if isinstance(action, dict) else getattr(action, "deadline", None)
             if deadline:
-                aid = str(
+                aid = format_work_item_id_for_prompt(
                     action.get("work_item_id", "") if isinstance(action, dict) else getattr(action, "work_item_id", "")
-                )[:32]
+                )
                 summary = neutralize_text(
                     str(action.get("summary", "") if isinstance(action, dict) else getattr(action, "summary", ""))
                 )[:100]
