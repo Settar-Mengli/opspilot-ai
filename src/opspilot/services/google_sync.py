@@ -52,9 +52,12 @@ def run_sync(
         "calendar_upserted": 0,
     }
     if "gmail" in wanted:
-        upserted, removed = _sync_gmail(session, access_token=access, account_email=account_email, transport=tx)
+        upserted, removed, gmail_truncated = _sync_gmail(
+            session, access_token=access, account_email=account_email, transport=tx
+        )
         result["gmail_upserted"] = upserted
         result["gmail_removed"] = removed
+        result["gmail_truncated"] = gmail_truncated
     if "calendar" in wanted:
         cal_upserted, cal_truncated = _sync_calendar(
             session, access_token=access, account_email=account_email, transport=tx
@@ -78,7 +81,7 @@ def _sync_gmail(
     access_token: str,
     account_email: str,
     transport: GoogleTransport,
-) -> tuple[int, int]:
+) -> tuple[int, int, bool]:
     client = GmailClient(access_token=access_token, transport=transport)
     cursor = sync_cursors.get_cursor(
         session,
@@ -103,6 +106,14 @@ def _sync_gmail(
         else:
             mode = "incremental"
             ids, removed_ids, history_truncated, last_hist_id = hist
+            if history_truncated and not last_hist_id:
+                # Truncate without usable history id — fall back to full list (C3).
+                mode = "full_resync_after_truncate"
+                history_truncated = False
+                ids, list_truncated = client.list_message_ids(max_results=50, query="in:inbox")
+                trash_ids, trash_trunc = client.list_message_ids(max_results=50, query="in:trash")
+                removed_ids = trash_ids
+                list_truncated = list_truncated or trash_trunc
     else:
         ids, list_truncated = client.list_message_ids(max_results=50, query="in:inbox")
         trash_ids, trash_trunc = client.list_message_ids(max_results=50, query="in:trash")
@@ -158,6 +169,7 @@ def _sync_gmail(
 
     # Cursor safety: never advance past unprocessed history pages.
     history_end = "-"
+    gmail_truncated = False
     if history_truncated:
         if last_hist_id:
             sync_cursors.upsert_cursor(
@@ -176,6 +188,16 @@ def _sync_gmail(
             last_hist_id or "-",
             cursor or "-",
         )
+    elif list_truncated:
+        # Full-list incomplete: do not claim a complete profile history id (A5).
+        gmail_truncated = True
+        history_end = cursor or "-"
+        _logger.warning(
+            "gmail_sync list_truncated=1 upserted=%s removed_local=%s prior_cursor_kept=%s",
+            upserted,
+            removed,
+            "1" if cursor else "0",
+        )
     else:
         new_history = client.profile_history_id()
         sync_cursors.upsert_cursor(
@@ -190,7 +212,7 @@ def _sync_gmail(
     _logger.info(
         "gmail_sync mode=%s history_start=%s added_candidates=%s removed_candidates=%s "
         "upserted=%s removed_local=%s skipped_non_inbox=%s history_end=%s "
-        "history_truncated=%s list_truncated=%s",
+        "history_truncated=%s list_truncated=%s gmail_truncated=%s",
         mode,
         cursor or "-",
         len(ids),
@@ -201,8 +223,9 @@ def _sync_gmail(
         history_end,
         int(history_truncated),
         int(list_truncated),
+        int(gmail_truncated),
     )
-    return upserted, removed
+    return upserted, removed, gmail_truncated
 
 
 def _sync_calendar(

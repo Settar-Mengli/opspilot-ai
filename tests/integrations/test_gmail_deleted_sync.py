@@ -374,3 +374,174 @@ def test_history_truncate_holds_cursor_then_remainder(
         db_session.scalar(select(func.count()).select_from(WorkItemRow).where(WorkItemRow.provider_id == "page2_msg"))
         == 1
     )
+
+
+def test_history_truncate_without_last_hid_falls_back_to_full_list(
+    db_session: Session, sync_env: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OPSPILOT_GMAIL_HISTORY_MAX_PAGES", "1")
+    oauth_credentials.upsert_encrypted_refresh(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly "
+            "https://www.googleapis.com/auth/gmail.send "
+            "https://www.googleapis.com/auth/calendar.readonly"
+        ),
+        refresh_token_plaintext="rt",
+    )
+    sync_cursors.upsert_cursor(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        cursor_kind=sync_cursors.CURSOR_GMAIL_HISTORY,
+        cursor_value="1000",
+    )
+    db_session.commit()
+
+    class _NoHidTruncate:
+        def __init__(self) -> None:
+            self.list_calls = 0
+
+        def request(
+            self,
+            method: str,
+            url: str,
+            *,
+            headers: dict[str, str] | None = None,
+            params: dict[str, Any] | None = None,
+            data: dict[str, Any] | None = None,
+            json: dict[str, Any] | None = None,
+        ) -> httpx.Response:
+            del method, headers, data, json
+            if "oauth2.googleapis.com/token" in url:
+                return httpx.Response(200, json={"access_token": "ya29.fake"})
+            if url.endswith("/users/me/profile"):
+                return httpx.Response(200, json={"historyId": "9999"})
+            if "/users/me/history" in url:
+                # Truncate with empty history (no entry ids) → last_hid None.
+                return httpx.Response(200, json={"history": [], "nextPageToken": "more"})
+            if url.endswith("/users/me/messages"):
+                self.list_calls += 1
+                q = str((params or {}).get("q") or "")
+                if "trash" in q:
+                    return httpx.Response(200, json={"messages": []})
+                return httpx.Response(200, json={"messages": [{"id": "full_fallback_msg"}]})
+            if "/users/me/messages/" in url:
+                mid = url.rsplit("/", 1)[-1]
+                return httpx.Response(
+                    200,
+                    json={
+                        "id": mid,
+                        "threadId": "thr",
+                        "labelIds": ["INBOX"],
+                        "payload": {
+                            "headers": [
+                                {"name": "Subject", "value": "Fb"},
+                                {"name": "From", "value": "a@example.com"},
+                                {"name": "Date", "value": "Tue, 30 Sep 2026 12:00:00 +0000"},
+                            ],
+                            "mimeType": "text/plain",
+                            "body": {"data": "Ym9keQ"},
+                        },
+                    },
+                )
+            if "/calendars/primary/events" in url:
+                return httpx.Response(200, json={"items": [], "nextSyncToken": "c"})
+            return httpx.Response(500, json={"error": "unexpected"})
+
+    tx = _NoHidTruncate()
+    r = google_sync.run_sync(db_session, transport=tx, providers=["gmail"])
+    db_session.commit()
+    assert tx.list_calls >= 1
+    assert (
+        db_session.scalar(
+            select(func.count()).select_from(WorkItemRow).where(WorkItemRow.provider_id == "full_fallback_msg")
+        )
+        == 1
+    )
+    assert r.get("gmail_truncated") is False
+
+
+def test_gmail_full_list_truncated_sets_flag_holds_cursor(
+    db_session: Session, sync_env: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OPSPILOT_GMAIL_LIST_MAX_PAGES", "1")
+    oauth_credentials.upsert_encrypted_refresh(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly "
+            "https://www.googleapis.com/auth/gmail.send "
+            "https://www.googleapis.com/auth/calendar.readonly"
+        ),
+        refresh_token_plaintext="rt",
+    )
+    sync_cursors.upsert_cursor(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        cursor_kind=sync_cursors.CURSOR_GMAIL_HISTORY,
+        cursor_value="prev-hid",
+    )
+    db_session.commit()
+
+    class _ListTrunc:
+        def request(
+            self,
+            method: str,
+            url: str,
+            *,
+            headers: dict[str, str] | None = None,
+            params: dict[str, Any] | None = None,
+            data: dict[str, Any] | None = None,
+            json: dict[str, Any] | None = None,
+        ) -> httpx.Response:
+            del method, headers, data, json
+            if "oauth2.googleapis.com/token" in url:
+                return httpx.Response(200, json={"access_token": "ya29.fake"})
+            if url.endswith("/users/me/profile"):
+                return httpx.Response(200, json={"historyId": "should-not-store"})
+            if "/users/me/history" in url:
+                return httpx.Response(404, json={"error": "expired"})
+            if url.endswith("/users/me/messages"):
+                q = str((params or {}).get("q") or "")
+                if "trash" in q:
+                    return httpx.Response(200, json={"messages": []})
+                return httpx.Response(
+                    200,
+                    json={"messages": [{"id": "listed1"}], "nextPageToken": "page2"},
+                )
+            if "/users/me/messages/" in url:
+                mid = url.rsplit("/", 1)[-1]
+                return httpx.Response(
+                    200,
+                    json={
+                        "id": mid,
+                        "threadId": "thr",
+                        "labelIds": ["INBOX"],
+                        "payload": {
+                            "headers": [
+                                {"name": "Subject", "value": "L"},
+                                {"name": "From", "value": "a@example.com"},
+                                {"name": "Date", "value": "Tue, 30 Sep 2026 12:00:00 +0000"},
+                            ],
+                            "mimeType": "text/plain",
+                            "body": {"data": "Ym9keQ"},
+                        },
+                    },
+                )
+            return httpx.Response(500, json={"error": "unexpected"})
+
+    r = google_sync.run_sync(db_session, transport=_ListTrunc(), providers=["gmail"])
+    db_session.commit()
+    assert r.get("gmail_truncated") is True
+    cur = sync_cursors.get_cursor(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        cursor_kind=sync_cursors.CURSOR_GMAIL_HISTORY,
+    )
+    assert cur == "prev-hid"
