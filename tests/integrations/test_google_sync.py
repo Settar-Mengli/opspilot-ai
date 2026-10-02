@@ -169,6 +169,119 @@ def test_sync_idempotent(db_session: Session, sync_env: None) -> None:
     assert "singleEvents" not in incr
 
 
+def test_calendar_truncate_holds_sync_token_then_remainder(
+    db_session: Session, sync_env: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OPSPILOT_CALENDAR_LIST_MAX_PAGES", "1")
+    oauth_credentials.upsert_encrypted_refresh(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly "
+            "https://www.googleapis.com/auth/gmail.send "
+            "https://www.googleapis.com/auth/calendar.readonly"
+        ),
+        refresh_token_plaintext="rt",
+    )
+    sync_cursors.upsert_cursor(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        cursor_kind=sync_cursors.CURSOR_CALENDAR_SYNC,
+        cursor_value="cal-prior",
+    )
+    db_session.commit()
+
+    class _PagedCal:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def request(
+            self,
+            method: str,
+            url: str,
+            *,
+            headers: dict[str, str] | None = None,
+            params: dict[str, Any] | None = None,
+            data: dict[str, Any] | None = None,
+            json: dict[str, Any] | None = None,
+        ) -> httpx.Response:
+            del method, headers, data, json
+            if "oauth2.googleapis.com/token" in url:
+                return httpx.Response(200, json={"access_token": "ya29.fake"})
+            if url.endswith("/users/me/profile"):
+                return httpx.Response(200, json={"historyId": "1"})
+            if "/users/me/history" in url:
+                return httpx.Response(200, json={"history": []})
+            if url.endswith("/users/me/messages"):
+                return httpx.Response(200, json={"messages": []})
+            if "/calendars/primary/events" in url:
+                self.calls += 1
+                p = dict(params or {})
+                if p.get("syncToken") == "cal-prior" and not p.get("pageToken"):
+                    return httpx.Response(
+                        200,
+                        json={
+                            "items": [
+                                {
+                                    "id": "ev_page1",
+                                    "summary": "One",
+                                    "start": {"dateTime": "2026-10-02T15:00:00Z"},
+                                    "end": {"dateTime": "2026-10-02T16:00:00Z"},
+                                }
+                            ],
+                            "nextPageToken": "calpage2",
+                        },
+                    )
+                if p.get("pageToken") == "calpage2" or (
+                    p.get("syncToken") == "cal-prior" and self.calls > 1 and not p.get("pageToken")
+                ):
+                    # After truncate, prior token kept; next sync may re-request with same token
+                    # and we serve page2 when max pages allows.
+                    if p.get("pageToken") == "calpage2" or self.calls >= 2:
+                        return httpx.Response(
+                            200,
+                            json={
+                                "items": [
+                                    {
+                                        "id": "ev_page2",
+                                        "summary": "Two",
+                                        "start": {"dateTime": "2026-10-03T15:00:00Z"},
+                                        "end": {"dateTime": "2026-10-03T16:00:00Z"},
+                                    }
+                                ],
+                                "nextSyncToken": "cal-next",
+                            },
+                        )
+                return httpx.Response(200, json={"items": [], "nextSyncToken": "cal-next"})
+            return httpx.Response(500, json={"error": "unexpected"})
+
+    tx = _PagedCal()
+    google_sync.run_sync(db_session, transport=tx, providers=["calendar"])
+    db_session.commit()
+    assert (
+        db_session.scalar(select(func.count()).select_from(MeetingRow).where(MeetingRow.provider_id == "ev_page1")) == 1
+    )
+    assert (
+        db_session.scalar(select(func.count()).select_from(MeetingRow).where(MeetingRow.provider_id == "ev_page2")) == 0
+    )
+    cur = sync_cursors.get_cursor(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        cursor_kind=sync_cursors.CURSOR_CALENDAR_SYNC,
+    )
+    assert cur == "cal-prior"
+
+    monkeypatch.setenv("OPSPILOT_CALENDAR_LIST_MAX_PAGES", "20")
+    google_sync.run_sync(db_session, transport=tx, providers=["calendar"])
+    db_session.commit()
+    assert (
+        db_session.scalar(select(func.count()).select_from(MeetingRow).where(MeetingRow.provider_id == "ev_page2")) == 1
+    )
+
+
 def test_list_events_sync_token_sends_only_token() -> None:
     tx = FakeTransport()
     client = CalendarClient(access_token="t", transport=tx)
