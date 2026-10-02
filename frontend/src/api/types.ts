@@ -93,6 +93,8 @@ export interface AskDraftCard {
   approveError?: string | null
   idempotencyKey?: string
   approving?: boolean
+  /** Last approve settled as ambiguous send; show deliberate re-send label. */
+  sendOutcomeUnknown?: boolean
 }
 
 export interface EveningSummaryRequest {

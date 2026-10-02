@@ -146,15 +146,17 @@ export function AskThreadBody({
                   ? 'Already sent'
                   : draft.approving
                     ? 'Sending…'
-                    : ASK_APPROVE_ENABLED
-                      ? 'Approve and send'
-                      : 'Approve available after mail HITL lands'
+                    : draft.sendOutcomeUnknown
+                      ? 'Check Sent folder, then re-send'
+                      : ASK_APPROVE_ENABLED
+                        ? 'Approve and send'
+                        : 'Approve available after mail HITL lands'
               }
               onClick={() => {
                 if (ASK_APPROVE_ENABLED && !draft.sentAt && !draft.approving) onApproveDraft?.()
               }}
             >
-              Approve & send
+              {draft.sendOutcomeUnknown ? 'Check Sent, then re-send' : 'Approve & send'}
             </button>
           </div>
         )}

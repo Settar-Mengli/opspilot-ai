@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+import httpx
+
 from opspilot.integrations.google_http import GoogleHttpError, GoogleTransport, request_with_backoff
 
 GMAIL_API = "https://gmail.googleapis.com/gmail/v1"
@@ -295,14 +297,32 @@ class GmailClient:
             _logger.info("missing_rfc_message_id provider_id=%s", in_reply_to_provider_id)
         msg.set_content(body if isinstance(body, str) else str(body))
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode("ascii").rstrip("=")
-        resp = request_with_backoff(
-            self._transport,
-            "POST",
-            f"{GMAIL_API}/users/me/messages/send",
-            headers=self._headers(),
-            json={"raw": raw, "threadId": thread_id},
-        )
+        try:
+            resp = request_with_backoff(
+                self._transport,
+                "POST",
+                f"{GMAIL_API}/users/me/messages/send",
+                headers=self._headers(),
+                json={"raw": raw, "threadId": thread_id},
+            )
+        except (httpx.TimeoutException, httpx.TransportError) as exc:
+            raise GoogleHttpError("send_outcome_unknown") from exc
         if resp.status_code >= 400:
+            err_code: str | None = None
+            try:
+                payload = resp.json()
+                if isinstance(payload, dict):
+                    raw_err = payload.get("error")
+                    if isinstance(raw_err, str):
+                        err_code = raw_err
+                    elif isinstance(raw_err, dict) and isinstance(raw_err.get("status"), str):
+                        err_code = str(raw_err.get("status"))
+            except Exception:
+                err_code = None
+            if resp.status_code == 401 or err_code == "invalid_grant":
+                raise GoogleHttpError("invalid_grant", status_code=resp.status_code)
+            if resp.status_code in {408, 429} or resp.status_code >= 500:
+                raise GoogleHttpError("send_outcome_unknown", status_code=resp.status_code)
             raise GoogleHttpError("gmail_send_failed", status_code=resp.status_code)
         mid = str(resp.json().get("id") or "")
         if not mid:

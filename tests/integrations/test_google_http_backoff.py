@@ -94,3 +94,42 @@ def test_request_with_backoff_cumulative_sleep_at_most_15s() -> None:
     )
     assert sum(sleeps) <= 15.0
     assert resp.status_code in {503, 200}
+
+
+def test_request_with_backoff_rejects_post_retry_without_opt_in() -> None:
+    sleeps: list[float] = []
+    tx = _SeqTransport(
+        [
+            httpx.Response(503, json={"error": "a"}),
+            httpx.Response(200, json={"ok": True}),
+        ]
+    )
+    resp = request_with_backoff(
+        tx,
+        "POST",
+        "https://example.test/x",
+        sleep=sleeps.append,
+    )
+    assert resp.status_code == 503
+    assert tx.calls == 1
+    assert sleeps == []
+
+
+def test_request_with_backoff_post_retries_when_opted_in() -> None:
+    sleeps: list[float] = []
+    tx = _SeqTransport(
+        [
+            httpx.Response(503, headers={"Retry-After": "0.1"}, json={"error": "a"}),
+            httpx.Response(200, json={"ok": True}),
+        ]
+    )
+    resp = request_with_backoff(
+        tx,
+        "POST",
+        "https://example.test/x",
+        sleep=sleeps.append,
+        allow_retry_non_idempotent=True,
+    )
+    assert resp.status_code == 200
+    assert tx.calls == 2
+    assert sleeps == [0.1]

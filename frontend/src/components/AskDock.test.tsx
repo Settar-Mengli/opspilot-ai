@@ -124,4 +124,34 @@ describe('AskThreadBody draft card', () => {
     screen.getByTestId('ask-draft-approve').click()
     expect(onApprove).toHaveBeenCalledTimes(1)
   })
+
+  it('AskDock_unknown_shows_alert_and_resend_label', () => {
+    render(
+      <AskThreadBody
+        assistantName="OpsPilot"
+        messages={[]}
+        draft={{
+          draftId: 'md_1',
+          subject: 'S',
+          body: 'B',
+          toAddrs: 'demo@example.com',
+          approveError: 'Send may have gone through. Check the Sent folder before trying again.',
+          sendOutcomeUnknown: true,
+          idempotencyKey: 'k2',
+        }}
+        input=""
+        loading={false}
+        error={null}
+        onInputChange={vi.fn()}
+        onSubmit={vi.fn()}
+        onApproveDraft={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent('Send may have gone through')
+    expect(screen.getByTestId('ask-draft-approve')).toHaveTextContent('Check Sent, then re-send')
+    expect(screen.getByTestId('ask-draft-approve')).toHaveAttribute(
+      'title',
+      'Check Sent folder, then re-send',
+    )
+  })
 })

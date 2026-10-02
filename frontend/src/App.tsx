@@ -124,6 +124,7 @@ function App() {
                 approveError: null,
                 idempotencyKey: crypto.randomUUID(),
                 approving: false,
+                sendOutcomeUnknown: false,
               })
             },
             onFinal: (answer) => {
@@ -270,11 +271,17 @@ function App() {
                   sentAt: Date.now(),
                   approveError: null,
                   approving: false,
+                  sendOutcomeUnknown: false,
                 }
               : d,
           )
         } catch (e) {
           const message = formatMailHitlError(e)
+          const code =
+            typeof e === 'object' && e && 'code' in e && typeof (e as { code?: string }).code === 'string'
+              ? (e as { code: string }).code
+              : undefined
+          const unknown = code === 'send_outcome_unknown'
           setAskDraft((d) =>
             d
               ? {
@@ -282,6 +289,7 @@ function App() {
                   approveError: message,
                   approving: false,
                   idempotencyKey: crypto.randomUUID(),
+                  sendOutcomeUnknown: unknown,
                 }
               : d,
           )

@@ -71,6 +71,9 @@ def _retry_after_delay(resp: httpx.Response, attempt: int) -> float:
     return float(min(_BACKOFF_SLEEP_CAP_S, delay))
 
 
+_IDEMPOTENT_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+
+
 def request_with_backoff(
     transport: GoogleTransport,
     method: str,
@@ -81,8 +84,13 @@ def request_with_backoff(
     data: dict[str, Any] | None = None,
     json: dict[str, Any] | None = None,
     sleep: Callable[[float], None] = time.sleep,
+    allow_retry_non_idempotent: bool = False,
 ) -> httpx.Response:
-    """Retry 429/502/503 with exponential backoff; total sleep capped at 15s."""
+    """Retry 429/502/503 with exponential backoff; total sleep capped at 15s.
+
+    Non-idempotent methods (e.g. POST) get a single attempt unless
+    ``allow_retry_non_idempotent=True`` — callers must not opt in for Gmail send.
+    """
     slept = 0.0
     last: httpx.Response | None = None
     call_kwargs: dict[str, Any] = {}
@@ -94,9 +102,11 @@ def request_with_backoff(
         call_kwargs["data"] = data
     if json is not None:
         call_kwargs["json"] = json
-    for attempt in range(_BACKOFF_MAX_RETRIES + 1):
+    method_u = method.upper()
+    max_attempts = _BACKOFF_MAX_RETRIES + 1 if method_u in _IDEMPOTENT_METHODS or allow_retry_non_idempotent else 1
+    for attempt in range(max_attempts):
         last = transport.request(method, url, **call_kwargs)
-        if last.status_code not in _RETRYABLE_STATUSES or attempt >= _BACKOFF_MAX_RETRIES:
+        if last.status_code not in _RETRYABLE_STATUSES or attempt >= max_attempts - 1:
             return last
         delay = _retry_after_delay(last, attempt)
         if slept + delay > _BACKOFF_WALL_CAP_S:

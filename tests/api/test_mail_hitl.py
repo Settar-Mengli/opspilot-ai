@@ -398,7 +398,7 @@ def test_failed_send_writes_audit_and_failed_status(db_session: Session, monkeyp
                         "payload": {"headers": [{"name": "Message-ID", "value": "<fail@example.test>"}]},
                     },
                 )
-            return httpx.Response(500, json={"error": "boom"})
+            return httpx.Response(400, json={"error": "boom"})
 
     with pytest.raises(mail_hitl.MailHitlError) as exc:
         mail_hitl.approve_and_send(
@@ -493,3 +493,239 @@ def test_approve_new_key_after_demo_deny_then_send(
     )
     assert ok.status_code == 200
     assert ok.json()["status"] == "sent"
+
+
+def _oauth_ready(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPSPILOT_SEND_RECIPIENT_ALLOWLIST", "demo@example.com")
+    monkeypatch.setenv("OPSPILOT_DEMO_MODE", "0")
+    monkeypatch.setenv("GOOGLE_OAUTH_CLIENT_ID", "cid")
+    monkeypatch.setenv("GOOGLE_OAUTH_CLIENT_SECRET", "csec")
+    monkeypatch.setenv("TOKEN_ENCRYPTION_KEY", Fernet.generate_key().decode())
+    oauth_credentials.upsert_encrypted_refresh(
+        db_session,
+        provider="google",
+        account_email="ops@example.com",
+        refresh_token_plaintext="refresh-tok",
+        scopes="https://www.googleapis.com/auth/gmail.send",
+    )
+    db_session.commit()
+
+
+class _SeqSendTransport:
+    """Token + metadata GET, then sequenced send POST responses (or raise)."""
+
+    def __init__(self, send_responses: list[httpx.Response | BaseException]) -> None:
+        self._send = list(send_responses)
+        self.send_posts = 0
+
+    def request(self, method: str, url: str, **kwargs):  # type: ignore[no-untyped-def]
+        if "oauth2.googleapis.com/token" in url:
+            return httpx.Response(200, json={"access_token": "tok"})
+        if method.upper() == "GET" and "/messages/" in url:
+            return httpx.Response(
+                200,
+                json={
+                    "id": "meta",
+                    "payload": {"headers": [{"name": "Message-ID", "value": "<fx@example.test>"}]},
+                },
+            )
+        if method.upper() == "POST" and url.endswith("/messages/send"):
+            self.send_posts += 1
+            if not self._send:
+                raise AssertionError("no send responses left")
+            item = self._send.pop(0)
+            if isinstance(item, BaseException):
+                raise item
+            return item
+        raise AssertionError(f"unexpected {method} {url}")
+
+
+def test_send_502_then_200_single_post_outcome_unknown(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    _oauth_ready(db_session, monkeypatch)
+    draft_id = _seed_draft(db_session, provider_id="msg_502_unknown")
+    draft = mail_drafts.get_draft(db_session, draft_id)
+    assert draft is not None
+    # Without opt-in, POST must not retry even if a 200 would follow.
+    tx = _SeqSendTransport(
+        [
+            httpx.Response(502, json={"error": "bad_gateway"}),
+            httpx.Response(200, json={"id": "should_not_send"}),
+        ]
+    )
+    with pytest.raises(mail_hitl.MailHitlError) as exc:
+        mail_hitl.approve_and_send(
+            db_session,
+            draft_id,
+            expected_payload_sha256=draft.payload_sha256,
+            operator_email="ops@example.com",
+            request_id="req-502",
+            idempotency_key="unk-502",
+            transport=tx,
+        )
+    assert exc.value.code == "send_outcome_unknown"
+    assert tx.send_posts == 1
+    refreshed = mail_drafts.get_draft(db_session, draft_id)
+    assert refreshed is not None
+    assert refreshed.status == "draft"
+    audit = mail_send_audit.get_by_idempotency_key(db_session, "unk-502")
+    assert audit is not None
+    assert audit.error_code == "send_outcome_unknown"
+    assert audit.send_failed is True
+
+
+def test_send_timeout_outcome_unknown(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    _oauth_ready(db_session, monkeypatch)
+    draft_id = _seed_draft(db_session, provider_id="msg_timeout_unknown")
+    draft = mail_drafts.get_draft(db_session, draft_id)
+    assert draft is not None
+    tx = _SeqSendTransport([httpx.TimeoutException("timed out")])
+    with pytest.raises(mail_hitl.MailHitlError) as exc:
+        mail_hitl.approve_and_send(
+            db_session,
+            draft_id,
+            expected_payload_sha256=draft.payload_sha256,
+            operator_email="ops@example.com",
+            request_id="req-to",
+            idempotency_key="unk-to",
+            transport=tx,
+        )
+    assert exc.value.code == "send_outcome_unknown"
+    assert tx.send_posts == 1
+    refreshed = mail_drafts.get_draft(db_session, draft_id)
+    assert refreshed is not None
+    assert refreshed.status == "draft"
+
+
+def test_send_400_definitive_send_failed(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    _oauth_ready(db_session, monkeypatch)
+    draft_id = _seed_draft(db_session, provider_id="msg_400_def")
+    draft = mail_drafts.get_draft(db_session, draft_id)
+    assert draft is not None
+    tx = _SeqSendTransport([httpx.Response(400, json={"error": "invalidArgument"})])
+    with pytest.raises(mail_hitl.MailHitlError) as exc:
+        mail_hitl.approve_and_send(
+            db_session,
+            draft_id,
+            expected_payload_sha256=draft.payload_sha256,
+            operator_email="ops@example.com",
+            request_id="req-400",
+            idempotency_key="def-400",
+            transport=tx,
+        )
+    assert exc.value.code == "gmail_send_failed"
+    assert tx.send_posts == 1
+    refreshed = mail_drafts.get_draft(db_session, draft_id)
+    assert refreshed is not None
+    assert refreshed.status == "failed"
+
+
+def test_send_401_maps_google_reauth_required_single_post(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    _oauth_ready(db_session, monkeypatch)
+    draft_id = _seed_draft(db_session, provider_id="msg_401_reauth")
+    draft = mail_drafts.get_draft(db_session, draft_id)
+    assert draft is not None
+    tx = _SeqSendTransport([httpx.Response(401, json={"error": "invalid_grant"})])
+    with pytest.raises(mail_hitl.MailHitlError) as exc:
+        mail_hitl.approve_and_send(
+            db_session,
+            draft_id,
+            expected_payload_sha256=draft.payload_sha256,
+            operator_email="ops@example.com",
+            request_id="req-401",
+            idempotency_key="reauth-401",
+            transport=tx,
+        )
+    assert exc.value.code == "google_reauth_required"
+    assert exc.value.http_status == 401
+    assert tx.send_posts == 1
+    refreshed = mail_drafts.get_draft(db_session, draft_id)
+    assert refreshed is not None
+    assert refreshed.status == "failed"
+    audit = mail_send_audit.get_by_idempotency_key(db_session, "reauth-401")
+    assert audit is not None
+    assert audit.error_code == "google_reauth_required"
+
+
+def test_approve_same_key_after_unknown_replays_zero_posts(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _oauth_ready(db_session, monkeypatch)
+    draft_id = _seed_draft(db_session, provider_id="msg_unk_replay")
+    draft = mail_drafts.get_draft(db_session, draft_id)
+    assert draft is not None
+    tx = _SeqSendTransport([httpx.Response(503, json={"error": "unavailable"})])
+    with pytest.raises(mail_hitl.MailHitlError) as exc:
+        mail_hitl.approve_and_send(
+            db_session,
+            draft_id,
+            expected_payload_sha256=draft.payload_sha256,
+            operator_email="ops@example.com",
+            request_id="req-rp1",
+            idempotency_key="unk-replay",
+            transport=tx,
+        )
+    assert exc.value.code == "send_outcome_unknown"
+    posts_after_first = tx.send_posts
+    replay = mail_hitl.approve_and_send(
+        db_session,
+        draft_id,
+        expected_payload_sha256=draft.payload_sha256,
+        operator_email="ops@example.com",
+        request_id="req-rp2",
+        idempotency_key="unk-replay",
+        transport=tx,
+    )
+    assert replay["status"] == "idempotent_replay"
+    assert replay.get("error_code") == "send_outcome_unknown"
+    assert replay.get("send_failed") is True
+    assert tx.send_posts == posts_after_first
+
+
+def test_unknown_outcome_counts_toward_daily_cap(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    _oauth_ready(db_session, monkeypatch)
+    monkeypatch.setenv("OPSPILOT_SEND_MAX_PER_DAY", "2")
+    # One success + one unknown = cap of 2 consumed.
+    d1 = _seed_draft(db_session, provider_id="msg_cap_ok")
+    draft1 = mail_drafts.get_draft(db_session, d1)
+    assert draft1 is not None
+    tx_ok = _CaptureTransport()
+    mail_hitl.approve_and_send(
+        db_session,
+        d1,
+        expected_payload_sha256=draft1.payload_sha256,
+        operator_email="ops@example.com",
+        request_id="req-cap-ok",
+        idempotency_key="cap-ok",
+        transport=tx_ok,
+    )
+    d2 = _seed_draft(db_session, provider_id="msg_cap_unk", thread_id="thr_cap_unk")
+    draft2 = mail_drafts.get_draft(db_session, d2)
+    assert draft2 is not None
+    tx_unk = _SeqSendTransport([httpx.Response(502, json={"error": "x"})])
+    with pytest.raises(mail_hitl.MailHitlError) as exc:
+        mail_hitl.approve_and_send(
+            db_session,
+            d2,
+            expected_payload_sha256=draft2.payload_sha256,
+            operator_email="ops@example.com",
+            request_id="req-cap-unk",
+            idempotency_key="cap-unk",
+            transport=tx_unk,
+        )
+    assert exc.value.code == "send_outcome_unknown"
+    d3 = _seed_draft(db_session, provider_id="msg_cap_deny", thread_id="thr_cap_deny")
+    draft3 = mail_drafts.get_draft(db_session, d3)
+    assert draft3 is not None
+    tx_deny = _SeqSendTransport([httpx.Response(200, json={"id": "nope"})])
+    with pytest.raises(mail_hitl.MailHitlError) as exc2:
+        mail_hitl.approve_and_send(
+            db_session,
+            d3,
+            expected_payload_sha256=draft3.payload_sha256,
+            operator_email="ops@example.com",
+            request_id="req-cap-deny",
+            idempotency_key="cap-deny",
+            transport=tx_deny,
+        )
+    assert exc2.value.code == "send_daily_cap"
+    assert tx_deny.send_posts == 0

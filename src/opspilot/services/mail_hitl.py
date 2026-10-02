@@ -130,6 +130,7 @@ def approve_and_send(
             "demo_mode_blocked": existing.demo_mode_blocked,
             "allowlist_denied": existing.allowlist_denied,
             "send_failed": existing.send_failed,
+            "error_code": existing.error_code,
         }
 
     draft = mail_drafts.get_draft(session, draft_id)
@@ -251,6 +252,39 @@ def approve_and_send(
         )
     except GoogleHttpError as exc:
         code = str(exc.args[0] if exc.args else "gmail_send_failed")[:64]
+        if code == "send_outcome_unknown":
+            # Release claim so a deliberate new-key re-approve is possible after Sent check.
+            mail_drafts.set_status(session, draft, "draft")
+            mail_send_audit.insert_audit(
+                session,
+                draft_id=draft.id,
+                idempotency_key=key,
+                to_addrs=draft.to_addrs,
+                payload_sha256=draft.payload_sha256,
+                request_id=request_id,
+                operator_email=operator_email,
+                send_failed=True,
+                error_code="send_outcome_unknown",
+            )
+            raise MailHitlError(
+                "send_outcome_unknown",
+                "Send may have gone through. Check the Sent folder before trying again.",
+                http_status=502,
+            ) from None
+        if code == "invalid_grant":
+            mail_drafts.set_status(session, draft, "failed")
+            mail_send_audit.insert_audit(
+                session,
+                draft_id=draft.id,
+                idempotency_key=key,
+                to_addrs=draft.to_addrs,
+                payload_sha256=draft.payload_sha256,
+                request_id=request_id,
+                operator_email=operator_email,
+                send_failed=True,
+                error_code="google_reauth_required",
+            )
+            raise MailHitlError("google_reauth_required", "Google re-auth required.", http_status=401) from None
         mail_drafts.set_status(session, draft, "failed")
         mail_send_audit.insert_audit(
             session,

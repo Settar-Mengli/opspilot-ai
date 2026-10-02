@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from opspilot.persistence.models import MailSendAuditRow
@@ -49,14 +49,23 @@ def insert_audit(
 
 
 def count_successful_sends_utc_day(session: Session, *, day_start: datetime) -> int:
-    """Count successful sends (gmail_message_id set, not blocked/failed) since UTC day_start."""
+    """Count cap-consuming sends since UTC day_start.
+
+    Counts successful sends (gmail_message_id set, not blocked/failed) **or**
+    ambiguous outcomes (error_code=send_outcome_unknown) so a possible-delivered
+    message still consumes the daily budget (A1).
+    """
+    success = (
+        MailSendAuditRow.gmail_message_id.is_not(None)
+        & MailSendAuditRow.send_failed.is_(False)
+        & MailSendAuditRow.demo_mode_blocked.is_(False)
+        & MailSendAuditRow.allowlist_denied.is_(False)
+    )
+    unknown = MailSendAuditRow.error_code == "send_outcome_unknown"
     stmt = (
         select(func.count())
         .select_from(MailSendAuditRow)
         .where(MailSendAuditRow.created_at >= day_start)
-        .where(MailSendAuditRow.gmail_message_id.is_not(None))
-        .where(MailSendAuditRow.send_failed.is_(False))
-        .where(MailSendAuditRow.demo_mode_blocked.is_(False))
-        .where(MailSendAuditRow.allowlist_denied.is_(False))
+        .where(or_(success, unknown))
     )
     return int(session.scalar(stmt) or 0)

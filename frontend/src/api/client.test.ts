@@ -59,6 +59,16 @@ describe('api client', () => {
     expect(formatMailHitlError(mk(403, 'draft_owner_mismatch'))).toContain('do not own')
     expect(formatMailHitlError(mk(429, 'send_daily_cap'))).toContain('Daily send limit')
     expect(formatMailHitlError(mk(422, 'unsafe_subject'))).toContain('rejected')
+    expect(formatMailHitlError(mk(502, 'send_outcome_unknown'))).toBe(
+      'Send may have gone through. Check the Sent folder before trying again. (ref req-1)',
+    )
     expect(formatMailHitlError(mk(500, 'internal_error'))).toContain('server error')
+  })
+
+  it('formatMailHitlError_send_outcome_unknown_copy', () => {
+    const err = Object.assign(new Error('x'), { status: 502, code: 'send_outcome_unknown' })
+    expect(formatMailHitlError(err)).toBe(
+      'Send may have gone through. Check the Sent folder before trying again.',
+    )
   })
 })

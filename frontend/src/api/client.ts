@@ -134,6 +134,12 @@ export function formatMailHitlError(err: unknown): string {
   if (status === 422 || code === 'validation_error' || code === 'unsafe_subject' || code === 'forbidden_edit_fields') {
     return `Draft update was rejected. Check subject and body.${suffix}`
   }
+  if (code === 'send_outcome_unknown') {
+    return `Send may have gone through. Check the Sent folder before trying again.${suffix}`
+  }
+  if (code === 'google_reauth_required') {
+    return `Google re-auth required. Reconnect to continue.${suffix}`
+  }
   if (status >= 500) {
     return `Send failed due to a server error.${suffix}`
   }
@@ -373,8 +379,12 @@ export async function approveMailDraft(
   draftId: string,
   payloadSha256: string,
   idempotencyKey?: string,
-): Promise<{ status: string }> {
-  return requestJson(`/api/v1/mail/drafts/${encodeURIComponent(draftId)}/approve`, {
+): Promise<{ status: string; send_failed?: boolean; error_code?: string | null }> {
+  const body = await requestJson<{
+    status: string
+    send_failed?: boolean
+    error_code?: string | null
+  }>(`/api/v1/mail/drafts/${encodeURIComponent(draftId)}/approve`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -382,4 +392,12 @@ export async function approveMailDraft(
       idempotency_key: idempotencyKey,
     }),
   })
+  if (body.send_failed || body.error_code === 'send_outcome_unknown') {
+    const err = Object.assign(new Error(body.error_code || 'send_failed'), {
+      status: body.error_code === 'send_outcome_unknown' ? 502 : 400,
+      code: body.error_code || 'send_failed',
+    })
+    throw err
+  }
+  return body
 }
