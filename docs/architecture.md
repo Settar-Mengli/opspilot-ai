@@ -137,7 +137,7 @@ Full audit: [docs/audits/2026-09-25-baseline-audit.md](audits/2026-09-25-baselin
 
 ## TARGET
 
-Remaining locked rebuild after **B5**: **B6–B7** (morning job + public deploy). Agent Ask + HITL send are **CURRENT** (see above). Package layout notes below still guide B6+ prefs/admin splits.
+Remaining locked rebuild after **B5**: **B6–B7** (morning job + public deploy). Agent Ask + HITL send are **branch CURRENT** on `b5/agentic-ask` (PR #40) until merge to `main` — see dualism at top of this file. Package layout notes below still guide B6+ prefs/admin splits.
 
 ### Package layout + dependency rules (D-024)
 

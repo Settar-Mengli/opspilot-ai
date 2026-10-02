@@ -1129,7 +1129,9 @@ Red commits and fix-forward: `9ba9190` OpenAPI drift -> `8b6043b`; `a3f6333` / `
 
 | Item | Value |
 |---|---|
-| Host label | `ep-withered-dew-b528cx5k-pooler.c-7.us-east-2.aws.neon.tech` |
+| Host label | `ep-withered-dew-b528cx5k-pooler` |
+
+> **Hostname redaction (pre-merge, 2026-10-02):** cell previously contained the full Neon hostname; redacted to first label only. Full value remains in branch history prior to this edit.
 | Observed at closeout check | `alembic_version` already `0008_ask_hitl_send`; tables `mail_drafts` / `mail_send_audit` present |
 | Observed counts (read-only) | `work_items` **63**, `llm_calls` **124** |
 | How / when applied | **Deviation:** applied without recorded owner go. Most likely `uv run alembic upgrade head` during C1 (`d698f84` era) while repo `.env` `DATABASE_URL` pointed at Neon (host confirmed only at later read-only check). Exact upgrade command+host pair was **not** logged at apply time. |
@@ -1479,5 +1481,42 @@ Local hermetic tip measure: **411** passed, **TOTAL coverage 82.24%** (≥82% ga
 #### STOP for owner
 
 1. Gallery sign-off (ask-error / Connections if drifted).
-2. Run `uv run python scripts/live_smoke_b5.py` (allowlist = operator only; max one send).
+2. Run `uv run python scripts/live_smoke_b5.py` then `--send` if sending (allowlist = operator only; max one send).
 3. Merge PR [#40](https://github.com/Settar-Mengli/opspilot-ai/pull/40) when green — agent never merges.
+
+### Post-audit fix-pass — 2026-10-02
+
+Ask-mode audit of tip `25cbdf8` → FIX-THEN-MERGE. Hermetic-only Build on `b5/agentic-ask` (PR #40). **Gallery NOT approved. Live smoke NOT run. PR NOT merged.**
+
+#### Findings A-1..A-11 (disposition)
+
+| Id | Finding | Disposition |
+|----|---------|-------------|
+| A-1 | Gmail `messages.send` via `request_with_backoff` could double-send | C1: POST single-attempt; `send_outcome_unknown`; unknown counts toward daily cap |
+| A-2 | (covered with A-1 FE) re-approve after unknown not visibly deliberate | C1/C5: `Check Sent, then re-send` label + remount tests |
+| A-3 | Calendar truncate kept syncToken → infinite page-1 loop | C2: clear token; full window + absence reconcile |
+| A-4.. | (audit ledger) | Mapped into C1–C7; see registry |
+| — | `live_smoke_b5.py` @ `e57c701` called non-existent `/api/v1/oauth/google/sync` and `/api/v1/oauth/google/status` — **could not have passed as written** | C6 rewrite; F14 status updated |
+| — | Definitive send failures → draft `failed` (not re-approvable) | Known limitation; ROADMAP Open findings (OD) |
+
+#### Per-commit CI (fill tip in C9)
+
+| SHA | Subject | Push run | PR run | Result |
+|-----|---------|----------|--------|--------|
+| `d1488ae` | fix(mail): never auto-retry… | 37021967493 | 37021973306 | success |
+| `b732f9b` | fix(sync): Calendar truncation… | 37022923248 | 37022931927 | success |
+| `364791d` | fix(sync): Gmail history truncation… | 37023722756 | 37023730133 | success |
+| `5c05d6d` | test(fixtures): wire sanitized… | 37024606824 | 37024615469 | success |
+| `af4add4` | test(ui): approve state survives… | 37025392373 | 37025396907 | success |
+| `42ce420` | feat(smoke): live_smoke_b5 enforces… | 37026241956 | 37026249204 | success |
+| `568d880` | fix(api): typed sync response… | 37027227572 | 37027235087 | _(pending C9)_ |
+| _(tip)_ | docs(b5): post-audit registry… | _(C9)_ | _(C9)_ | |
+
+#### Process deviations (prior + this pass)
+
+- Prior reality-gap: `2ba4a08` bundled under `f0f7a3e` with no solo CI; reds `b4675d8`, `8a55b47`, `22b6e9e`, `4e7d4b6`, `f0f7a3e` + fix-forwards; local soft-resets of unpushed commits; Build report false “fixtures wired” claim (fixtures committed but not behaviourally loaded until C4).
+- This pass: one-commit-per-push restored for C1–C8.
+
+#### Registry
+
+See [docs/audits/2026-10-02-b5-reality-gap-registry.md](docs/audits/2026-10-02-b5-reality-gap-registry.md).

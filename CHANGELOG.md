@@ -7,6 +7,10 @@ and this project follows Semantic Versioning principles for release tags.
 
 ## [Unreleased]
 
+### Fixed
+
+- **B5 post-audit fix-pass (branch `b5/agentic-ask`):** Gmail send single-attempt + `send_outcome_unknown` (counts toward daily cap); Calendar truncate clears syncToken + full-window absence reconcile; Gmail truncate-without-hid → full list + `gmail_truncated`; fixture behavioural loads + widened safety scan; live_smoke `--send`/preflight (script @ `e57c701` had non-existent sync/status URLs); typed `SyncResponse` OpenAPI; registry + PART 13. **Gallery not approved; live smoke not run; PR not merged.**
+
 ### Added
 
 - **B5 Agentic Ask + HITL send** (branch `b5/agentic-ask`, **complete pending merge**): JSON-emulated tool loop (D-031); `POST /ask/stream` SSE (D-032); draft edit/approve + allowlist + DEMO_MODE (D-033); `gmail.send`; Alembic **0009**; Gmail deleted/SPAM sync + pagination; Calendar pagination; FE per-attempt idempotency; sticky final provider; `live_smoke_b5` script (not executed this pass); fixture-safety gate; PART 13. **Next after merge:** **B6**.

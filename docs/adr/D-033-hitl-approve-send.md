@@ -28,7 +28,15 @@ Agentic Ask may draft replies, but mail must never leave the machine without exp
    - Threading headers: fetch RFC `Message-ID` via metadata; set `In-Reply-To` / `References` only when present — **never synthesize** from Gmail provider id (omit headers; rely on `threadId`).
 5. **No undo window** after send.
 6. Gmail send client asserts DEMO_MODE off + allowlist before token refresh / HTTP.
-7. Refresh `invalid_grant` → `google_reauth_required` (401) reconnect UX; Gmail/Calendar HTTP retries 429/502/503 with ≤15s sleep wall.
+7. Refresh `invalid_grant` → `google_reauth_required` (401) reconnect UX; Gmail/Calendar **idempotent** HTTP retries 429/502/503 with ≤15s sleep wall. **Non-idempotent methods (POST send) are single-attempt** unless a caller explicitly opts in (nothing opts in for send).
+
+### Addendum (post-audit fix-pass, 2026-10-02)
+
+- Ambiguous send outcomes (timeout, connection error, 408/429/5xx after single POST) → audit `error_code=send_outcome_unknown`, draft returned to `draft`, API `502` `send_outcome_unknown`. FE copy: check Sent folder; button label `Check Sent, then re-send`.
+- `send_outcome_unknown` rows **count toward** the daily send cap (same advisory-lock section as successes).
+- Definitive 4xx (other than 408/429) and reauth paths leave draft `failed` (not re-approvable) — known limitation (ROADMAP OD).
+- Send-path `invalid_grant` / 401 → `google_reauth_required` (no retry).
+
 
 ### Non-goals
 
