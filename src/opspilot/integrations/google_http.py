@@ -85,8 +85,17 @@ def request_with_backoff(
     """Retry 429/502/503 with exponential backoff; total sleep capped at 15s."""
     slept = 0.0
     last: httpx.Response | None = None
+    call_kwargs: dict[str, Any] = {}
+    if headers is not None:
+        call_kwargs["headers"] = headers
+    if params is not None:
+        call_kwargs["params"] = params
+    if data is not None:
+        call_kwargs["data"] = data
+    if json is not None:
+        call_kwargs["json"] = json
     for attempt in range(_BACKOFF_MAX_RETRIES + 1):
-        last = transport.request(method, url, headers=headers, params=params, data=data, json=json)
+        last = transport.request(method, url, **call_kwargs)
         if last.status_code not in _RETRYABLE_STATUSES or attempt >= _BACKOFF_MAX_RETRIES:
             return last
         delay = _retry_after_delay(last, attempt)
