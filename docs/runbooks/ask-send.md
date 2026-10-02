@@ -93,6 +93,8 @@ Re-run counts. Expand-only: new columns with defaults; verify no unexpected drop
 - `OPSPILOT_SEND_RECIPIENT_ALLOWLIST=<one demo addr>`
 - Caps optional: `OPSPILOT_ASK_*`, `OPSPILOT_SEND_MAX_PER_DAY` (default 5).
 - Google OAuth client must show **`gmail.send`** on consent (Cloud Console + Testing users).
+- **Must unset** `OPSPILOT_FORCE_RULES` and `OPSPILOT_LLM_DISABLE` for live Ask (agent shells often inherit `FORCE_RULES=1` from pytest).
+- After API start, **require** the `startup_config …` log line: confirm `FORCE_RULES=0`, `DEMO_MODE` as intended, `allowlist_count` (≥1 for send), `ANTHROPIC_ENABLED=0`. Also confirm `opspilot.api.access` lines include `request_id=` on each request.
 
 **4. OAuth reconnect**
 

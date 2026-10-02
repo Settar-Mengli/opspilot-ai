@@ -20,6 +20,7 @@ load_repo_dotenv()
 
 from opspilot.api.cors_origins import allowed_cors_origins  # noqa: E402
 from opspilot.api.errors import register_exception_handlers  # noqa: E402
+from opspilot.api.startup_config import ensure_api_logging, log_startup_config  # noqa: E402
 from opspilot.api.v1.oauth_routes import router as oauth_router  # noqa: E402
 from opspilot.api.v1.routes import router as v1_router  # noqa: E402
 from opspilot.api.v1.routes_ask import router as ask_router  # noqa: E402
@@ -82,7 +83,9 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
 
 def create_app() -> FastAPI:
     load_repo_dotenv()
+    ensure_api_logging()
     log_active_database_host(logger=logging.getLogger("opspilot.api"))
+    log_startup_config(logger=logging.getLogger("opspilot.api"))
 
     root = logging.getLogger()
     if not any(isinstance(f, RequestIdFilter) for f in root.filters):
