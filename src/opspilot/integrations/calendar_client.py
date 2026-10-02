@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
-from opspilot.integrations.google_http import GoogleHttpError, GoogleTransport
+from opspilot.integrations.google_http import GoogleHttpError, GoogleTransport, request_with_backoff
 
 CAL_API = "https://www.googleapis.com/calendar/v3"
 _logger = logging.getLogger("opspilot.sync.calendar")
@@ -124,7 +124,8 @@ class CalendarClient:
                 params["pageToken"] = page_token
             if max_results is not None:
                 params["maxResults"] = max_results
-            resp = self._transport.request(
+            resp = request_with_backoff(
+                self._transport,
                 "GET",
                 f"{CAL_API}/calendars/primary/events",
                 headers=self._headers(),

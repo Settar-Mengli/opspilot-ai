@@ -42,7 +42,8 @@ def run_sync(
             transport=tx,
         )
     except GoogleHttpError as exc:
-        raise GoogleReauthRequired("refresh_failed") from exc
+        code = str(exc.args[0]) if exc.args else "refresh_failed"
+        raise GoogleReauthRequired(code) from exc
 
     result: dict[str, Any] = {
         "account_email": account_email,

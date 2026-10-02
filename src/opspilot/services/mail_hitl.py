@@ -222,7 +222,10 @@ def approve_and_send(
             refresh_token=refresh,
             transport=tx,
         )
-    except GoogleHttpError:
+    except GoogleHttpError as exc:
+        code = str(exc.args[0]) if exc.args else "refresh_failed"
+        # invalid_grant / refresh_failed → reconnect UX (same as sync google_reauth_required).
+        err = "google_reauth_required" if code in {"invalid_grant", "refresh_failed"} else code
         mail_drafts.set_status(session, draft, "failed")
         mail_send_audit.insert_audit(
             session,
@@ -233,9 +236,9 @@ def approve_and_send(
             request_id=request_id,
             operator_email=operator_email,
             send_failed=True,
-            error_code="refresh_failed",
+            error_code=err,
         )
-        raise MailHitlError("refresh_failed", "Google re-auth required.") from None
+        raise MailHitlError(err, "Google re-auth required.", http_status=401) from None
 
     client = GmailClient(access_token=access, transport=tx)
     try:

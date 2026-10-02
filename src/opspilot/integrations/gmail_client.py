@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
-from opspilot.integrations.google_http import GoogleHttpError, GoogleTransport
+from opspilot.integrations.google_http import GoogleHttpError, GoogleTransport, request_with_backoff
 
 GMAIL_API = "https://gmail.googleapis.com/gmail/v1"
 _logger = logging.getLogger("opspilot.sync.gmail")
@@ -106,7 +106,7 @@ class GmailClient:
         return {"Authorization": f"Bearer {self._token}"}
 
     def profile_history_id(self) -> str:
-        resp = self._transport.request("GET", f"{GMAIL_API}/users/me/profile", headers=self._headers())
+        resp = request_with_backoff(self._transport, "GET", f"{GMAIL_API}/users/me/profile", headers=self._headers())
         if resp.status_code >= 400:
             raise GoogleHttpError("gmail_profile_failed", status_code=resp.status_code)
         hid = str(resp.json().get("historyId") or "")
@@ -126,7 +126,8 @@ class GmailClient:
                 params["q"] = query
             if page_token:
                 params["pageToken"] = page_token
-            resp = self._transport.request(
+            resp = request_with_backoff(
+                self._transport,
                 "GET",
                 f"{GMAIL_API}/users/me/messages",
                 headers=self._headers(),
@@ -148,7 +149,8 @@ class GmailClient:
         return ids, truncated
 
     def get_message(self, message_id: str) -> GmailMessage:
-        resp = self._transport.request(
+        resp = request_with_backoff(
+            self._transport,
             "GET",
             f"{GMAIL_API}/users/me/messages/{message_id}",
             headers=self._headers(),
@@ -160,7 +162,8 @@ class GmailClient:
 
     def get_message_rfc_message_id(self, message_id: str) -> str | None:
         """Return the RFC Message-ID header for a Gmail message, or None if absent."""
-        resp = self._transport.request(
+        resp = request_with_backoff(
+            self._transport,
             "GET",
             f"{GMAIL_API}/users/me/messages/{message_id}",
             headers=self._headers(),
@@ -197,7 +200,8 @@ class GmailClient:
             }
             if page_token:
                 params["pageToken"] = page_token
-            resp = self._transport.request(
+            resp = request_with_backoff(
+                self._transport,
                 "GET",
                 f"{GMAIL_API}/users/me/history",
                 headers=self._headers(),
@@ -291,7 +295,8 @@ class GmailClient:
             _logger.info("missing_rfc_message_id provider_id=%s", in_reply_to_provider_id)
         msg.set_content(body if isinstance(body, str) else str(body))
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode("ascii").rstrip("=")
-        resp = self._transport.request(
+        resp = request_with_backoff(
+            self._transport,
             "POST",
             f"{GMAIL_API}/users/me/messages/send",
             headers=self._headers(),
