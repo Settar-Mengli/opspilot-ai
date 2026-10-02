@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import base64
 import email.utils
+import logging
+import os
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -12,6 +14,17 @@ from typing import Any
 from opspilot.integrations.google_http import GoogleHttpError, GoogleTransport
 
 GMAIL_API = "https://gmail.googleapis.com/gmail/v1"
+_logger = logging.getLogger("opspilot.sync.gmail")
+
+
+def _max_pages(env_name: str, default: int = 20) -> int:
+    raw = os.environ.get(env_name, "").strip()
+    if not raw:
+        return default
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return default
 
 
 @dataclass(frozen=True)
@@ -101,20 +114,38 @@ class GmailClient:
             raise GoogleHttpError("gmail_missing_history_id")
         return hid
 
-    def list_message_ids(self, *, max_results: int = 50, query: str | None = None) -> list[str]:
-        params: dict[str, Any] = {"maxResults": max_results}
-        if query:
-            params["q"] = query
-        resp = self._transport.request(
-            "GET",
-            f"{GMAIL_API}/users/me/messages",
-            headers=self._headers(),
-            params=params,
-        )
-        if resp.status_code >= 400:
-            raise GoogleHttpError("gmail_list_failed", status_code=resp.status_code)
-        msgs = resp.json().get("messages") or []
-        return [str(m["id"]) for m in msgs if isinstance(m, dict) and m.get("id")]
+    def list_message_ids(self, *, max_results: int = 50, query: str | None = None) -> tuple[list[str], bool]:
+        """Return (ids, truncated). Paginate until done or max pages."""
+        ids: list[str] = []
+        page_token: str | None = None
+        max_pages = _max_pages("OPSPILOT_GMAIL_LIST_MAX_PAGES")
+        truncated = False
+        for page_i in range(max_pages):
+            params: dict[str, Any] = {"maxResults": max_results}
+            if query:
+                params["q"] = query
+            if page_token:
+                params["pageToken"] = page_token
+            resp = self._transport.request(
+                "GET",
+                f"{GMAIL_API}/users/me/messages",
+                headers=self._headers(),
+                params=params,
+            )
+            if resp.status_code >= 400:
+                raise GoogleHttpError("gmail_list_failed", status_code=resp.status_code)
+            payload = resp.json()
+            msgs = payload.get("messages") or []
+            for m in msgs:
+                if isinstance(m, dict) and m.get("id"):
+                    ids.append(str(m["id"]))
+            page_token = str(payload.get("nextPageToken") or "") or None
+            if not page_token:
+                break
+            if page_i == max_pages - 1:
+                truncated = True
+                _logger.info("gmail_list_truncated pages=%s query=%s", max_pages, query or "-")
+        return ids, truncated
 
     def get_message(self, message_id: str) -> GmailMessage:
         resp = self._transport.request(
@@ -127,55 +158,78 @@ class GmailClient:
             raise GoogleHttpError("gmail_get_failed", status_code=resp.status_code)
         return parse_message(resp.json())
 
-    def history_message_ids(self, *, start_history_id: str) -> tuple[list[str], list[str]] | None:
-        """Return (added_ids, removed_ids), or None if history expired (caller should full sync).
+    def history_message_ids(self, *, start_history_id: str) -> tuple[list[str], list[str], bool, str | None] | None:
+        """Return (added, removed, truncated, last_processed_history_id), or None to full-resync.
 
-        removed_ids includes messagesDeleted plus trash / leave-INBOX label changes.
+        removed includes messagesDeleted plus trash / leave-INBOX / SPAM label changes.
+        On truncate, last_processed_history_id is the max history record id from pages read.
         """
-        resp = self._transport.request(
-            "GET",
-            f"{GMAIL_API}/users/me/history",
-            headers=self._headers(),
-            params={
-                "startHistoryId": start_history_id,
-                # Repeated query params (not CSV) — Gmail rejects comma-joined historyTypes.
-                "historyTypes": ["messageAdded", "messageDeleted", "labelAdded", "labelRemoved"],
-            },
-        )
-        # 404 = expired/unknown startHistoryId. 400 = invalid start id (post-reconnect) or
-        # malformed historyTypes; both require a full list resync rather than failing sync.
-        if resp.status_code in {400, 404}:
-            return None
-        if resp.status_code >= 400:
-            raise GoogleHttpError("gmail_history_failed", status_code=resp.status_code)
         added: list[str] = []
         removed: list[str] = []
-        for entry in resp.json().get("history") or []:
-            if not isinstance(entry, dict):
-                continue
-            for added_entry in entry.get("messagesAdded") or []:
-                mid = _history_message_id(added_entry)
-                if mid:
-                    added.append(mid)
-            for deleted_entry in entry.get("messagesDeleted") or []:
-                mid = _history_message_id(deleted_entry)
-                if mid:
-                    removed.append(mid)
-            for lab in entry.get("labelsAdded") or []:
-                if not isinstance(lab, dict):
+        page_token: str | None = None
+        max_pages = _max_pages("OPSPILOT_GMAIL_HISTORY_MAX_PAGES")
+        truncated = False
+        last_hid: str | None = None
+        for page_i in range(max_pages):
+            params: dict[str, Any] = {
+                "startHistoryId": start_history_id,
+                "historyTypes": ["messageAdded", "messageDeleted", "labelAdded", "labelRemoved"],
+            }
+            if page_token:
+                params["pageToken"] = page_token
+            resp = self._transport.request(
+                "GET",
+                f"{GMAIL_API}/users/me/history",
+                headers=self._headers(),
+                params=params,
+            )
+            # 404 = expired/unknown startHistoryId. 400 = invalid start id (post-reconnect) or
+            # malformed historyTypes; both require a full list resync rather than failing sync.
+            if resp.status_code in {400, 404}:
+                return None
+            if resp.status_code >= 400:
+                raise GoogleHttpError("gmail_history_failed", status_code=resp.status_code)
+            payload = resp.json()
+            for entry in payload.get("history") or []:
+                if not isinstance(entry, dict):
                     continue
-                labels = {str(x) for x in (lab.get("labelIds") or []) if x}
-                mid = _history_message_id(lab)
-                if mid and "TRASH" in labels:
-                    removed.append(mid)
-            for lab in entry.get("labelsRemoved") or []:
-                if not isinstance(lab, dict):
-                    continue
-                labels = {str(x) for x in (lab.get("labelIds") or []) if x}
-                mid = _history_message_id(lab)
-                if mid and "INBOX" in labels:
-                    removed.append(mid)
-        return added, removed
+                hid = entry.get("id")
+                if hid is not None:
+                    last_hid = str(hid)
+                for added_entry in entry.get("messagesAdded") or []:
+                    mid = _history_message_id(added_entry)
+                    if mid:
+                        added.append(mid)
+                for deleted_entry in entry.get("messagesDeleted") or []:
+                    mid = _history_message_id(deleted_entry)
+                    if mid:
+                        removed.append(mid)
+                for lab in entry.get("labelsAdded") or []:
+                    if not isinstance(lab, dict):
+                        continue
+                    labels = {str(x) for x in (lab.get("labelIds") or []) if x}
+                    mid = _history_message_id(lab)
+                    if mid and "TRASH" in labels:
+                        removed.append(mid)
+                for lab in entry.get("labelsRemoved") or []:
+                    if not isinstance(lab, dict):
+                        continue
+                    labels = {str(x) for x in (lab.get("labelIds") or []) if x}
+                    mid = _history_message_id(lab)
+                    if mid and "INBOX" in labels:
+                        removed.append(mid)
+            page_token = str(payload.get("nextPageToken") or "") or None
+            if not page_token:
+                break
+            if page_i == max_pages - 1:
+                truncated = True
+                _logger.info(
+                    "gmail_history_truncated pages=%s start=%s last_hid=%s",
+                    max_pages,
+                    start_history_id,
+                    last_hid or "-",
+                )
+        return added, removed, truncated, last_hid
 
     def send_reply(
         self,

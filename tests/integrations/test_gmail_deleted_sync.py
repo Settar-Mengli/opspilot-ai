@@ -241,3 +241,124 @@ def test_delete_by_provider_id_cascades_triage(db_session: Session, sync_env: No
         {"wid": wid},
     ).scalar()
     assert n == 0
+
+
+def test_history_truncate_holds_cursor_then_remainder(
+    db_session: Session, sync_env: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Max-pages truncate must not skip remainder: next sync processes page 2."""
+    monkeypatch.setenv("OPSPILOT_GMAIL_HISTORY_MAX_PAGES", "1")
+    oauth_credentials.upsert_encrypted_refresh(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        scopes=(
+            "https://www.googleapis.com/auth/gmail.readonly "
+            "https://www.googleapis.com/auth/gmail.send "
+            "https://www.googleapis.com/auth/calendar.readonly"
+        ),
+        refresh_token_plaintext="rt",
+    )
+    sync_cursors.upsert_cursor(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        cursor_kind=sync_cursors.CURSOR_GMAIL_HISTORY,
+        cursor_value="1000",
+    )
+    db_session.commit()
+
+    class _PagedHistory:
+        def __init__(self) -> None:
+            self.history_calls = 0
+
+        def request(
+            self,
+            method: str,
+            url: str,
+            *,
+            headers: dict[str, str] | None = None,
+            params: dict[str, Any] | None = None,
+            data: dict[str, Any] | None = None,
+            json: dict[str, Any] | None = None,
+        ) -> httpx.Response:
+            del method, headers, data, json
+            if "oauth2.googleapis.com/token" in url:
+                return httpx.Response(200, json={"access_token": "ya29.fake"})
+            if url.endswith("/users/me/profile"):
+                return httpx.Response(200, json={"historyId": "9000"})
+            if "/users/me/history" in url:
+                self.history_calls += 1
+                start = str((params or {}).get("startHistoryId") or "")
+                token = (params or {}).get("pageToken")
+                if start == "1000" and not token:
+                    return httpx.Response(
+                        200,
+                        json={
+                            "history": [
+                                {
+                                    "id": "1100",
+                                    "messagesAdded": [{"message": {"id": "page1_msg"}}],
+                                }
+                            ],
+                            "nextPageToken": "page2",
+                        },
+                    )
+                if start == "1000" and token == "page2":
+                    return httpx.Response(
+                        200,
+                        json={
+                            "history": [
+                                {
+                                    "id": "1200",
+                                    "messagesAdded": [{"message": {"id": "page2_msg"}}],
+                                }
+                            ],
+                        },
+                    )
+                if start == "1100":
+                    return httpx.Response(
+                        200,
+                        json={
+                            "history": [
+                                {
+                                    "id": "1200",
+                                    "messagesAdded": [{"message": {"id": "page2_msg"}}],
+                                }
+                            ],
+                        },
+                    )
+                return httpx.Response(200, json={"history": []})
+            if "/users/me/messages/" in url and not url.rstrip("/").endswith("/messages"):
+                mid = url.rsplit("/", 1)[-1]
+                return httpx.Response(200, json=_msg_json(mid, labels=["INBOX"]))
+            if url.rstrip("/").endswith("/messages"):
+                return httpx.Response(200, json={"messages": []})
+            return httpx.Response(500, json={"error": "unexpected"})
+
+    tx = _PagedHistory()
+    google_sync.run_sync(db_session, transport=tx, providers=["gmail"])
+    db_session.commit()
+    assert (
+        db_session.scalar(select(func.count()).select_from(WorkItemRow).where(WorkItemRow.provider_id == "page1_msg"))
+        == 1
+    )
+    assert (
+        db_session.scalar(select(func.count()).select_from(WorkItemRow).where(WorkItemRow.provider_id == "page2_msg"))
+        == 0
+    )
+    cur = sync_cursors.get_cursor(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        cursor_kind=sync_cursors.CURSOR_GMAIL_HISTORY,
+    )
+    assert cur == "1100"
+
+    monkeypatch.setenv("OPSPILOT_GMAIL_HISTORY_MAX_PAGES", "20")
+    google_sync.run_sync(db_session, transport=tx, providers=["gmail"])
+    db_session.commit()
+    assert (
+        db_session.scalar(select(func.count()).select_from(WorkItemRow).where(WorkItemRow.provider_id == "page2_msg"))
+        == 1
+    )

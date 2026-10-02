@@ -15,6 +15,7 @@ from opspilot.integrations.google_oauth import client_id, client_secret
 from opspilot.persistence.repositories import meetings, oauth_credentials, sync_cursors, work_items
 
 _logger = logging.getLogger("opspilot.sync.gmail")
+_cal_logger = logging.getLogger("opspilot.sync.calendar")
 
 
 class GoogleReauthRequired(RuntimeError):
@@ -77,18 +78,25 @@ def _sync_gmail(
     ids: list[str]
     removed_ids: list[str] = []
     mode = "full"
+    history_truncated = False
+    list_truncated = False
+    last_hist_id: str | None = None
     if cursor:
         hist = client.history_message_ids(start_history_id=cursor)
         if hist is None:
             mode = "full_resync"
-            ids = client.list_message_ids(max_results=50, query="in:inbox")
-            removed_ids = client.list_message_ids(max_results=50, query="in:trash")
+            ids, list_truncated = client.list_message_ids(max_results=50, query="in:inbox")
+            trash_ids, trash_trunc = client.list_message_ids(max_results=50, query="in:trash")
+            removed_ids = trash_ids
+            list_truncated = list_truncated or trash_trunc
         else:
             mode = "incremental"
-            ids, removed_ids = hist
+            ids, removed_ids, history_truncated, last_hist_id = hist
     else:
-        ids = client.list_message_ids(max_results=50, query="in:inbox")
-        removed_ids = client.list_message_ids(max_results=50, query="in:trash")
+        ids, list_truncated = client.list_message_ids(max_results=50, query="in:inbox")
+        trash_ids, trash_trunc = client.list_message_ids(max_results=50, query="in:trash")
+        removed_ids = trash_ids
+        list_truncated = list_truncated or trash_trunc
 
     # Deduplicate while preserving order.
     seen_rm: set[str] = set()
@@ -137,17 +145,41 @@ def _sync_gmail(
         )
         upserted += 1
 
-    new_history = client.profile_history_id()
-    sync_cursors.upsert_cursor(
-        session,
-        provider="google",
-        account_email=account_email,
-        cursor_kind=sync_cursors.CURSOR_GMAIL_HISTORY,
-        cursor_value=new_history,
-    )
+    # Cursor safety: never advance past unprocessed history pages.
+    history_end = "-"
+    if history_truncated:
+        if last_hist_id:
+            sync_cursors.upsert_cursor(
+                session,
+                provider="google",
+                account_email=account_email,
+                cursor_kind=sync_cursors.CURSOR_GMAIL_HISTORY,
+                cursor_value=last_hist_id,
+            )
+            history_end = last_hist_id
+        else:
+            # Keep prior cursor unchanged so the next sync re-reads from the same start.
+            history_end = cursor or "-"
+        _logger.info(
+            "gmail_sync cursor_held truncated=1 last_hid=%s prior=%s",
+            last_hist_id or "-",
+            cursor or "-",
+        )
+    else:
+        new_history = client.profile_history_id()
+        sync_cursors.upsert_cursor(
+            session,
+            provider="google",
+            account_email=account_email,
+            cursor_kind=sync_cursors.CURSOR_GMAIL_HISTORY,
+            cursor_value=new_history,
+        )
+        history_end = new_history
+
     _logger.info(
         "gmail_sync mode=%s history_start=%s added_candidates=%s removed_candidates=%s "
-        "upserted=%s removed_local=%s skipped_non_inbox=%s history_end=%s",
+        "upserted=%s removed_local=%s skipped_non_inbox=%s history_end=%s "
+        "history_truncated=%s list_truncated=%s",
         mode,
         cursor or "-",
         len(ids),
@@ -155,7 +187,9 @@ def _sync_gmail(
         upserted,
         removed,
         skipped_non_inbox,
-        new_history,
+        history_end,
+        int(history_truncated),
+        int(list_truncated),
     )
     return upserted, removed
 
@@ -177,10 +211,11 @@ def _sync_calendar(
         account_email=account_email,
         cursor_kind=sync_cursors.CURSOR_CALENDAR_SYNC,
     )
-    events, next_token = client.list_events(time_min=time_min, time_max=time_max, sync_token=sync_token)
-    if sync_token and next_token is None and not events:
+    listed = client.list_events(time_min=time_min, time_max=time_max, sync_token=sync_token)
+    if listed.gone:
         # 410 path: full window resync
-        events, next_token = client.list_events(time_min=time_min, time_max=time_max, sync_token=None)
+        listed = client.list_events(time_min=time_min, time_max=time_max, sync_token=None)
+    events = listed.events
     upserted = 0
     for ev in events:
         if ev.cancelled:
@@ -196,12 +231,18 @@ def _sync_calendar(
             end_at=ev.end_at,
         )
         upserted += 1
-    if next_token:
+    # Only persist nextSyncToken after a complete (non-truncated) page walk.
+    if listed.next_sync_token and not listed.truncated:
         sync_cursors.upsert_cursor(
             session,
             provider="google",
             account_email=account_email,
             cursor_kind=sync_cursors.CURSOR_CALENDAR_SYNC,
-            cursor_value=next_token,
+            cursor_value=listed.next_sync_token,
+        )
+    elif listed.truncated:
+        _cal_logger.info(
+            "calendar_sync truncated=1 prior_token_kept=%s",
+            "1" if sync_token else "0",
         )
     return upserted
