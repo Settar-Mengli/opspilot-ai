@@ -135,27 +135,31 @@ Owner approves ask-error `-linux.png` baselines (375 required) when reviewing th
 
 ## Automated live smoke script (owner-run only)
 
-`scripts/live_smoke_b5.py` — **do not run in CI** and was **not executed** in the B5 post-audit fix-pass Build.
+`scripts/live_smoke_b5.py` — **do not run in CI**. Owner-run only after hermetic gates are green.
 
 ```bash
 # Preconditions: allowlist exactly one address == connected operator Google email;
 # gmail.send on stored scopes; Alembic head matches repo; Anthropic off; FORCE_RULES/LLM_DISABLE unset;
-# existing operator credential in DB; free LLM path available for Ask draft.
+# existing operator credential in DB; free LLM path available for Ask draft;
+# demo inbox has at least one self-sent gmail message (From = operator) so the script can pin a target.
 # Default = NO real send. Real send requires --send (still capped at one).
-uv run python scripts/live_smoke_b5.py          # default: preflight + sync + Ask + demo/allowlist 403
+uv run python scripts/live_smoke_b5.py          # default: preflight + sync + pinned Ask + demo/allowlist 403
 uv run python scripts/live_smoke_b5.py --send   # + one real approve send + 409 + idempotent replay
 ```
 
-Behavior (process-only env; never writes `.env`; DB access = read-only counts + API writes only):
+Behavior (process-only env; never writes `.env`; script SQL = **read-only** SELECTs only; API child performs writes):
 
 1. Print `mode=` and `database_host=` (first label only).
 2. Hard preflight (non-zero exit, codes only): Anthropic enabled; FORCE_RULES/LLM_DISABLE set; allowlist ≠ exactly operator; Alembic head mismatch (revision ids); `gmail_send_scope=N`.
 3. Mint operator cookie via `issue_session` (never prints cookie/token values).
-4. Start/stop uvicorn per phase on `127.0.0.1:8010`.
-5. Sync via `POST /api/v1/sync` (status code only); Ask draft (LLM asks capped at 3 per run; prints `llm_asks_used`).
-6. Default mode: print `expect_409=skipped`; no real send. `--send`: one approve send (unknown outcome counts as the one send and stops further sends) → 409 re-approve → idempotent replay.
-7. Phase demo (`DEMO_MODE=1`): approve → 403.
-8. Phase allowlist empty: approve → 403.
-9. Teardown child processes; print COUNT deltas only.
+4. Start/stop uvicorn per phase on `127.0.0.1:8010`. Child stdout/stderr append to a file under gitignored `tmp/live_smoke/`; script prints only `api_log=<relative path>` — **never echo log contents** (logs may contain addresses, subjects, tokens, request bodies).
+5. Sync via `POST /api/v1/sync`. On unexpected status: print `approve_status=<http> error_code=<code> request_id=<id-or-none>` then `FAIL: sync_failed`.
+6. **Target selection (read-only):** most recent gmail `work_item` whose sender equals the operator under product `parse_single_addr_spec`. Print `target_self_sent_item=Y|N self_sent_items=<count>` (never ids’ senders or addresses). If none: `FAIL: no_self_sent_item` **before any Ask**.
+7. **Pinned Ask:** question names that exact `work_item_id` and requires `draft_reply` for it (LLM asks capped at 3; prints `llm_asks_used`). On Ask HTTP/SSE failure: same `approve_status=… error_code=… request_id=…` line then `FAIL: ask_stream_failed`.
+8. **Draft gate (before any approve):** reload draft (SELECT); require `work_item_id` match, exactly one recipient, recipient == operator (product normalisation). Failures: `FAIL: draft_wrong_item` | `draft_recipient_count` | `draft_recipient_not_operator`. Success prints `draft_item_matches=Y draft_recipient_is_operator=Y`.
+9. Default mode: print `expect_409=skipped`; no real send. `--send`: one approve send (`send_outcome_unknown` / 502 counts as the one send and stops further sends) → 409 on new-key re-approve → same-key idempotent replay. Unexpected approve status: print `approve_status=… error_code=… request_id=…` then `FAIL: …_failed` (codes/ids only — never response message text).
+10. Phase demo (`DEMO_MODE=1`): approve the **verified self-addressed** draft → expect **403** (`demo_mode_blocks_send`). Proves DEMO_MODE itself, not a third-party recipient miss. If prior `--send` left the draft `sent` (409), mint a fresh verified draft under the ask cap first.
+11. Phase allowlist empty (`OPSPILOT_SEND_RECIPIENT_ALLOWLIST=""`): approve the **same verified operator-recipient draft** → expect **403** (`recipient_not_allowlisted`). Still a valid gate test: deny-all allowlist refuses even the operator address; the failure is empty allowlist, not “wrong recipient”.
+12. Teardown child processes; print COUNT deltas + `real_sends_total` only.
 
 At most **one** real Gmail send for the entire `--send` run; default mode must print `real_sends_total=0`.
