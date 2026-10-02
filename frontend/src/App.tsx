@@ -244,27 +244,25 @@ function App() {
     onDraftBodyChange: (value: string) => setAskDraft((d) => (d ? { ...d, body: value } : d)),
     onApproveDraft: () => {
       void (async () => {
-        let attemptKey = ''
-        let snapshot: {
-          draftId: string
-          subject: string
-          body: string
-        } | null = null
+        const hold: {
+          key: string
+          draft: Pick<AskDraftCard, 'draftId' | 'subject' | 'body'> | null
+        } = { key: '', draft: null }
         setAskDraft((d) => {
           if (!d || d.sentAt || d.approving) return d
-          attemptKey = d.idempotencyKey || crypto.randomUUID()
-          snapshot = { draftId: d.draftId, subject: d.subject, body: d.body }
+          hold.key = d.idempotencyKey || crypto.randomUUID()
+          hold.draft = { draftId: d.draftId, subject: d.subject, body: d.body }
           return {
             ...d,
             approveError: null,
             approving: true,
-            idempotencyKey: attemptKey,
+            idempotencyKey: hold.key,
           }
         })
-        if (!snapshot || !attemptKey) return
+        if (!hold.draft || !hold.key) return
         try {
-          const edited = await editMailDraft(snapshot.draftId, snapshot.subject, snapshot.body)
-          await approveMailDraft(edited.id, edited.payload_sha256, attemptKey)
+          const edited = await editMailDraft(hold.draft.draftId, hold.draft.subject, hold.draft.body)
+          await approveMailDraft(edited.id, edited.payload_sha256, hold.key)
           setAskDraft((d) =>
             d
               ? {
