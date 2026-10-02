@@ -118,6 +118,10 @@ def run_live_cli(
 
     require_local_database_url()
 
+    # P7: refuse Anthropic before session/budget I/O (avoids unrelated schema failures).
+    if provider.strip().lower() == "anthropic":
+        raise LiveEvalError("Anthropic skipped in B3 (P7); no Anthropic HTTP")
+
     case_ids: set[str] | None = None
     base: dict[str, Any] | None = None
     explicit_ids = parse_case_ids(case_ids_raw)
