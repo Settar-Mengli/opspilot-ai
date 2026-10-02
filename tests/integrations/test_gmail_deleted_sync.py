@@ -545,3 +545,16 @@ def test_gmail_full_list_truncated_sets_flag_holds_cursor(
         cursor_kind=sync_cursors.CURSOR_GMAIL_HISTORY,
     )
     assert cur == "prev-hid"
+
+    # Second sync: still bounded (max pages), flag still honest, cursor not falsely advanced.
+    r2 = google_sync.run_sync(db_session, transport=_ListTrunc(), providers=["gmail"])
+    db_session.commit()
+    assert r2.get("gmail_truncated") is True
+    cur2 = sync_cursors.get_cursor(
+        db_session,
+        provider="google",
+        account_email="demo@example.com",
+        cursor_kind=sync_cursors.CURSOR_GMAIL_HISTORY,
+    )
+    assert cur2 == "prev-hid"
+    assert cur2 != "should-not-store"
