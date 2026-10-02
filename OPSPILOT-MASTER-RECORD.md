@@ -1410,11 +1410,12 @@ Computed vs parent commit (exact pixel inequality; descriptive only):
 - Unset shell `OPSPILOT_SEND_RECIPIENT_ALLOWLIST` override; `OPSPILOT_DEMO_MODE=0`; `FORCE_RULES=0` / `LLM_DISABLE=0`.
 - **Observed after restart (2026-10-02):** `startup_config … allowlist_count=0` — **deny-all** restored. Owner may set allowlist in `.env` for further live send (do not paste values in PART).
 
-#### Post-STOP fix commits (A/B)
+#### Post-STOP fix commits (A/B + records)
 
 | SHA | Subject | CI |
 |-----|---------|-----|
-| `90177ff` | fix(ask): replace Ask final after draft with fixed HITL copy | _(fill after push)_ |
-| `48e4963` | fix(ui): persist draft sent state and surface approve errors on card | _(fill after push)_ |
+| `90177ff` | fix(ask): replace Ask final after draft with fixed HITL copy | success (push [36968531789](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36968531789); PR [36968535177](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36968535177)) |
+| `48e4963` | fix(ui): persist draft sent state and surface approve errors on card | success (push [36969012072](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36969012072); PR [36969016090](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36969016090)) |
+| `cbbf3ed` | docs(b5): PART 13 STOP LIVE closeout sections 4-7 and post-STOP fixes | success (push [36969502285](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36969502285); PR [36969506612](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/36969506612)) |
 
-Hermetic: **388** passed after A+B (local).
+Hermetic: **388** passed after A+B (local). Agent does **not** merge; PR [#40](https://github.com/Settar-Mengli/opspilot-ai/pull/40).
