@@ -89,6 +89,8 @@ export interface AskDraftCard {
   subject: string
   body: string
   toAddrs: string
+  sentAt?: number | null
+  approveError?: string | null
 }
 
 export interface EveningSummaryRequest {

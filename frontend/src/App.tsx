@@ -120,6 +120,8 @@ function App() {
                 subject: d.subject,
                 body: d.body,
                 toAddrs: d.to_addrs,
+                sentAt: null,
+                approveError: null,
               })
             },
             onFinal: (answer) => {
@@ -240,13 +242,15 @@ function App() {
     onDraftBodyChange: (value: string) => setAskDraft((d) => (d ? { ...d, body: value } : d)),
     onApproveDraft: () => {
       void (async () => {
-        if (!askDraft) return
+        if (!askDraft || askDraft.sentAt) return
+        setAskDraft((d) => (d ? { ...d, approveError: null } : d))
         try {
           const edited = await editMailDraft(askDraft.draftId, askDraft.subject, askDraft.body)
           await approveMailDraft(edited.id, edited.payload_sha256)
-          setAskDraft(null)
+          setAskDraft((d) => (d ? { ...d, sentAt: Date.now(), approveError: null } : d))
         } catch (e) {
-          setAskError(formatMailHitlError(e))
+          const message = formatMailHitlError(e)
+          setAskDraft((d) => (d ? { ...d, approveError: message } : d))
         }
       })()
     },

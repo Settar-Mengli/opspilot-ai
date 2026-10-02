@@ -104,6 +104,7 @@ export function AskThreadBody({
                 value={draft.subject}
                 onChange={(e) => onDraftSubjectChange?.(e.target.value)}
                 aria-label="Draft subject"
+                disabled={Boolean(draft.sentAt)}
               />
             </label>
             <label className="ask-draft-label">
@@ -114,18 +115,40 @@ export function AskThreadBody({
                 onChange={(e) => onDraftBodyChange?.(e.target.value)}
                 rows={4}
                 aria-label="Draft body"
+                disabled={Boolean(draft.sentAt)}
               />
             </label>
             <p className="ask-draft-meta" aria-live="polite">
               To: {draft.toAddrs} (server-managed)
+              {draft.sentAt ? (
+                <>
+                  {' '}
+                  · Sent ✓{' '}
+                  {new Date(draft.sentAt).toLocaleTimeString(undefined, {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}
+                </>
+              ) : null}
             </p>
+            {draft.approveError ? (
+              <div className="ask-draft-approve-error" role="alert">
+                {draft.approveError}
+              </div>
+            ) : null}
             <button
               type="button"
               className="ask-draft-approve"
-              disabled={!ASK_APPROVE_ENABLED}
-              title={ASK_APPROVE_ENABLED ? 'Approve and send' : 'Approve available after mail HITL lands'}
+              disabled={!ASK_APPROVE_ENABLED || Boolean(draft.sentAt)}
+              title={
+                draft.sentAt
+                  ? 'Already sent'
+                  : ASK_APPROVE_ENABLED
+                    ? 'Approve and send'
+                    : 'Approve available after mail HITL lands'
+              }
               onClick={() => {
-                if (ASK_APPROVE_ENABLED) onApproveDraft?.()
+                if (ASK_APPROVE_ENABLED && !draft.sentAt) onApproveDraft?.()
               }}
             >
               Approve & send
