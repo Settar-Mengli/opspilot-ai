@@ -18,7 +18,7 @@ Unsourced items = **NOT-DEFINED** (never invented).
 | F11 | Sticky final provider | DONE (prior) | loop prefer_provider |
 | F12 | Fixed Ask final after draft | DONE (`90177ff` era) | — |
 | F13 | Alias of F2 | DONE | — |
-| F14 | Live smoke script + sanitized fixtures | Script shipped `e57c701` but **called non-existent** `/api/v1/oauth/google/sync` and `/api/v1/oauth/google/status` — **could not have passed as written**. C6 rewrote guards/`--send`/correct sync path. Fixtures wired C4; token_error + llm_turns behavioural in fix-pass 2. **Live smoke NOT run.** | C4, C6, D3 |
+| F14 | Live smoke script + sanitized fixtures | Script fixed in `6eef4c4` (pin self-sent item + draft gate + failure codes). Owner live smoke **PASS** 2026-10-02 (1 real send). Run 2 on `cb452e0` `--send` failed `recipient_not_allowlisted` (model chose third-party item; no send) — fixed by pin. | C4, C6, D3, `6eef4c4` |
 | F15 | Owner gallery approval | **approved** — owner quote `gallery approved` — 2026-10-02; before run **37053916564**, compare run **37054725997** | STOP VISUAL closed (PART 13) |
 | F16 | Docs (ROADMAP/CHANGELOG/PART/ADRs) | Updated post-audit + fix-pass 2 | PART 13 subsections |
 | F17 | startup_config expansion | DONE (prior `29ac4f7`) | — |

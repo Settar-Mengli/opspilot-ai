@@ -1620,3 +1620,67 @@ Prior tip `ff321df` CI (filled here; row above left as historical placeholder): 
 | SHA | Subject | Push run | PR run | Result |
 |-----|---------|----------|--------|--------|
 | _(tip)_ | docs(b5): record owner gallery approval (STOP VISUAL closed) | final records commit — CI run on PR checks | final records commit — CI run on PR checks | |
+
+### Live smoke (live_smoke_b5) — owner-run — 2026-10-02
+
+Owner-run in own terminal; process-only env (`.env` not edited). Allowlist set in process to exactly the operator address. Database host label `ep-withered-dew-b528cx5k-pooler`. Alembic repo head = db head = `0009_mail_send_audit_failed`. `gmail_send_scope=Y`. Anthropic disabled.
+
+**OD-B5-8 satisfied.** STOP VISUAL closed (`cb452e0`). Remaining to close B5 = **owner merge of PR #40 only**. **PR NOT merged.** Merge SHA + merge CI run id to be recorded in B6's first PART.
+
+Smoke leaves unsent drafts and deny-audit rows in the app database by design (counts below); no cleanup performed. Allowlist was process-only so `.env` remains deny-all.
+
+Gallery tip `cb452e0` CI (filled here; historical placeholder row above left unchanged): push **37061007639**, PR **37061014087**, success.
+
+#### Run 1 — default (no-send), script @ `cb452e0` — PASS
+
+| Field | Value |
+|-------|-------|
+| counts_before | llm_calls=167 mail_drafts=3 mail_send_audit=6 work_items=66 |
+| sync_status | 200 |
+| llm_asks_used | 1 max=3; ask_draft=Y; expect_409=skipped |
+| demo_approve_status | 403 expect_403=Y |
+| empty_allowlist_status | 403 expect_403=Y |
+| counts_after | llm_calls=175 mail_drafts=4 mail_send_audit=8 work_items=68 |
+| delta_mail_send_audit | 2 |
+| real_sends_total | **0** |
+
+#### Run 2 — `--send`, script @ `cb452e0` — FAIL (no send)
+
+| Field | Value |
+|-------|-------|
+| counts_before | llm_calls=175 mail_drafts=4 mail_send_audit=8 work_items=68 |
+| sync_status | 200; llm_asks_used=1; ask_draft=Y |
+| approve_send_status | 403 → `FAIL: approve_send_failed` |
+| recon (SELECT-only) | audit `error_code=recipient_not_allowlisted`, `allowlist_denied=Y`, `gmail_message_id` null → **NO send** |
+| counts after recon | llm_calls=180 mail_drafts=5 mail_send_audit=9 work_items=68 |
+
+**Proven root cause:** Ask prompt left work-item choice to the model (“latest inbox mail”); model drafted a reply to a third-party gmail item (sender ≠ operator; also not the latest by `received_at`); `draft_reply` derives recipient from the item’s sender; allowlist gate correctly refused. Product safety held; defect was in the smoke script. Script printed no error code and discarded API child logs. Existing unit tests covered only argparse/preflight/cap.
+
+**Fix:** `6eef4c4` `fix(smoke): pin live smoke to a verified self-sent item; print failure codes` — push **37064570286**, PR **37064577317**, success. `src/opspilot` unchanged.
+
+#### Run 3 — `--send`, script @ `6eef4c4` — PASS
+
+| Field | Value |
+|-------|-------|
+| counts_before | llm_calls=180 mail_drafts=5 mail_send_audit=9 work_items=68 |
+| sync_status | 200 |
+| target | target_self_sent_item=Y self_sent_items=2 |
+| draft gate | ask_draft=Y; draft_item_matches=Y draft_recipient_is_operator=Y |
+| approve_send_status | 200; real_sends=1 |
+| reapprove_status | 409 expect_409=Y |
+| idempotent_replay | Y |
+| demo phase | second Ask (llm_asks_used=2 max=3), draft verified; demo_approve_status=403 expect_403=Y |
+| allowlist_empty | empty_allowlist_status=403 expect_403=Y |
+| counts_after | llm_calls=191 mail_drafts=7 mail_send_audit=12 work_items=68 |
+| delta_mail_send_audit | 3 |
+| real_sends_total | **1**; live_smoke_b5=PASS |
+
+**Owner inbox verification:** exactly one new reply delivered, threaded in the original self-sent conversation, recipient = operator only.
+
+**Total real sends across all three runs: 1.**
+
+#### Per-commit CI (live smoke records)
+
+| SHA | Subject | Push run | PR run | Result |
+|-----|---------|----------|--------|--------|
+| _(tip)_ | docs(b5): record live smoke runs (1 real send, PASS); B5 ready for owner merge | final records commit — CI run on PR checks | final records commit — CI run on PR checks | |

@@ -9,6 +9,7 @@ and this project follows Semantic Versioning principles for release tags.
 
 ### Fixed
 
+- **B5 live smoke recorded (branch `b5/agentic-ask`):** owner-run 2026-10-02 — default PASS; `--send` on `cb452e0` FAIL (no send, `recipient_not_allowlisted`); `--send` on `6eef4c4` PASS (1 real send). OD-B5-8 + STOP VISUAL closed; **PR not merged** (owner merge only).
 - **B5 live smoke pin (branch `b5/agentic-ask`):** `live_smoke_b5.py` selects a self-sent gmail work item, pins Ask to that id, verifies draft recipient == operator before approve, prints approve/sync/ask failure codes + request id, writes API child logs under gitignored `tmp/live_smoke/`. **Live smoke not re-run in this commit; PR not merged.**
 - **B5 STOP VISUAL closed (branch `b5/agentic-ask`):** owner quote `gallery approved` — 2026-10-02; UI Baselines before **37053916564** / compare **37054725997**; 8 baselines approved (incl. 375 ask-error + connections); `MAX_DIFF_PIXELS` unchanged. **Live smoke not run; PR not merged.**
 - **B5 post-audit fix-pass 2 (branch `b5/agentic-ask`):** classify pre-POST Gmail failures as `gmail_unavailable_not_sent` (503, re-approvable, not capped); HITL last-resort never bare-500; real AskDock↔AskPanel remount tests; token_error/llm_turns behavioural fixtures; Gmail truncate second-sync assert; pytest refuses non-local `DATABASE_URL`; PART 12 byte-restored. **Gallery not approved; live smoke not run; PR not merged.**
