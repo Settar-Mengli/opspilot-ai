@@ -158,6 +158,26 @@ class GmailClient:
             raise GoogleHttpError("gmail_get_failed", status_code=resp.status_code)
         return parse_message(resp.json())
 
+    def get_message_rfc_message_id(self, message_id: str) -> str | None:
+        """Return the RFC Message-ID header for a Gmail message, or None if absent."""
+        resp = self._transport.request(
+            "GET",
+            f"{GMAIL_API}/users/me/messages/{message_id}",
+            headers=self._headers(),
+            params={"format": "metadata", "metadataHeaders": ["Message-ID"]},
+        )
+        if resp.status_code >= 400:
+            raise GoogleHttpError("gmail_get_failed", status_code=resp.status_code)
+        payload = resp.json()
+        headers = (payload.get("payload") or {}).get("headers") or []
+        for h in headers:
+            if not isinstance(h, dict):
+                continue
+            if str(h.get("name") or "").lower() == "message-id":
+                value = str(h.get("value") or "").strip()
+                return value or None
+        return None
+
     def history_message_ids(self, *, start_history_id: str) -> tuple[list[str], list[str], bool, str | None] | None:
         """Return (added, removed, truncated, last_processed_history_id), or None to full-resync.
 
@@ -259,12 +279,16 @@ class GmailClient:
 
         import email.message
 
+        rfc_message_id = self.get_message_rfc_message_id(in_reply_to_provider_id)
         msg = email.message.EmailMessage()
         msg["To"] = to_header
         msg["Subject"] = safe_subject
-        # Server-derived Gmail message id used as In-Reply-To / References (thread reply).
-        msg["In-Reply-To"] = in_reply_to_provider_id
-        msg["References"] = in_reply_to_provider_id
+        # Prefer RFC Message-ID for threading headers; never synthesize from provider id.
+        if rfc_message_id:
+            msg["In-Reply-To"] = rfc_message_id
+            msg["References"] = rfc_message_id
+        else:
+            _logger.info("missing_rfc_message_id provider_id=%s", in_reply_to_provider_id)
         msg.set_content(body if isinstance(body, str) else str(body))
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode("ascii").rstrip("=")
         resp = self._transport.request(

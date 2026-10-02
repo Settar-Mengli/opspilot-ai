@@ -272,12 +272,18 @@ def test_approve_daily_cap_429(api_client: TestClient, db_session: Session, monk
 
 
 class _CaptureTransport:
-    def __init__(self) -> None:
+    def __init__(self, *, rfc_message_id: str | None = "<fixture@example.test>") -> None:
         self.last_json: dict | None = None
+        self.rfc_message_id = rfc_message_id
 
     def request(self, method: str, url: str, **kwargs):  # type: ignore[no-untyped-def]
         if "oauth2.googleapis.com/token" in url:
             return httpx.Response(200, json={"access_token": "tok"})
+        if method.upper() == "GET" and "/messages/" in url:
+            headers = []
+            if self.rfc_message_id:
+                headers.append({"name": "Message-ID", "value": self.rfc_message_id})
+            return httpx.Response(200, json={"id": "meta", "payload": {"headers": headers}})
         self.last_json = kwargs.get("json")
         return httpx.Response(200, json={"id": "gmail_sent_1"})
 
@@ -318,8 +324,8 @@ def test_approve_send_success_and_double_claim_409(
     raw_b64 = str(tx.last_json.get("raw") or "")
     pad = "=" * (-len(raw_b64) % 4)
     msg = message_from_bytes(base64.urlsafe_b64decode(raw_b64 + pad))
-    assert msg["In-Reply-To"] == "msg_send_ok"
-    assert msg["References"] == "msg_send_ok"
+    assert msg["In-Reply-To"] == "<fixture@example.test>"
+    assert msg["References"] == "<fixture@example.test>"
     assert "Bcc" not in msg
     assert msg["To"] == "demo@example.com"
 
@@ -384,6 +390,14 @@ def test_failed_send_writes_audit_and_failed_status(db_session: Session, monkeyp
         def request(self, method: str, url: str, **kwargs):  # type: ignore[no-untyped-def]
             if "oauth2.googleapis.com/token" in url:
                 return httpx.Response(200, json={"access_token": "tok"})
+            if method.upper() == "GET" and "/messages/" in url:
+                return httpx.Response(
+                    200,
+                    json={
+                        "id": "meta",
+                        "payload": {"headers": [{"name": "Message-ID", "value": "<fail@example.test>"}]},
+                    },
+                )
             return httpx.Response(500, json={"error": "boom"})
 
     with pytest.raises(mail_hitl.MailHitlError) as exc:
