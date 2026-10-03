@@ -102,38 +102,14 @@ def _google_connected(session: Session) -> bool:
 
 
 def _latest_triage_records(session: Session) -> list[dict[str, Any]]:
-    """Latest triage decisions joined to work items (same shape as GET /triage).
+    """Latest triage decisions with correction overlay (B6 C6).
 
     When Google is connected, only ``source_type=gmail`` rows are returned so sample
     work items never mix into the operator queue (G7). Disconnected = all sources.
     """
-    stmt = (
-        select(TriageDecisionRow, WorkItemRow)
-        .join(WorkItemRow, TriageDecisionRow.work_item_id == WorkItemRow.id)
-        .order_by(desc(TriageDecisionRow.id))
-    )
-    if _google_connected(session):
-        stmt = stmt.where(WorkItemRow.source_type == "gmail")
-    result = session.execute(stmt)
-    seen: set[str] = set()
-    payload: list[dict[str, Any]] = []
-    for decision, work_item in result.all():
-        if decision.work_item_id in seen:
-            continue
-        seen.add(decision.work_item_id)
-        payload.append(
-            {
-                "id": decision.work_item_id,
-                "subject_or_title": work_item.subject_or_title,
-                "urgency": decision.urgency,
-                "urgency_reason": decision.urgency_reason,
-                "category": decision.category,
-                "category_reason": decision.category_reason,
-                "sentiment": decision.sentiment,
-                "sentiment_reason": decision.sentiment_reason,
-            }
-        )
-    return payload
+    from opspilot.services.triage_overlay import latest_triage_with_overlay
+
+    return latest_triage_with_overlay(session, gmail_only=_google_connected(session))
 
 
 def _latest_named_briefing(session: Session, *, name: str) -> str | None:
