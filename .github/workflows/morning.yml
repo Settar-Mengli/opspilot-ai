@@ -1,0 +1,98 @@
+# B6 morning job (D-011) — in-runner; workflow_dispatch first; schedule in C14 after LIVE PASS.
+
+name: Morning Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_override:
+        description: Force a new morning job even if one succeeded today
+        type: boolean
+        required: false
+        default: false
+      simulate_google_reauth:
+        description: Skip Google sync and set reauth_needed (no credential damage)
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: morning-run
+  cancel-in-progress: false
+
+jobs:
+  morning:
+    name: Morning
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.OPSPILOT_DATABASE_URL }}
+      TOKEN_ENCRYPTION_KEY: ${{ secrets.TOKEN_ENCRYPTION_KEY }}
+      GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      OPSPILOT_DEMO_MODE: "0"
+      OPSPILOT_ANTHROPIC_ENABLED: "false"
+      INFERENCE_PROVIDER_ORDER: "gemini,groq,mistral,cloudflare,openrouter"
+      GEMINI_MODEL: "gemini-3.5-flash-lite"
+      GROQ_MODEL: "openai/gpt-oss-20b"
+      MISTRAL_MODEL: "ministral-3b-2512"
+      OPENROUTER_MODEL: "nvidia/nemotron-3-super-120b-a12b:free"
+      CLOUDFLARE_MODEL: "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+      OPSPILOT_BUDGET_GEMINI_REQ_DAY: "400"
+      OPSPILOT_BUDGET_GEMINI_TOK_DAY: "800000"
+      OPSPILOT_BUDGET_GROQ_REQ_DAY: "800"
+      OPSPILOT_BUDGET_GROQ_TOK_DAY: "160000"
+      OPSPILOT_BUDGET_MISTRAL_REQ_DAY: "1000"
+      OPSPILOT_BUDGET_MISTRAL_TOK_DAY: "1000000"
+      OPSPILOT_BUDGET_CLOUDFLARE_REQ_DAY: "80"
+      OPSPILOT_BUDGET_CLOUDFLARE_TOK_DAY: "140000"
+      OPSPILOT_BUDGET_OPENROUTER_REQ_DAY: "40"
+      OPSPILOT_BUDGET_OPENROUTER_TOK_DAY: "160000"
+      OPSPILOT_SYNC_TRIAGE_CAP: "10"
+      OPSPILOT_MORNING_REQUEST_CEILING: "60"
+      OPSPILOT_SYNC_REQUEST_CEILING: "40"
+      OPSPILOT_BRIEF_REQUEST_RESERVE: "10"
+      OPSPILOT_JOB_HEARTBEAT_SECONDS: "15"
+      OPSPILOT_JOB_STALE_SECONDS: "900"
+      OPSPILOT_JOB_QUEUED_ORPHAN_SECONDS: "120"
+      GOOGLE_OAUTH_REDIRECT_URI: "http://127.0.0.1:8000/api/v1/oauth/google/callback"
+      OPSPILOT_MORNING_FORCE: ${{ inputs.force_override && '1' || '0' }}
+      OPSPILOT_SIMULATE_GOOGLE_REAUTH: ${{ inputs.simulate_google_reauth && '1' || '0' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install backend dependencies
+        run: uv sync
+
+      - name: Print database host label
+        run: uv run python -m opspilot.jobs.db_host
+
+      - name: Run morning job
+        run: |
+          set -euo pipefail
+          ARGS=()
+          if [ "${{ inputs.force_override }}" = "true" ]; then
+            ARGS+=(--force)
+          fi
+          uv run python -m opspilot.jobs.morning_run "${ARGS[@]}"
