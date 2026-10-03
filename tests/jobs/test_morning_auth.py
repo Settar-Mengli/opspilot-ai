@@ -34,6 +34,8 @@ def test_simulate_reauth_skips_sync(db_session: Session, monkeypatch: pytest.Mon
 
 def test_google_reauth_exception_sets_flag(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
     """GoogleReauthRequired during sync sets reauth_needed on the job."""
+    from cryptography.fernet import Fernet
+
     job, gen = _setup_job_with_lease(db_session)
 
     from opspilot.services.google_sync import GoogleReauthRequired
@@ -43,6 +45,7 @@ def test_google_reauth_exception_sets_flag(db_session: Session, monkeypatch: pyt
 
     monkeypatch.setattr("opspilot.services.google_sync.run_sync", _raise_reauth)
     monkeypatch.setenv("OPSPILOT_DEMO_MODE", "0")
+    monkeypatch.setenv("TOKEN_ENCRYPTION_KEY", Fernet.generate_key().decode())
     monkeypatch.delenv("OPSPILOT_SIMULATE_GOOGLE_REAUTH", raising=False)
 
     # Simulate the auth check path manually.
