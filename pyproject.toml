@@ -12,7 +12,7 @@ authors = [{ name = "OpsPilot AI Contributors" }]
 dependencies = [
 	"fastapi",
 	"uvicorn[standard]",
-	"anthropic>=0.25.0",
+	"anthropic>=1.10.0",
 	"python-dotenv>=1.0.0",
 	"sqlalchemy>=2.0",
 	"psycopg[binary]>=3.3.6",
