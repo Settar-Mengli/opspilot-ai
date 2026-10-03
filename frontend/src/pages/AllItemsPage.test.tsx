@@ -73,7 +73,7 @@ describe('AllItemsPage corrections refetch', () => {
 
     await waitFor(() => {
       expect(upsertCorrection).toHaveBeenCalled()
-      expect(getTriage.mock.calls.length).toBeGreaterThanOrEqual(2)
+      expect(vi.mocked(getTriage).mock.calls.length).toBeGreaterThanOrEqual(2)
     })
 
     await waitFor(() => {
