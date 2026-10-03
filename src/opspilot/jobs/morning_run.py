@@ -92,13 +92,37 @@ def _simulate_reauth() -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Notification stub (C4 wires Telegram)
+# Telegram notify (C4)
 # ---------------------------------------------------------------------------
 
 
 def notify_morning_outcome(job_id: str, status: str, **meta: object) -> None:
-    """Stub: log the outcome. Telegram notification is C4."""
-    logger.info("morning_outcome job=%s status=%s meta_keys=%s", job_id, status, sorted(meta.keys()))
+    """Send counts-only Telegram outcome; persist telegram_error_code on HTTP failure."""
+    del meta  # counts come from ops_jobs row only (never pass subjects/bodies through meta)
+    from opspilot.integrations.telegram_client import fields_from_ops_job, send_outcome_message
+    from opspilot.persistence.db import create_engine, create_session_factory, get_database_url
+    from opspilot.persistence.models import OpsJobRow
+    from opspilot.persistence.repositories.ops_jobs import update_ops_job_fields
+
+    engine = create_engine(get_database_url())
+    factory = create_session_factory(engine)
+    session = factory()
+    try:
+        job = session.get(OpsJobRow, job_id)
+        if job is None:
+            logger.warning("telegram notify skipped missing job_id=%s", job_id)
+            return
+        fields = fields_from_ops_job(session, job, status=status)
+        err = send_outcome_message(fields)
+        if err:
+            update_ops_job_fields(session, job, telegram_error_code=err)
+            session.commit()
+            logger.warning("telegram notify failed job=%s code=%s", job_id, err)
+        else:
+            logger.info("telegram notify ok job=%s status=%s", job_id, status)
+    finally:
+        session.close()
+        engine.dispose()
 
 
 # ---------------------------------------------------------------------------
