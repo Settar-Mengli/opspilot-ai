@@ -178,6 +178,8 @@ export interface JobStatusSummary {
   status: string
   triaged: number
   pending: number
+  rules_fallback_count?: number
+  reauth_needed?: boolean
   error_code?: string | null
   finished_at?: string | null
 }

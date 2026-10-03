@@ -103,13 +103,43 @@ describe('SettingsPage', () => {
     expect(screen.getByText('succeeded')).toBeInTheDocument()
     expect(screen.getByText('failed')).toBeInTheDocument()
     expect(screen.getByText('timeout')).toBeInTheDocument()
-    // F1 JobBlock rows only (Rules fallback / Re-auth land in F6).
     expect(screen.getAllByText('Status').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Triaged').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Pending').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Finished').length).toBeGreaterThanOrEqual(1)
-    expect(screen.queryByText('Rules fallback')).toBeNull()
-    expect(screen.queryByText('Re-auth')).toBeNull()
+    expect(screen.getAllByText('Rules fallback').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Re-auth').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('renders rules_fallback_count and reauth_needed from job summary', async () => {
+    mockGetApiSettings.mockResolvedValue({
+      provider: 'gemini',
+      model: 'gemini-3.5-flash-lite',
+      api_key_set: true,
+      last_morning: {
+        id: 'j-1',
+        status: 'partial',
+        triaged: 2,
+        pending: 1,
+        rules_fallback_count: 3,
+        reauth_needed: true,
+        error_code: null,
+        finished_at: '2026-10-01T08:00:00Z',
+      },
+      last_sync: null,
+    })
+
+    render(
+      <MemoryRouter>
+        <SettingsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('job-block-last-morning-run')).toBeInTheDocument()
+    })
+    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.getByText('needed')).toBeInTheDocument()
   })
 
   it('hides job blocks when fields are undefined', async () => {

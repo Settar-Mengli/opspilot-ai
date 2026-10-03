@@ -37,6 +37,14 @@ function JobBlock({ label, job }: { label: string; job: JobStatusSummary }) {
         <span className="settings-status-label">Pending</span>
         <span className="settings-status-value">{job.pending}</span>
       </p>
+      <p className="settings-status-row">
+        <span className="settings-status-label">Rules fallback</span>
+        <span className="settings-status-value">{job.rules_fallback_count ?? 0}</span>
+      </p>
+      <p className="settings-status-row">
+        <span className="settings-status-label">Re-auth</span>
+        <span className="settings-status-value">{job.reauth_needed ? 'needed' : 'ok'}</span>
+      </p>
       {job.error_code && (
         <p className="settings-status-row">
           <span className="settings-status-label">Error</span>

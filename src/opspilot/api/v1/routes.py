@@ -46,6 +46,8 @@ def _job_status_summary(job: object) -> dict[str, object] | None:
         "status": job.status,
         "triaged": job.triaged,
         "pending": job.pending,
+        "rules_fallback_count": job.rules_fallback_count,
+        "reauth_needed": job.reauth_needed,
         "error_code": job.error_code,
         "finished_at": job.finished_at.isoformat() if job.finished_at else None,
     }
