@@ -33,19 +33,54 @@ from opspilot.services.insights import generate_insights
 router = APIRouter(prefix="/api/v1")
 
 
+def _job_status_summary(job: object) -> dict[str, object] | None:
+    """Minimal job status dict for settings payload."""
+    if job is None:
+        return None
+    from opspilot.persistence.models import OpsJobRow
+
+    if not isinstance(job, OpsJobRow):
+        return None
+    return {
+        "id": job.id,
+        "status": job.status,
+        "triaged": job.triaged,
+        "pending": job.pending,
+        "error_code": job.error_code,
+        "finished_at": job.finished_at.isoformat() if job.finished_at else None,
+    }
+
+
 def _settings_payload(session: Session | None = None) -> dict[str, object]:
     from opspilot.persistence.repositories import oauth_credentials
     from opspilot.services.operator_session import demo_mode_enabled
 
     google_connected = False
+    last_morning: dict[str, object] | None = None
+    last_sync: dict[str, object] | None = None
     if session is not None:
         google_connected = oauth_credentials.is_connected(session, provider="google")
+        from sqlalchemy import desc as sa_desc
+        from sqlalchemy import select
+
+        from opspilot.persistence.models import OpsJobRow
+
+        morning_job = session.scalars(
+            select(OpsJobRow).where(OpsJobRow.job_kind == "morning").order_by(sa_desc(OpsJobRow.created_at)).limit(1)
+        ).first()
+        last_morning = _job_status_summary(morning_job)
+        sync_job = session.scalars(
+            select(OpsJobRow).where(OpsJobRow.job_kind == "sync_drain").order_by(sa_desc(OpsJobRow.created_at)).limit(1)
+        ).first()
+        last_sync = _job_status_summary(sync_job)
     return {
         "provider": ai_settings.provider,
         "model": ai_settings.model,
         "api_key_set": bool(ai_settings.api_key),
         "demo_mode": demo_mode_enabled(),
         "google_connected": google_connected,
+        "last_morning": last_morning,
+        "last_sync": last_sync,
     }
 
 

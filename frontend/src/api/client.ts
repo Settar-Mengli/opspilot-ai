@@ -3,6 +3,7 @@ import type {
   CalendarMeeting,
   Capability,
   InsightsResponse,
+  JobStatus,
   RunMetadata,
   RunPipelineResult,
   RunSummary,
@@ -353,7 +354,19 @@ export async function getCapabilities(): Promise<Capability[]> {
 }
 
 export async function postSync(): Promise<SyncResult> {
-  return requestJson<SyncResult>('/api/v1/sync', { method: 'POST' })
+  const response = await fetch(`${API_BASE_URL}/api/v1/sync`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!response.ok && response.status !== 202) {
+    const detail = await getErrorDetail(response)
+    throw toApiError(response.status, detail)
+  }
+  return response.json() as Promise<SyncResult>
+}
+
+export async function getJobStatus(jobId: string): Promise<JobStatus> {
+  return requestJson<JobStatus>(`/api/v1/jobs/${encodeURIComponent(jobId)}`)
 }
 
 export async function disconnectGoogle(): Promise<void> {

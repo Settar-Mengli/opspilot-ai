@@ -78,19 +78,40 @@ class InsightsRequest(BaseModel):
 
 
 class SyncResponse(BaseModel):
-    """Typed POST /api/v1/sync response (must match run_sync + triage merge)."""
+    """Typed POST /api/v1/sync response (drain-based, B6 C5).
 
-    account_email: str
-    gmail_upserted: int
+    ``drain`` indicates outcome: ``not_needed`` (no pending), ``started``
+    (background drain spawned), or ``busy`` (lease held, try again).
+    HTTP status is 202 for ``started``, 200 otherwise.
+    """
+
+    drain: str  # not_needed | started | busy
+    job_id: str | None = None
+    account_email: str = ""
+    gmail_upserted: int = 0
     gmail_removed: int = 0
-    calendar_upserted: int
+    calendar_upserted: int = 0
     gmail_total: int | None = None
     meetings_total: int | None = None
-    triaged: int
-    pending: int
-    run_id: str | None = None
+    triaged: int = 0
+    pending: int = 0
     calendar_truncated: bool = False
     gmail_truncated: bool = False
+
+
+class JobStatusResponse(BaseModel):
+    """GET /api/v1/jobs/{job_id} response."""
+
+    id: str
+    job_kind: str
+    status: str
+    triaged: int = 0
+    pending: int = 0
+    error_code: str | None = None
+    run_id: str | None = None
+    created_at: str
+    started_at: str | None = None
+    finished_at: str | None = None
 
 
 def safe_error(

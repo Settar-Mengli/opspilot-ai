@@ -128,14 +128,6 @@ export interface Capability {
 
 export type AIProvider = 'anthropic'
 
-export interface ApiSettings {
-  provider: string
-  model: string
-  api_key_set: boolean
-  demo_mode?: boolean
-  google_connected?: boolean
-}
-
 export interface CalendarMeeting {
   id: string
   provider_id: string
@@ -145,6 +137,9 @@ export interface CalendarMeeting {
 }
 
 export interface SyncResult {
+  /** Drain outcome: not_needed | started | busy */
+  drain: 'not_needed' | 'started' | 'busy'
+  job_id?: string | null
   account_email: string
   gmail_upserted: number
   gmail_removed?: number
@@ -153,9 +148,40 @@ export interface SyncResult {
   meetings_total?: number
   triaged: number
   pending: number
-  run_id?: string | null
   /** True when calendar list hit max pages (C2). */
   calendar_truncated?: boolean
   /** True when Gmail full-list hit max pages (C3/A5). */
   gmail_truncated?: boolean
+}
+
+export interface JobStatus {
+  id: string
+  job_kind: string
+  status: string
+  triaged: number
+  pending: number
+  error_code?: string | null
+  run_id?: string | null
+  created_at: string
+  started_at?: string | null
+  finished_at?: string | null
+}
+
+export interface JobStatusSummary {
+  id: string
+  status: string
+  triaged: number
+  pending: number
+  error_code?: string | null
+  finished_at?: string | null
+}
+
+export interface ApiSettings {
+  provider: string
+  model: string
+  api_key_set: boolean
+  demo_mode?: boolean
+  google_connected?: boolean
+  last_morning?: JobStatusSummary | null
+  last_sync?: JobStatusSummary | null
 }
