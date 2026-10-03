@@ -131,7 +131,15 @@ export function AllItemsPage({ onAsk }: Props) {
     }
     try {
       await upsertCorrection(id, payload)
-      updateCorrection(id, { saved: true, saving: false })
+      const fresh = await getTriage()
+      setRecords(fresh)
+      updateCorrection(id, {
+        urgency: payload.urgency,
+        category: payload.category,
+        sentiment: payload.sentiment,
+        saved: true,
+        saving: false,
+      })
     } catch {
       updateCorrection(id, { saving: false })
     }
@@ -141,6 +149,8 @@ export function AllItemsPage({ onAsk }: Props) {
     updateCorrection(id, { saving: true })
     try {
       await deleteCorrection(id)
+      const fresh = await getTriage()
+      setRecords(fresh)
       setCorrections((prev) => {
         const next = { ...prev }
         delete next[id]
@@ -164,7 +174,7 @@ export function AllItemsPage({ onAsk }: Props) {
     const prefix = context === 'pane' ? 'corr-pane' : 'corr-sheet'
     return (
       <div className={`${prefix}-controls`} data-testid="correction-controls">
-        {state.saved && (
+        {(state.saved || record.corrected) && (
           <span className="corr-badge" data-testid="correction-badge">Corrected</span>
         )}
         <label className="corr-label">
@@ -278,7 +288,9 @@ export function AllItemsPage({ onAsk }: Props) {
                     <p className="fp-row-title">{r.subject_or_title ?? r.id}</p>
                     <p className="fp-row-cat">
                       {categoryLabel(r.category)}
-                      {corrState.saved && <span className="corr-badge-inline"> Corrected</span>}
+                      {(corrState.saved || r.corrected) && (
+                        <span className="corr-badge-inline"> Corrected</span>
+                      )}
                     </p>
                   </span>
                   <span className="fp-row-arr">

@@ -13,6 +13,8 @@ export interface TriageRecord {
   category_reason: string
   sentiment: Sentiment
   sentiment_reason: string
+  /** True when a human correction overlay is applied (GET /triage). */
+  corrected?: boolean
 }
 
 export interface ApiError {
