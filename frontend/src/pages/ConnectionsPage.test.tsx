@@ -107,6 +107,86 @@ describe('ConnectionsPage copy', () => {
     await waitFor(() => {
       expect(screen.getByText(/triage busy, try again shortly \(3 pending\)/)).toBeInTheDocument()
     })
+    expect(screen.getByTestId('sync-status')).toHaveAttribute('data-sync-outcome', 'busy')
+    expect(screen.getByRole('button', { name: /sync now/i })).toBeInTheDocument()
+  })
+
+  it('shows Syncing… while POST is in flight (progress)', async () => {
+    vi.mocked(getApiSettings).mockResolvedValue({
+      demo_mode: false,
+      google_connected: true,
+    } as never)
+    let resolveSync: (v: unknown) => void = () => undefined
+    vi.mocked(postSync).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSync = resolve
+        }),
+    )
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: /sync now/i }))
+    expect(await screen.findByRole('button', { name: /syncing/i })).toBeDisabled()
+    resolveSync({
+      drain: 'busy',
+      job_id: null,
+      account_email: 'ops@example.com',
+      gmail_upserted: 0,
+      gmail_removed: 0,
+      calendar_upserted: 0,
+      gmail_total: 1,
+      meetings_total: 0,
+      triaged: 0,
+      pending: 1,
+      calendar_truncated: false,
+      gmail_truncated: false,
+    })
+    await waitFor(() => {
+      expect(screen.getByTestId('sync-status')).toHaveAttribute('data-sync-outcome', 'busy')
+    })
+  })
+
+  it('shows triaging then done after started poll succeeds', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.mocked(getApiSettings).mockResolvedValue({
+      demo_mode: false,
+      google_connected: true,
+    } as never)
+    vi.mocked(postSync).mockResolvedValue({
+      drain: 'started',
+      job_id: 'job-1',
+      account_email: 'ops@example.com',
+      gmail_upserted: 2,
+      gmail_removed: 0,
+      calendar_upserted: 1,
+      gmail_total: 10,
+      meetings_total: 4,
+      triaged: 0,
+      pending: 5,
+      calendar_truncated: false,
+      gmail_truncated: false,
+    })
+    vi.mocked(getJobStatus).mockResolvedValue({
+      id: 'job-1',
+      job_kind: 'sync_drain',
+      status: 'succeeded',
+      triaged: 4,
+      pending: 1,
+      error_code: null,
+      created_at: '2026-10-01T00:00:00Z',
+    })
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: /sync now/i }))
+    await waitFor(() => {
+      expect(screen.getByText(/triaging 5 pending/)).toBeInTheDocument()
+    })
+    expect(screen.getByTestId('sync-status')).toHaveAttribute('data-sync-outcome', 'triaging')
+    await vi.advanceTimersByTimeAsync(2100)
+    await waitFor(() => {
+      expect(screen.getByTestId('sync-status')).toHaveAttribute('data-sync-outcome', 'done')
+    })
+    expect(screen.getByText(/triaged 4 \(1 pending\)/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /sync now/i })).toBeInTheDocument()
+    vi.useRealTimers()
   })
 
   it('appends calendar and gmail truncated suffixes', async () => {

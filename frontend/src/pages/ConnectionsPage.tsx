@@ -51,6 +51,10 @@ export function ConnectionsPage() {
     searchParams.get('oauth_error') === 'grant_required' ? GRANT_REQUIRED_MSG : null,
   )
   const [syncing, setSyncing] = useState(false)
+  /** Distinct UI outcomes for gallery/tests: progress | triaging | done | busy */
+  const [syncOutcome, setSyncOutcome] = useState<'progress' | 'triaging' | 'done' | 'busy' | null>(
+    null,
+  )
   const [needsReauth, setNeedsReauth] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
@@ -104,6 +108,7 @@ export function ConnectionsPage() {
         const job = await getJobStatus(jobId)
         if (job.status === 'succeeded' || job.status === 'partial') {
           setSyncMsg(`${syncCounts} — triaged ${job.triaged} (${job.pending} pending)`)
+          setSyncOutcome('done')
           setSyncing(false)
           getCapabilities().then(setCapabilities).catch(() => { /* keep */ })
           getApiSettings().then(setSettings).catch(() => { /* keep */ })
@@ -111,6 +116,7 @@ export function ConnectionsPage() {
         }
         if (job.status === 'failed' || job.status === 'abandoned') {
           setSyncMsg(`${syncCounts} — triage ${job.error_code || 'failed'}`)
+          setSyncOutcome(null)
           setSyncing(false)
           return
         }
@@ -125,6 +131,7 @@ export function ConnectionsPage() {
   const runSync = async () => {
     setSyncing(true)
     setSyncMsg(null)
+    setSyncOutcome('progress')
     setNeedsReauth(false)
     try {
       const result = await postSync()
@@ -132,16 +139,20 @@ export function ConnectionsPage() {
 
       if (result.drain === 'not_needed') {
         setSyncMsg(`${counts} — triaged ${result.triaged} (${result.pending} pending)`)
+        setSyncOutcome('done')
         setSyncing(false)
         refresh()
       } else if (result.drain === 'busy') {
         setSyncMsg(`${counts} — triage busy, try again shortly (${result.pending} pending)`)
+        setSyncOutcome('busy')
         setSyncing(false)
       } else if (result.drain === 'started' && result.job_id) {
         setSyncMsg(`${counts} — triaging ${result.pending} pending…`)
+        setSyncOutcome('triaging')
         void pollJobUntilDone(result.job_id, counts)
       } else {
         setSyncMsg(counts)
+        setSyncOutcome(null)
         setSyncing(false)
         refresh()
       }
@@ -158,6 +169,7 @@ export function ConnectionsPage() {
         const parts = [code || 'sync_failed', rid ? `ref ${rid}` : null].filter(Boolean)
         setSyncMsg(`Sync failed (${parts.join('; ')})`)
       }
+      setSyncOutcome(null)
       setSyncing(false)
     }
   }
@@ -223,7 +235,16 @@ export function ConnectionsPage() {
               Connect Google
             </button>
           )}
-          {syncMsg && <p className="cn-feat-sub" role="status">{syncMsg}</p>}
+          {syncMsg && (
+            <p
+              className="cn-feat-sub"
+              role="status"
+              data-testid="sync-status"
+              data-sync-outcome={syncOutcome ?? undefined}
+            >
+              {syncMsg}
+            </p>
+          )}
         </div>
       )}
 
