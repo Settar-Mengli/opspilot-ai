@@ -1064,7 +1064,10 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 1000;
+  /* Below Ask chrome (MobileDock / ask bar) so 375 sheet does not cover Ask. */
+  z-index: 900;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
 }
 
 .corr-sheet {
@@ -1074,9 +1077,78 @@
   padding: 24px 20px 28px;
   width: 100%;
   max-width: 500px;
-  max-height: 80vh;
+  max-height: min(80vh, calc(100% - 8px));
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* Match Week/Priorities: center sheet from 600px (not desktop-only 1280). */
+@media (min-width: 600px) {
+  .corr-sheet-overlay {
+    align-items: center;
+    padding-bottom: 0;
+  }
+
+  .corr-sheet {
+    border-radius: 16px;
+    max-height: 80vh;
+  }
+}
+
+/* Shared detail chrome for sheet (desktop pane keeps rules in desktop.css @1280). */
+.corr-sheet .items-detail-subject {
+  font-family: var(--font-prose);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--text-1);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.corr-sheet .items-detail-urgency {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.corr-sheet .items-detail-urgency--critical { color: #d85a30; }
+.corr-sheet .items-detail-urgency--high { color: #ef9f27; }
+.corr-sheet .items-detail-urgency--medium { color: var(--blue); }
+.corr-sheet .items-detail-urgency--low { color: var(--text-3); }
+
+.corr-sheet .items-detail-reasons {
+  font-family: var(--font-prose);
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.corr-sheet .items-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.corr-sheet .items-detail-actions button {
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  color: var(--text-1);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.corr-sheet .items-detail-actions button:hover {
+  border-color: var(--accent-border);
 }
