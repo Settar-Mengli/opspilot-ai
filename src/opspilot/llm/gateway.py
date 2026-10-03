@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator, Sequence
+from decimal import Decimal, InvalidOperation
 from typing import Protocol
 
 from pydantic import BaseModel, ValidationError
@@ -18,6 +19,7 @@ from opspilot.llm.schema_convert import schema_prompt_fragment, unwrap_schema_ec
 from opspilot.llm.types import AttemptStatus, CompletionResult, Message, ProviderResult, StreamChunk, TaskName
 from opspilot.obs.tracing import LlmSpanAttrs, append_llm_jsonl, emit_llm_span
 from opspilot.persistence.llm_calls import record_llm_call
+from opspilot.persistence.repositories.anthropic_budget import debit_budget
 
 _REPAIR_SUFFIX = (
     "Your previous JSON failed validation. Return corrected JSON only that matches the schema. "
@@ -233,6 +235,16 @@ class LlmGateway:
             return None, str(exc)
 
 
+def _usd_estimate_from_raw(raw: dict[str, object]) -> Decimal | None:
+    val = raw.get("usd_estimate")
+    if val is None:
+        return None
+    try:
+        return Decimal(str(val))
+    except (InvalidOperation, ValueError):
+        return None
+
+
 def session_attempt_recorder(session: Session) -> AttemptRecorder:
     """Build a recorder that writes LlmCallRow via an open SQLAlchemy Session."""
 
@@ -244,6 +256,7 @@ def session_attempt_recorder(session: Session) -> AttemptRecorder:
         request_id: str | None = None,
         prompt_version: str | None = None,
     ) -> None:
+        usd_estimate = _usd_estimate_from_raw(result.raw)
         record_llm_call(
             session,
             task=task,
@@ -253,11 +266,17 @@ def session_attempt_recorder(session: Session) -> AttemptRecorder:
             latency_ms=result.latency_ms,
             tokens_in=result.input_tokens,
             tokens_out=result.output_tokens,
+            usd_estimate=usd_estimate,
             request_id=request_id,
             prompt_version=prompt_version,
             error_code=result.error_code,
             meta=sanitize_meta(result.meta),
         )
+        if provider == "anthropic" and result.status is AttemptStatus.SUCCESS:
+            tokens = result.input_tokens + result.output_tokens
+            debit_usd = usd_estimate if usd_estimate is not None else Decimal(0)
+            if tokens > 0 or debit_usd > 0:
+                debit_budget(session, tokens=tokens, usd=debit_usd)
 
     return _record
 

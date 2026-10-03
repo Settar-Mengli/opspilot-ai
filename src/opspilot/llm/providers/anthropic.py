@@ -9,8 +9,10 @@ from decimal import Decimal
 from typing import Any
 
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from opspilot.llm.types import AttemptStatus, Message, ProviderResult, StreamChunk, TaskName
+from opspilot.persistence.repositories.anthropic_budget import get_budget
 
 _ALLOWLIST: frozenset[str] = frozenset({"demo_quality", "leaderboard", "judge_calibration"})
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
@@ -61,7 +63,7 @@ def task_allowlisted(task: TaskName) -> bool:
     return task in _ALLOWLIST
 
 
-def gate_reason(task: TaskName) -> str | None:
+def gate_reason(task: TaskName, session: Session | None = None) -> str | None:
     """Return a deny reason, or None if Anthropic may be constructed for this task."""
     if not anthropic_enabled():
         return "anthropic_disabled"
@@ -70,6 +72,14 @@ def gate_reason(task: TaskName) -> str | None:
     rates = usd_rates()
     if rates is None:
         return "missing_usd_rates"
+    if session is not None:
+        row = get_budget(session)
+        if row is not None:
+            if row.remaining_tokens <= 0:
+                return "token_budget_exhausted"
+            if row.remaining_usd <= 0:
+                return "usd_budget_exhausted"
+            return None
     tok = remaining_token_budget()
     usd = remaining_usd_budget()
     if tok is None or tok <= 0:

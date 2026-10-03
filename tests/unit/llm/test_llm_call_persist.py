@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -12,8 +13,10 @@ from opspilot.llm import FakeProvider, LlmGateway, Message
 from opspilot.llm.gateway import session_attempt_recorder
 from opspilot.llm.prompts.versioning import prompt_version_sha256
 from opspilot.llm.routed import BudgetAwareGateway
+from opspilot.llm.types import AttemptStatus, ProviderResult
 from opspilot.obs.tracing import LlmSpanAttrs, append_llm_jsonl
 from opspilot.persistence.models import LlmCallRow
+from opspilot.persistence.repositories.anthropic_budget import get_budget
 
 
 @pytest.fixture()
@@ -45,8 +48,6 @@ def test_fake_complete_writes_llm_call_row(db_session: Session) -> None:
 
 @pytest.mark.usefixtures("allow_llm")
 def test_failover_writes_one_row_per_attempt(db_session: Session) -> None:
-    from opspilot.llm.types import AttemptStatus, ProviderResult
-
     failing = FakeProvider(
         name="bad",
         complete_results=[ProviderResult(status=AttemptStatus.ERROR, error_code="boom", model="bad-v1")],
@@ -61,6 +62,62 @@ def test_failover_writes_one_row_per_attempt(db_session: Session) -> None:
     rows = list(db_session.scalars(select(LlmCallRow).order_by(LlmCallRow.id)).all())
     assert [r.provider for r in rows] == ["bad", "good"]
     assert [r.status for r in rows] == ["error", "success"]
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_recorder_persists_usd_estimate_from_raw(db_session: Session) -> None:
+    gw = LlmGateway(
+        [
+            FakeProvider(
+                name="anthropic",
+                complete_results=[
+                    ProviderResult(
+                        status=AttemptStatus.SUCCESS,
+                        text="ok",
+                        model="claude-test",
+                        input_tokens=10,
+                        output_tokens=5,
+                        raw={"usd_estimate": "0.001234"},
+                    )
+                ],
+            )
+        ],
+        recorder=session_attempt_recorder(db_session),
+        observe=False,
+    )
+    gw.complete(task="demo_quality", messages=[Message(role="user", content="hi")])
+    row = db_session.scalars(select(LlmCallRow)).one()
+    assert row.usd_estimate == Decimal("0.001234")
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_recorder_debits_anthropic_prepaid_on_success(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPSPILOT_ANTHROPIC_BUDGET_TOKENS", "1000")
+    monkeypatch.setenv("OPSPILOT_ANTHROPIC_BUDGET_USD", "5")
+    gw = LlmGateway(
+        [
+            FakeProvider(
+                name="anthropic",
+                complete_results=[
+                    ProviderResult(
+                        status=AttemptStatus.SUCCESS,
+                        text="ok",
+                        model="claude-test",
+                        input_tokens=100,
+                        output_tokens=50,
+                        raw={"usd_estimate": "0.5"},
+                    )
+                ],
+            )
+        ],
+        recorder=session_attempt_recorder(db_session),
+        observe=False,
+    )
+    gw.complete(task="demo_quality", messages=[Message(role="user", content="hi")])
+    budget = get_budget(db_session)
+    assert budget is not None
+    assert budget.remaining_tokens == 850
+    assert budget.remaining_usd == Decimal("4.5")
 
 
 @pytest.mark.usefixtures("allow_llm")

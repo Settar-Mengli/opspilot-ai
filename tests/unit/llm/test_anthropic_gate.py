@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 import pytest
+from sqlalchemy.orm import Session
 
 from opspilot.llm.providers.anthropic import AnthropicProvider, gate_reason
 from opspilot.llm.types import AttemptStatus, Message
+from opspilot.persistence.models import AnthropicPrepaidBudgetRow
 
 
 def test_disabled_never_constructs(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -99,6 +103,23 @@ def test_ask_never_allowlisted(monkeypatch: pytest.MonkeyPatch) -> None:
     assert result.status is AttemptStatus.POLICY_DENIED
     assert result.error_code == "task_not_allowlisted"
     assert constructed == []
+
+
+def test_ledger_empty_hard_stops_with_session(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
+    monkeypatch.setenv("OPSPILOT_ANTHROPIC_ENABLED", "1")
+    monkeypatch.setenv("OPSPILOT_ANTHROPIC_BUDGET_TOKENS", "10000")
+    monkeypatch.setenv("OPSPILOT_ANTHROPIC_BUDGET_USD", "5")
+    monkeypatch.setenv("OPSPILOT_ANTHROPIC_USD_PER_MTOK_IN", "0.25")
+    monkeypatch.setenv("OPSPILOT_ANTHROPIC_USD_PER_MTOK_OUT", "1.25")
+    db_session.add(
+        AnthropicPrepaidBudgetRow(
+            id=1,
+            remaining_tokens=0,
+            remaining_usd=Decimal("1"),
+        )
+    )
+    db_session.flush()
+    assert gate_reason("demo_quality", db_session) == "token_budget_exhausted"
 
 
 def test_enabled_allowlisted_constructs_with_stub(monkeypatch: pytest.MonkeyPatch) -> None:
