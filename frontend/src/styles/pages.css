@@ -653,6 +653,10 @@
   gap: 7px;
 }
 
+.cn-feature .cn-feat-btn + .cn-feat-btn {
+  margin-top: 10px;
+}
+
 .cn-sec {
   font-size: 11px;
   letter-spacing: 0.1em;
