@@ -116,7 +116,20 @@ describe('ConnectionsPage copy', () => {
       demo_mode: false,
       google_connected: true,
     } as never)
-    let resolveSync: (v: unknown) => void = () => undefined
+    let resolveSync!: (v: {
+      drain: 'busy'
+      job_id: null
+      account_email: string
+      gmail_upserted: number
+      gmail_removed: number
+      calendar_upserted: number
+      gmail_total: number
+      meetings_total: number
+      triaged: number
+      pending: number
+      calendar_truncated: boolean
+      gmail_truncated: boolean
+    }) => void
     vi.mocked(postSync).mockImplementation(
       () =>
         new Promise((resolve) => {
