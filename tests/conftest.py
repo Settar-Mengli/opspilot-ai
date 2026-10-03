@@ -139,7 +139,8 @@ def db_session(test_database_url: str) -> Iterator[Session]:
             text(
                 "TRUNCATE TABLE triage_decisions, run_artifacts, runs, work_items, "
                 "oauth_credentials, sync_cursors, meetings, llm_calls, llm_budget_counters, "
-                "mail_drafts, mail_send_audit RESTART IDENTITY CASCADE"
+                "mail_drafts, mail_send_audit, ops_jobs, ops_job_lease, "
+                "triage_corrections, anthropic_prepaid_budget RESTART IDENTITY CASCADE"
             )
         )
     with factory() as session:
