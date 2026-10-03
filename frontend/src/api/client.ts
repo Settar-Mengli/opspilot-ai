@@ -419,3 +419,11 @@ export async function approveMailDraft(
   }
   return body
 }
+
+export async function reopenMailDraft(
+  draftId: string,
+): Promise<{ id: string; status: string; payload_sha256: string; error_code?: string | null }> {
+  return requestJson(`/api/v1/mail/drafts/${encodeURIComponent(draftId)}/reopen`, {
+    method: 'POST',
+  })
+}

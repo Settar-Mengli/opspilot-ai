@@ -898,6 +898,50 @@
         }
       }
     },
+    "/api/v1/mail/drafts/{draft_id}/reopen": {
+      "post": {
+        "tags": [
+          "mail"
+        ],
+        "summary": "Mail Draft Reopen",
+        "operationId": "mail_draft_reopen_api_v1_mail_drafts__draft_id__reopen_post",
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Mail Draft Reopen Api V1 Mail Drafts  Draft Id  Reopen Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/oauth/google/start": {
       "get": {
         "tags": [

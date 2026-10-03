@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from opspilot.api.csrf import require_csrf_origin
 from opspilot.api.deps import get_db_session
 from opspilot.api.schemas import safe_error
-from opspilot.services.mail_hitl import MailHitlError, approve_and_send, edit_draft
+from opspilot.services.mail_hitl import MailHitlError, approve_and_send, edit_draft, reopen_failed_draft
 from opspilot.services.operator_session import COOKIE_NAME, verify_session
 
 router = APIRouter(tags=["mail"])
@@ -86,5 +86,20 @@ def mail_draft_approve(
     except MailHitlError as exc:
         # Persist deny/fail audit rows written before the raise (D-027).
         session.commit()
+        _map_hitl_error(exc)
+        raise  # pragma: no cover
+
+
+@router.post("/mail/drafts/{draft_id}/reopen")
+def mail_draft_reopen(
+    draft_id: str,
+    request: Request,
+    session: Session = Depends(get_db_session),
+) -> dict[str, Any]:
+    require_csrf_origin(request)
+    email = _require_operator(request)
+    try:
+        return reopen_failed_draft(session, draft_id, operator_email=email)
+    except MailHitlError as exc:
         _map_hitl_error(exc)
         raise  # pragma: no cover
