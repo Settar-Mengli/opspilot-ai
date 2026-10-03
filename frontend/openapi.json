@@ -694,6 +694,102 @@
         }
       }
     },
+    "/api/v1/corrections/{work_item_id}": {
+      "post": {
+        "tags": [
+          "corrections"
+        ],
+        "summary": "Upsert Correction",
+        "operationId": "upsert_correction_api_v1_corrections__work_item_id__post",
+        "parameters": [
+          {
+            "name": "work_item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Work Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Upsert Correction Api V1 Corrections  Work Item Id  Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "corrections"
+        ],
+        "summary": "Delete Correction",
+        "operationId": "delete_correction_api_v1_corrections__work_item_id__delete",
+        "parameters": [
+          {
+            "name": "work_item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Work Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Correction Api V1 Corrections  Work Item Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/mail/drafts/{draft_id}/edit": {
       "post": {
         "tags": [
@@ -1071,6 +1167,36 @@
         ],
         "title": "AskStreamRequest",
         "description": "Same body as AskRequest for POST /ask/stream."
+      },
+      "CorrectionRequest": {
+        "properties": {
+          "urgency": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Urgency"
+          },
+          "category": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Category"
+          },
+          "sentiment": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Sentiment"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "urgency",
+          "category",
+          "sentiment"
+        ],
+        "title": "CorrectionRequest"
       },
       "DraftApproveRequest": {
         "properties": {

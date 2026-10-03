@@ -317,6 +317,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/corrections/{work_item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upsert Correction */
+        post: operations["upsert_correction_api_v1_corrections__work_item_id__post"];
+        /** Delete Correction */
+        delete: operations["delete_correction_api_v1_corrections__work_item_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mail/drafts/{draft_id}/edit": {
         parameters: {
             query?: never;
@@ -484,6 +502,15 @@ export interface components {
             assistant_name: string;
             /** History */
             history?: components["schemas"]["AskHistoryTurn"][];
+        };
+        /** CorrectionRequest */
+        CorrectionRequest: {
+            /** Urgency */
+            urgency: string;
+            /** Category */
+            category: string;
+            /** Sentiment */
+            sentiment: string;
         };
         /** DraftApproveRequest */
         DraftApproveRequest: {
@@ -1188,6 +1215,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_correction_api_v1_corrections__work_item_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                work_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorrectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_correction_api_v1_corrections__work_item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                work_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
