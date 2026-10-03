@@ -52,15 +52,45 @@ function AppAskApproveShell({
       if (!hold.draft || !hold.key) return
       try {
         const edited = await editMailDraft(hold.draft.draftId, hold.draft.subject, hold.draft.body)
-        await approveMailDraft(edited.id, edited.payload_sha256, hold.key)
+        const result = await approveMailDraft(edited.id, edited.payload_sha256, hold.key)
+        const code =
+          typeof result === 'object' && result && 'error_code' in result
+            ? (result as { error_code?: string | null }).error_code ?? undefined
+            : undefined
+        const failed =
+          result.status === 'failed' ||
+          (typeof result === 'object' &&
+            result &&
+            'send_failed' in result &&
+            (result as { send_failed?: boolean }).send_failed === true)
+        if (failed) {
+          const reopenable =
+            code === 'no_google_credential' ||
+            code === 'google_reauth_required' ||
+            code === 'gmail_send_failed' ||
+            code === 'send_failed'
+          setAskDraft((d) =>
+            d
+              ? {
+                  ...d,
+                  draftId: edited.id,
+                  approveError: code ? `Send failed (${code})` : 'Send failed.',
+                  idempotencyKey: crypto.randomUUID(),
+                  sendOutcomeUnknown: code === 'send_outcome_unknown',
+                  reopenable,
+                }
+              : d,
+          )
+          return
+        }
         setAskDraft((d) =>
           d
             ? {
                 ...d,
                 sentAt: Date.now(),
                 approveError: null,
-                approving: false,
                 sendOutcomeUnknown: false,
+                reopenable: false,
               }
             : d,
         )
@@ -71,17 +101,24 @@ function AppAskApproveShell({
             ? (e as { code: string }).code
             : undefined
         const unknown = code === 'send_outcome_unknown'
+        const reopenable =
+          code === 'no_google_credential' ||
+          code === 'google_reauth_required' ||
+          code === 'gmail_send_failed' ||
+          code === 'send_failed'
         setAskDraft((d) =>
           d
             ? {
                 ...d,
                 approveError: message,
-                approving: false,
                 idempotencyKey: crypto.randomUUID(),
                 sendOutcomeUnknown: unknown,
+                reopenable,
               }
             : d,
         )
+      } finally {
+        setAskDraft((d) => (d ? { ...d, approving: false } : d))
       }
     })()
   }, [approveMailDraft, editMailDraft])
@@ -93,6 +130,7 @@ function AppAskApproveShell({
     onDraftSubjectChange: (value: string) => setAskDraft((d) => (d ? { ...d, subject: value } : d)),
     onDraftBodyChange: (value: string) => setAskDraft((d) => (d ? { ...d, body: value } : d)),
     onApproveDraft,
+    demoMode: false,
     input: askInput,
     loading: false,
     error: null as string | null,
@@ -326,5 +364,30 @@ describe('approve state remount survival (C5/D2) — real AskDock ↔ AskPanel',
       )
     })
     expect(approveMailDraft).toHaveBeenCalledTimes(1)
+  })
+
+  it('approve failure clears approving and shows error plus Reopen', async () => {
+    approveMailDraft.mockImplementation(async () => {
+      throw Object.assign(new Error('google_reauth_required'), {
+        status: 400,
+        code: 'google_reauth_required',
+      })
+    })
+
+    render(
+      <AppAskApproveShell
+        editMailDraft={editMailDraft}
+        approveMailDraft={approveMailDraft}
+        initialDraft={baseDraft()}
+      />,
+    )
+    const dock = screen.getByRole('complementary', { name: 'Ask' })
+    fireEvent.click(within(dock).getByTestId('ask-draft-approve'))
+
+    await waitFor(() => {
+      expect(within(dock).getByRole('alert')).toBeInTheDocument()
+      expect(within(dock).getByTestId('ask-draft-reopen')).toBeInTheDocument()
+    })
+    expect(within(dock).getByTestId('ask-draft-approve')).not.toBeDisabled()
   })
 })

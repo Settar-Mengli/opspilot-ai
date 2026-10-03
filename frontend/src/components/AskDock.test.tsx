@@ -181,4 +181,54 @@ describe('AskThreadBody draft card', () => {
     expect(screen.getByTestId('ask-draft-approve')).toHaveTextContent('Approve & send')
     expect(screen.getByTestId('ask-draft-approve')).not.toHaveTextContent('Check Sent, then re-send')
   })
+
+  it('shows Reopen when reopenable and not demo mode', () => {
+    render(
+      <AskThreadBody
+        assistantName="OpsPilot"
+        messages={[]}
+        draft={{
+          draftId: 'md_1',
+          subject: 'S',
+          body: 'B',
+          toAddrs: 'demo@example.com',
+          approveError: 'Send failed (google_reauth_required)',
+          reopenable: true,
+        }}
+        demoMode={false}
+        input=""
+        loading={false}
+        error={null}
+        onInputChange={vi.fn()}
+        onSubmit={vi.fn()}
+        onReopenDraft={vi.fn()}
+      />,
+    )
+    expect(screen.getByTestId('ask-draft-reopen')).toBeInTheDocument()
+  })
+
+  it('hides Reopen when demoMode is true', () => {
+    render(
+      <AskThreadBody
+        assistantName="OpsPilot"
+        messages={[]}
+        draft={{
+          draftId: 'md_1',
+          subject: 'S',
+          body: 'B',
+          toAddrs: 'demo@example.com',
+          approveError: 'Send failed (google_reauth_required)',
+          reopenable: true,
+        }}
+        demoMode
+        input=""
+        loading={false}
+        error={null}
+        onInputChange={vi.fn()}
+        onSubmit={vi.fn()}
+        onReopenDraft={vi.fn()}
+      />,
+    )
+    expect(screen.queryByTestId('ask-draft-reopen')).toBeNull()
+  })
 })

@@ -13,6 +13,7 @@ interface Props {
   onDraftBodyChange?: (value: string) => void
   onApproveDraft?: () => void
   onReopenDraft?: () => void
+  demoMode?: boolean
   input: string
   loading: boolean
   error: string | null
@@ -31,6 +32,7 @@ export function AskPanel({
   onDraftBodyChange,
   onApproveDraft,
   onReopenDraft,
+  demoMode,
   input,
   loading,
   error,
@@ -79,6 +81,7 @@ export function AskPanel({
           onDraftBodyChange={onDraftBodyChange}
           onApproveDraft={onApproveDraft}
           onReopenDraft={onReopenDraft}
+          demoMode={demoMode}
           input={input}
           loading={loading}
           error={error}

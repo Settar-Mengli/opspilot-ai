@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, Navigate } from 'react-router-dom'
-import { getHealth, getTriage, editMailDraft, approveMailDraft, reopenMailDraft, formatMailHitlError } from './api/client'
+import {
+  getHealth,
+  getTriage,
+  getApiSettings,
+  editMailDraft,
+  approveMailDraft,
+  reopenMailDraft,
+  formatMailHitlError,
+} from './api/client'
 import { askOpsPilotStream } from './api/askStream'
 import type { AskDraftCard, AskMessage, AskToolStep } from './api/types'
 import { Brand } from './components/Brand'
@@ -47,8 +55,17 @@ function App() {
   const [askFocusToken, setAskFocusToken] = useState(0)
   const [askToolSteps, setAskToolSteps] = useState<AskToolStep[]>([])
   const [askDraft, setAskDraft] = useState<AskDraftCard | null>(null)
+  const [demoMode, setDemoMode] = useState(false)
   const dockInputRef = useRef<HTMLInputElement>(null)
   const askAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    void getApiSettings()
+      .then((s) => setDemoMode(s.demo_mode === true))
+      .catch(() => {
+        /* keep false */
+      })
+  }, [])
 
   const sendAsk = useCallback(
     async (question: string) => {
@@ -279,7 +296,6 @@ function App() {
                     ...d,
                     draftId: edited.id,
                     approveError: code ? `Send failed (${code})` : 'Send failed.',
-                    approving: false,
                     idempotencyKey: crypto.randomUUID(),
                     sendOutcomeUnknown: unknown,
                     reopenable,
@@ -294,7 +310,6 @@ function App() {
                   ...d,
                   sentAt: Date.now(),
                   approveError: null,
-                  approving: false,
                   sendOutcomeUnknown: false,
                   reopenable: false,
                 }
@@ -318,16 +333,18 @@ function App() {
               ? {
                   ...d,
                   approveError: message,
-                  approving: false,
                   idempotencyKey: crypto.randomUUID(),
                   sendOutcomeUnknown: unknown,
                   reopenable,
                 }
               : d,
           )
+        } finally {
+          setAskDraft((d) => (d ? { ...d, approving: false } : d))
         }
       })()
     },
+    demoMode,
     onReopenDraft: () => {
       void (async () => {
         let draftId = ''
