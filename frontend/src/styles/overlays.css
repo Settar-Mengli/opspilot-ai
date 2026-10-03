@@ -738,3 +738,18 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+.ask-draft-reopen {
+  font: inherit;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-top: 6px;
+}
+.ask-draft-reopen:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

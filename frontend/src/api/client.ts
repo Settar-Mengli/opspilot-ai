@@ -2,6 +2,7 @@ import type {
   ApiSettings,
   CalendarMeeting,
   Capability,
+  CorrectionPayload,
   InsightsResponse,
   JobStatus,
   RunMetadata,
@@ -425,5 +426,24 @@ export async function reopenMailDraft(
 ): Promise<{ id: string; status: string; payload_sha256: string; error_code?: string | null }> {
   return requestJson(`/api/v1/mail/drafts/${encodeURIComponent(draftId)}/reopen`, {
     method: 'POST',
+  })
+}
+
+export async function upsertCorrection(
+  workItemId: string,
+  payload: CorrectionPayload,
+): Promise<{ status: string }> {
+  return requestJson(`/api/v1/corrections/${encodeURIComponent(workItemId)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteCorrection(
+  workItemId: string,
+): Promise<{ status: string }> {
+  return requestJson(`/api/v1/corrections/${encodeURIComponent(workItemId)}`, {
+    method: 'DELETE',
   })
 }

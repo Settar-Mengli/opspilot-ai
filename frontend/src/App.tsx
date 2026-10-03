@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, Navigate } from 'react-router-dom'
-import { getHealth, getTriage, editMailDraft, approveMailDraft, formatMailHitlError } from './api/client'
+import { getHealth, getTriage, editMailDraft, approveMailDraft, reopenMailDraft, formatMailHitlError } from './api/client'
 import { askOpsPilotStream } from './api/askStream'
 import type { AskDraftCard, AskMessage, AskToolStep } from './api/types'
 import { Brand } from './components/Brand'
@@ -263,7 +263,31 @@ function App() {
         if (!hold.draft || !hold.key) return
         try {
           const edited = await editMailDraft(hold.draft.draftId, hold.draft.subject, hold.draft.body)
-          await approveMailDraft(edited.id, edited.payload_sha256, hold.key)
+          const result = await approveMailDraft(edited.id, edited.payload_sha256, hold.key)
+          const code = result.error_code ?? undefined
+          const failed = result.status === 'failed' || result.send_failed === true
+          if (failed) {
+            const unknown = code === 'send_outcome_unknown'
+            const reopenable =
+              code === 'no_google_credential' ||
+              code === 'google_reauth_required' ||
+              code === 'gmail_send_failed' ||
+              code === 'send_failed'
+            setAskDraft((d) =>
+              d
+                ? {
+                    ...d,
+                    draftId: edited.id,
+                    approveError: code ? `Send failed (${code})` : 'Send failed.',
+                    approving: false,
+                    idempotencyKey: crypto.randomUUID(),
+                    sendOutcomeUnknown: unknown,
+                    reopenable,
+                  }
+                : d,
+            )
+            return
+          }
           setAskDraft((d) =>
             d
               ? {
@@ -272,6 +296,7 @@ function App() {
                   approveError: null,
                   approving: false,
                   sendOutcomeUnknown: false,
+                  reopenable: false,
                 }
               : d,
           )
@@ -282,6 +307,12 @@ function App() {
               ? (e as { code: string }).code
               : undefined
           const unknown = code === 'send_outcome_unknown'
+          // Match backend reopenable failed codes (not unknown/unavailable → draft).
+          const reopenable =
+            code === 'no_google_credential' ||
+            code === 'google_reauth_required' ||
+            code === 'gmail_send_failed' ||
+            code === 'send_failed'
           setAskDraft((d) =>
             d
               ? {
@@ -290,6 +321,45 @@ function App() {
                   approving: false,
                   idempotencyKey: crypto.randomUUID(),
                   sendOutcomeUnknown: unknown,
+                  reopenable,
+                }
+              : d,
+          )
+        }
+      })()
+    },
+    onReopenDraft: () => {
+      void (async () => {
+        let draftId = ''
+        setAskDraft((d) => {
+          if (!d || d.sentAt || d.reopening) return d
+          draftId = d.draftId
+          return { ...d, reopening: true, approveError: null }
+        })
+        if (!draftId) return
+        try {
+          const result = await reopenMailDraft(draftId)
+          setAskDraft((d) =>
+            d
+              ? {
+                  ...d,
+                  draftId: result.id,
+                  reopening: false,
+                  reopenable: false,
+                  approveError: null,
+                  sendOutcomeUnknown: false,
+                  sentAt: null,
+                  idempotencyKey: crypto.randomUUID(),
+                }
+              : d,
+          )
+        } catch (e) {
+          setAskDraft((d) =>
+            d
+              ? {
+                  ...d,
+                  reopening: false,
+                  approveError: e instanceof Error ? e.message : 'Reopen failed.',
                 }
               : d,
           )

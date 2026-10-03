@@ -95,6 +95,10 @@ export interface AskDraftCard {
   approving?: boolean
   /** Last approve settled as ambiguous send; show deliberate re-send label. */
   sendOutcomeUnknown?: boolean
+  /** True when the draft can be re-created after a send failure. */
+  reopenable?: boolean
+  /** True while a reopen request is in flight. */
+  reopening?: boolean
 }
 
 export interface EveningSummaryRequest {
@@ -184,4 +188,10 @@ export interface ApiSettings {
   google_connected?: boolean
   last_morning?: JobStatusSummary | null
   last_sync?: JobStatusSummary | null
+}
+
+export interface CorrectionPayload {
+  urgency: Urgency
+  category: Category
+  sentiment: Sentiment
 }

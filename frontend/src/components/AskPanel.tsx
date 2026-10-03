@@ -12,6 +12,7 @@ interface Props {
   onDraftSubjectChange?: (value: string) => void
   onDraftBodyChange?: (value: string) => void
   onApproveDraft?: () => void
+  onReopenDraft?: () => void
   input: string
   loading: boolean
   error: string | null
@@ -29,6 +30,7 @@ export function AskPanel({
   onDraftSubjectChange,
   onDraftBodyChange,
   onApproveDraft,
+  onReopenDraft,
   input,
   loading,
   error,
@@ -76,6 +78,7 @@ export function AskPanel({
           onDraftSubjectChange={onDraftSubjectChange}
           onDraftBodyChange={onDraftBodyChange}
           onApproveDraft={onApproveDraft}
+          onReopenDraft={onReopenDraft}
           input={input}
           loading={loading}
           error={error}
