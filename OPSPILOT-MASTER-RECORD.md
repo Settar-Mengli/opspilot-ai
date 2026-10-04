@@ -1684,3 +1684,79 @@ Gallery tip `cb452e0` CI (filled here; historical placeholder row above left unc
 | SHA | Subject | Push run | PR run | Result |
 |-----|---------|----------|--------|--------|
 | _(tip)_ | docs(b5): record live smoke runs (1 real send, PASS); B5 ready for owner merge | final records commit — CI run on PR checks | final records commit — CI run on PR checks | |
+
+## PART 14 -- B6 Morning Run -- 2026-10-04
+
+### Summary
+- Branch b6/morning-run from origin/main @ 2131f32 (B5 PR #40 merge CI 37070730054 success).
+- Scope: morning job + reap/lease/fence, Sync 202/poll, corrections, reopen, F-05 plumbing (Anthropic still off), Settings job summary, visual C9-C11 (one commit), PART 14.
+- Scratch visual/b6-gallery-2 for gallery; visual/b6-gallery left untouched.
+- Next: C14 / STOP LIVE / PR -- not this commit. Agent does not merge.
+
+### Owner quotes (verbatim)
+- SCOPE APPROVED (2026-10-03)
+- VISUAL APPROVED (2026-10-04): Approved gallery run 37215651414, GALLERY_SHA b0cf0fd1be4a4d492a2c0a7fcf92973045fa0783.
+
+### Gallery / compare
+| Item | Value |
+|---|---|
+| GALLERY_SHA | b0cf0fd1be4a4d492a2c0a7fcf92973045fa0783 |
+| Approved update run | 37215651414 (artifact b6-gallery-update) |
+| Compare tip | ae02236a2ee7500ff4fb1986c0e9413273f59bd4 on visual/b6-gallery-2 |
+| Compare run | 37222547675 success |
+| Compare CI | 37222547702 success |
+| C9-C11 landing | e643c1635ad7c19fed0b8dd7ee8c85a1b45919a3 CI 37221969087 success; 28 new B6 PNGs; 62 pre-B6 untouched vs 2131f32 |
+
+### maxDiffPixels tolerance
+B6 new states: tol 28. Measurement: update runs 37162007920 vs 37199718443 measured max 27 px (mic-btn edge AA @375 bbox 337,750-374,791; top-nav icon AA @768/1280). Convention measured max N -> tol N+1 (same as existing MAX_DIFF_PIXELS entries / D-026). Double-update on tip b0cf0fd (37215307417 vs 37215651414): diffs 27 and 20 px, within 28, confined to mic/nav regions; 62 pre-B6 hash-matched 2131f32.
+
+### Notes for the record (from STOP VISUAL section 6)
+1. App.approve.test.tsx uses a thin UI harness around the real runApproveAskDraft module, not a full App.tsx mount.
+2. The pre-fix probe in runApproveAskDraft.test.ts is a test-local re-implementation of hold-in-setState, not historical App source.
+3. Compare mode still fully excuses dashboard-error and evening-error via --new-states (open finding).
+
+### Red commits and fix-forwards (b6/morning-run)
+| Red SHA | CI run | Fix-forward | CI run |
+|---|---|---|---|
+| fc4399f | 37139840932 failure | 3dbe398 | 37141625482 success |
+| d2c6f12 | 37143545129 failure | 62d3d66 | 37144077556 success |
+| 8a4f514 | 37154734503 failure | 4745332 | 37154899715 success |
+| b7a0937 | 37155713907 failure | 34253f2 | 37155952523 success |
+| 470395c | 37176321428 failure | 1d32a6c | 37176738781 success |
+
+### CI table (selected)
+| SHA | Subject | CI run | Result |
+|---|---|---|---|
+| e643c16 | feat(b6): land C9-C11 visual harness and B6 baselines from approved gallery | 37221969087 | success |
+| ff8e284 | fix(ci): define UI Baselines expected snapshot count once | 37214457218 | success |
+| 355351a | fix(ci): fail render-gate on missing snapshots and wrong count | 37199278978 | success |
+| 1d32a6c | fix(ui): sync askDraftRef in useLayoutEffect for eslint refs rule | 37176738781 | success |
+| 470395c | fix(ui): read ask draft via ref before Approve edit (askDraftRef) | 37176321428 | failure |
+| 55a7993 | fix(ui): space stacked Sync/Disconnect cn-feat-btn siblings (F7) | 37156921046 | success |
+| 4d93669 | feat(b6): surface rules_fallback and reauth in settings job summary (F6) | 37156470396 | success |
+| 34253f2 | fix(b6): type getTriage mock access in AllItemsPage test (F5) | 37155952523 | success |
+| b7a0937 | feat(b6): refetch triage after correction save (F5) | 37155713907 | failure |
+| b6a21db | fix(ui): style item detail sheet below 1280 and clear Ask bar (F4) | 37155284697 | success |
+| 4745332 | fix(test): type deferred postSync resolve in Connections Vitest | 37154899715 | success |
+| 8a4f514 | feat(b6): distinguish sync progress, triaging, done, and busy (F3) | 37154734503 | failure |
+| 11d6203 | fix(b6): clear approving in finally and gate Reopen on DEMO_MODE (F2) | 37154326334 | success |
+| f2a1c5f | feat(b6): port Settings/corrections/reopen UI onto morning-run (F1) | 37153720202 | success |
+| e200c37 | feat(b6): C12 morning.yml workflow_dispatch and runbook | 37145622634 | success |
+| 7ace485 | feat(b6): C8 F-05 usd_estimate and anthropic prepaid ledger | 37145018975 | success |
+| 2d14c32 | feat(b6): C7 reopen failed mail drafts | 37144546189 | success |
+| 62d3d66 | fix(b6): export OpenAPI for corrections routes (C6 drift) | 37144077556 | success |
+| d2c6f12 | feat(b6): C6 triage corrections overlay and ask_agent n=7 | 37143545129 | failure |
+| 66adb17 | feat(b6): C5 Sync 202/poll drain, lifespan, Connections client | 37143002107 | success |
+| 1e83a2c | feat(b6): C4 counts-only Telegram morning notify | 37142077169 | success |
+| 3dbe398 | fix(b6): set TOKEN_ENCRYPTION_KEY in morning auth test | 37141625482 | success |
+| fc4399f | feat(b6): C3 morning_run CLI with P1 sync-before-pending | 37139840932 | failure |
+| 4b5e69d | feat(b6): C2 reap/lease/fence drain and raising structured LLM | 37139143873 | success |
+| 4af1366 | feat(b6): C1 ops_jobs, lease, corrections, prepaid budget schema | 37138245726 | success |
+| 1578e0b | docs(b6): C0 delta preaudit and locked decisions | 37137627502 | success |
+
+### Deviations
+- Late SCOPE (build started after SCOPE APPROVED quote).
+- New scratch visual/b6-gallery-2 (visual/b6-gallery untouched; no force-push).
+- C12 (morning.yml) landed before VISUAL APPROVED (workflow/docs only).
+- C9-C11 collapsed to one commit per owner (visual.spec.ts single file).
+- No C14 / no PR / no live calls in this PART.
