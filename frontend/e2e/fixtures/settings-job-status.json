@@ -1,0 +1,27 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.5-flash-lite",
+  "api_key_set": true,
+  "demo_mode": false,
+  "google_connected": true,
+  "last_morning": {
+    "id": "j-morning-1",
+    "status": "succeeded",
+    "triaged": 5,
+    "pending": 0,
+    "rules_fallback_count": 2,
+    "reauth_needed": true,
+    "error_code": null,
+    "finished_at": "2026-09-26T06:30:00Z"
+  },
+  "last_sync": {
+    "id": "j-sync-1",
+    "status": "partial",
+    "triaged": 3,
+    "pending": 2,
+    "rules_fallback_count": 0,
+    "reauth_needed": false,
+    "error_code": null,
+    "finished_at": "2026-09-26T01:45:00Z"
+  }
+}

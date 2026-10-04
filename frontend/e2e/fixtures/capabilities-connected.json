@@ -1,0 +1,38 @@
+[
+  {
+    "id": "composio",
+    "name": "Composio",
+    "category": "aggregator",
+    "apps": ["Gmail", "Slack", "Salesforce", "Stripe"],
+    "status": "coming_soon",
+    "featured": true,
+    "description": "One connection. 250+ apps. Connect once and unlock Gmail, Slack, Salesforce, Stripe, and more."
+  },
+  {
+    "id": "email",
+    "name": "Email",
+    "category": "email",
+    "apps": ["Gmail", "Outlook", "Mailgun"],
+    "status": "connected",
+    "featured": false,
+    "description": ""
+  },
+  {
+    "id": "chat",
+    "name": "Chat",
+    "category": "chat",
+    "apps": ["Slack", "Discord", "Teams"],
+    "status": "coming_soon",
+    "featured": false,
+    "description": ""
+  },
+  {
+    "id": "calendar",
+    "name": "Calendar",
+    "category": "calendar",
+    "apps": ["Google", "Outlook"],
+    "status": "connected",
+    "featured": false,
+    "description": ""
+  }
+]

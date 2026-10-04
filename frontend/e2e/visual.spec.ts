@@ -8,6 +8,11 @@ import { preparePage, settle } from './helpers'
  * Noise measured on visual/harness-r1 @ 2bf83f7 (settle: blur/shadow/filter off + crisp SVG):
  *   pair4 a/b: 36293955065 / 36293962130
  *   pair5 a/b: 36294414647 / 36294419505
+ * Convention: measured max N → tol N+1 (see D-026 / docs/runbooks/ui-tests.md).
+ *
+ * B6 new-state AA (update runs 37162007920 vs 37199718443): measured max 27 px,
+ * confined to .mic-btn edge AA @375 (bbox 337,750–374,791) and top-nav icon AA @768/1280
+ * → tol 28. Do not raise settle()/masks (would churn 62 pre-B6 baselines).
  * Keys = `{screenshotBasename}-{projectName}` (no .png).
  */
 const MAX_DIFF_PIXELS: Record<string, number> = {
@@ -25,6 +30,34 @@ const MAX_DIFF_PIXELS: Record<string, number> = {
   'evening-error-chromium-1280': 5,
   // measured max 4 → tol 5
   'notify-open-chromium-768': 5,
+  // B6 new states — measured max 27 → tol 28 (mic @375 / top-nav @768|1280)
+  'connections-connected-idle-chromium-375': 28,
+  'connections-connected-idle-chromium-768': 28,
+  'connections-connected-idle-chromium-1280': 28,
+  'connections-sync-progress-chromium-375': 28,
+  'connections-sync-progress-chromium-768': 28,
+  'connections-sync-progress-chromium-1280': 28,
+  'connections-sync-triaging-chromium-375': 28,
+  'connections-sync-triaging-chromium-768': 28,
+  'connections-sync-triaging-chromium-1280': 28,
+  'connections-sync-done-chromium-375': 28,
+  'connections-sync-done-chromium-768': 28,
+  'connections-sync-done-chromium-1280': 28,
+  'connections-sync-busy-chromium-375': 28,
+  'connections-sync-busy-chromium-768': 28,
+  'connections-sync-busy-chromium-1280': 28,
+  'settings-job-status-chromium-375': 28,
+  'settings-job-status-chromium-768': 28,
+  'settings-job-status-chromium-1280': 28,
+  'items-correction-controls-chromium-375': 28,
+  'items-correction-controls-chromium-768': 28,
+  'items-correction-controls-chromium-1280': 28,
+  'items-correction-saved-chromium-375': 28,
+  'items-correction-saved-chromium-768': 28,
+  'items-correction-saved-chromium-1280': 28,
+  'ask-draft-failed-reopen-chromium-375': 28,
+  'ask-draft-failed-reopen-chromium-768': 28,
+  'ask-draft-failed-reopen-chromium-1280': 28,
 }
 
 function screenshotOpts(basename: string): { maxDiffPixels: number } {
@@ -210,6 +243,164 @@ test.describe('visual baselines', () => {
   })
 })
 
+/* ─── B6 connected / job-status / correction / draft-failed visual states ─── */
+test.describe('B6 visual states', () => {
+  test('connections-connected-idle', async ({ page }) => {
+    await preparePage(page, { mode: 'connected' })
+    await page.goto('/connections')
+    await settle(page)
+    await expect(page.locator('.cn-badge', { hasText: 'Connected' }).first()).toBeVisible()
+    await expect(page.getByRole('button', { name: /sync now/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /disconnect/i })).toBeVisible()
+    await expect(page.getByTestId('sync-status')).toHaveCount(0)
+    await expect(page).toHaveScreenshot('connections-connected-idle.png', screenshotOpts('connections-connected-idle'))
+  })
+
+  test('connections-sync-progress', async ({ page }) => {
+    await preparePage(page, { mode: 'sync-progress' })
+    await page.goto('/connections')
+    await settle(page)
+    await page.getByRole('button', { name: /sync now/i }).click()
+    await expect(page.getByRole('button', { name: /syncing/i })).toBeVisible()
+    await expect(page.getByTestId('sync-status')).toHaveCount(0)
+    await settle(page)
+    await expect(page).toHaveScreenshot('connections-sync-progress.png', screenshotOpts('connections-sync-progress'))
+  })
+
+  test('connections-sync-triaging', async ({ page }) => {
+    await preparePage(page, { mode: 'sync-triaging' })
+    await page.goto('/connections')
+    await settle(page)
+    await page.getByRole('button', { name: /sync now/i }).click()
+    await expect(page.getByTestId('sync-status')).toHaveAttribute('data-sync-outcome', 'triaging')
+    await expect(page.getByText(/triaging 5 pending/i)).toBeVisible()
+    await settle(page)
+    await expect(page).toHaveScreenshot('connections-sync-triaging.png', screenshotOpts('connections-sync-triaging'))
+  })
+
+  test('connections-sync-done', async ({ page }) => {
+    await preparePage(page, { mode: 'sync-done' })
+    await page.goto('/connections')
+    await settle(page)
+    await page.getByRole('button', { name: /sync now/i }).click()
+    await expect(page.getByTestId('sync-status')).toHaveAttribute('data-sync-outcome', 'triaging')
+    await page.clock.fastForward(2100)
+    await expect(page.getByTestId('sync-status')).toHaveAttribute('data-sync-outcome', 'done', {
+      timeout: 10_000,
+    })
+    await expect(page.getByText(/triaged 4 \(1 pending\)/i)).toBeVisible()
+    await expect(page.getByRole('button', { name: /sync now/i })).toBeVisible()
+    await settle(page)
+    await expect(page).toHaveScreenshot('connections-sync-done.png', screenshotOpts('connections-sync-done'))
+  })
+
+  test('connections-sync-busy', async ({ page }) => {
+    await preparePage(page, { mode: 'sync-busy' })
+    await page.goto('/connections')
+    await settle(page)
+    await page.getByRole('button', { name: /sync now/i }).click()
+    await expect(page.getByTestId('sync-status')).toHaveAttribute('data-sync-outcome', 'busy')
+    await expect(page.getByText(/triage busy/i)).toBeVisible()
+    await expect(page.getByRole('button', { name: /sync now/i })).toBeVisible()
+    await settle(page)
+    await expect(page).toHaveScreenshot('connections-sync-busy.png', screenshotOpts('connections-sync-busy'))
+  })
+
+  test('settings-job-status', async ({ page }) => {
+    await preparePage(page, { mode: 'job-status' })
+    await page.goto('/settings')
+    await settle(page)
+    await expect(page.getByText('Last morning run')).toBeVisible()
+    await expect(page.getByText('Last sync')).toBeVisible()
+    const morning = page.getByTestId('job-block-last-morning-run')
+    // Scroll job block into view so Pending / Rules fallback / Re-auth / Finished are on-screen.
+    await morning.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' }))
+    await settle(page)
+    await expect(morning.getByText('Pending')).toBeInViewport()
+    await expect(morning.getByText('Rules fallback')).toBeInViewport()
+    await expect(morning.getByText('Re-auth')).toBeInViewport()
+    await expect(morning.getByText('Finished')).toBeInViewport()
+    if (test.info().project.name === 'chromium-375') {
+      const finished = morning.locator('.settings-status-row', { hasText: 'Finished' })
+      const dock = page.locator('.mobile-dock')
+      const fBox = await finished.boundingBox()
+      const dBox = await dock.boundingBox()
+      expect(fBox, 'Finished row bbox').toBeTruthy()
+      expect(dBox, 'mobile-dock bbox').toBeTruthy()
+      // Product clearance: last job row must sit above the fixed Ask bar (110px content-shell pad).
+      expect((fBox!.y + fBox!.height)).toBeLessThanOrEqual(dBox!.y)
+    }
+    await expect(page).toHaveScreenshot('settings-job-status.png', screenshotOpts('settings-job-status'))
+  })
+
+  test('items-correction-controls', async ({ page }) => {
+    await preparePage(page, { mode: 'correction' })
+    await page.goto('/items')
+    await settle(page)
+    const row = page.locator('.fp-row').first()
+    await row.click()
+    await settle(page)
+    await expect(page.getByTestId('correction-controls')).toBeVisible()
+    await expect(page.getByTestId('correction-badge')).toHaveCount(0)
+    await expect(page).toHaveScreenshot('items-correction-controls.png', screenshotOpts('items-correction-controls'))
+  })
+
+  test('items-correction-saved', async ({ page }) => {
+    await preparePage(page, { mode: 'correction' })
+    await page.goto('/items')
+    await settle(page)
+    const row = page.locator('.fp-row').first()
+    await row.click()
+    await settle(page)
+    const controls = page.getByTestId('correction-controls')
+    await controls.locator('select').first().selectOption('medium')
+    await controls.getByRole('button', { name: /save correction/i }).click()
+    await expect(page.getByTestId('correction-badge').first()).toBeVisible({ timeout: 5_000 })
+    // WI-013 moves high→medium; fixture already has one medium → Medium · 2
+    await expect(page.getByText(/medium\s*·\s*2/i)).toBeVisible()
+    await settle(page)
+    await expect(page).toHaveScreenshot('items-correction-saved.png', screenshotOpts('items-correction-saved'))
+  })
+
+  test('ask-draft-failed-reopen', async ({ page }) => {
+    await preparePage(page, { mode: 'draft-failed' })
+    await page.goto('/dashboard')
+    await settle(page)
+    const isDesktop = test.info().project.name === 'chromium-1280'
+    if (!isDesktop) {
+      await page.getByRole('button', { name: /just ask me/i }).click()
+    }
+    const input = isDesktop
+      ? page.locator('.desk-ask-input')
+      : page.locator('.ask-panel-input:visible').first()
+    await expect(input).toBeVisible()
+    await input.fill('Draft a reply')
+    await (isDesktop
+      ? page.locator('.desk-ask .ask-panel-send')
+      : page.locator('.ask-panel-send:visible').first()
+    ).click()
+    const card = page.getByTestId('ask-draft-card')
+    await expect(card).toBeVisible({ timeout: 10_000 })
+    // Stream must finish (askLoading false) before Approve is usable in practice.
+    await expect(page.getByTestId('ask-draft-reopen')).toHaveCount(0)
+    const approve = page.getByTestId('ask-draft-approve')
+    await expect(approve).toBeVisible()
+    await expect(approve).toBeEnabled({ timeout: 15_000 })
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes('/mail/drafts/') && r.url().includes('/edit') && r.status() === 200,
+        { timeout: 15_000 },
+      ),
+      approve.click(),
+    ])
+    await expect(page.getByTestId('ask-draft-reopen')).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('.ask-draft-approve-error')).toBeVisible()
+    await expect(approve).toBeEnabled()
+    await settle(page)
+    await expect(page).toHaveScreenshot('ask-draft-failed-reopen.png', screenshotOpts('ask-draft-failed-reopen'))
+  })
+})
+
 /** B1.5b desktop chrome states — chromium-1280 only. */
 test.describe('desktop visual states ≥1280', () => {
   test.beforeEach(() => {
@@ -267,5 +458,14 @@ test.describe('desktop visual states ≥1280', () => {
     await expect(page.locator('aside.desk-ask')).toBeVisible()
     await settle(page)
     await expect(page).toHaveScreenshot('overlays-over-layout.png', screenshotOpts('overlays-over-layout'))
+  })
+
+  test('items-split-correction', async ({ page }) => {
+    await preparePage(page, { mode: 'correction' })
+    await page.goto('/items')
+    await settle(page)
+    await expect(page.locator('.items-split')).toBeVisible()
+    await expect(page.getByTestId('correction-controls')).toBeVisible()
+    await expect(page).toHaveScreenshot('items-split-correction.png', screenshotOpts('items-split-correction'))
   })
 })
