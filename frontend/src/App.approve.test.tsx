@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { AskDraftCard, AskMessage } from './api/types'
 import { AskDock } from './components/AskDock'
 import { AskPanel } from './components/AskPanel'
@@ -31,7 +31,9 @@ function AskApproveUiHarness({
   const [askOpen, setAskOpen] = useState(true)
   const [askDraft, setAskDraft] = useState<AskDraftCard | null>(initialDraft)
   const askDraftRef = useRef<AskDraftCard | null>(initialDraft)
-  askDraftRef.current = askDraft
+  useLayoutEffect(() => {
+    askDraftRef.current = askDraft
+  }, [askDraft])
   const [askInput, setAskInput] = useState('')
 
   const thread = {

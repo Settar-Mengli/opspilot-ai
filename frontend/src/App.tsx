@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, Navigate } from 'react-router-dom'
 import {
   getHealth,
@@ -56,7 +56,9 @@ function App() {
   const [askToolSteps, setAskToolSteps] = useState<AskToolStep[]>([])
   const [askDraft, setAskDraft] = useState<AskDraftCard | null>(null)
   const askDraftRef = useRef<AskDraftCard | null>(null)
-  askDraftRef.current = askDraft
+  useLayoutEffect(() => {
+    askDraftRef.current = askDraft
+  }, [askDraft])
   const [demoMode, setDemoMode] = useState(false)
   const dockInputRef = useRef<HTMLInputElement>(null)
   const askAbortRef = useRef<AbortController | null>(null)
