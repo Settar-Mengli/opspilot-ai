@@ -54,6 +54,7 @@ jobs:
       CI: "true"
       # Avoid interactive prompts inside the container
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      EXPECTED_SNAPSHOT_COUNT: "90"
     steps:
       - name: Checkout trigger ref
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -265,14 +266,14 @@ jobs:
           fi
           node scripts/visual_gallery.mjs index "$REPORT" gallery.md --new-states=dashboard-error,evening-error
           if [ "$MODE" = "update" ] && { [ "${{ steps.cfg.outputs.frontend_ref }}" = "c5de149" ] || [[ "${{ steps.cfg.outputs.frontend_ref }}" == c5de149* ]]; }; then
-            node scripts/visual_gallery.mjs render-gate "$REPORT" --new-states=dashboard-error,evening-error --expected-count=90
+            node scripts/visual_gallery.mjs render-gate "$REPORT" --new-states=dashboard-error,evening-error --expected-count="$EXPECTED_SNAPSHOT_COUNT"
           elif [ "$MODE" = "update" ]; then
             # Non-c5de149 update: any failure / missing snapshot / wrong count blocks
-            node scripts/visual_gallery.mjs render-gate "$REPORT" --new-states= --expected-count=90
+            node scripts/visual_gallery.mjs render-gate "$REPORT" --new-states= --expected-count="$EXPECTED_SNAPSHOT_COUNT"
           fi
           # compare mode: pixel diffs OK; missing snapshots / render fails / wrong count still block
           if [ "$MODE" = "compare" ]; then
-            node scripts/visual_gallery.mjs render-gate "$REPORT" --new-states=dashboard-error,evening-error --expected-count=90 --allow-pixel-diff
+            node scripts/visual_gallery.mjs render-gate "$REPORT" --new-states=dashboard-error,evening-error --expected-count="$EXPECTED_SNAPSHOT_COUNT" --allow-pixel-diff
           fi
 
       - name: Stage snapshots for upload
