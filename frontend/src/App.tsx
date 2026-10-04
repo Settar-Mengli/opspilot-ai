@@ -7,9 +7,9 @@ import {
   editMailDraft,
   approveMailDraft,
   reopenMailDraft,
-  formatMailHitlError,
 } from './api/client'
 import { askOpsPilotStream } from './api/askStream'
+import { runApproveAskDraft } from './ask/runApproveAskDraft'
 import type { AskDraftCard, AskMessage, AskToolStep } from './api/types'
 import { Brand } from './components/Brand'
 import { AssistantPill } from './components/AssistantPill'
@@ -55,6 +55,8 @@ function App() {
   const [askFocusToken, setAskFocusToken] = useState(0)
   const [askToolSteps, setAskToolSteps] = useState<AskToolStep[]>([])
   const [askDraft, setAskDraft] = useState<AskDraftCard | null>(null)
+  const askDraftRef = useRef<AskDraftCard | null>(null)
+  askDraftRef.current = askDraft
   const [demoMode, setDemoMode] = useState(false)
   const dockInputRef = useRef<HTMLInputElement>(null)
   const askAbortRef = useRef<AbortController | null>(null)
@@ -261,88 +263,12 @@ function App() {
       setAskDraft((d) => (d ? { ...d, subject: value } : d)),
     onDraftBodyChange: (value: string) => setAskDraft((d) => (d ? { ...d, body: value } : d)),
     onApproveDraft: () => {
-      void (async () => {
-        const hold: {
-          key: string
-          draft: Pick<AskDraftCard, 'draftId' | 'subject' | 'body'> | null
-        } = { key: '', draft: null }
-        setAskDraft((d) => {
-          if (!d || d.sentAt || d.approving) return d
-          hold.key = d.idempotencyKey || crypto.randomUUID()
-          hold.draft = { draftId: d.draftId, subject: d.subject, body: d.body }
-          return {
-            ...d,
-            approveError: null,
-            approving: true,
-            idempotencyKey: hold.key,
-          }
-        })
-        if (!hold.draft || !hold.key) return
-        try {
-          const edited = await editMailDraft(hold.draft.draftId, hold.draft.subject, hold.draft.body)
-          const result = await approveMailDraft(edited.id, edited.payload_sha256, hold.key)
-          const code = result.error_code ?? undefined
-          const failed = result.status === 'failed' || result.send_failed === true
-          if (failed) {
-            const unknown = code === 'send_outcome_unknown'
-            const reopenable =
-              code === 'no_google_credential' ||
-              code === 'google_reauth_required' ||
-              code === 'gmail_send_failed' ||
-              code === 'send_failed'
-            setAskDraft((d) =>
-              d
-                ? {
-                    ...d,
-                    draftId: edited.id,
-                    approveError: code ? `Send failed (${code})` : 'Send failed.',
-                    idempotencyKey: crypto.randomUUID(),
-                    sendOutcomeUnknown: unknown,
-                    reopenable,
-                  }
-                : d,
-            )
-            return
-          }
-          setAskDraft((d) =>
-            d
-              ? {
-                  ...d,
-                  sentAt: Date.now(),
-                  approveError: null,
-                  sendOutcomeUnknown: false,
-                  reopenable: false,
-                }
-              : d,
-          )
-        } catch (e) {
-          const message = formatMailHitlError(e)
-          const code =
-            typeof e === 'object' && e && 'code' in e && typeof (e as { code?: string }).code === 'string'
-              ? (e as { code: string }).code
-              : undefined
-          const unknown = code === 'send_outcome_unknown'
-          // Match backend reopenable failed codes (not unknown/unavailable → draft).
-          const reopenable =
-            code === 'no_google_credential' ||
-            code === 'google_reauth_required' ||
-            code === 'gmail_send_failed' ||
-            code === 'send_failed'
-          setAskDraft((d) =>
-            d
-              ? {
-                  ...d,
-                  approveError: message,
-                  idempotencyKey: crypto.randomUUID(),
-                  sendOutcomeUnknown: unknown,
-                  reopenable,
-                }
-              : d,
-          )
-        } finally {
-          setAskDraft((d) => (d ? { ...d, approving: false } : d))
-        }
-      })()
+      void runApproveAskDraft({
+        getDraft: () => askDraftRef.current,
+        setDraft: setAskDraft,
+        editMailDraft,
+        approveMailDraft,
+      })
     },
     demoMode,
     onReopenDraft: () => {

@@ -1,17 +1,17 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useCallback, useState } from 'react'
+import { useRef, useState } from 'react'
 import type { AskDraftCard, AskMessage } from './api/types'
 import { AskDock } from './components/AskDock'
 import { AskPanel } from './components/AskPanel'
-import { formatMailHitlError } from './api/client'
+import { runApproveAskDraft } from './ask/runApproveAskDraft'
 import { useMinWidth } from './hooks/useMinWidth'
 
 /**
- * Mirrors App.tsx Ask surface + approve state (isDesktop dock vs panel, askDraft, onApproveDraft).
- * Renders real AskDock and AskPanel — not AskThreadBody alone (D2).
+ * Thin UI harness: same runApproveAskDraft path as App.tsx (no duplicated hold logic).
+ * Seeds an initial draft so remount / Approve UI can be exercised without SSE.
  */
-function AppAskApproveShell({
+function AskApproveUiHarness({
   editMailDraft,
   approveMailDraft,
   initialDraft,
@@ -24,104 +24,15 @@ function AppAskApproveShell({
     id: string,
     hash: string,
     key?: string,
-  ) => Promise<{ status: string }>
+  ) => Promise<{ status: string; send_failed?: boolean; error_code?: string | null }>
   initialDraft: AskDraftCard
 }) {
   const isDesktop = useMinWidth(1280)
   const [askOpen, setAskOpen] = useState(true)
   const [askDraft, setAskDraft] = useState<AskDraftCard | null>(initialDraft)
+  const askDraftRef = useRef<AskDraftCard | null>(initialDraft)
+  askDraftRef.current = askDraft
   const [askInput, setAskInput] = useState('')
-
-  const onApproveDraft = useCallback(() => {
-    void (async () => {
-      const hold: {
-        key: string
-        draft: Pick<AskDraftCard, 'draftId' | 'subject' | 'body'> | null
-      } = { key: '', draft: null }
-      setAskDraft((d) => {
-        if (!d || d.sentAt || d.approving) return d
-        hold.key = d.idempotencyKey || crypto.randomUUID()
-        hold.draft = { draftId: d.draftId, subject: d.subject, body: d.body }
-        return {
-          ...d,
-          approveError: null,
-          approving: true,
-          idempotencyKey: hold.key,
-        }
-      })
-      if (!hold.draft || !hold.key) return
-      try {
-        const edited = await editMailDraft(hold.draft.draftId, hold.draft.subject, hold.draft.body)
-        const result = await approveMailDraft(edited.id, edited.payload_sha256, hold.key)
-        const code =
-          typeof result === 'object' && result && 'error_code' in result
-            ? (result as { error_code?: string | null }).error_code ?? undefined
-            : undefined
-        const failed =
-          result.status === 'failed' ||
-          (typeof result === 'object' &&
-            result &&
-            'send_failed' in result &&
-            (result as { send_failed?: boolean }).send_failed === true)
-        if (failed) {
-          const reopenable =
-            code === 'no_google_credential' ||
-            code === 'google_reauth_required' ||
-            code === 'gmail_send_failed' ||
-            code === 'send_failed'
-          setAskDraft((d) =>
-            d
-              ? {
-                  ...d,
-                  draftId: edited.id,
-                  approveError: code ? `Send failed (${code})` : 'Send failed.',
-                  idempotencyKey: crypto.randomUUID(),
-                  sendOutcomeUnknown: code === 'send_outcome_unknown',
-                  reopenable,
-                }
-              : d,
-          )
-          return
-        }
-        setAskDraft((d) =>
-          d
-            ? {
-                ...d,
-                sentAt: Date.now(),
-                approveError: null,
-                sendOutcomeUnknown: false,
-                reopenable: false,
-              }
-            : d,
-        )
-      } catch (e) {
-        const message = formatMailHitlError(e)
-        const code =
-          typeof e === 'object' && e && 'code' in e && typeof (e as { code?: string }).code === 'string'
-            ? (e as { code: string }).code
-            : undefined
-        const unknown = code === 'send_outcome_unknown'
-        const reopenable =
-          code === 'no_google_credential' ||
-          code === 'google_reauth_required' ||
-          code === 'gmail_send_failed' ||
-          code === 'send_failed'
-        setAskDraft((d) =>
-          d
-            ? {
-                ...d,
-                approveError: message,
-                idempotencyKey: crypto.randomUUID(),
-                sendOutcomeUnknown: unknown,
-                reopenable,
-              }
-            : d,
-        )
-      } finally {
-        setAskDraft((d) => (d ? { ...d, approving: false } : d))
-      }
-    })()
-  }, [approveMailDraft, editMailDraft])
 
   const thread = {
     assistantName: 'Bulbul',
@@ -129,7 +40,14 @@ function AppAskApproveShell({
     draft: askDraft,
     onDraftSubjectChange: (value: string) => setAskDraft((d) => (d ? { ...d, subject: value } : d)),
     onDraftBodyChange: (value: string) => setAskDraft((d) => (d ? { ...d, body: value } : d)),
-    onApproveDraft,
+    onApproveDraft: () => {
+      void runApproveAskDraft({
+        getDraft: () => askDraftRef.current,
+        setDraft: setAskDraft,
+        editMailDraft,
+        approveMailDraft,
+      })
+    },
     demoMode: false,
     input: askInput,
     loading: false,
@@ -139,15 +57,13 @@ function AppAskApproveShell({
   }
 
   return (
-    <div>
-      <button type="button" data-testid="open-ask-panel" onClick={() => setAskOpen(true)}>
-        open panel
-      </button>
-      {isDesktop && <AskDock {...thread} />}
-      {!isDesktop && (
+    <>
+      {isDesktop ? (
+        <AskDock {...thread} />
+      ) : (
         <AskPanel open={askOpen} onClose={() => setAskOpen(false)} {...thread} />
       )}
-    </div>
+    </>
   )
 }
 
@@ -211,7 +127,7 @@ const baseDraft = (): AskDraftCard => ({
   sendOutcomeUnknown: false,
 })
 
-describe('approve state remount survival (C5/D2) — real AskDock ↔ AskPanel', () => {
+describe('approve via runApproveAskDraft (same module as App.tsx)', () => {
   let mq: ReturnType<typeof installMatchMediaController>
   const editMailDraft = vi.fn()
   const approveMailDraft = vi.fn()
@@ -232,6 +148,33 @@ describe('approve state remount survival (C5/D2) — real AskDock ↔ AskPanel',
     vi.restoreAllMocks()
   })
 
+  it('Approve calls editMailDraft; failure clears approving and shows error + Reopen', async () => {
+    approveMailDraft.mockImplementation(async () => {
+      throw Object.assign(new Error('google_reauth_required'), {
+        status: 400,
+        code: 'google_reauth_required',
+      })
+    })
+
+    render(
+      <AskApproveUiHarness
+        editMailDraft={editMailDraft}
+        approveMailDraft={approveMailDraft}
+        initialDraft={baseDraft()}
+      />,
+    )
+    const dock = screen.getByRole('complementary', { name: 'Ask' })
+    fireEvent.click(within(dock).getByTestId('ask-draft-approve'))
+
+    await waitFor(() => {
+      expect(editMailDraft).toHaveBeenCalledTimes(1)
+      expect(editMailDraft).toHaveBeenCalledWith('md_remount', 'Re: FIXTURE_SUBJECT', 'FIXTURE_BODY')
+      expect(within(dock).getByRole('alert')).toBeInTheDocument()
+      expect(within(dock).getByTestId('ask-draft-reopen')).toBeInTheDocument()
+    })
+    expect(within(dock).getByTestId('ask-draft-approve')).not.toBeDisabled()
+  })
+
   it('test_approve_pending_survives_dock_to_panel_remount_sent', async () => {
     let resolveApprove: (v: { status: string }) => void = () => undefined
     const approvePending = new Promise<{ status: string }>((resolve) => {
@@ -240,7 +183,7 @@ describe('approve state remount survival (C5/D2) — real AskDock ↔ AskPanel',
     approveMailDraft.mockImplementation(async () => approvePending)
 
     render(
-      <AppAskApproveShell
+      <AskApproveUiHarness
         editMailDraft={editMailDraft}
         approveMailDraft={approveMailDraft}
         initialDraft={baseDraft()}
@@ -255,6 +198,7 @@ describe('approve state remount survival (C5/D2) — real AskDock ↔ AskPanel',
     )
     fireEvent.click(dockApprove)
     await waitFor(() => {
+      expect(editMailDraft).toHaveBeenCalledTimes(1)
       expect(approveMailDraft).toHaveBeenCalledTimes(1)
       expect(dockApprove).toBeDisabled()
     })
@@ -290,7 +234,7 @@ describe('approve state remount survival (C5/D2) — real AskDock ↔ AskPanel',
     approveMailDraft.mockImplementation(async () => approvePending)
 
     render(
-      <AppAskApproveShell
+      <AskApproveUiHarness
         editMailDraft={editMailDraft}
         approveMailDraft={approveMailDraft}
         initialDraft={baseDraft()}
@@ -330,7 +274,7 @@ describe('approve state remount survival (C5/D2) — real AskDock ↔ AskPanel',
     approveMailDraft.mockImplementation(async () => approvePending)
 
     render(
-      <AppAskApproveShell
+      <AskApproveUiHarness
         editMailDraft={editMailDraft}
         approveMailDraft={approveMailDraft}
         initialDraft={baseDraft()}
@@ -364,30 +308,5 @@ describe('approve state remount survival (C5/D2) — real AskDock ↔ AskPanel',
       )
     })
     expect(approveMailDraft).toHaveBeenCalledTimes(1)
-  })
-
-  it('approve failure clears approving and shows error plus Reopen', async () => {
-    approveMailDraft.mockImplementation(async () => {
-      throw Object.assign(new Error('google_reauth_required'), {
-        status: 400,
-        code: 'google_reauth_required',
-      })
-    })
-
-    render(
-      <AppAskApproveShell
-        editMailDraft={editMailDraft}
-        approveMailDraft={approveMailDraft}
-        initialDraft={baseDraft()}
-      />,
-    )
-    const dock = screen.getByRole('complementary', { name: 'Ask' })
-    fireEvent.click(within(dock).getByTestId('ask-draft-approve'))
-
-    await waitFor(() => {
-      expect(within(dock).getByRole('alert')).toBeInTheDocument()
-      expect(within(dock).getByTestId('ask-draft-reopen')).toBeInTheDocument()
-    })
-    expect(within(dock).getByTestId('ask-draft-approve')).not.toBeDisabled()
   })
 })
