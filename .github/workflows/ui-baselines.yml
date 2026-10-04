@@ -265,14 +265,14 @@ jobs:
           fi
           node scripts/visual_gallery.mjs index "$REPORT" gallery.md --new-states=dashboard-error,evening-error
           if [ "$MODE" = "update" ] && { [ "${{ steps.cfg.outputs.frontend_ref }}" = "c5de149" ] || [[ "${{ steps.cfg.outputs.frontend_ref }}" == c5de149* ]]; }; then
-            node scripts/visual_gallery.mjs render-gate "$REPORT" --new-states=dashboard-error,evening-error
+            node scripts/visual_gallery.mjs render-gate "$REPORT" --new-states=dashboard-error,evening-error --expected-count=90
           elif [ "$MODE" = "update" ]; then
-            # Non-c5de149 update: any render failure blocks
-            node scripts/visual_gallery.mjs render-gate "$REPORT" --new-states=
+            # Non-c5de149 update: any failure / missing snapshot / wrong count blocks
+            node scripts/visual_gallery.mjs render-gate "$REPORT" --new-states= --expected-count=90
           fi
-          # compare mode: pixel diffs OK; render failures for existing states still block
+          # compare mode: pixel diffs OK; missing snapshots / render fails / wrong count still block
           if [ "$MODE" = "compare" ]; then
-            node scripts/visual_gallery.mjs render-gate "$REPORT" --new-states=dashboard-error,evening-error
+            node scripts/visual_gallery.mjs render-gate "$REPORT" --new-states=dashboard-error,evening-error --expected-count=90 --allow-pixel-diff
           fi
 
       - name: Stage snapshots for upload
