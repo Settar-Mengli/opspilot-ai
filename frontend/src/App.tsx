@@ -1,7 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, Navigate } from 'react-router-dom'
-import { getHealth, getTriage, editMailDraft, approveMailDraft, formatMailHitlError } from './api/client'
+import {
+  getHealth,
+  getTriage,
+  getApiSettings,
+  editMailDraft,
+  approveMailDraft,
+  reopenMailDraft,
+} from './api/client'
 import { askOpsPilotStream } from './api/askStream'
+import { runApproveAskDraft } from './ask/runApproveAskDraft'
 import type { AskDraftCard, AskMessage, AskToolStep } from './api/types'
 import { Brand } from './components/Brand'
 import { AssistantPill } from './components/AssistantPill'
@@ -47,8 +55,21 @@ function App() {
   const [askFocusToken, setAskFocusToken] = useState(0)
   const [askToolSteps, setAskToolSteps] = useState<AskToolStep[]>([])
   const [askDraft, setAskDraft] = useState<AskDraftCard | null>(null)
+  const askDraftRef = useRef<AskDraftCard | null>(null)
+  useLayoutEffect(() => {
+    askDraftRef.current = askDraft
+  }, [askDraft])
+  const [demoMode, setDemoMode] = useState(false)
   const dockInputRef = useRef<HTMLInputElement>(null)
   const askAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    void getApiSettings()
+      .then((s) => setDemoMode(s.demo_mode === true))
+      .catch(() => {
+        /* keep false */
+      })
+  }, [])
 
   const sendAsk = useCallback(
     async (question: string) => {
@@ -244,52 +265,46 @@ function App() {
       setAskDraft((d) => (d ? { ...d, subject: value } : d)),
     onDraftBodyChange: (value: string) => setAskDraft((d) => (d ? { ...d, body: value } : d)),
     onApproveDraft: () => {
+      void runApproveAskDraft({
+        getDraft: () => askDraftRef.current,
+        setDraft: setAskDraft,
+        editMailDraft,
+        approveMailDraft,
+      })
+    },
+    demoMode,
+    onReopenDraft: () => {
       void (async () => {
-        const hold: {
-          key: string
-          draft: Pick<AskDraftCard, 'draftId' | 'subject' | 'body'> | null
-        } = { key: '', draft: null }
+        let draftId = ''
         setAskDraft((d) => {
-          if (!d || d.sentAt || d.approving) return d
-          hold.key = d.idempotencyKey || crypto.randomUUID()
-          hold.draft = { draftId: d.draftId, subject: d.subject, body: d.body }
-          return {
-            ...d,
-            approveError: null,
-            approving: true,
-            idempotencyKey: hold.key,
-          }
+          if (!d || d.sentAt || d.reopening) return d
+          draftId = d.draftId
+          return { ...d, reopening: true, approveError: null }
         })
-        if (!hold.draft || !hold.key) return
+        if (!draftId) return
         try {
-          const edited = await editMailDraft(hold.draft.draftId, hold.draft.subject, hold.draft.body)
-          await approveMailDraft(edited.id, edited.payload_sha256, hold.key)
+          const result = await reopenMailDraft(draftId)
           setAskDraft((d) =>
             d
               ? {
                   ...d,
-                  sentAt: Date.now(),
+                  draftId: result.id,
+                  reopening: false,
+                  reopenable: false,
                   approveError: null,
-                  approving: false,
                   sendOutcomeUnknown: false,
+                  sentAt: null,
+                  idempotencyKey: crypto.randomUUID(),
                 }
               : d,
           )
         } catch (e) {
-          const message = formatMailHitlError(e)
-          const code =
-            typeof e === 'object' && e && 'code' in e && typeof (e as { code?: string }).code === 'string'
-              ? (e as { code: string }).code
-              : undefined
-          const unknown = code === 'send_outcome_unknown'
           setAskDraft((d) =>
             d
               ? {
                   ...d,
-                  approveError: message,
-                  approving: false,
-                  idempotencyKey: crypto.randomUUID(),
-                  sendOutcomeUnknown: unknown,
+                  reopening: false,
+                  approveError: e instanceof Error ? e.message : 'Reopen failed.',
                 }
               : d,
           )

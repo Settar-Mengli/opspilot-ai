@@ -10,7 +10,7 @@ from typing import Any
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from opspilot.llm.gateway import session_attempt_recorder
+from opspilot.llm.gateway import AttemptRecorder, session_attempt_recorder
 from opspilot.llm.meta_redact import redact_text
 from opspilot.llm.policy import llm_allowed
 from opspilot.llm.prompt_safety import neutralize_text, wrap_untrusted
@@ -188,3 +188,50 @@ def complete_structured[T: BaseModel](
         except Exception as exc:  # noqa: BLE001
             _log_llm_failure(task, exc)
             return None
+
+
+def complete_structured_raising[T: BaseModel](
+    *,
+    task: TaskName,
+    system: str,
+    user: str,
+    schema: type[T],
+    max_tokens: int,
+    session: Session,
+    recorder: AttemptRecorder | None = None,
+    request_id: str | None = None,
+) -> T | None:
+    """Like ``complete_structured`` but re-raises budget/exhaustion errors.
+
+    * ``LlmProvidersExhausted`` and ``LlmPolicyDenied`` propagate to the caller
+      so drain can distinguish budget-denied from soft failures.
+    * All other exceptions are logged and return ``None`` (same as the soft variant).
+    """
+    from opspilot.llm.errors import LlmPolicyDenied, LlmProvidersExhausted
+
+    if not llm_allowed():
+        raise LlmPolicyDenied("remote LLM disabled by policy")
+    providers = providers_or_empty()
+    if not providers:
+        raise LlmProvidersExhausted("no_providers")
+
+    rec = recorder or session_attempt_recorder(session)
+    gw = BudgetAwareGateway(
+        providers,
+        session=session,
+        recorder=rec,
+        observe=True,
+        request_id=_resolve_request_id(request_id),
+    )
+    try:
+        return gw.complete_json(
+            task=task,
+            messages=[Message(role="system", content=system), Message(role="user", content=user)],
+            schema=schema,
+            max_tokens=max_tokens,
+        )
+    except (LlmProvidersExhausted, LlmPolicyDenied):
+        raise
+    except Exception as exc:  # noqa: BLE001
+        _log_llm_failure(task, exc)
+        return None

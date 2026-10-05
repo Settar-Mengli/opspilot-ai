@@ -1684,3 +1684,300 @@ Gallery tip `cb452e0` CI (filled here; historical placeholder row above left unc
 | SHA | Subject | Push run | PR run | Result |
 |-----|---------|----------|--------|--------|
 | _(tip)_ | docs(b5): record live smoke runs (1 real send, PASS); B5 ready for owner merge | final records commit — CI run on PR checks | final records commit — CI run on PR checks | |
+
+## PART 14 -- B6 Morning Run -- 2026-10-04
+
+### Summary
+- Branch b6/morning-run from origin/main @ 2131f32 (B5 PR #40 merge CI 37070730054 success).
+- Scope: morning job + reap/lease/fence, Sync 202/poll, corrections, reopen, F-05 plumbing (Anthropic still off), Settings job summary, visual C9-C11 (one commit), PART 14.
+- Scratch visual/b6-gallery-2 for gallery; visual/b6-gallery left untouched.
+- Next: C14 / STOP LIVE / PR -- not this commit. Agent does not merge.
+
+### Owner quotes (verbatim)
+- SCOPE APPROVED (2026-10-03)
+- VISUAL APPROVED (2026-10-04): Approved gallery run 37215651414, GALLERY_SHA b0cf0fd1be4a4d492a2c0a7fcf92973045fa0783.
+
+### Gallery / compare
+| Item | Value |
+|---|---|
+| GALLERY_SHA | b0cf0fd1be4a4d492a2c0a7fcf92973045fa0783 |
+| Approved update run | 37215651414 (artifact b6-gallery-update) |
+| Compare tip | ae02236a2ee7500ff4fb1986c0e9413273f59bd4 on visual/b6-gallery-2 |
+| Compare run | 37222547675 success |
+| Compare CI | 37222547702 success |
+| C9-C11 landing | e643c1635ad7c19fed0b8dd7ee8c85a1b45919a3 CI 37221969087 success; 28 new B6 PNGs; 62 pre-B6 untouched vs 2131f32 |
+
+### maxDiffPixels tolerance
+B6 new states: tol 28. Measurement: update runs 37162007920 vs 37199718443 measured max 27 px (mic-btn edge AA @375 bbox 337,750-374,791; top-nav icon AA @768/1280). Convention measured max N -> tol N+1 (same as existing MAX_DIFF_PIXELS entries / D-026). Double-update on tip b0cf0fd (37215307417 vs 37215651414): diffs 27 and 20 px, within 28, confined to mic/nav regions; 62 pre-B6 hash-matched 2131f32.
+
+### Notes for the record (from STOP VISUAL section 6)
+1. App.approve.test.tsx uses a thin UI harness around the real runApproveAskDraft module, not a full App.tsx mount.
+2. The pre-fix probe in runApproveAskDraft.test.ts is a test-local re-implementation of hold-in-setState, not historical App source.
+3. Compare mode still fully excuses dashboard-error and evening-error via --new-states (open finding).
+
+### Red commits and fix-forwards (b6/morning-run)
+| Red SHA | CI run | Fix-forward | CI run |
+|---|---|---|---|
+| fc4399f | 37139840932 failure | 3dbe398 | 37141625482 success |
+| d2c6f12 | 37143545129 failure | 62d3d66 | 37144077556 success |
+| 8a4f514 | 37154734503 failure | 4745332 | 37154899715 success |
+| b7a0937 | 37155713907 failure | 34253f2 | 37155952523 success |
+| 470395c | 37176321428 failure | 1d32a6c | 37176738781 success |
+
+### CI table (selected)
+| SHA | Subject | CI run | Result |
+|---|---|---|---|
+| e643c16 | feat(b6): land C9-C11 visual harness and B6 baselines from approved gallery | 37221969087 | success |
+| ff8e284 | fix(ci): define UI Baselines expected snapshot count once | 37214457218 | success |
+| 355351a | fix(ci): fail render-gate on missing snapshots and wrong count | 37199278978 | success |
+| 1d32a6c | fix(ui): sync askDraftRef in useLayoutEffect for eslint refs rule | 37176738781 | success |
+| 470395c | fix(ui): read ask draft via ref before Approve edit (askDraftRef) | 37176321428 | failure |
+| 55a7993 | fix(ui): space stacked Sync/Disconnect cn-feat-btn siblings (F7) | 37156921046 | success |
+| 4d93669 | feat(b6): surface rules_fallback and reauth in settings job summary (F6) | 37156470396 | success |
+| 34253f2 | fix(b6): type getTriage mock access in AllItemsPage test (F5) | 37155952523 | success |
+| b7a0937 | feat(b6): refetch triage after correction save (F5) | 37155713907 | failure |
+| b6a21db | fix(ui): style item detail sheet below 1280 and clear Ask bar (F4) | 37155284697 | success |
+| 4745332 | fix(test): type deferred postSync resolve in Connections Vitest | 37154899715 | success |
+| 8a4f514 | feat(b6): distinguish sync progress, triaging, done, and busy (F3) | 37154734503 | failure |
+| 11d6203 | fix(b6): clear approving in finally and gate Reopen on DEMO_MODE (F2) | 37154326334 | success |
+| f2a1c5f | feat(b6): port Settings/corrections/reopen UI onto morning-run (F1) | 37153720202 | success |
+| e200c37 | feat(b6): C12 morning.yml workflow_dispatch and runbook | 37145622634 | success |
+| 7ace485 | feat(b6): C8 F-05 usd_estimate and anthropic prepaid ledger | 37145018975 | success |
+| 2d14c32 | feat(b6): C7 reopen failed mail drafts | 37144546189 | success |
+| 62d3d66 | fix(b6): export OpenAPI for corrections routes (C6 drift) | 37144077556 | success |
+| d2c6f12 | feat(b6): C6 triage corrections overlay and ask_agent n=7 | 37143545129 | failure |
+| 66adb17 | feat(b6): C5 Sync 202/poll drain, lifespan, Connections client | 37143002107 | success |
+| 1e83a2c | feat(b6): C4 counts-only Telegram morning notify | 37142077169 | success |
+| 3dbe398 | fix(b6): set TOKEN_ENCRYPTION_KEY in morning auth test | 37141625482 | success |
+| fc4399f | feat(b6): C3 morning_run CLI with P1 sync-before-pending | 37139840932 | failure |
+| 4b5e69d | feat(b6): C2 reap/lease/fence drain and raising structured LLM | 37139143873 | success |
+| 4af1366 | feat(b6): C1 ops_jobs, lease, corrections, prepaid budget schema | 37138245726 | success |
+| 1578e0b | docs(b6): C0 delta preaudit and locked decisions | 37137627502 | success |
+
+### Deviations
+- Late SCOPE (build started after SCOPE APPROVED quote).
+- New scratch visual/b6-gallery-2 (visual/b6-gallery untouched; no force-push).
+- C12 (morning.yml) landed before VISUAL APPROVED (workflow/docs only).
+- C9-C11 collapsed to one commit per owner (visual.spec.ts single file).
+- No C14 / no PR / no live calls in this PART.
+
+## PART 15 -- B6 LIVE PASS + C14 -- 2026-10-04
+
+Append-only after PART 14. Does not edit PART 14. Fills gaps required by the B6 plan PART outline and records owner LIVE PASS evidence.
+
+### PART 14 opening -- verification (report; PART 14 left unchanged)
+
+Plan requirement for B6 first PART opening (PART 14):
+
+| Required fact | In PART 14 opening? | Evidence |
+|---|---|---|
+| B5 merge PR #40 | Yes (summary line) | PART 14 Summary |
+| Merge SHA `2131f32` | Yes (as branch base) | `2131f32` = `Merge pull request #40 from Settar-Mengli/b5/agentic-ask` |
+| Merge CI `37070730054` success | Yes | PART 14 Summary |
+| Tip fill `9957cf4` push `37067782386` / PR `37067788923` | **No** | Still `_(tip)_` placeholder in PART 13 live-smoke CI table; filled below |
+
+### B5 merge facts (record for B6 first PART gap fill)
+
+| Item | Value |
+|---|---|
+| PR | [#40](https://github.com/Settar-Mengli/opspilot-ai/pull/40) |
+| Merge SHA | `2131f32ed351bf41e4702eac7a92b17865064d1d` |
+| Merge CI | [37070730054](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37070730054) **success** |
+
+### PART 13 tip CI fill-in (was `_(tip)_` for live-smoke records commit)
+
+| Item | Value |
+|---|---|
+| Tip SHA | `9957cf492c82f52c599a29352295ecefe63fba1a` |
+| Subject | docs(b5): record live smoke runs (1 real send, PASS); B5 ready for owner merge |
+| Push CI | [37067782386](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37067782386) **success** |
+| PR CI | [37067788923](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37067788923) **success** |
+
+Historical `_(tip)_` rows in PART 13 left unchanged (append-only).
+
+### Owner quotes (verbatim)
+
+- `SECRETS SET` (2026-10-04): All 12 GitHub secrets referenced by `.github/workflows/morning.yml` are set (names verified with `gh secret list`). Record this quote for PART 14.
+- `LIVE PASS` (2026-10-04): owner-run STOP LIVE evidence below; agent did not re-run live steps.
+
+### PR #43 (dispatch-only morning.yml on main)
+
+Unblocked `workflow_dispatch` after HTTP 404 "not found on the default branch".
+
+| Item | Value |
+|---|---|
+| PR | [#43](https://github.com/Settar-Mengli/opspilot-ai/pull/43) |
+| Title | ci: add dispatch-only morning.yml on main for STOP LIVE |
+| Merge SHA | `462062a9fb0b247d331db57c8183061d02ff3c1f` |
+| Merged at | 2026-10-04T20:34:30Z |
+| PR/push CI (pre-merge) | [37231430781](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37231430781), [37231444742](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37231444742) **success** |
+| Merge CI on main | [37232624888](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37232624888) **success** |
+
+### Neon / Alembic (owner)
+
+- Neon host label: `ep-withered-dew-b528cx5k-pooler`
+- Alembic: `0009_mail_send_audit_failed` -> `0010_ops_jobs_corrections_budget` applied by owner
+- Migration run **before** interactive Sync (new Sync code needs 0010 tables) -- deviation from checklist order (checklist had Sync cleanup before migration confirmation order; owner inverted so Sync would not fail on missing tables)
+
+### Demo inbox + local Sync (owner)
+
+- Demo inbox: 1 real third-party mail archived; not present in All Items afterwards
+- Local API Sync against Neon: +4 mail, triaging 4 pending, then triaged 4 (0 pending); 202 + poll path observed in the UI
+
+### GHA Morning Run evidence (owner; all success; Telegram counts-only)
+
+| Run id | Notes | Counts / flags |
+|---|---|---|
+| 37232627000 | happy path | gmail_upserted=0, corrections_only, reauth_needed=false, forced=false |
+| 37236553002 | forced | gmail_upserted=0 |
+| 37236733400 | forced | lease generation 4, gmail_upserted=0 |
+| 37236903160 | forced | lease generation 6, gmail_upserted=0 (local API still running; its Sync drain took generation 5 and triaged the test mail first) |
+| 37247296563 | forced, local API stopped | gmail_upserted=2, triaged=2, pending=2, rules_fallback_count=0 -- **LLM triage in GHA proven** |
+| 37247424719 | drill simulate_google_reauth=true | reauth_needed=true, gmail_upserted=0 |
+| 37247520322 | restore | reauth_needed=false |
+
+### Mail send audit + spend (owner)
+
+- `mail_send_audit` successful sends: 2 before, 2 after (unchanged)
+- Zero paid spend; Anthropic disabled
+
+### C14 (this batch; after LIVE PASS)
+
+| Item | Value |
+|---|---|
+| Commit | `9b4783046ebef2b0e7d0228e813d0b5e6f894611` |
+| Change | `schedule: cron: "0 12 * * *"` added; `workflow_dispatch` kept |
+| Runbook | `docs/runbooks/gha-morning-job.md` updated |
+| Push CI | [37248140191](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37248140191) **success** |
+| When schedule takes effect | Only after the C14 workflow file (with `schedule`) is on **default branch `main`**. Until B6 merges, `main` still has PR #43 dispatch-only YAML. Branch cron does not fire. First scheduled fire = next 12:00 UTC after that merge (GHA may delay registration briefly). |
+
+### Deviations
+
+1. **C13 before STOP LIVE** -- PART 14 / gallery closeout written and committed before owner LIVE PASS (plan order was LIVE then C14; C13 docs landed at STOP VISUAL closeout).
+2. **Migration before Sync** -- Alembic 0010 applied before interactive Sync (required by new Sync tables; checklist order inverted).
+3. **Local API interference** -- while local API Sync drain held lease generation 5, forced morning runs saw gmail_upserted=0 / corrections_only until local API was stopped; run 37247296563 then proved GHA LLM triage.
+4. **PR #43 out-of-band** -- dispatch-only `morning.yml` merged to main to unblock STOP LIVE after workflow_dispatch 404.
+
+### Open findings (record only; no code changes this pass)
+
+1. **corrections_only misnamed / stale comment:** `morning_run.py` takes the corrections_only path on every zero-pending run once a gmail run exists; it never queries `triage_corrections`. Comment is stale.
+2. **Telegram pending vs triaged:** Telegram summary `pending` is the pre-drain count, which reads as contradictory next to `triaged` (e.g. triaged=2, pending=2 on run 37247296563).
+3. **Connections sync status spacing:** sync status line sits flush under the Disconnect button (`.cn-feat-sub` has no top margin).
+4. **Compare `--new-states` excuse:** compare mode fully excuses `dashboard-error` and `evening-error` via `--new-states`.
+5. **gmail_upserted semantics:** `gmail_upserted` counts updates as well as inserts.
+
+### Next
+
+- SoT docs (ROADMAP / README / CHANGELOG / architecture) updated in a following commit on this branch.
+- B6 PR / owner merge -- not this commit. Agent does not merge.
+
+## PART 16 -- B6 fix pass (post LIVE PASS audit) -- 2026-10-04
+
+Append-only after PART 15. Does not edit PART 14/15 bodies. Agent fix pass on `b6/morning-run`; **stops before PR**. Owner quiet-day `workflow_dispatch` is **not** recorded here — append that evidence in the later PR / closeout step.
+
+### Pre-pass tip / merge-base
+
+| Item | Value |
+|---|---|
+| Pre-pass tip | `5514e0d` (SoT docs after LIVE PASS) |
+| Merge-base with `origin/main` (`462062a`) | `2131f32` |
+| PART 14 tip CI | `82c5bc3` → [37223287977](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37223287977) **success** |
+
+### M1 forward-merge
+
+| Item | Value |
+|---|---|
+| Merge commit | `c9d0e04ae495fc0b9d95106b06921c9ad5039d94` |
+| Merged | `origin/main` @ `462062a` (PR #43 dispatch-only `morning.yml`) |
+| Conflict | add/add on `.github/workflows/morning.yml` |
+| Resolution | **kept b6** file: `schedule: cron: "0 12 * * *"` + `workflow_dispatch` |
+| Push CI | [37256722986](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37256722986) **success** (Backend / Frontend / UI Tests / Gitleaks) |
+
+### Fix commits + CI
+
+| SHA | Subject | CI run | Result |
+|---|---|---|---|
+| `c9d0e04ae495fc0b9d95106b06921c9ad5039d94` | merge(main): forward-merge 462062a; keep b6 morning.yml schedule | [37256722986](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37256722986) | success |
+| `2d86fa2c7931f9f9060a146a2fcbf7361ca7ea44` | fix(b6): corrections_only only when unbriefed triage_corrections exist | [37257436873](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37257436873) | success |
+| `b56e506c64fe0264a6c9e3278f7c0cd3c0135790` | fix(b6): release lease and mark failed on morning_run exceptions | [37258055016](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37258055016) | success |
+| `043cf671ec1f15c78617b08c61244e186ae4ca5e` | fix(b6): recount ops_jobs.pending after morning drain | [37258662385](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37258662385) | success |
+| `b61dd7de1232c07d68e4ade5063a0b3e3355f25c` | test(b6): use fictional example.test addresses in draft_reply_ids | [37259233858](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37259233858) | success |
+| `0aeb61d8c3ed3e831a53f9e60cca523eff42c067` | docs(evals): set ask_agent v1 manifest n_cases to 7 | [37259758375](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37259758375) | success |
+| _(this commit)_ | docs(b6): PART 16 fix-pass record; ROADMAP/runbook SoT | _(fill after push)_ | _(pending)_ |
+
+### H1 — corrections_only (implemented)
+
+Marker clock: `MAX(COALESCE(ops_jobs.started_at, ops_jobs.created_at))` for `ops_jobs` with `run_id = :rid` and `status IN ('succeeded','partial')`. True no-op never sets `run_id`, so it does not advance the marker. When no such ops_jobs row exists, fallback to `runs.finished_at` / `runs.started_at` for the same `run_id` (pre-ops_jobs briefs only — not GREATEST'd with ops_jobs, so mid-window corrections are not hidden).
+
+`corrections_only` ⇔ `pending == 0` AND latest gmail `run_id` non-null AND EXISTS `triage_corrections` with `updated_at > last_brief_start` (or any correction if marker is null).
+
+### H2 — failure cleanup order (implemented)
+
+1. Capture `original`; log. 2. Best-effort `rollback`. 3. Cleanup txn: `status=failed`, `error_code=morning_run_error`, `finished_at`, gen-fenced `release_lease` if acquired, `commit`. 4. Best-effort `notify_morning_outcome(..., "failed")` (Telegram must not mask `original` or undo cleanup). 5. Re-raise `original`. Telegram payload: counts/flags/`error_code` only.
+
+### Audit finding dispositions
+
+| Finding | Disposition |
+|---|---|
+| (a) / H1 corrections_only always true when gmail run exists | **FIXED** (`2d86fa2`) |
+| (b) / H2 crash leaves lease held | **FIXED** (`b56e506`) |
+| (c) / M2 Telegram pending pre-drain | **FIXED** (`043cf67`) |
+| (d) / H3 `*.gmail.com` in draft_reply_ids test | **FIXED** (`b61dd7d` → `*.example.test`) |
+| (e) / M5 ask_agent `n_cases` 6 vs 7 lines | **FIXED** (`0aeb61d`) |
+| M1 forward-merge vs main dispatch-only YAML | **FIXED** (`c9d0e04`; kept b6 schedule) |
+| M4 promotion_hook → eval dataset file write | **DEFER** — not in locked W1–W10; ROADMAP M9 remainder |
+| Connections `.cn-feat-sub` flush under Disconnect | **DEFER** — baseline change; needs new VISUAL APPROVED |
+| Compare `--new-states=dashboard-error,evening-error` full excuse | **DEFER** — record only |
+| `gmail_upserted` rename | **DEFER** — runbook note only (counts updates+inserts) |
+
+### Baselines
+
+No committed PNG changes; no `MAX_DIFF_PIXELS` edits in this fix pass.
+
+### Owner step (list only; not run in this PART)
+
+One quiet-day `workflow_dispatch` of **Morning Run** from branch tip `b6/morning-run` (`force_override=false`, `simulate_google_reauth=false`). Expected: true no-op (`pending=0`, job `run_id` null, lease released, Telegram succeeded/triaged=0/pending=0) unless unbriefed corrections exist. **Evidence appends at PR / closeout — not in this commit.**
+
+### Next
+
+- Owner quiet-day dispatch on fixed tip; then PR / owner merge. Agent does not open PR or merge in this pass.
+
+## PART 17 -- B6 PR closeout (record fill + verification) -- 2026-10-05
+
+Append-only after PART 16. Does not edit PART 14/15/16 bodies. Closes record gaps called out in the post-fix verification; opens the B6 PR. Agent does not merge.
+
+### PART 16 fills (tip CI + merge-base correction)
+
+| Item | Value |
+|---|---|
+| PART 16 tip SHA | `d97e71d5b2500eb22db0225d4de0441c518ff949` |
+| Subject | docs(b6): PART 16 fix-pass record; ROADMAP and runbook SoT |
+| Push CI | [37260660831](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37260660831) **success** |
+| Merge-base correction | PART 16 pre-pass line cited merge-base with `origin/main` (`462062a`) as `2131f32` (true **before** forward-merge). **After** merge commit `c9d0e04ae495fc0b9d95106b06921c9ad5039d94`, merge-base(`b6/morning-run`, `origin/main`) = `462062a9fb0b247d331db57c8183061d02ff3c1f` (`origin/main` is an ancestor of the tip). |
+
+### Owner post-fix dispatch (quiet-day no-op semantics)
+
+| Item | Value |
+|---|---|
+| Workflow | Morning Run |
+| Run id | [37261354939](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37261354939) **success** |
+| Branch tip | `d97e71d5b2500eb22db0225d4de0441c518ff949` |
+| Log (counts/flags only) | `lease_acquired generation=10`; `sync_ok gmail_upserted=0`; `zero_pending no_brief succeeded triaged=0` |
+| Telegram (counts/flags only) | `status=succeeded`, `triaged=0`, `pending=0`, urgency 0/0/0/0, `forced=true` |
+| Force note | `force_override=true` was **deliberate**: a morning run had already succeeded that UTC day, so the non-forced same-day path was not re-run. True no-op path (`zero_pending no_brief`) still confirmed on the fixed tip. |
+
+### Independent verification (Ask-mode, post fix pass)
+
+Items **1–7 PASS** (mergeability + `morning.yml`; H1; H2; M2; tests; fix-pass file scope; CI ×7). Record gaps (tip CI row, owner dispatch evidence, merge-base after `c9d0e04`) **closed by this section**. Item 8 (PART 16 incompleteness) resolved here; item 9 had no hard code block.
+
+### Open findings carried forward (no code in this commit)
+
+1. Unexpected raise from `notify_morning_outcome` on a **success** path would enter the H2 except and mark a succeeded job `failed`.
+2. `test_zero_pending_helper_branch_no_run_no_brief` does not call `run_morning` (reimplements finalize).
+3. H2 failure test does not assert Telegram payload fields (counts/flags/`error_code` only via product code path).
+4. Corrections saved while `pending > 0`, or with no latest gmail run, wait for a later zero-pending morning (and a gmail run) before `corrections_only` brief rewrite.
+5. **DEFER (unchanged):** Connections sync-status spacing (`.cn-feat-sub`); compare `--new-states` full excuse for `dashboard-error` / `evening-error`; `gmail_upserted` rename (counts updates+inserts); M9 `promotion_hook` → eval dataset file write.
+
+### Next
+
+- Open B6 PR `b6/morning-run` → `main`. Agent does not merge.

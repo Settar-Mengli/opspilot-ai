@@ -20,7 +20,7 @@ from opspilot.agent.loop import CancelCheck, run_ask_agent
 from opspilot.api.csrf import require_csrf_origin
 from opspilot.api.deps import get_db_session
 from opspilot.api.schemas import AskStreamRequest
-from opspilot.persistence.models import LlmCallRow, TriageDecisionRow, WorkItemRow
+from opspilot.persistence.models import LlmCallRow
 from opspilot.persistence.repositories import oauth_credentials
 from opspilot.services.operator_session import COOKIE_NAME, verify_session
 
@@ -42,33 +42,9 @@ def _google_connected(session: Session) -> bool:
 
 
 def _latest_triage_records(session: Session) -> list[dict[str, Any]]:
-    stmt = (
-        select(TriageDecisionRow, WorkItemRow)
-        .join(WorkItemRow, TriageDecisionRow.work_item_id == WorkItemRow.id)
-        .order_by(desc(TriageDecisionRow.id))
-    )
-    if _google_connected(session):
-        stmt = stmt.where(WorkItemRow.source_type == "gmail")
-    result = session.execute(stmt)
-    seen: set[str] = set()
-    payload: list[dict[str, Any]] = []
-    for decision, work_item in result.all():
-        if decision.work_item_id in seen:
-            continue
-        seen.add(decision.work_item_id)
-        payload.append(
-            {
-                "id": decision.work_item_id,
-                "subject_or_title": work_item.subject_or_title,
-                "urgency": decision.urgency,
-                "urgency_reason": decision.urgency_reason,
-                "category": decision.category,
-                "category_reason": decision.category_reason,
-                "sentiment": decision.sentiment,
-                "sentiment_reason": decision.sentiment_reason,
-            }
-        )
-    return payload
+    from opspilot.services.triage_overlay import latest_triage_with_overlay
+
+    return latest_triage_with_overlay(session, gmail_only=_google_connected(session))
 
 
 def _operator_email(request: Request) -> str | None:

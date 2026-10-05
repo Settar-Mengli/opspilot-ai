@@ -2,7 +2,64 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { getApiSettings } from '../api/client'
-import type { ApiSettings } from '../api/types'
+import type { ApiSettings, JobStatusSummary } from '../api/types'
+
+function formatJobTime(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  } catch {
+    return iso
+  }
+}
+
+function JobBlock({ label, job }: { label: string; job: JobStatusSummary }) {
+  const isOk = job.status === 'succeeded' || job.status === 'partial'
+  return (
+    <div className="settings-card" data-testid={`job-block-${label.toLowerCase().replace(/\s+/g, '-')}`}>
+      <p className="settings-section-title">{label}</p>
+      <p className="settings-status-row">
+        <span className="settings-status-label">Status</span>
+        <span className="settings-status-value" style={{ color: isOk ? '#9cab7a' : '#f0a793' }}>
+          {job.status}
+        </span>
+      </p>
+      <p className="settings-status-row">
+        <span className="settings-status-label">Triaged</span>
+        <span className="settings-status-value">{job.triaged}</span>
+      </p>
+      <p className="settings-status-row">
+        <span className="settings-status-label">Pending</span>
+        <span className="settings-status-value">{job.pending}</span>
+      </p>
+      <p className="settings-status-row">
+        <span className="settings-status-label">Rules fallback</span>
+        <span className="settings-status-value">{job.rules_fallback_count ?? 0}</span>
+      </p>
+      <p className="settings-status-row">
+        <span className="settings-status-label">Re-auth</span>
+        <span className="settings-status-value">{job.reauth_needed ? 'needed' : 'ok'}</span>
+      </p>
+      {job.error_code && (
+        <p className="settings-status-row">
+          <span className="settings-status-label">Error</span>
+          <span className="settings-status-value" style={{ color: '#f0a793' }}>
+            {job.error_code}
+          </span>
+        </p>
+      )}
+      <p className="settings-status-row">
+        <span className="settings-status-label">Finished</span>
+        <span className="settings-status-value">{formatJobTime(job.finished_at)}</span>
+      </p>
+    </div>
+  )
+}
 
 export function SettingsPage() {
   const navigate = useNavigate()
@@ -84,6 +141,9 @@ export function SettingsPage() {
         )}
         {errorMessage && <p className="settings-error">{errorMessage}</p>}
       </div>
+
+      {status?.last_morning && <JobBlock label="Last morning run" job={status.last_morning} />}
+      {status?.last_sync && <JobBlock label="Last sync" job={status.last_sync} />}
     </div>
   )
 }

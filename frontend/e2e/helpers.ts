@@ -31,6 +31,34 @@ export type ApiMode =
   | 'insights-error'
   | 'evening-error'
   | 'triage-error'
+  | 'connected'
+  | 'sync-progress'
+  | 'sync-triaging'
+  | 'sync-done'
+  | 'sync-busy'
+  | 'job-status'
+  | 'correction'
+  | 'draft-failed'
+
+/** Credentialed FE calls (credentials:'include') reject ACAO:* — mirror preview origin. */
+const CORS_HEADERS: Record<string, string> = {
+  'Access-Control-Allow-Origin': 'http://127.0.0.1:4173',
+  'Access-Control-Allow-Credentials': 'true',
+  'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
+  'Access-Control-Allow-Headers': 'content-type,x-requested-with',
+}
+
+function isConnectedMode(mode: ApiMode): boolean {
+  return (
+    mode === 'connected' ||
+    mode === 'correction' ||
+    mode === 'sync-progress' ||
+    mode === 'sync-triaging' ||
+    mode === 'sync-done' ||
+    mode === 'sync-busy' ||
+    mode === 'job-status'
+  )
+}
 
 function readJson(name: string): unknown {
   return JSON.parse(fs.readFileSync(path.join(FIXTURES, name), 'utf-8'))
@@ -44,6 +72,7 @@ async function fulfillJson(route: Route, body: unknown, status = 200): Promise<v
   await route.fulfill({
     status,
     contentType: 'application/json',
+    headers: CORS_HEADERS,
     body: JSON.stringify(body),
   })
 }
@@ -52,6 +81,21 @@ async function fulfillText(route: Route, body: string, status = 200): Promise<vo
   await route.fulfill({
     status,
     contentType: 'text/plain; charset=utf-8',
+    headers: CORS_HEADERS,
+    body,
+  })
+}
+
+async function fulfillSse(route: Route, body: string): Promise<void> {
+  await route.fulfill({
+    status: 200,
+    contentType: 'text/event-stream',
+    headers: {
+      ...CORS_HEADERS,
+      // Force the fetch reader to complete so later mail/draft calls are not starved.
+      'Content-Length': String(Buffer.byteLength(body, 'utf8')),
+      Connection: 'close',
+    },
     body,
   })
 }
@@ -92,17 +136,63 @@ export async function installFontFixtures(page: Page): Promise<void> {
 }
 
 export async function mockApi(page: Page, mode: ApiMode = 'ok'): Promise<void> {
-  const triage = readJson('triage.json')
-  const settings = readJson('settings.json')
+  type TriageRow = {
+    id: string
+    subject_or_title: string
+    urgency: string
+    urgency_reason: string
+    category: string
+    category_reason: string
+    sentiment: string
+    sentiment_reason: string
+    corrected?: boolean
+  }
+  let triageRecords = readJson('triage.json') as TriageRow[]
+  const settingsConnected = readJson('settings-connected.json')
+  const settingsJobStatus = readJson('settings-job-status.json')
+  const settingsBase = readJson('settings.json')
+  const settings =
+    mode === 'job-status'
+      ? settingsJobStatus
+      : isConnectedMode(mode) && mode !== 'job-status'
+        ? settingsConnected
+        : settingsBase
   const insights = readJson('insights.json')
-  const capabilities = readJson('capabilities.json')
+  const capabilitiesConnected = readJson('capabilities-connected.json')
+  const capabilitiesBase = readJson('capabilities.json')
+  const capabilities = isConnectedMode(mode) ? capabilitiesConnected : capabilitiesBase
   const calendarWeek = readJson('calendar-week.json')
   const briefing = readText('briefing.txt')
+
+  const syncCountsBase = {
+    account_email: 'ops@example.com',
+    gmail_upserted: 2,
+    gmail_removed: 0,
+    calendar_upserted: 1,
+    gmail_total: 10,
+    meetings_total: 4,
+    calendar_truncated: false,
+    gmail_truncated: false,
+  }
 
   await page.route('**/api/v1/**', async (route) => {
     const url = new URL(route.request().url())
     const pathname = url.pathname
     const method = route.request().method()
+
+    // Mail drafts handled by a later route (Playwright: last match wins).
+    if (pathname.includes('/mail/drafts/')) {
+      await route.fallback()
+      return
+    }
+
+    if (method === 'OPTIONS') {
+      await route.fulfill({
+        status: 204,
+        headers: CORS_HEADERS,
+      })
+      return
+    }
 
     if (mode === 'down') {
       await route.abort('failed')
@@ -122,7 +212,7 @@ export async function mockApi(page: Page, mode: ApiMode = 'ok'): Promise<void> {
         )
         return
       }
-      await fulfillJson(route, triage)
+      await fulfillJson(route, triageRecords)
       return
     }
     if (pathname.endsWith('/settings') && method === 'GET') {
@@ -155,21 +245,29 @@ export async function mockApi(page: Page, mode: ApiMode = 'ok'): Promise<void> {
     }
     if (pathname.endsWith('/ask/stream') && method === 'POST') {
       if (mode === 'ask-error') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'text/event-stream',
-          body: 'data: {"type":"error","request_id":"e2e","code":"ask_failed","message":"Ask fixture error"}\n\n',
-        })
+        await fulfillSse(
+          route,
+          'data: {"type":"error","request_id":"e2e","code":"ask_failed","message":"Ask fixture error"}\n\n',
+        )
+        return
+      }
+      if (mode === 'draft-failed') {
+        const answer = 'I drafted a reply for you.'
+        // No SSE reopenable seed — gallery must click Approve → fail → Reopen (O1).
+        await fulfillSse(
+          route,
+          `data: {"type":"token","request_id":"e2e","text":${JSON.stringify(answer)}}\n\n` +
+            `data: {"type":"draft","request_id":"e2e","draft_id":"draft-fail-1","subject":"Re: Checkout errors","body":"Hi, we are investigating the checkout issue.","to_addrs":"customer@example.com"}\n\n` +
+            `data: {"type":"final","request_id":"e2e","answer":${JSON.stringify(answer)}}\n\n`,
+        )
         return
       }
       const answer = 'Checkout confirm is the priority. I can draft a status note when you want.'
-      await route.fulfill({
-        status: 200,
-        contentType: 'text/event-stream',
-        body:
-          `data: {"type":"token","request_id":"e2e","text":${JSON.stringify(answer)}}\n\n` +
+      await fulfillSse(
+        route,
+        `data: {"type":"token","request_id":"e2e","text":${JSON.stringify(answer)}}\n\n` +
           `data: {"type":"final","request_id":"e2e","answer":${JSON.stringify(answer)}}\n\n`,
-      })
+      )
       return
     }
     if (pathname.endsWith('/ask') && method === 'POST') {
@@ -213,7 +311,152 @@ export async function mockApi(page: Page, mode: ApiMode = 'ok'): Promise<void> {
       return
     }
 
+    if (pathname.match(/\/corrections\//) && method === 'POST') {
+      const workItemId = pathname.split('/').pop() || ''
+      let urgency = 'medium'
+      let category: string | undefined
+      let sentiment: string | undefined
+      try {
+        const posted = route.request().postDataJSON() as {
+          urgency?: string
+          category?: string
+          sentiment?: string
+        }
+        if (posted.urgency) urgency = posted.urgency
+        category = posted.category
+        sentiment = posted.sentiment
+      } catch {
+        // keep defaults
+      }
+      triageRecords = triageRecords.map((row) =>
+        row.id === workItemId
+          ? {
+              ...row,
+              urgency,
+              category: category ?? row.category,
+              sentiment: sentiment ?? row.sentiment,
+              corrected: true,
+            }
+          : row,
+      )
+      await fulfillJson(route, { status: 'saved' })
+      return
+    }
+    if (pathname.match(/\/corrections\//) && method === 'DELETE') {
+      await fulfillJson(route, { status: 'deleted' })
+      return
+    }
+    if (pathname.match(/\/jobs\//) && method === 'GET') {
+      if (mode === 'sync-triaging') {
+        await fulfillJson(route, {
+          id: 'job-sync-1',
+          job_kind: 'sync_drain',
+          status: 'running',
+          triaged: 0,
+          pending: 5,
+          error_code: null,
+          run_id: null,
+          created_at: '2026-09-26T02:00:00.000Z',
+          started_at: '2026-09-26T02:00:00.000Z',
+          finished_at: null,
+        })
+        return
+      }
+      if (mode === 'sync-done') {
+        await fulfillJson(route, {
+          id: 'job-sync-1',
+          job_kind: 'sync_drain',
+          status: 'succeeded',
+          triaged: 4,
+          pending: 1,
+          error_code: null,
+          run_id: null,
+          created_at: '2026-09-26T02:00:00.000Z',
+          started_at: '2026-09-26T02:00:00.000Z',
+          finished_at: '2026-09-26T02:01:00.000Z',
+        })
+        return
+      }
+    }
+    if (pathname.endsWith('/sync') && method === 'POST') {
+      if (mode === 'sync-progress') {
+        // Hold forever so the UI stays on Syncing… (no status line yet).
+        await new Promise(() => {})
+        return
+      }
+      if (mode === 'sync-busy') {
+        await fulfillJson(route, {
+          ...syncCountsBase,
+          drain: 'busy',
+          job_id: null,
+          triaged: 0,
+          pending: 5,
+        })
+        return
+      }
+      if (mode === 'sync-triaging' || mode === 'sync-done') {
+        await fulfillJson(route, {
+          ...syncCountsBase,
+          drain: 'started',
+          job_id: 'job-sync-1',
+          triaged: 0,
+          pending: 5,
+        })
+        return
+      }
+      await fulfillJson(route, {
+        ...syncCountsBase,
+        drain: 'not_needed',
+        job_id: null,
+        triaged: 0,
+        pending: 0,
+      })
+      return
+    }
+
     await fulfillJson(route, { error: { code: 'unmocked', message: pathname, details: {} } }, 404)
+  })
+
+  // Registered last → takes precedence for mail HITL (edit/approve/reopen).
+  await page.route('**/api/v1/mail/drafts/**', async (route) => {
+    const method = route.request().method()
+    const pathname = new URL(route.request().url()).pathname
+    if (method === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: CORS_HEADERS })
+      return
+    }
+    if (pathname.includes('/reopen') && method === 'POST') {
+      await fulfillJson(route, {
+        id: 'draft-reopened-1',
+        status: 'pending_review',
+        payload_sha256: 'abc123',
+        error_code: null,
+      })
+      return
+    }
+    if (pathname.includes('/edit') && method === 'POST') {
+      await fulfillJson(route, {
+        id: mode === 'draft-failed' ? 'draft-fail-1' : 'draft-1',
+        subject: 'Re: Checkout errors',
+        body: 'Hi, we are investigating the checkout issue.',
+        to_addrs: 'customer@example.com',
+        payload_sha256: 'sha256-e2e-edit',
+      })
+      return
+    }
+    if (pathname.includes('/approve') && method === 'POST') {
+      if (mode === 'draft-failed') {
+        await fulfillJson(route, {
+          status: 'failed',
+          send_failed: false,
+          error_code: 'google_reauth_required',
+        })
+        return
+      }
+      await fulfillJson(route, { status: 'sent' })
+      return
+    }
+    await fulfillJson(route, { error: { code: 'unmocked_mail', message: pathname, details: {} } }, 404)
   })
 }
 

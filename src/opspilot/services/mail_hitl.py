@@ -8,7 +8,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from opspilot.integrations.gmail_client import GmailClient
@@ -18,6 +18,20 @@ from opspilot.persistence.repositories import mail_drafts, mail_send_audit, oaut
 from opspilot.services.mail_address import MailAddressError, assert_safe_subject, parse_single_addr_spec
 from opspilot.services.operator_session import demo_mode_enabled
 from opspilot.services.send_allowlist import recipients_allowed
+
+REOPENABLE_FAILED_ERROR_CODES = frozenset(
+    {
+        "no_google_credential",
+        "google_reauth_required",
+        "gmail_send_failed",
+    }
+)
+NON_FAILED_DRAFT_ERROR_CODES = frozenset(
+    {
+        "send_outcome_unknown",
+        "gmail_unavailable_not_sent",
+    }
+)
 
 FORBIDDEN_EDIT_FIELDS = frozenset(
     {
@@ -397,4 +411,55 @@ def approve_and_send(
         "audit_id": audit.id,
         "gmail_message_id": message_id,
         "draft_id": draft.id,
+    }
+
+
+def _latest_send_failed_error_code(session: Session, draft_id: str) -> str | None:
+    from opspilot.persistence.models import MailSendAuditRow
+
+    stmt = (
+        select(MailSendAuditRow.error_code)
+        .where(MailSendAuditRow.draft_id == draft_id)
+        .where(MailSendAuditRow.send_failed.is_(True))
+        .order_by(MailSendAuditRow.created_at.desc())
+        .limit(1)
+    )
+    code = session.scalars(stmt).one_or_none()
+    return str(code) if code else None
+
+
+def _failed_draft_reopenable(error_code: str | None) -> bool:
+    if error_code in NON_FAILED_DRAFT_ERROR_CODES:
+        return False
+    if error_code in REOPENABLE_FAILED_ERROR_CODES:
+        return True
+    # Definitive upstream Gmail failure: audit stores upstream code; API raises gmail_send_failed.
+    return bool(error_code)
+
+
+def reopen_failed_draft(
+    session: Session,
+    draft_id: str,
+    *,
+    operator_email: str,
+) -> dict[str, Any]:
+    if demo_mode_enabled():
+        raise MailHitlError("demo_mode", "Draft reopen is disabled in demo mode.", http_status=403)
+    draft = mail_drafts.get_draft(session, draft_id)
+    if draft is None:
+        raise MailHitlError("draft_not_found", "Draft not found.", http_status=404)
+    _require_owner(draft, operator_email)
+    if draft.status == "sent":
+        raise MailHitlError("already_sent", "Draft was already sent.", http_status=409)
+    if draft.status != "failed":
+        raise MailHitlError("draft_not_failed", "Only failed drafts can be reopened.", http_status=409)
+    error_code = _latest_send_failed_error_code(session, draft_id)
+    if not _failed_draft_reopenable(error_code):
+        raise MailHitlError("draft_not_failed", "Only failed drafts can be reopened.", http_status=409)
+    mail_drafts.set_status(session, draft, "draft")
+    return {
+        "id": draft.id,
+        "status": draft.status,
+        "payload_sha256": draft.payload_sha256,
+        "error_code": error_code,
     }

@@ -10,6 +10,9 @@ export interface AskThreadProps {
   onDraftSubjectChange?: (value: string) => void
   onDraftBodyChange?: (value: string) => void
   onApproveDraft?: () => void
+  onReopenDraft?: () => void
+  /** When true, hide Reopen (backend also 403s reopen in DEMO_MODE). */
+  demoMode?: boolean
   input: string
   loading: boolean
   error: string | null
@@ -28,6 +31,8 @@ export function AskThreadBody({
   onDraftSubjectChange,
   onDraftBodyChange,
   onApproveDraft,
+  onReopenDraft,
+  demoMode = false,
   input,
   loading,
   error,
@@ -158,6 +163,17 @@ export function AskThreadBody({
             >
               {draft.sendOutcomeUnknown ? 'Check Sent, then re-send' : 'Approve & send'}
             </button>
+            {draft.reopenable && !draft.sentAt && !demoMode && (
+              <button
+                type="button"
+                className="ask-draft-reopen"
+                data-testid="ask-draft-reopen"
+                disabled={Boolean(draft.reopening)}
+                onClick={() => onReopenDraft?.()}
+              >
+                {draft.reopening ? 'Reopening…' : 'Reopen draft'}
+              </button>
+            )}
           </div>
         )}
         {loading && (

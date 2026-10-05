@@ -42,7 +42,7 @@ def _seed_gmail_item(session: Session) -> WorkItemRow:
         source_type="gmail",
         subject_or_title="Project sync",
         body_or_description="Can we meet Friday?",
-        sender_or_requester="Nytherra AI <nytherraai@gmail.com>",
+        sender_or_requester="Nytherra AI <operator@example.test>",
         received_at=datetime(2026, 10, 1, 12, 0, tzinfo=UTC),
         thread_id="gmail_thr_draft_test_1",
     )
@@ -62,7 +62,7 @@ def test_draft_reply_not_found_on_truncated_id(db_session: Session) -> None:
         session=db_session,
         args={"work_item_id": truncated, "subject": "Re: Project sync", "body": "Friday works."},
         gmail_only=True,
-        operator_email="nytherraai@gmail.com",
+        operator_email="operator@example.test",
         request_id="req-trunc-1",
     )
     assert result == {"ok": False, "error": "not_found"}
@@ -78,7 +78,7 @@ def test_draft_reply_rejects_provider_id_as_pk(db_session: Session) -> None:
             "body": "Friday works.",
         },
         gmail_only=True,
-        operator_email="nytherraai@gmail.com",
+        operator_email="operator@example.test",
         request_id="req-pid-1",
     )
     assert bad == {"ok": False, "error": "not_found"}
@@ -86,12 +86,12 @@ def test_draft_reply_rejects_provider_id_as_pk(db_session: Session) -> None:
         session=db_session,
         args={"id": row.id, "subject": "Re: Project sync", "body": "Friday works."},
         gmail_only=True,
-        operator_email="nytherraai@gmail.com",
+        operator_email="operator@example.test",
         request_id="req-pid-2",
     )
     assert good.get("ok") is True
     assert good.get("draft_id")
-    assert good.get("to_addrs") == "nytherraai@gmail.com"
+    assert good.get("to_addrs") == "operator@example.test"
 
 
 def test_draft_reply_self_sent_derives_operator_to_addrs(db_session: Session) -> None:
@@ -101,8 +101,8 @@ def test_draft_reply_self_sent_derives_operator_to_addrs(db_session: Session) ->
         session=db_session,
         args={"work_item_id": row.id, "subject": "Re: Project sync", "body": "Confirmed."},
         gmail_only=True,
-        operator_email="nytherraai@gmail.com",
+        operator_email="operator@example.test",
         request_id="req-self-1",
     )
     assert result.get("ok") is True
-    assert result.get("to_addrs") == "nytherraai@gmail.com"
+    assert result.get("to_addrs") == "operator@example.test"

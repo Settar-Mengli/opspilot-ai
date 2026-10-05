@@ -59,7 +59,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
     - **Tests:** n/a (docs only); pytest/lint/build still green as regression.
     - **Evals:** n/a.
     - **Live smoke:** n/a for docs; key check False.
-    - **Docs:** PART 2 accepted; CUT/DEFER frozen; docs+LICENSE only on branch; PR open.
+    - **Docs:** PART 2 accepted; CUT/DEFER frozen; docs+LICENSE only on branch; **merged** to `main`.
 - **Deps:** none · **Size:** M–L · **Metric:** Architecture & roadmap locked in-repo
 
 ### B1 — Hermetic foundation, Postgres, SEC gate & /api/v1 reshape (M1)
@@ -160,7 +160,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B3.1 — Live leaderboard remainder (CF D5 + OpenRouter D6 partial)
 
-- **Status:** Done on branch `b3.1/live-remainder` (PR open; owner merges). **No new product scope.**
+- **Status:** Merged to `main` (PR #39 → `1a6fe7d`). **No new product scope.**
 - **Delivered:**
   - Pre-live guards (checkpoint, case selection, local-DB refuse, per-case commit, `--max-requests`); `LAST_GUARD_SHA` `0a4f5d5`.
   - **Cloudflare D5** + **CF combined** (60/60; F1 0.706 n=40; ASR 0.150 3/20).
@@ -183,32 +183,38 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 - **Deps:** B1 persistence, B2 gateway, B3 before agent reads bodies · **Size:** XL · **Metric:** Live fictional inbox demo
 - **Next after merge:** B3.1 (done — see above), then **B5** (done — see B5), then **B6**.
 
-### B5 — Agentic Ask + approve & send (M6 + M7) — **complete pending merge**
+### B5 — Agentic Ask + approve & send (M6 + M7) — **DONE**
 
 - **Goal:** Tool-using Ask with HITL send.
-- **Workstream M6** — P2 + X8 — **DONE** (on branch; pending merge to main)
+- **Workstream M6** — P2 + X8 — **DONE**
   - Bounded JSON-emulated tool loop (D-031); caps 5/8 (D-014); `POST /ask/stream` SSE (D-032); read tools + `draft_reply`; Ask dock/timeline/draft card.
-- **Workstream M7** — P3 + X3 — **DONE** (on branch; pending merge to main)
+- **Workstream M7** — P3 + X3 — **DONE**
   - `gmail.send` scope; HITL edit/approve; allowlist fail-closed; DEMO_MODE 403; Gmail reply-in-thread only; `mail_send_audit`.
 - **Also IN:** Gmail `messageDeleted` + SPAM/TRASH label removal; history/list + Calendar pagination with safe cursors; DM-09 `ttft_ms` on Ask SSE; hermetic `ask_agent` + `redteam_agent` evals; reality-gap fix-pass (PART 13).
-- **Batch exit:** hermetic gates green; ask-error visual refresh (**gallery approved** 2026-10-02); Neon Alembic **0009**; PART 13; **live_smoke_b5 PASS** 2026-10-02 (1 real send). **Complete pending merge** — only owner merge of PR #40 remains.
-- **Deps:** B2–B4 · **Size:** XL · **Next after merge:** **B6**
+- **Batch exit:** hermetic gates green; ask-error visual refresh (**gallery approved** 2026-10-02); Neon Alembic **0009**; PART 13; **live_smoke_b5 PASS** 2026-10-02 (1 real send).
+- **Merged:** PR #40 → `2131f32` (merge CI [37070730054](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37070730054) success). Tip fill `9957cf4` push/PR CI in PART 15.
+- **Deps:** B2–B4 · **Size:** XL · **Next:** **B6**
 
-### B6 — Morning run + preferences (M8 + M9)
+### B6 — Morning run + preferences (M8 + M9) — **LIVE PASS on branch**
 
 - **Goal:** Scheduled brief + human feedback into evals — **in-runner**, no public backend (D-011).
+- **Branch:** `b6/morning-run` (cut from `2131f32`). Alembic **0010** on branch / applied on Neon by owner. **Not merged** to `main`.
 - **Workstream M8** — P4 + P11-telegram
   - **Scope:** GHA cron in-runner; morning triage/brief; Telegram notify; schema-head check; fail-closed auth (D-016).
-  - **Exit criteria (M8):** Cron smoke writes Neon + Telegram; no public BE required; auth-fail path alerts re-auth.
+  - **CURRENT on branch:** Sync 202/poll drain; morning_run + Telegram counts-only; C14 schedule `0 12 * * *` in workflow YAML (activates only after merge to `main`).
+  - **CURRENT on main (pre-B6 merge):** dispatch-only `morning.yml` via PR #43 → `462062a` (unblocked STOP LIVE).
+  - **Exit criteria (M8):** Cron smoke writes Neon + Telegram; no public BE required; auth-fail path alerts re-auth. **Owner LIVE PASS 2026-10-04** (PART 15) — GHA LLM triage proven (run 37247296563); reauth drill + restore; send count unchanged.
 - **Workstream M9** — P5 lite
   - **Scope:** Correction UI; Preference store; promote to eval dataset.
+  - **CURRENT on branch:** Corrections overlay + brief upsert onto latest gmail `run_id`; in-memory `promotion_hook` (unit-tested). Ask-agent dataset has 7 cases (`n_cases=7`).
   - **Exit criteria (M9):** One correction appears in eval dataset path.
+  - **M9 remainder (deferred):** `promotion_hook` → eval dataset file write / preference promotion **not** in locked W1–W10; track under M9/OPTIONAL or next owner batch (fix-pass PART 16).
 - **Batch exit criteria:**
   - **Tests:** Job unit tests with fakes; preference→eval path tested.
   - **Evals:** Promoted case appears in harness path.
-  - **Live smoke:** Manual workflow_dispatch or scheduled run succeeds; Telegram received.
-  - **Docs:** PART appended; ROADMAP/ADRs/CHANGELOG; [gha-morning-job.md](docs/runbooks/gha-morning-job.md) current.
-- **Deps:** B3, B4/B5 as needed for data · **Size:** L–XL · **Metric:** Scheduled morning brief; feedback → eval cases
+  - **Live smoke:** Manual workflow_dispatch or scheduled run succeeds; Telegram received. **LIVE PASS** recorded (dispatch); scheduled cron pending B6 merge to `main`.
+  - **Docs:** PART 14 + PART 15; ROADMAP/ADRs/CHANGELOG; [gha-morning-job.md](docs/runbooks/gha-morning-job.md) current.
+- **Deps:** B3, B4/B5 as needed for data · **Size:** L–XL · **Metric:** Scheduled morning brief; feedback → eval cases · **Next after merge:** **B7**
 
 ### B7 — Public free-tier deploy (M10)
 

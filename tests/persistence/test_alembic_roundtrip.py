@@ -29,6 +29,10 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
                 "meetings",
                 "mail_drafts",
                 "mail_send_audit",
+                "ops_jobs",
+                "ops_job_lease",
+                "triage_corrections",
+                "anthropic_prepaid_budget",
                 "alembic_version",
             }.issubset(tables)
         finally:
@@ -49,7 +53,10 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
         try:
             with engine.connect() as conn:
                 version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            assert version == "0009_mail_send_audit_failed"
+                lease_row = conn.execute(
+                    text("SELECT slot, job_id, generation FROM ops_job_lease WHERE slot = 1")
+                ).one()
+            assert version == "0010_ops_jobs_corrections_budget"
             indexes = {idx["name"] for idx in inspect(engine).get_indexes("runs")}
             assert "ix_runs_finished_at" in indexes
             llm_indexes = {idx["name"] for idx in inspect(engine).get_indexes("llm_calls")}
@@ -75,6 +82,12 @@ def test_alembic_upgrade_downgrade_upgrade(alembic_throwaway_url: str) -> None:
             audit_cols = {c["name"] for c in inspect(engine).get_columns("mail_send_audit")}
             assert "idempotency_key" in audit_cols
             assert "demo_mode_blocked" in audit_cols
+            assert lease_row.slot == 1
+            assert lease_row.job_id is None
+            assert lease_row.generation == 0
+            ops_cols = {c["name"] for c in inspect(engine).get_columns("ops_jobs")}
+            assert "metadata_json" in ops_cols
+            assert "lease_generation" in ops_cols
         finally:
             engine.dispose()
     finally:

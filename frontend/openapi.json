@@ -694,6 +694,102 @@
         }
       }
     },
+    "/api/v1/corrections/{work_item_id}": {
+      "post": {
+        "tags": [
+          "corrections"
+        ],
+        "summary": "Upsert Correction",
+        "operationId": "upsert_correction_api_v1_corrections__work_item_id__post",
+        "parameters": [
+          {
+            "name": "work_item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Work Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Upsert Correction Api V1 Corrections  Work Item Id  Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "corrections"
+        ],
+        "summary": "Delete Correction",
+        "operationId": "delete_correction_api_v1_corrections__work_item_id__delete",
+        "parameters": [
+          {
+            "name": "work_item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Work Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Correction Api V1 Corrections  Work Item Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/mail/drafts/{draft_id}/edit": {
       "post": {
         "tags": [
@@ -785,6 +881,50 @@
                   "type": "object",
                   "additionalProperties": true,
                   "title": "Response Mail Draft Approve Api V1 Mail Drafts  Draft Id  Approve Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mail/drafts/{draft_id}/reopen": {
+      "post": {
+        "tags": [
+          "mail"
+        ],
+        "summary": "Mail Draft Reopen",
+        "operationId": "mail_draft_reopen_api_v1_mail_drafts__draft_id__reopen_post",
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Mail Draft Reopen Api V1 Mail Drafts  Draft Id  Reopen Post"
                 }
               }
             }
@@ -906,6 +1046,7 @@
           "oauth"
         ],
         "summary": "Post Sync",
+        "description": "Sync Google \u2192 Postgres, then drain triage in background.\n\nReturns 202 (started), 200 (not_needed), or 200 (busy).",
         "operationId": "post_sync_api_v1_sync_post",
         "responses": {
           "200": {
@@ -914,6 +1055,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SyncResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "oauth"
+        ],
+        "summary": "Get Job Status",
+        "description": "Return job status fields. Cookie required.",
+        "operationId": "get_job_status_api_v1_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -1028,6 +1212,36 @@
         "title": "AskStreamRequest",
         "description": "Same body as AskRequest for POST /ask/stream."
       },
+      "CorrectionRequest": {
+        "properties": {
+          "urgency": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Urgency"
+          },
+          "category": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Category"
+          },
+          "sentiment": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Sentiment"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "urgency",
+          "category",
+          "sentiment"
+        ],
+        "title": "CorrectionRequest"
+      },
       "DraftApproveRequest": {
         "properties": {
           "payload_sha256": {
@@ -1120,6 +1334,89 @@
         "type": "object",
         "title": "InsightsRequest"
       },
+      "JobStatusResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "job_kind": {
+            "type": "string",
+            "title": "Job Kind"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "triaged": {
+            "type": "integer",
+            "title": "Triaged",
+            "default": 0
+          },
+          "pending": {
+            "type": "integer",
+            "title": "Pending",
+            "default": 0
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "job_kind",
+          "status",
+          "created_at"
+        ],
+        "title": "JobStatusResponse",
+        "description": "GET /api/v1/jobs/{job_id} response."
+      },
       "RunPipelineRequest": {
         "properties": {
           "input_file": {
@@ -1141,13 +1438,30 @@
       },
       "SyncResponse": {
         "properties": {
+          "drain": {
+            "type": "string",
+            "title": "Drain"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
           "account_email": {
             "type": "string",
-            "title": "Account Email"
+            "title": "Account Email",
+            "default": ""
           },
           "gmail_upserted": {
             "type": "integer",
-            "title": "Gmail Upserted"
+            "title": "Gmail Upserted",
+            "default": 0
           },
           "gmail_removed": {
             "type": "integer",
@@ -1156,7 +1470,8 @@
           },
           "calendar_upserted": {
             "type": "integer",
-            "title": "Calendar Upserted"
+            "title": "Calendar Upserted",
+            "default": 0
           },
           "gmail_total": {
             "anyOf": [
@@ -1182,22 +1497,13 @@
           },
           "triaged": {
             "type": "integer",
-            "title": "Triaged"
+            "title": "Triaged",
+            "default": 0
           },
           "pending": {
             "type": "integer",
-            "title": "Pending"
-          },
-          "run_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Run Id"
+            "title": "Pending",
+            "default": 0
           },
           "calendar_truncated": {
             "type": "boolean",
@@ -1212,14 +1518,10 @@
         },
         "type": "object",
         "required": [
-          "account_email",
-          "gmail_upserted",
-          "calendar_upserted",
-          "triaged",
-          "pending"
+          "drain"
         ],
         "title": "SyncResponse",
-        "description": "Typed POST /api/v1/sync response (must match run_sync + triage merge)."
+        "description": "Typed POST /api/v1/sync response (drain-based, B6 C5).\n\n``drain`` indicates outcome: ``not_needed`` (no pending), ``started``\n(background drain spawned), or ``busy`` (lease held, try again).\nHTTP status is 202 for ``started``, 200 otherwise."
       },
       "ValidationError": {
         "properties": {

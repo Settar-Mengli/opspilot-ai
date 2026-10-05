@@ -88,14 +88,32 @@ function collectSpecs(report) {
         const errText = errors.map((e) => e.message || e.value || '').join('\n')
         const pix = errText.match(/(\d+)\s+pixels?\s+\(ratio/i)
         if (pix) diffPixels = Number(pix[1])
+        // Missing baseline often prints Expected:/Received: paths without a pixel ratio —
+        // that must NOT be classified as a benign pixel-diff (false-negative gate).
+        const isMissingSnapshot =
+          status !== 'passed' &&
+          (/snapshot doesn't exist|no snapshot|missing snapshot/i.test(errText) ||
+            (/Expected:/i.test(errText) &&
+              /Received:/i.test(errText) &&
+              diffPixels === null &&
+              !/\d+\s+pixels?\s+\(ratio/i.test(errText)))
         const isPixel =
-          diffPixels !== null ||
-          /toHaveScreenshot|Screenshot comparison|Expected:.*Received:/i.test(errText)
+          !isMissingSnapshot &&
+          (diffPixels !== null ||
+            (/toHaveScreenshot|Screenshot comparison/i.test(errText) &&
+              /\d+\s+pixels?/i.test(errText)))
         // Do not treat screenshot pixel mismatches as render failures (Error: is too broad).
         const isRender =
           !isPixel &&
+          !isMissingSnapshot &&
           (status === 'timedOut' ||
             /Timeout|locator|toBeVisible|strict mode violation|not found/i.test(errText))
+        const hasSnapshotPng = attachments.some(
+          (a) =>
+            (a.contentType || '').startsWith('image/') ||
+            String(a.name || '').endsWith('.png') ||
+            String(a.path || '').endsWith('.png'),
+        )
         rows.push({
           state,
           viewport,
@@ -103,6 +121,8 @@ function collectSpecs(report) {
           diffPixels,
           isRender: Boolean(isRender && status !== 'passed'),
           isPixelDiff: Boolean(isPixel && status !== 'passed'),
+          isMissingSnapshot: Boolean(isMissingSnapshot),
+          hasSnapshotPng,
           error: errText.slice(0, 500),
           attachments: attachments.map((a) => ({
             name: a.name,
@@ -161,14 +181,67 @@ function cmdRenderGate(jsonPath, flags) {
   const report = loadReport(jsonPath)
   const rows = collectSpecs(report)
   const news = new Set(newStates(flags))
-  const blockers = rows.filter((r) => r.isRender && !news.has(r.state) && r.status !== 'passed')
-  if (blockers.length) {
-    console.error('RENDER GATE FAILED (non-new states):')
-    for (const b of blockers) {
-      console.error(`- ${b.state}@${b.viewport}: ${b.error.split('\n')[0]}`)
+  const allowPixelDiff = Boolean(flags['allow-pixel-diff'])
+  const failures = []
+
+  // Any non-pass (except skipped) fails the gate. New-states may be excused.
+  // --allow-pixel-diff: compare mode may keep pixel diffs non-blocking.
+  for (const r of rows) {
+    if (r.status === 'passed' || r.status === 'skipped') continue
+    if (news.has(r.state)) continue
+    if (allowPixelDiff && r.isPixelDiff && !r.isMissingSnapshot && !r.isRender) continue
+    const kind = r.isMissingSnapshot
+      ? 'missing-snapshot'
+      : r.isRender
+        ? 'render-fail'
+        : r.isPixelDiff
+          ? 'pixel-diff'
+          : `status=${r.status}`
+    failures.push({ ...r, kind })
+  }
+
+  // Failed/missing rows with no PNG evidence (expected state produced no snapshot).
+  for (const r of rows) {
+    if (news.has(r.state) || r.status === 'skipped' || r.status === 'passed') continue
+    if (r.isMissingSnapshot || !r.hasSnapshotPng) {
+      const already = failures.some(
+        (f) => f.state === r.state && f.viewport === r.viewport && f.kind === 'missing-snapshot',
+      )
+      if (!already && r.isMissingSnapshot) {
+        /* already added above */
+      } else if (!r.hasSnapshotPng && !r.isMissingSnapshot) {
+        failures.push({
+          ...r,
+          kind: 'no-snapshot-png',
+          error: r.error || 'expected state has no snapshot PNG',
+        })
+      }
+    }
+  }
+
+  if (failures.length) {
+    console.error('RENDER GATE FAILED:')
+    for (const b of failures) {
+      console.error(`- [${b.kind}] ${b.state}@${b.viewport}: ${(b.error || '').split('\n')[0]}`)
     }
     process.exit(1)
   }
+
+  if (flags['expected-count'] !== undefined && flags['expected-count'] !== true) {
+    const expected = Number(flags['expected-count'])
+    if (!Number.isFinite(expected) || expected < 0) {
+      console.error(`RENDER GATE FAILED: invalid --expected-count=${flags['expected-count']}`)
+      process.exit(1)
+    }
+    // Count non-skipped rows (one screenshot result per state×viewport).
+    const actual = rows.filter((r) => r.status !== 'skipped').length
+    if (actual !== expected) {
+      console.error(`RENDER GATE FAILED: expected snapshot count ${expected}, got ${actual}`)
+      process.exit(1)
+    }
+    console.log(`Expected snapshot count OK: ${actual}`)
+  }
+
   const skippedNew = rows.filter((r) => news.has(r.state) && r.status !== 'passed')
   if (skippedNew.length) {
     console.log('New-state render issues (allowed for before-run):')

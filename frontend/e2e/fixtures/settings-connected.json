@@ -1,0 +1,9 @@
+{
+  "provider": "anthropic",
+  "model": "claude-sonnet-4-20250514",
+  "api_key_set": true,
+  "demo_mode": false,
+  "google_connected": true,
+  "last_morning": null,
+  "last_sync": null
+}

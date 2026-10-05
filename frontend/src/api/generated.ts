@@ -317,6 +317,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/corrections/{work_item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upsert Correction */
+        post: operations["upsert_correction_api_v1_corrections__work_item_id__post"];
+        /** Delete Correction */
+        delete: operations["delete_correction_api_v1_corrections__work_item_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mail/drafts/{draft_id}/edit": {
         parameters: {
             query?: never;
@@ -345,6 +363,23 @@ export interface paths {
         put?: never;
         /** Mail Draft Approve */
         post: operations["mail_draft_approve_api_v1_mail_drafts__draft_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/drafts/{draft_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mail Draft Reopen */
+        post: operations["mail_draft_reopen_api_v1_mail_drafts__draft_id__reopen_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -394,8 +429,33 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Post Sync */
+        /**
+         * Post Sync
+         * @description Sync Google → Postgres, then drain triage in background.
+         *
+         *     Returns 202 (started), 200 (not_needed), or 200 (busy).
+         */
         post: operations["post_sync_api_v1_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Job Status
+         * @description Return job status fields. Cookie required.
+         */
+        get: operations["get_job_status_api_v1_jobs__job_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -460,6 +520,15 @@ export interface components {
             /** History */
             history?: components["schemas"]["AskHistoryTurn"][];
         };
+        /** CorrectionRequest */
+        CorrectionRequest: {
+            /** Urgency */
+            urgency: string;
+            /** Category */
+            category: string;
+            /** Sentiment */
+            sentiment: string;
+        };
         /** DraftApproveRequest */
         DraftApproveRequest: {
             /** Payload Sha256 */
@@ -495,6 +564,38 @@ export interface components {
              */
             assistant_name: string;
         };
+        /**
+         * JobStatusResponse
+         * @description GET /api/v1/jobs/{job_id} response.
+         */
+        JobStatusResponse: {
+            /** Id */
+            id: string;
+            /** Job Kind */
+            job_kind: string;
+            /** Status */
+            status: string;
+            /**
+             * Triaged
+             * @default 0
+             */
+            triaged: number;
+            /**
+             * Pending
+             * @default 0
+             */
+            pending: number;
+            /** Error Code */
+            error_code?: string | null;
+            /** Run Id */
+            run_id?: string | null;
+            /** Created At */
+            created_at: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
+        };
         /** RunPipelineRequest */
         RunPipelineRequest: {
             /**
@@ -510,30 +611,51 @@ export interface components {
         };
         /**
          * SyncResponse
-         * @description Typed POST /api/v1/sync response (must match run_sync + triage merge).
+         * @description Typed POST /api/v1/sync response (drain-based, B6 C5).
+         *
+         *     ``drain`` indicates outcome: ``not_needed`` (no pending), ``started``
+         *     (background drain spawned), or ``busy`` (lease held, try again).
+         *     HTTP status is 202 for ``started``, 200 otherwise.
          */
         SyncResponse: {
-            /** Account Email */
+            /** Drain */
+            drain: string;
+            /** Job Id */
+            job_id?: string | null;
+            /**
+             * Account Email
+             * @default
+             */
             account_email: string;
-            /** Gmail Upserted */
+            /**
+             * Gmail Upserted
+             * @default 0
+             */
             gmail_upserted: number;
             /**
              * Gmail Removed
              * @default 0
              */
             gmail_removed: number;
-            /** Calendar Upserted */
+            /**
+             * Calendar Upserted
+             * @default 0
+             */
             calendar_upserted: number;
             /** Gmail Total */
             gmail_total?: number | null;
             /** Meetings Total */
             meetings_total?: number | null;
-            /** Triaged */
+            /**
+             * Triaged
+             * @default 0
+             */
             triaged: number;
-            /** Pending */
+            /**
+             * Pending
+             * @default 0
+             */
             pending: number;
-            /** Run Id */
-            run_id?: string | null;
             /**
              * Calendar Truncated
              * @default false
@@ -1123,6 +1245,76 @@ export interface operations {
             };
         };
     };
+    upsert_correction_api_v1_corrections__work_item_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                work_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorrectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_correction_api_v1_corrections__work_item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                work_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     mail_draft_edit_api_v1_mail_drafts__draft_id__edit_post: {
         parameters: {
             query?: never;
@@ -1174,6 +1366,39 @@ export interface operations {
                 "application/json": components["schemas"]["DraftApproveRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mail_draft_reopen_api_v1_mail_drafts__draft_id__reopen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -1266,6 +1491,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SyncResponse"];
+                };
+            };
+        };
+    };
+    get_job_status_api_v1_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

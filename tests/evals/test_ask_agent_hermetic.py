@@ -21,10 +21,10 @@ def allow_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.mark.usefixtures("allow_llm")
 def test_ask_agent_hermetic_suite(db_session: Session) -> None:
-    assert len(load_ask_agent_cases()) == 6
+    assert len(load_ask_agent_cases()) == 7
     report = run_ask_agent_hermetic(db_session)
     assert report["gate_passed"] is True, report["results"]
-    assert report["passed"] == report["n"] == 6
+    assert report["passed"] == report["n"] == 7
 
 
 @pytest.mark.usefixtures("allow_llm")

@@ -1,8 +1,12 @@
-# B6 morning job (D-011) — in-runner; workflow_dispatch first; schedule in C14 after LIVE PASS.
+# B6 morning job (D-011) — in-runner; workflow_dispatch + schedule (C14 after LIVE PASS).
 
 name: Morning Run
 
 on:
+  schedule:
+    # 12:00 UTC = 07:00 America/Toronto standard; 08:00 during EDT.
+    # Takes effect only after this workflow file with schedule is on the default branch (main).
+    - cron: "0 12 * * *"
   workflow_dispatch:
     inputs:
       force_override:

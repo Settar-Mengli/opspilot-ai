@@ -33,19 +33,56 @@ from opspilot.services.insights import generate_insights
 router = APIRouter(prefix="/api/v1")
 
 
+def _job_status_summary(job: object) -> dict[str, object] | None:
+    """Minimal job status dict for settings payload."""
+    if job is None:
+        return None
+    from opspilot.persistence.models import OpsJobRow
+
+    if not isinstance(job, OpsJobRow):
+        return None
+    return {
+        "id": job.id,
+        "status": job.status,
+        "triaged": job.triaged,
+        "pending": job.pending,
+        "rules_fallback_count": job.rules_fallback_count,
+        "reauth_needed": job.reauth_needed,
+        "error_code": job.error_code,
+        "finished_at": job.finished_at.isoformat() if job.finished_at else None,
+    }
+
+
 def _settings_payload(session: Session | None = None) -> dict[str, object]:
     from opspilot.persistence.repositories import oauth_credentials
     from opspilot.services.operator_session import demo_mode_enabled
 
     google_connected = False
+    last_morning: dict[str, object] | None = None
+    last_sync: dict[str, object] | None = None
     if session is not None:
         google_connected = oauth_credentials.is_connected(session, provider="google")
+        from sqlalchemy import desc as sa_desc
+        from sqlalchemy import select
+
+        from opspilot.persistence.models import OpsJobRow
+
+        morning_job = session.scalars(
+            select(OpsJobRow).where(OpsJobRow.job_kind == "morning").order_by(sa_desc(OpsJobRow.created_at)).limit(1)
+        ).first()
+        last_morning = _job_status_summary(morning_job)
+        sync_job = session.scalars(
+            select(OpsJobRow).where(OpsJobRow.job_kind == "sync_drain").order_by(sa_desc(OpsJobRow.created_at)).limit(1)
+        ).first()
+        last_sync = _job_status_summary(sync_job)
     return {
         "provider": ai_settings.provider,
         "model": ai_settings.model,
         "api_key_set": bool(ai_settings.api_key),
         "demo_mode": demo_mode_enabled(),
         "google_connected": google_connected,
+        "last_morning": last_morning,
+        "last_sync": last_sync,
     }
 
 
@@ -67,38 +104,14 @@ def _google_connected(session: Session) -> bool:
 
 
 def _latest_triage_records(session: Session) -> list[dict[str, Any]]:
-    """Latest triage decisions joined to work items (same shape as GET /triage).
+    """Latest triage decisions with correction overlay (B6 C6).
 
     When Google is connected, only ``source_type=gmail`` rows are returned so sample
     work items never mix into the operator queue (G7). Disconnected = all sources.
     """
-    stmt = (
-        select(TriageDecisionRow, WorkItemRow)
-        .join(WorkItemRow, TriageDecisionRow.work_item_id == WorkItemRow.id)
-        .order_by(desc(TriageDecisionRow.id))
-    )
-    if _google_connected(session):
-        stmt = stmt.where(WorkItemRow.source_type == "gmail")
-    result = session.execute(stmt)
-    seen: set[str] = set()
-    payload: list[dict[str, Any]] = []
-    for decision, work_item in result.all():
-        if decision.work_item_id in seen:
-            continue
-        seen.add(decision.work_item_id)
-        payload.append(
-            {
-                "id": decision.work_item_id,
-                "subject_or_title": work_item.subject_or_title,
-                "urgency": decision.urgency,
-                "urgency_reason": decision.urgency_reason,
-                "category": decision.category,
-                "category_reason": decision.category_reason,
-                "sentiment": decision.sentiment,
-                "sentiment_reason": decision.sentiment_reason,
-            }
-        )
-    return payload
+    from opspilot.services.triage_overlay import latest_triage_with_overlay
+
+    return latest_triage_with_overlay(session, gmail_only=_google_connected(session))
 
 
 def _latest_named_briefing(session: Session, *, name: str) -> str | None:

@@ -2,7 +2,9 @@ import type {
   ApiSettings,
   CalendarMeeting,
   Capability,
+  CorrectionPayload,
   InsightsResponse,
+  JobStatus,
   RunMetadata,
   RunPipelineResult,
   RunSummary,
@@ -353,7 +355,19 @@ export async function getCapabilities(): Promise<Capability[]> {
 }
 
 export async function postSync(): Promise<SyncResult> {
-  return requestJson<SyncResult>('/api/v1/sync', { method: 'POST' })
+  const response = await fetch(`${API_BASE_URL}/api/v1/sync`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!response.ok && response.status !== 202) {
+    const detail = await getErrorDetail(response)
+    throw toApiError(response.status, detail)
+  }
+  return response.json() as Promise<SyncResult>
+}
+
+export async function getJobStatus(jobId: string): Promise<JobStatus> {
+  return requestJson<JobStatus>(`/api/v1/jobs/${encodeURIComponent(jobId)}`)
 }
 
 export async function disconnectGoogle(): Promise<void> {
@@ -405,4 +419,31 @@ export async function approveMailDraft(
     throw err
   }
   return body
+}
+
+export async function reopenMailDraft(
+  draftId: string,
+): Promise<{ id: string; status: string; payload_sha256: string; error_code?: string | null }> {
+  return requestJson(`/api/v1/mail/drafts/${encodeURIComponent(draftId)}/reopen`, {
+    method: 'POST',
+  })
+}
+
+export async function upsertCorrection(
+  workItemId: string,
+  payload: CorrectionPayload,
+): Promise<{ status: string }> {
+  return requestJson(`/api/v1/corrections/${encodeURIComponent(workItemId)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteCorrection(
+  workItemId: string,
+): Promise<{ status: string }> {
+  return requestJson(`/api/v1/corrections/${encodeURIComponent(workItemId)}`, {
+    method: 'DELETE',
+  })
 }
