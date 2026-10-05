@@ -3,11 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
-
-
-class _SessionLike(Protocol):
-    role: str
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -17,10 +13,11 @@ class OperatorAnthropicAuth:
     role: str
 
     @classmethod
-    def from_session(cls, session: _SessionLike | None) -> OperatorAnthropicAuth | None:
+    def from_session(cls, session: Any | None) -> OperatorAnthropicAuth | None:
         """Return auth only for a verified demo_operator session; else None."""
         if session is None:
             return None
-        if session.role != "demo_operator":
+        role = getattr(session, "role", None)
+        if role != "demo_operator":
             return None
-        return cls(role=session.role)
+        return cls(role=str(role))
