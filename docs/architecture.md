@@ -1,6 +1,6 @@
 # OpsPilot Architecture
 
-**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B5** (PR #40 → `2131f32`) plus dispatch-only Morning Run on `main` (PR #43). Sections labeled **CURRENT on B6 branch** describe `b6/morning-run` (LIVE PASS; not yet on `main`). Sections labeled **TARGET** describe the remaining locked rebuild (**B6 merge closeout + B7**). Do not present TARGET or unmerged branch work as shipped on `main`.
+**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B6** (PR #44 → `eae1a9a`). Sections labeled **TARGET** describe the remaining locked rebuild (**B7** and optional side batches). Do not present TARGET as shipped on `main`.
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
@@ -17,9 +17,9 @@ Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs
 
 ---
 
-## CURRENT (B1–B5 on main; B6 on branch)
+## CURRENT (B1–B6 on main)
 
-Verified through **B5** on `main` (PR #40 → `2131f32`): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, Alembic head **0009** on `main` (expand-only on `mail_send_audit`; **0010** on `b6/morning-run` / Neon owner-applied), `/api/v1` with envelope, FE on `/api/v1`, coverage fail-under **72**, Node ≥24.15 / Python 3.13 / uv.
+Verified through **B6** on `main` (PR #44 → `eae1a9a`): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, Alembic head **0010** on `main` (Neon owner-applied per PART 15), `/api/v1` with envelope, FE on `/api/v1`, coverage fail-under **72**, Node ≥24.15 / Python 3.13 / uv.
 
 **B1.5a:** Playwright visual/e2e/axe safety net with container-only `-linux` baselines; CSS partials; `useOverlay`; D-026/D-027.
 
@@ -27,7 +27,7 @@ Verified through **B5** on `main` (PR #40 → `2131f32`): hermetic pytest (socke
 
 **B2 (CURRENT):** hand-rolled `opspilot.llm` gateway; `llm_allowed()`; services; free-tier providers + D-023; `LlmCall` + UTC budgets; runs pagination; `X-Request-ID`; timestamptz.
 
-**B2.1 (CURRENT):** recursive meta redaction; OpenRouter `:free` gate; OBS request_id; dead-adapter delete; introduced migration 0005 in that batch (current head: **0009**); toolchain pins.
+**B2.1 (CURRENT):** recursive meta redaction; OpenRouter `:free` gate; OBS request_id; dead-adapter delete; introduced migration 0005 in that batch (superseded; current head: **0010**); toolchain pins.
 
 **B3 (CURRENT):** eval harness `b3-live/v2`; triage N=40 + red-team N=20; hermetic F1 floor 0.30; live D1–D3 full; CF D4 partial 33/60 (remainder in B3.1); Alembic `0006` confidence/evidence_refs.
 
@@ -37,7 +37,7 @@ Verified through **B5** on `main` (PR #40 → `2131f32`): hermetic pytest (socke
 
 **B5 (CURRENT on main):** `opspilot.agent` JSON-emulated tool loop (D-031); caps 5/8; `POST /ask/stream` SSE (D-032); HITL mail draft edit/approve + allowlist + DEMO_MODE (D-033); `gmail.send`; deleted-message sync; Alembic **0008**/**0009** (`mail_drafts`, `mail_send_audit` + failed/error_code); hermetic `ask_agent` + `redteam_agent` evals.
 
-**B6 (CURRENT on branch `b6/morning-run`; LIVE PASS 2026-10-04; not on main):** in-runner GHA `morning_run` + Telegram counts-only; Sync **202**/poll drain + ops_jobs lease/reap/fence; triage corrections overlay; failed-draft reopen; F-05 prepaid ledger plumbing (Anthropic still off); Alembic **0010**; C14 cron `0 12 * * *` in workflow YAML (fires only after merge to default branch). On `main` today: dispatch-only `morning.yml` (PR #43).
+**B6 (CURRENT on main):** in-runner GHA `morning_run` + Telegram counts-only; Sync **202**/poll drain + ops_jobs lease/reap/fence; triage corrections overlay; failed-draft reopen; F-05 prepaid ledger plumbing (Anthropic still off); Alembic **0010**; C14 cron `0 12 * * *` + `workflow_dispatch` in `.github/workflows/morning.yml` (workflow **active** on default branch; first `event=schedule` observation pending at PART 18).
 
 ### Endpoints (CURRENT) — `/api/v1`
 
@@ -53,14 +53,16 @@ Primary surface is **`/api/v1/*`**. Legacy unversioned routes were removed in B1
 | GET | `/api/v1/briefing`, `/api/v1/ai-briefing` |
 | GET | `/api/v1/runs/{run_id}/triage`, `.../briefing`, `.../ai-briefing` |
 | POST | `/api/v1/ask`, `/api/v1/ask/stream`, `/api/v1/evening-summary`, `/api/v1/insights` |
-| POST | `/api/v1/mail/drafts/{id}/edit`, `/api/v1/mail/drafts/{id}/approve` |
+| POST | `/api/v1/mail/drafts/{id}/edit`, `/api/v1/mail/drafts/{id}/approve`, `/api/v1/mail/drafts/{id}/reopen` |
+| POST | `/api/v1/corrections/{work_item_id}`, DELETE `/api/v1/corrections/{work_item_id}` |
 | GET | `/api/v1/inputs`, `/api/v1/capabilities`, `/api/v1/capabilities/{capability_id}` |
 | GET | `/api/v1/oauth/google/start`, `/api/v1/oauth/google/callback` |
 | DELETE | `/api/v1/oauth/google` |
-| POST | `/api/v1/sync` |
+| POST | `/api/v1/sync` (202 + poll drain when started) |
+| GET | `/api/v1/jobs/{job_id}` |
 | GET | `/api/v1/calendar/week` |
 
-**B6 branch also:** Sync **202** + job poll; corrections routes; draft reopen; settings job summary (see OpenAPI on `b6/morning-run`).
+Settings GET includes last morning / last sync job summaries when present.
 
 Notable: **no** `PATCH` settings. Pipeline runs **in-process** (no CLI subprocess).
 
@@ -141,7 +143,7 @@ Full audit: [docs/audits/2026-09-25-baseline-audit.md](audits/2026-09-25-baselin
 
 ## TARGET
 
-Remaining locked rebuild after **B5 on main**: finish **B6** merge (morning job + cron on default branch) then **B7** (public deploy). B6 LIVE PASS is recorded on branch — see dualism at top of this file. Package layout notes below still guide B6+ prefs/admin splits.
+Remaining locked rebuild after **B6 on main**: **B7** (public deploy). Owner-pending order may insert Anthropic/MCP PR before B7 (PART 18). Package layout notes below still guide prefs/admin splits.
 
 ### Package layout + dependency rules (D-024)
 
@@ -327,9 +329,7 @@ Datasets under `evals/datasets/` (fictional). Metrics: precision/recall/F1, conf
 
 ### Jobs / scheduling
 
-**CURRENT on main:** Manual CLI/API still the local path; GitHub Actions **Morning Run** exists as **workflow_dispatch only** (PR #43). No in-app scheduler. Local Windows Task Scheduler remains a valid **dev** path.
-
-**CURRENT on B6 branch (D-011):** `morning.yml` has `schedule: 0 12 * * *` plus `workflow_dispatch` (C14 after LIVE PASS). In-runner `morning_run` (secrets → env; Google refresh from Neon; Telegram counts-only). Fail fast if Neon schema ≠ Alembic head; migrations operator-applied, never by cron. Auth-fail drill via `simulate_google_reauth`. **Schedule activates only after this YAML is on `main`.**
+**CURRENT on main (D-011):** Manual CLI/API remains a valid local path. GitHub Actions **Morning Run** on default branch has `schedule: 0 12 * * *` plus `workflow_dispatch` (C14; workflow **active**). In-runner `morning_run` (secrets → env; Google refresh from Neon; Telegram counts-only). Fail fast if Neon schema ≠ Alembic head; migrations operator-applied, never by cron. Auth-fail drill via `simulate_google_reauth`. No in-app scheduler. Local Windows Task Scheduler remains a valid **dev** path. First `event=schedule` observation on `main` pending at PART 18.
 
 **TARGET B7:** Public deploy; optional HMAC webhook wake of deployed API (X2).
 

@@ -1981,3 +1981,125 @@ Items **1–7 PASS** (mergeability + `morning.yml`; H1; H2; M2; tests; fix-pass 
 ### Next
 
 - Open B6 PR `b6/morning-run` → `main`. Agent does not merge.
+
+## PART 18 -- B6 merge closeout -- 2026-10-05
+
+Append-only after PART 17. Does not edit PART 14/15/16/17 bodies. Records B6 merge to `main` and truth-aligns SoT docs. Docs-only; no product code.
+
+### B6 merge facts
+
+| Item | Value |
+|---|---|
+| PR | [#44](https://github.com/Settar-Mengli/opspilot-ai/pull/44) |
+| Title | B6: morning run, Sync 202 + poll, corrections, job status |
+| Merge SHA | `eae1a9a47ff7568f9bc7aa8d8f0ca911a2bb9c13` |
+| Parents | `462062a9fb0b247d331db57c8183061d02ff3c1f` (main / PR #43) + `717391b4109fe9148c14399e99f31914bb02a4ce` (b6 tip) |
+| Merged at | 2026-10-05T04:19:52Z |
+| Merge CI | [37263038965](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37263038965) **success** |
+
+### Schedule on default branch
+
+| Item | Value |
+|---|---|
+| Workflow | `.github/workflows/morning.yml` on `main` |
+| Cron | `0 12 * * *` (C14) + `workflow_dispatch` |
+| Workflow state | **active** (`gh api .../actions/workflows/morning.yml`) |
+| First `event=schedule` on `main` | **Pending** — read-only `gh run list --workflow="Morning Run" --event schedule` returned no runs at closeout time (2026-10-05). Prior Morning Run history is `workflow_dispatch` on `b6/morning-run`. First scheduled fire expected at next 12:00 UTC after merge (GHA may delay registration briefly). |
+
+### Alembic / Neon
+
+| Item | Value |
+|---|---|
+| Repo head on `main` | **0010** (`0010_ops_jobs_corrections_budget`) |
+| Neon | Owner-applied **0010** before B6 LIVE (PART 15); not re-queried this PART |
+
+### Open findings / deferrals carried forward
+
+From PART 17 (unchanged; no code this PART):
+
+1. Unexpected raise from `notify_morning_outcome` on a **success** path would enter the H2 except and mark a succeeded job `failed`.
+2. `test_zero_pending_helper_branch_no_run_no_brief` does not call `run_morning` (reimplements finalize).
+3. H2 failure test does not assert Telegram payload fields (counts/flags/`error_code` only via product code path).
+4. Corrections saved while `pending > 0`, or with no latest gmail run, wait for a later zero-pending morning (and a gmail run) before `corrections_only` brief rewrite.
+5. **DEFER:** Connections sync-status spacing (`.cn-feat-sub`); compare `--new-states` full excuse for `dashboard-error` / `evening-error`; `gmail_upserted` rename (counts updates+inserts); M9 `promotion_hook` → eval dataset file write.
+
+ROADMAP Open findings closed as shipped on this merge (docs truth-align only): background-job triage (202 + poll); failed-draft reopen. M9 remainder stays open.
+
+### Remaining order (owner-pending)
+
+Owner-stated order after B6 merge (not a new ADR; record only):
+
+1. Anthropic operator profile + MCP as its own PR (MCP is CUT from B0–B7 spine in PART 2 — needs owner un-CUT / ADR before Plan if MCP is in scope)
+2. B7 public free-tier deploy + hardening
+3. Optional side batches (deps+U9; open-decisions / OD)
+4. Final general repo cleanup
+
+### SoT docs this PART
+
+Truth-align only (false CURRENT claims): `ROADMAP.md`, `README.md`, `CHANGELOG.md`, `docs/architecture.md`, `docs/runbooks/gha-morning-job.md`. Historical audits / `docs/history/` untouched.
+
+### Next
+
+- Owner merges this docs PR. Agent does not merge.
+- First `schedule` Morning Run on `main`: append run id + conclusion when observed (later PART or owner note).
+
+## PART 18 -- B6 merge closeout -- 2026-10-05
+
+Append-only after PART 17. Does not edit PART 14/15/16/17 bodies. Records B6 merge to `main` and truth-aligns SoT docs. Docs-only; no product code.
+
+### B6 merge facts
+
+| Item | Value |
+|---|---|
+| PR | [#44](https://github.com/Settar-Mengli/opspilot-ai/pull/44) |
+| Title | B6: morning run, Sync 202 + poll, corrections, job status |
+| Merge SHA | `eae1a9a47ff7568f9bc7aa8d8f0ca911a2bb9c13` |
+| Parents | `462062a9fb0b247d331db57c8183061d02ff3c1f` (main / PR #43) + `717391b4109fe9148c14399e99f31914bb02a4ce` (b6 tip) |
+| Merged at | 2026-10-05T04:19:52Z |
+| Merge CI | [37263038965](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37263038965) **success** |
+
+### Schedule on default branch
+
+| Item | Value |
+|---|---|
+| Workflow | `.github/workflows/morning.yml` on `main` |
+| Cron | `0 12 * * *` (C14) + `workflow_dispatch` |
+| Workflow state | **active** (`gh api .../actions/workflows/morning.yml`) |
+| First `event=schedule` on `main` | **Pending** — read-only `gh run list --workflow="Morning Run" --event schedule` returned no runs at closeout time (2026-10-05). Prior Morning Run history is `workflow_dispatch` on `b6/morning-run`. First scheduled fire expected at next 12:00 UTC after merge (GHA may delay registration briefly). |
+
+### Alembic / Neon
+
+| Item | Value |
+|---|---|
+| Repo head on `main` | **0010** (`0010_ops_jobs_corrections_budget`) |
+| Neon | Owner-applied **0010** before B6 LIVE (PART 15); not re-queried this PART |
+
+### Open findings / deferrals carried forward
+
+From PART 17 (unchanged; no code this PART):
+
+1. Unexpected raise from `notify_morning_outcome` on a **success** path would enter the H2 except and mark a succeeded job `failed`.
+2. `test_zero_pending_helper_branch_no_run_no_brief` does not call `run_morning` (reimplements finalize).
+3. H2 failure test does not assert Telegram payload fields (counts/flags/`error_code` only via product code path).
+4. Corrections saved while `pending > 0`, or with no latest gmail run, wait for a later zero-pending morning (and a gmail run) before `corrections_only` brief rewrite.
+5. **DEFER:** Connections sync-status spacing (`.cn-feat-sub`); compare `--new-states` full excuse for `dashboard-error` / `evening-error`; `gmail_upserted` rename (counts updates+inserts); M9 `promotion_hook` → eval dataset file write.
+
+ROADMAP Open findings closed as shipped on this merge (docs truth-align only): background-job triage (202 + poll); failed-draft reopen. M9 remainder stays open.
+
+### Remaining order (owner-pending)
+
+Owner-stated order after B6 merge (not a new ADR; record only):
+
+1. Anthropic operator profile + MCP as its own PR (MCP is CUT from B0–B7 spine in PART 2 — needs owner un-CUT / ADR before Plan if MCP is in scope)
+2. B7 public free-tier deploy + hardening
+3. Optional side batches (deps+U9; open-decisions / OD)
+4. Final general repo cleanup
+
+### SoT docs this PART
+
+Truth-align only (false CURRENT claims): `ROADMAP.md`, `README.md`, `CHANGELOG.md`, `docs/architecture.md`, `docs/runbooks/gha-morning-job.md`. Historical audits / `docs/history/` untouched.
+
+### Next
+
+- Owner merges this docs PR. Agent does not merge.
+- First `schedule` Morning Run on `main`: append run id + conclusion when observed (later PART or owner note).
