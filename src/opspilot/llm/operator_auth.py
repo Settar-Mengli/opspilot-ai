@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
 
-from opspilot.services.operator_session import OperatorSession
+
+class _SessionLike(Protocol):
+    role: str
 
 
 @dataclass(frozen=True)
@@ -14,7 +17,7 @@ class OperatorAnthropicAuth:
     role: str
 
     @classmethod
-    def from_session(cls, session: OperatorSession | None) -> OperatorAnthropicAuth | None:
+    def from_session(cls, session: _SessionLike | None) -> OperatorAnthropicAuth | None:
         """Return auth only for a verified demo_operator session; else None."""
         if session is None:
             return None
