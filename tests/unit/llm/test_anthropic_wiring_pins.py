@@ -27,6 +27,40 @@ def test_from_session_only_in_ask_and_oauth_routes() -> None:
     }
 
 
+def test_operator_anthropic_auth_constructed_only_in_from_session() -> None:
+    """A6: OperatorAnthropicAuth( may be constructed in src/ only inside from_session."""
+    root = Path("src/opspilot")
+    hits: list[str] = []
+    for path in root.rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            name = None
+            if isinstance(func, ast.Name) and func.id == "OperatorAnthropicAuth":
+                name = "OperatorAnthropicAuth"
+            elif isinstance(func, ast.Attribute) and func.attr == "OperatorAnthropicAuth":
+                name = "OperatorAnthropicAuth"
+            if name is None:
+                continue
+            # Allowed only as return inside from_session in operator_auth.py
+            if path.as_posix() != "src/opspilot/llm/operator_auth.py":
+                hits.append(f"{path.as_posix()}:{node.lineno}")
+                continue
+            # Must be nested under a FunctionDef named from_session
+            parent_ok = False
+            for parent in ast.walk(tree):
+                if isinstance(parent, ast.FunctionDef) and parent.name == "from_session":
+                    for child in ast.walk(parent):
+                        if child is node:
+                            parent_ok = True
+                            break
+            if not parent_ok:
+                hits.append(f"{path.as_posix()}:{node.lineno}")
+    assert hits == [], hits
+
+
 def test_morning_yml_anthropic_literal_false() -> None:
     text = Path(".github/workflows/morning.yml").read_text(encoding="utf-8")
     assert 'OPSPILOT_ANTHROPIC_ENABLED: "false"' in text

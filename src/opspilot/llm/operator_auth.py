@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from opspilot.services.operator_session import OperatorSession
 
 
 @dataclass(frozen=True)
@@ -13,11 +16,14 @@ class OperatorAnthropicAuth:
     role: str
 
     @classmethod
-    def from_session(cls, session: Any | None) -> OperatorAnthropicAuth | None:
-        """Return auth only for a verified demo_operator session; else None."""
+    def from_session(cls, session: OperatorSession | None) -> OperatorAnthropicAuth | None:
+        """Return auth only for a real OperatorSession with demo_operator role; else None."""
+        from opspilot.services.operator_session import OperatorSession as _OperatorSession
+
         if session is None:
             return None
-        role = getattr(session, "role", None)
-        if role != "demo_operator":
+        if not isinstance(session, _OperatorSession):
             return None
-        return cls(role=str(role))
+        if session.role != "demo_operator":
+            return None
+        return OperatorAnthropicAuth(role=session.role)

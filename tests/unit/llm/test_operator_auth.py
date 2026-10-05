@@ -35,6 +35,17 @@ def test_operator_auth_from_session_wrong_role() -> None:
     assert OperatorAnthropicAuth.from_session(session) is None
 
 
+def test_operator_auth_from_session_duck_typed_rejected() -> None:
+    """Duck-typed object with role=demo_operator is not OperatorSession → None."""
+
+    class _Duck:
+        role = "demo_operator"
+        email = "duck@example.test"
+        exp = datetime.now(UTC) + timedelta(hours=1)
+
+    assert OperatorAnthropicAuth.from_session(_Duck()) is None  # type: ignore[arg-type]
+
+
 def test_operator_auth_from_session_forged_signature(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OPSPILOT_SESSION_SECRET", "test-secret-for-auth-a6")
     good = issue_session(email="op@example.test")
