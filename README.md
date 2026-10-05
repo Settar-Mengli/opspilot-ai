@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml)
 
-**CURRENT on `main`:** B0–B5 merged (**B5** PR #40 → `2131f32`; Alembic **0009**); dispatch-only Morning Run workflow on `main` (PR #43 → `462062a`). **B6** on branch `b6/morning-run` (Alembic **0010**, LIVE PASS 2026-10-04; schedule cron in YAML activates after B6 merge). **Next after B6 merge:** **B7**. See:
+**CURRENT on `main`:** B0–B6 merged (**B6** PR #44 → `eae1a9a`; Alembic **0010**; Morning Run `schedule: 0 12 * * *` + `workflow_dispatch` on default branch, workflow active; first `event=schedule` observation pending). **Next:** **B7** (owner may insert Anthropic/MCP PR first — PART 18). See:
 
 - [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history, baseline, locked plan
 - [ROADMAP.md](ROADMAP.md) — batches **B0–B7** (+ B1.5 / B2.1 / B3.1)
@@ -42,7 +42,7 @@ Referenced from existing Playwright container baselines (not regenerated):
 
 **Eval metrics:** published only in [docs/evals/leaderboard.md](docs/evals/leaderboard.md) + [docs/evals/results/](docs/evals/results/) (no invented README scores). Hermetic CI floor = rules macro-F1 ≥ **0.30**. Live: Gemini/Groq/Mistral 60/60; Cloudflare **combined 60/60** (F1 0.706 n=40); OpenRouter **partial** D6 triage n=15 F1 0.619 (ASR N/A; D7–D9 cancelled); Anthropic **skipped**.
 
-**Not yet:** public deploy; scheduled morning cron on `main` (C14 YAML on B6 branch; activates after B6 merge).
+**Not yet:** public deploy (B7). Morning Run schedule YAML is on `main`; first `event=schedule` fire pending observation.
 
 ---
 

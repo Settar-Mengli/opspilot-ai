@@ -11,7 +11,7 @@ In-runner morning triage on GitHub Actions. **Not** triggered on push/PR. Schedu
 - Concurrency group `morning-run`, `cancel-in-progress: false`, timeout 30m
 - `permissions: contents: read`
 - Maps GitHub secrets → process env (see plan §11 / secrets table below)
-- **When schedule takes effect:** after the workflow file that includes `schedule` is merged to `main`. Until then, only `workflow_dispatch` on `main` (dispatch-only YAML from PR #43) can run. Branch pushes do not enable cron.
+- **Schedule on default branch:** C14 cron is on `main` (B6 merge PR #44 → `eae1a9a`). Workflow state **active**. First `event=schedule` run on `main` was **pending** at PART 18 closeout; until observed, use `workflow_dispatch` for manual runs. Branch-only pushes do not register cron.
 
 ## Secrets (names only)
 
@@ -47,4 +47,4 @@ Counts, flags, error codes only — never titles, subjects, bodies, links, or br
 
 ## Cron (C14 — after LIVE PASS)
 
-`0 12 * * *` (= 07:00 America/Toronto standard; 08:00 during EDT). Present on `b6/morning-run` after the C14 commit; **active on GitHub only once that file is on `main`**. First scheduled fire is the next 12:00 UTC after the merge lands (GHA may delay registration briefly).
+`0 12 * * *` (= 07:00 America/Toronto standard; 08:00 during EDT). Present on default branch `main` after B6 merge (PR #44). First scheduled fire is the next 12:00 UTC after that merge (GHA may delay registration briefly). At PART 18 closeout, no `event=schedule` run on `main` had been observed yet.
