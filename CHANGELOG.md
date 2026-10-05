@@ -7,6 +7,8 @@ and this project follows Semantic Versioning principles for release tags.
 
 ## [Unreleased]
 
+- **b6.1 Anthropic operator switch (branch; ADR TARGET until LIVE):** operator-authorized Anthropic for Ask SSE + Sync drain triage; prepaid ledger reserve/reconcile + CLI `anthropic_budget show/set`; startup refuse ENABLED∧DEMO; morning preflight refuse; STOP LIVE procedure in `docs/runbooks/llm-providers.md`. PART 20 + D-023 CURRENT flips after owner LIVE (C9).
+
 ### Fixed
 
 - **B5 live smoke recorded:** owner-run 2026-10-02 — default PASS; `--send` on `cb452e0` FAIL (no send, `recipient_not_allowlisted`); `--send` on `6eef4c4` PASS (1 real send). OD-B5-8 + STOP VISUAL closed; **merged** via PR #40 → `2131f32`.

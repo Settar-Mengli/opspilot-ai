@@ -39,6 +39,8 @@ Verified through **B6** on `main` (PR #44 → `eae1a9a`): hermetic pytest (socke
 
 **B6 (CURRENT on main):** in-runner GHA `morning_run` + Telegram counts-only; Sync **202**/poll drain + ops_jobs lease/reap/fence; triage corrections overlay; failed-draft reopen; F-05 prepaid ledger plumbing (Anthropic still off); Alembic **0010**; C14 cron `0 12 * * *` + `workflow_dispatch` in `.github/workflows/morning.yml` (workflow **active** on default branch; first `event=schedule` observation pending at PART 18).
 
+**b6.1 (TARGET on branch `b6.1/anthropic-operator`):** operator-authorized Anthropic for Ask SSE + Sync drain triage only; prepaid ledger reserve/reconcile + CLI; D-023 addendum labelled TARGET until owner LIVE + C9. See `docs/runbooks/llm-providers.md` STOP LIVE.
+
 ### Endpoints (CURRENT) — `/api/v1`
 
 Primary surface is **`/api/v1/*`**. Legacy unversioned routes were removed in B1.
@@ -143,7 +145,7 @@ Full audit: [docs/audits/2026-09-25-baseline-audit.md](audits/2026-09-25-baselin
 
 ## TARGET
 
-Remaining locked rebuild after **B6 on main**: **B7** (public deploy). Owner-pending order may insert Anthropic/MCP PR before B7 (PART 18). Package layout notes below still guide prefs/admin splits.
+Remaining locked rebuild after **B6 on main**: **b6.1** Anthropic operator switch (PART 19), then **B7** (public deploy). Package layout notes below still guide prefs/admin splits.
 
 ### Package layout + dependency rules (D-024)
 
@@ -278,7 +280,7 @@ complete(task, messages, schema=None) -> Result
 stream(task, messages) -> AsyncIterator[Event]
 ```
 
-**Default order:** `gemini → groq → ollama → rules` (task-dependent). Anthropic **never** in the default list.
+**Default order:** `gemini → groq → ollama → rules` (task-dependent). Anthropic **never** in the env order list; b6.1 TARGET prepends it only when operator-authorized for ask/triage.
 
 - **Failover:** on 429/5xx/timeout; honor Retry-After; circuit open N minutes
 - **Budgets:** daily req/token caps per free provider from env; Anthropic hard **token and USD** remaining (D-023)

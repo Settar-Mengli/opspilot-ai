@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml)
 
-**CURRENT on `main`:** B0–B6 merged (**B6** PR #44 → `eae1a9a`; Alembic **0010**; Morning Run `schedule: 0 12 * * *` + `workflow_dispatch` on default branch, workflow active; first `event=schedule` observation pending). **Next:** **B7** (owner may insert Anthropic/MCP PR first — PART 18). See:
+**CURRENT on `main`:** B0–B6 merged (**B6** PR #44 → `eae1a9a`; Alembic **0010**; Morning Run `schedule: 0 12 * * *` + `workflow_dispatch` on default branch, workflow active; first `event=schedule` observation pending). **Next on branch:** **b6.1** Anthropic operator switch (PART 19 item 1; D-023 addendum TARGET until LIVE). Then **B7**. See:
 
 - [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history, baseline, locked plan
 - [ROADMAP.md](ROADMAP.md) — batches **B0–B7** (+ B1.5 / B2.1 / B3.1)

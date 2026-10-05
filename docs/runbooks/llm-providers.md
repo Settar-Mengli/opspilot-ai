@@ -57,9 +57,57 @@ Resolution order (Gemini):
 
 **Policy-cap deviation:** Mistral (and OpenRouter/Gemini TOK_DAY policy values) are **OWNER POLICY** where daily measured RPD/TPD was missing or estimated — not pure `floor(0.8 × measured)`. Recorded in PART 7.
 
-## Anthropic (D-023)
+## Anthropic (D-023 / b6.1 TARGET → CURRENT after LIVE)
 
-`OPSPILOT_ANTHROPIC_ENABLED=false` by default. Allowlisted tasks only (`demo_quality`, `leaderboard`, `judge_calibration`). Missing `OPSPILOT_ANTHROPIC_USD_PER_MTOK_IN` / `_OUT` while enabled → **never construct client**. Rates: **VERIFY AT DECISION TIME**.
+`OPSPILOT_ANTHROPIC_ENABLED=false` by default. **Operator-only** Ask SSE + Sync drain triage when authorized (`demo_operator` cookie + ENABLED + DEMO off + prepaid ledger). Visitors / morning job / evals never call Anthropic. Missing positive `OPSPILOT_ANTHROPIC_USD_PER_MTOK_IN` / `_OUT` while enabled → never construct client. Rates: **VERIFY AT DECISION TIME** (plan baseline $1 / $5 MTok). Default model `claude-haiku-4-5-20251001`. SDK timeout default 25s (`OPSPILOT_ANTHROPIC_TIMEOUT_S`); Ask step wall remains 30s.
+
+**Ledger CLI (counts only; replaces raw SQL):**
+
+```powershell
+uv run python -m opspilot.jobs.db_host
+uv run python -m opspilot.jobs.anthropic_budget show
+uv run python -m opspilot.jobs.anthropic_budget set --tokens 100000 --usd 0.30
+# non-local hosts require: --confirm-host <label>
+```
+
+`show` prints `remaining_*`, `anthropic_rows_total`, `by_status`, `by_task`, `max_id`. Startup refuse if ENABLED ∧ DEMO_MODE. Morning `_preflight()` raises `PreflightError("anthropic_enabled")` when enabled.
+
+### STOP LIVE (operator demo; process env only — never commit `.env`)
+
+Process env on API host: `ANTHROPIC_API_KEY`, `OPSPILOT_ANTHROPIC_ENABLED=true`, rates IN/OUT, `ANTHROPIC_MODEL=claude-haiku-4-5-20251001`, `OPSPILOT_DEMO_MODE=0` (optional timeout 25). FE `http://127.0.0.1:5173`, API `http://127.0.0.1:8000`. Google-connected operator session required for Sync triage.
+
+```powershell
+# L0 host
+uv run python -m opspilot.jobs.db_host
+# L1 baseline counts
+uv run python -m opspilot.jobs.anthropic_budget show
+# record N0, MAX0
+# L2 set LIVE ledger
+uv run python -m opspilot.jobs.anthropic_budget set --tokens 100000 --usd 0.30
+# (+ --confirm-host if non-local)
+uv run python -m opspilot.jobs.anthropic_budget show
+# expect remaining_tokens=100000 remaining_usd=0.30 anthropic_rows_total=N0
+# L3 start API with STOP SECRETS process env; expect ANTHROPIC_ENABLED=1 ANTHROPIC_LEDGER=1
+# L4 operator Ask (browser cookie) → show: N1>N0; by_status success≥1; by_task ask≥1; max_id>MAX0; remaining below set
+# L5 no-cookie Ask
+Invoke-RestMethod -Method POST -Uri 'http://127.0.0.1:8000/api/v1/ask/stream' `
+  -ContentType 'application/json' `
+  -Headers @{ Origin = 'http://127.0.0.1:5173' } `
+  -Body '{"question":"ping","assistant_name":"OpsPilot","history":[]}'
+uv run python -m opspilot.jobs.anthropic_budget show
+# expect anthropic_rows_total unchanged (delta = 0)
+# L6 one-item Sync triage (browser) → by_task triage increases; remaining decreases
+# L7 exhaustion
+uv run python -m opspilot.jobs.anthropic_budget set --tokens 1 --usd 0.000001
+# operator Ask → zero new success rows; ledger unchanged; Ask still answers via free path
+# L8 flag-off restart (ENABLED unset) → Ask → anthropic_rows_total delta = 0
+# L9 morning preflight
+$env:OPSPILOT_ANTHROPIC_ENABLED = '1'
+uv run python -c "from opspilot.jobs.morning_run import _preflight; _preflight()"
+# expect PreflightError anthropic_enabled
+Remove-Item Env:OPSPILOT_ANTHROPIC_ENABLED -ErrorAction SilentlyContinue
+# L10 restore ENABLED unset; record final show counts in PART 20 (C9)
+```
 
 ## Discovery (STOP A)
 
