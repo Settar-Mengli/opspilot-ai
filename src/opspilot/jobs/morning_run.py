@@ -166,6 +166,61 @@ def _latest_gmail_run_id(session: Session) -> str | None:  # type: ignore[name-d
     return str(rid) if rid is not None else None
 
 
+def _last_brief_start(session: Session, run_id: str) -> datetime | None:  # type: ignore[name-defined]  # noqa: F821
+    """Start clock of the last job that wrote a brief for ``run_id``.
+
+    Uses COALESCE(ops_jobs.started_at, ops_jobs.created_at) for succeeded/partial
+    jobs that recorded ``run_id`` (true no-ops leave run_id null and never mark).
+    When no such ops_jobs row exists, falls back to runs.finished_at / runs.started_at
+    for pre-ops_jobs briefs only (not GREATEST'd with ops_jobs — that would hide
+    mid-window corrections saved before the brief job finished).
+    """
+    from sqlalchemy import select, text
+
+    from opspilot.persistence.models import RunRow
+
+    job_start_raw = session.execute(
+        text(
+            """
+            SELECT MAX(COALESCE(started_at, created_at))
+            FROM ops_jobs
+            WHERE run_id = :rid
+              AND status IN ('succeeded', 'partial')
+            """
+        ),
+        {"rid": run_id},
+    ).scalar()
+    # Prefer ops_jobs brief-job start; runs.* only when no ops_jobs marker (pre-B6 briefs).
+    if job_start_raw is not None:
+        return job_start_raw if isinstance(job_start_raw, datetime) else datetime.fromisoformat(str(job_start_raw))
+
+    run_row = session.execute(select(RunRow).where(RunRow.run_id == run_id)).scalar_one_or_none()
+    if run_row is None:
+        return None
+    candidates: list[datetime] = []
+    if run_row.finished_at is not None:
+        candidates.append(run_row.finished_at)
+    if run_row.started_at is not None:
+        candidates.append(run_row.started_at)
+    if not candidates:
+        return None
+    return max(candidates)
+
+
+def _has_unbriefed_corrections(session: Session, run_id: str) -> bool:  # type: ignore[name-defined]  # noqa: F821
+    """True when a triage_corrections.updated_at is newer than last brief start for run_id."""
+    from sqlalchemy import func, select
+
+    from opspilot.persistence.models import TriageCorrectionRow
+
+    last_start = _last_brief_start(session, run_id)
+    stmt = select(func.count()).select_from(TriageCorrectionRow)
+    if last_start is not None:
+        stmt = stmt.where(TriageCorrectionRow.updated_at > last_start)
+    n = session.execute(stmt).scalar()
+    return int(n or 0) > 0
+
+
 def _upsert_corrections_brief(
     session: Session,  # type: ignore[name-defined]  # noqa: F821
     run_id: str,
@@ -387,18 +442,17 @@ def run_morning(*, force_override: bool = False) -> int:
         session.flush()
         print(f"pending={pending}")
 
-        # Detect corrections-only need.
-
+        # Detect corrections-only: unbriefed triage_corrections vs last brief start.
         corrections_only = False
+        existing_run_id: str | None = None
         if pending == 0:
-            # Check if any triaged items have corrections that haven't been briefed yet.
             existing_run_id = _latest_gmail_run_id(session)
-            if existing_run_id is not None:
+            if existing_run_id is not None and _has_unbriefed_corrections(session, existing_run_id):
                 corrections_only = True
 
         # ── 9. Branch ──
         if pending == 0 and not corrections_only:
-            # Zero pending, no corrections — noop.
+            # Zero pending, no unbriefed corrections — true no-op (do not set run_id).
             update_ops_job_fields(
                 session,
                 job,
@@ -414,7 +468,6 @@ def run_morning(*, force_override: bool = False) -> int:
 
         if corrections_only:
             assert pending == 0
-            existing_run_id = _latest_gmail_run_id(session)
             assert existing_run_id is not None
             briefing = _upsert_corrections_brief(session, existing_run_id)
             update_ops_job_fields(
