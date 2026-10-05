@@ -125,7 +125,7 @@ def test_sync_started_with_pending(
     spawn_called = threading.Event()
     _orig_spawn = None
 
-    def _fake_spawn(job_id: str, generation: int, ceiling: int) -> None:
+    def _fake_spawn(job_id: str, generation: int, ceiling: int, operator_auth: object | None = None) -> None:
         spawn_called.set()
 
     monkeypatch.setattr("opspilot.api.v1.oauth_routes._spawn_sync_drain", _fake_spawn)
