@@ -20,6 +20,8 @@ from opspilot.agent.loop import CancelCheck, run_ask_agent
 from opspilot.api.csrf import require_csrf_origin
 from opspilot.api.deps import get_db_session
 from opspilot.api.schemas import AskStreamRequest
+from opspilot.llm.operator_auth import OperatorAnthropicAuth
+from opspilot.llm.routing import build_providers
 from opspilot.persistence.models import LlmCallRow
 from opspilot.persistence.repositories import oauth_credentials
 from opspilot.services.operator_session import COOKIE_NAME, verify_session
@@ -162,6 +164,11 @@ def ask_stream(
     records = _latest_triage_records(session)
     gmail_only = _google_connected(session)
     operator_email = _operator_email(http_request)
+    cookie = http_request.cookies.get(COOKIE_NAME)
+    operator_auth = OperatorAnthropicAuth.from_session(verify_session(cookie))
+    # Free path unchanged: omit providers when unauthenticated so loop.build_providers
+    # (and existing hermetic monkeypatches) remain the visitor/default path.
+    providers = build_providers(operator_auth=operator_auth, session=session) if operator_auth is not None else None
     history = [{"role": h.role, "content": h.content} for h in payload.history]
     cancel_check, stop_poller = _disconnect_poller(http_request)
 
@@ -178,6 +185,7 @@ def ask_stream(
                 request_id=rid,
                 gmail_only=gmail_only,
                 operator_email=operator_email,
+                providers=providers,
                 cancel_check=cancel_check,
             ):
                 if event.type == "token" and not ttft_done:
