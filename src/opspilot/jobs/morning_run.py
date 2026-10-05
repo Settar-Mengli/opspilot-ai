@@ -506,11 +506,14 @@ def run_morning(*, force_override: bool = False) -> int:
         if drain_result.ceiling_hit or drain_result.budget_exhausted:
             final_status = "partial"
 
+        # Recount pending after drain (Telegram / job summary; mirror Sync drain).
+        pending_after = work_items.count_gmail_untriaged(session)
         update_ops_job_fields(
             session,
             job,
             status=final_status,
             triaged=drain_result.triaged,
+            pending=pending_after,
             request_count=drain_result.request_count,
             rules_fallback_count=drain_result.rules_fallback_count,
             ceiling_hit=drain_result.ceiling_hit,
@@ -522,6 +525,7 @@ def run_morning(*, force_override: bool = False) -> int:
         session.commit()
         print(
             f"drain status={final_status} triaged={drain_result.triaged} "
+            f"pending={pending_after} "
             f"ceiling_hit={drain_result.ceiling_hit} budget_exhausted={drain_result.budget_exhausted}"
         )
         notify_morning_outcome(
