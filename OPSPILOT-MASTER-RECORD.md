@@ -1941,3 +1941,43 @@ One quiet-day `workflow_dispatch` of **Morning Run** from branch tip `b6/morning
 ### Next
 
 - Owner quiet-day dispatch on fixed tip; then PR / owner merge. Agent does not open PR or merge in this pass.
+
+## PART 17 -- B6 PR closeout (record fill + verification) -- 2026-10-05
+
+Append-only after PART 16. Does not edit PART 14/15/16 bodies. Closes record gaps called out in the post-fix verification; opens the B6 PR. Agent does not merge.
+
+### PART 16 fills (tip CI + merge-base correction)
+
+| Item | Value |
+|---|---|
+| PART 16 tip SHA | `d97e71d5b2500eb22db0225d4de0441c518ff949` |
+| Subject | docs(b6): PART 16 fix-pass record; ROADMAP and runbook SoT |
+| Push CI | [37260660831](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37260660831) **success** |
+| Merge-base correction | PART 16 pre-pass line cited merge-base with `origin/main` (`462062a`) as `2131f32` (true **before** forward-merge). **After** merge commit `c9d0e04ae495fc0b9d95106b06921c9ad5039d94`, merge-base(`b6/morning-run`, `origin/main`) = `462062a9fb0b247d331db57c8183061d02ff3c1f` (`origin/main` is an ancestor of the tip). |
+
+### Owner post-fix dispatch (quiet-day no-op semantics)
+
+| Item | Value |
+|---|---|
+| Workflow | Morning Run |
+| Run id | [37261354939](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37261354939) **success** |
+| Branch tip | `d97e71d5b2500eb22db0225d4de0441c518ff949` |
+| Log (counts/flags only) | `lease_acquired generation=10`; `sync_ok gmail_upserted=0`; `zero_pending no_brief succeeded triaged=0` |
+| Telegram (counts/flags only) | `status=succeeded`, `triaged=0`, `pending=0`, urgency 0/0/0/0, `forced=true` |
+| Force note | `force_override=true` was **deliberate**: a morning run had already succeeded that UTC day, so the non-forced same-day path was not re-run. True no-op path (`zero_pending no_brief`) still confirmed on the fixed tip. |
+
+### Independent verification (Ask-mode, post fix pass)
+
+Items **1–7 PASS** (mergeability + `morning.yml`; H1; H2; M2; tests; fix-pass file scope; CI ×7). Record gaps (tip CI row, owner dispatch evidence, merge-base after `c9d0e04`) **closed by this section**. Item 8 (PART 16 incompleteness) resolved here; item 9 had no hard code block.
+
+### Open findings carried forward (no code in this commit)
+
+1. Unexpected raise from `notify_morning_outcome` on a **success** path would enter the H2 except and mark a succeeded job `failed`.
+2. `test_zero_pending_helper_branch_no_run_no_brief` does not call `run_morning` (reimplements finalize).
+3. H2 failure test does not assert Telegram payload fields (counts/flags/`error_code` only via product code path).
+4. Corrections saved while `pending > 0`, or with no latest gmail run, wait for a later zero-pending morning (and a gmail run) before `corrections_only` brief rewrite.
+5. **DEFER (unchanged):** Connections sync-status spacing (`.cn-feat-sub`); compare `--new-states` full excuse for `dashboard-error` / `evening-error`; `gmail_upserted` rename (counts updates+inserts); M9 `promotion_hook` → eval dataset file write.
+
+### Next
+
+- Open B6 PR `b6/morning-run` → `main`. Agent does not merge.
