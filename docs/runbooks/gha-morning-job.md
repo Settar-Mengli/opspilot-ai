@@ -1,15 +1,17 @@
 # GHA morning job (D-011)
 
-In-runner morning triage on GitHub Actions. **Not** triggered on push/PR. Schedule cron lands only after owner `LIVE PASS` (C14).
+In-runner morning triage on GitHub Actions. **Not** triggered on push/PR. Schedule cron is present after owner `LIVE PASS` (C14); it runs only from the **default branch**.
 
 ## Workflow
 
 [`.github/workflows/morning.yml`](../../.github/workflows/morning.yml)
 
+- `schedule`: `0 12 * * *` (12:00 UTC = 07:00 America/Toronto standard; 08:00 during EDT)
 - `workflow_dispatch` inputs: `force_override`, `simulate_google_reauth`
 - Concurrency group `morning-run`, `cancel-in-progress: false`, timeout 30m
 - `permissions: contents: read`
 - Maps GitHub secrets → process env (see plan §11 / secrets table below)
+- **When schedule takes effect:** after the workflow file that includes `schedule` is merged to `main`. Until then, only `workflow_dispatch` on `main` (dispatch-only YAML from PR #43) can run. Branch pushes do not enable cron.
 
 ## Secrets (names only)
 
@@ -41,6 +43,6 @@ No `OPSPILOT_SESSION_SECRET` on this job.
 
 Counts, flags, error codes only — never titles, subjects, bodies, links, or briefings.
 
-## Cron (C14 only)
+## Cron (C14 — after LIVE PASS)
 
-After `LIVE PASS`: `0 12 * * *` (= 07:00 America/Toronto standard; 08:00 during EDT).
+`0 12 * * *` (= 07:00 America/Toronto standard; 08:00 during EDT). Present on `b6/morning-run` after the C14 commit; **active on GitHub only once that file is on `main`**. First scheduled fire is the next 12:00 UTC after the merge lands (GHA may delay registration briefly).
