@@ -59,7 +59,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
     - **Tests:** n/a (docs only); pytest/lint/build still green as regression.
     - **Evals:** n/a.
     - **Live smoke:** n/a for docs; key check False.
-    - **Docs:** PART 2 accepted; CUT/DEFER frozen; docs+LICENSE only on branch; PR open.
+    - **Docs:** PART 2 accepted; CUT/DEFER frozen; docs+LICENSE only on branch; **merged** to `main`.
 - **Deps:** none · **Size:** M–L · **Metric:** Architecture & roadmap locked in-repo
 
 ### B1 — Hermetic foundation, Postgres, SEC gate & /api/v1 reshape (M1)
@@ -160,7 +160,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ### B3.1 — Live leaderboard remainder (CF D5 + OpenRouter D6 partial)
 
-- **Status:** Done on branch `b3.1/live-remainder` (PR open; owner merges). **No new product scope.**
+- **Status:** Merged to `main` (PR #39 → `1a6fe7d`). **No new product scope.**
 - **Delivered:**
   - Pre-live guards (checkpoint, case selection, local-DB refuse, per-case commit, `--max-requests`); `LAST_GUARD_SHA` `0a4f5d5`.
   - **Cloudflare D5** + **CF combined** (60/60; F1 0.706 n=40; ASR 0.150 3/20).
@@ -206,7 +206,9 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
   - **Exit criteria (M8):** Cron smoke writes Neon + Telegram; no public BE required; auth-fail path alerts re-auth. **Owner LIVE PASS 2026-10-04** (PART 15) — GHA LLM triage proven (run 37247296563); reauth drill + restore; send count unchanged.
 - **Workstream M9** — P5 lite
   - **Scope:** Correction UI; Preference store; promote to eval dataset.
+  - **CURRENT on branch:** Corrections overlay + brief upsert onto latest gmail `run_id`; in-memory `promotion_hook` (unit-tested). Ask-agent dataset has 7 cases (`n_cases=7`).
   - **Exit criteria (M9):** One correction appears in eval dataset path.
+  - **M9 remainder (deferred):** `promotion_hook` → eval dataset file write / preference promotion **not** in locked W1–W10; track under M9/OPTIONAL or next owner batch (fix-pass PART 16).
 - **Batch exit criteria:**
   - **Tests:** Job unit tests with fakes; preference→eval path tested.
   - **Evals:** Promoted case appears in harness path.

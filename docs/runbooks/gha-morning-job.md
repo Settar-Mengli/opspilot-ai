@@ -43,6 +43,8 @@ No `OPSPILOT_SESSION_SECRET` on this job.
 
 Counts, flags, error codes only — never titles, subjects, bodies, links, or briefings.
 
+`gmail_upserted` counts **updates and inserts** (not inserts-only). Rename deferred.
+
 ## Cron (C14 — after LIVE PASS)
 
 `0 12 * * *` (= 07:00 America/Toronto standard; 08:00 during EDT). Present on `b6/morning-run` after the C14 commit; **active on GitHub only once that file is on `main`**. First scheduled fire is the next 12:00 UTC after the merge lands (GHA may delay registration briefly).

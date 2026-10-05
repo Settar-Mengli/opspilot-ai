@@ -1870,3 +1870,74 @@ Unblocked `workflow_dispatch` after HTTP 404 "not found on the default branch".
 
 - SoT docs (ROADMAP / README / CHANGELOG / architecture) updated in a following commit on this branch.
 - B6 PR / owner merge -- not this commit. Agent does not merge.
+
+## PART 16 -- B6 fix pass (post LIVE PASS audit) -- 2026-10-04
+
+Append-only after PART 15. Does not edit PART 14/15 bodies. Agent fix pass on `b6/morning-run`; **stops before PR**. Owner quiet-day `workflow_dispatch` is **not** recorded here — append that evidence in the later PR / closeout step.
+
+### Pre-pass tip / merge-base
+
+| Item | Value |
+|---|---|
+| Pre-pass tip | `5514e0d` (SoT docs after LIVE PASS) |
+| Merge-base with `origin/main` (`462062a`) | `2131f32` |
+| PART 14 tip CI | `82c5bc3` → [37223287977](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37223287977) **success** |
+
+### M1 forward-merge
+
+| Item | Value |
+|---|---|
+| Merge commit | `c9d0e04ae495fc0b9d95106b06921c9ad5039d94` |
+| Merged | `origin/main` @ `462062a` (PR #43 dispatch-only `morning.yml`) |
+| Conflict | add/add on `.github/workflows/morning.yml` |
+| Resolution | **kept b6** file: `schedule: cron: "0 12 * * *"` + `workflow_dispatch` |
+| Push CI | [37256722986](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37256722986) **success** (Backend / Frontend / UI Tests / Gitleaks) |
+
+### Fix commits + CI
+
+| SHA | Subject | CI run | Result |
+|---|---|---|---|
+| `c9d0e04ae495fc0b9d95106b06921c9ad5039d94` | merge(main): forward-merge 462062a; keep b6 morning.yml schedule | [37256722986](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37256722986) | success |
+| `2d86fa2c7931f9f9060a146a2fcbf7361ca7ea44` | fix(b6): corrections_only only when unbriefed triage_corrections exist | [37257436873](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37257436873) | success |
+| `b56e506c64fe0264a6c9e3278f7c0cd3c0135790` | fix(b6): release lease and mark failed on morning_run exceptions | [37258055016](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37258055016) | success |
+| `043cf671ec1f15c78617b08c61244e186ae4ca5e` | fix(b6): recount ops_jobs.pending after morning drain | [37258662385](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37258662385) | success |
+| `b61dd7de1232c07d68e4ade5063a0b3e3355f25c` | test(b6): use fictional example.test addresses in draft_reply_ids | [37259233858](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37259233858) | success |
+| `0aeb61d8c3ed3e831a53f9e60cca523eff42c067` | docs(evals): set ask_agent v1 manifest n_cases to 7 | [37259758375](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37259758375) | success |
+| _(this commit)_ | docs(b6): PART 16 fix-pass record; ROADMAP/runbook SoT | _(fill after push)_ | _(pending)_ |
+
+### H1 — corrections_only (implemented)
+
+Marker clock: `MAX(COALESCE(ops_jobs.started_at, ops_jobs.created_at))` for `ops_jobs` with `run_id = :rid` and `status IN ('succeeded','partial')`. True no-op never sets `run_id`, so it does not advance the marker. When no such ops_jobs row exists, fallback to `runs.finished_at` / `runs.started_at` for the same `run_id` (pre-ops_jobs briefs only — not GREATEST'd with ops_jobs, so mid-window corrections are not hidden).
+
+`corrections_only` ⇔ `pending == 0` AND latest gmail `run_id` non-null AND EXISTS `triage_corrections` with `updated_at > last_brief_start` (or any correction if marker is null).
+
+### H2 — failure cleanup order (implemented)
+
+1. Capture `original`; log. 2. Best-effort `rollback`. 3. Cleanup txn: `status=failed`, `error_code=morning_run_error`, `finished_at`, gen-fenced `release_lease` if acquired, `commit`. 4. Best-effort `notify_morning_outcome(..., "failed")` (Telegram must not mask `original` or undo cleanup). 5. Re-raise `original`. Telegram payload: counts/flags/`error_code` only.
+
+### Audit finding dispositions
+
+| Finding | Disposition |
+|---|---|
+| (a) / H1 corrections_only always true when gmail run exists | **FIXED** (`2d86fa2`) |
+| (b) / H2 crash leaves lease held | **FIXED** (`b56e506`) |
+| (c) / M2 Telegram pending pre-drain | **FIXED** (`043cf67`) |
+| (d) / H3 `*.gmail.com` in draft_reply_ids test | **FIXED** (`b61dd7d` → `*.example.test`) |
+| (e) / M5 ask_agent `n_cases` 6 vs 7 lines | **FIXED** (`0aeb61d`) |
+| M1 forward-merge vs main dispatch-only YAML | **FIXED** (`c9d0e04`; kept b6 schedule) |
+| M4 promotion_hook → eval dataset file write | **DEFER** — not in locked W1–W10; ROADMAP M9 remainder |
+| Connections `.cn-feat-sub` flush under Disconnect | **DEFER** — baseline change; needs new VISUAL APPROVED |
+| Compare `--new-states=dashboard-error,evening-error` full excuse | **DEFER** — record only |
+| `gmail_upserted` rename | **DEFER** — runbook note only (counts updates+inserts) |
+
+### Baselines
+
+No committed PNG changes; no `MAX_DIFF_PIXELS` edits in this fix pass.
+
+### Owner step (list only; not run in this PART)
+
+One quiet-day `workflow_dispatch` of **Morning Run** from branch tip `b6/morning-run` (`force_override=false`, `simulate_google_reauth=false`). Expected: true no-op (`pending=0`, job `run_id` null, lease released, Telegram succeeded/triaged=0/pending=0) unless unbriefed corrections exist. **Evidence appends at PR / closeout — not in this commit.**
+
+### Next
+
+- Owner quiet-day dispatch on fixed tip; then PR / owner merge. Agent does not open PR or merge in this pass.
