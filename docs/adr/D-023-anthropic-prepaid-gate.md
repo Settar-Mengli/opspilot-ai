@@ -55,3 +55,21 @@ Allowlist tasks: `demo_quality`, `leaderboard`, `judge_calibration` — **never*
 ## Addendum (B3, 2026-09-30)
 
 - B3 leaderboard Anthropic column is documented as **`skipped`** (lock P7). **No Anthropic HTTP** in B3; zero-spend. Optional prepaid column remains future (D-018 historical AC superseded for B3 by P7).
+
+## Addendum (b6.1 operator switch, 2026-10-05) — TARGET until C9
+
+Status of this addendum: **TARGET** (not CURRENT). CURRENT flips happen only in C9 after owner LIVE. Until then, B2/B3 addenda above remain the runtime contract on `main`.
+
+**Scope (TARGET):** Operator-authorized Anthropic for **Ask SSE** and **Sync drain triage** only. Off by default. Never visitors. Never morning job. Never tests/CI live calls.
+
+**Auth (TARGET):** Request-scoped `OperatorAnthropicAuth` minted only via `from_session` from Ask and Sync routes after `verify_session` returns a `demo_operator` session. Soft-skip Anthropic (free path serves) when auth absent.
+
+**Gate order (TARGET):** operator_auth → ENABLED → DEMO off → task in `{ask, triage}` → model allowlist → positive USD rates → `est_input` ≤ 16384 → SDK client constructible (`max_retries=0`, timeout default 25s) → ledger row exists → atomic reserve.
+
+**Ledger (TARGET):** `anthropic_prepaid_budget` id=1 is SoT. CLI `show`/`set` sole writer (no env seed). Pre-call reserve + LlmCall open row (`status=error`, `error_code=anthropic_reserved`); reconcile refunds/keeps/excess in one transaction. Rates: env `OPSPILOT_ANTHROPIC_USD_PER_MTOK_IN`/`_OUT` (VERIFY AT DECISION TIME; plan baseline $1/$5 MTok). Default model `claude-haiku-4-5-20251001`.
+
+**Startup (TARGET):** `OPSPILOT_ANTHROPIC_ENABLED` ∧ `OPSPILOT_DEMO_MODE` → refuse to start. Startup config prints `ANTHROPIC_LEDGER=1` when ledger row present.
+
+**B7 note (TARGET):** Public host never has `ANTHROPIC_API_KEY` or enable flag.
+
+**Supersedes (when CURRENT):** B2 addendum allowlist that excludes `ask`; env `OPSPILOT_ANTHROPIC_BUDGET_TOKENS`/`_USD` as runtime gate/seed.
