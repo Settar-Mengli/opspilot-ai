@@ -2103,3 +2103,93 @@ Truth-align only (false CURRENT claims): `ROADMAP.md`, `README.md`, `CHANGELOG.m
 
 - Owner merges this docs PR. Agent does not merge.
 - First `schedule` Morning Run on `main`: append run id + conclusion when observed (later PART or owner note).
+
+## PART 19 -- Owner decisions 2026-10-05 -- 2026-10-05
+
+Append-only after PART 18. Does not edit PART 18 (or earlier) bodies, ADR bodies, or product code. Docs-only record of owner decisions made 2026-10-05. All items below are **TARGET** until each batch is planned and shipped; each batch amends its own ADRs when planned.
+
+### PR #45 merge facts (PART 18 closeout on main)
+
+| Item | Value |
+|---|---|
+| PR | [#45](https://github.com/Settar-Mengli/opspilot-ai/pull/45) |
+| Title | docs(b6): PART 18 merge closeout after PR #44 |
+| Merge SHA | `247c3983a720b6bc488397c3b507254a2af2e7f4` |
+| Merged at | 2026-10-05T05:14:00Z |
+| Merge CI | [37266857889](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37266857889) **success** |
+
+### Remaining order (TARGET)
+
+Owner decision 2026-10-05. Supersedes the owner-pending order sketched in PART 18 for sequencing only (PART 18 body not edited).
+
+1. Anthropic operator switch
+2. B7 public deploy
+3. MCP connection to GitHub
+4. Final general cleanup
+5. Demo recording
+
+### 1. Anthropic operator switch (TARGET)
+
+Owner wants to use his Anthropic API when recording the demo, for speed.
+
+Intent (TARGET; not implemented this PART):
+
+- Operator-only
+- Off by default
+- Never reachable by visitors
+- Hard spend cap
+- Covers Ask and triage for the operator session
+
+**ADR note (TARGET):** Requires an amendment to D-023 (CURRENT D-023 excludes ask). The amendment is written when that batch is planned — not in this PART. Model ids and pricing are verified at the source at that time. No model ids or prices recorded here.
+
+### 2. B7 public deploy — additions (TARGET)
+
+Additions to B7 scope (TARGET; B7 batch plan writes ADRs/exit criteria when planned):
+
+- Public site is **not** open to everyone. Access is by a code the owner gives to recruiters: per-recipient, expiring, revocable; rate limits and a daily cap behind it.
+- Code holders get fictional demo data only: never the operator mailbox, no Gmail connect, no send.
+- README presentation uses the existing Playwright screenshots.
+- Security is the priority.
+
+**Data-handling and trust workstream (TARGET):**
+
+- What mail data leaves the app and to which providers
+- Provider training/retention terms verified at the source (at decision/build time — not invented here)
+- Data minimization
+- A rules-only private mode
+- Deletion on disconnect
+- A plain-language data-handling page
+
+### 3. MCP connection to GitHub (TARGET)
+
+PART 2 CUT of MCP client is **reversed by owner decision for one scope only** (this PART records the decision; ADR amendment when that batch is planned):
+
+- OpsPilot as an **MCP client**
+- **ONE** read-only connection to **GitHub**
+- Using an **official** server
+- Off by default
+- Built **after B7** on its own branch
+
+Rationale: no other portfolio project shows MCP. Slack was considered and set aside as harder. An MCP server exposing OpsPilot was considered and **not** chosen.
+
+Other MCP / CUT items from PART 2 remain CUT unless separately decided.
+
+### 4. Final general cleanup (TARGET)
+
+Delete stale scratch branches and anything extra or unneeded across the repo. Done **only after** all batches above are complete.
+
+### 5. Demo recording (TARGET)
+
+After the preceding items; no further scope locked in this PART beyond sequencing.
+
+### Docs this PART
+
+- `OPSPILOT-MASTER-RECORD.md` (this PART)
+- `ROADMAP.md` — remaining-order section + MCP CUT/DEFER supersession note for the stated scope only
+
+No product code, tests, workflows, ADR body edits, or earlier PART edits.
+
+### Next
+
+- Owner merges this docs PR. Agent does not merge.
+- Plan/build each TARGET item in the order above; each batch amends its own ADRs when planned.
