@@ -1,6 +1,6 @@
 # OpsPilot Architecture
 
-**Dualism:** Sections labeled **CURRENT after B5 merge** describe behavior once B5 lands on `main` (agentic Ask + HITL send) plus **B3.1** live leaderboard closeout already on `main`. Until B5 merges, treat B5 bullets as **branch CURRENT** (not yet on `main`). Sections labeled **TARGET** describe the remaining locked rebuild (**B6–B7** only). Do not present TARGET as shipped.
+**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B5** (PR #40 → `2131f32`) plus dispatch-only Morning Run on `main` (PR #43). Sections labeled **CURRENT on B6 branch** describe `b6/morning-run` (LIVE PASS; not yet on `main`). Sections labeled **TARGET** describe the remaining locked rebuild (**B6 merge closeout + B7**). Do not present TARGET or unmerged branch work as shipped on `main`.
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
@@ -17,9 +17,9 @@ Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs
 
 ---
 
-## CURRENT (B1–B4 on main; B5 on branch — CURRENT after B5 merge)
+## CURRENT (B1–B5 on main; B6 on branch)
 
-Verified through **B5** branch (cut from `main` @ `1a6fe7d` after B3.1 merge; **not yet on main**): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, Alembic head **0009** (expand-only on `mail_send_audit`), `/api/v1` with envelope, FE on `/api/v1`, coverage fail-under **72**, Node ≥24.15 / Python 3.13 / uv.
+Verified through **B5** on `main` (PR #40 → `2131f32`): hermetic pytest (socket block + `OPSPILOT_FORCE_RULES`), Postgres via Compose/CI, **sync** SQLAlchemy 2 + `psycopg`, Alembic head **0009** on `main` (expand-only on `mail_send_audit`; **0010** on `b6/morning-run` / Neon owner-applied), `/api/v1` with envelope, FE on `/api/v1`, coverage fail-under **72**, Node ≥24.15 / Python 3.13 / uv.
 
 **B1.5a:** Playwright visual/e2e/axe safety net with container-only `-linux` baselines; CSS partials; `useOverlay`; D-026/D-027.
 
@@ -35,7 +35,9 @@ Verified through **B5** branch (cut from `main` @ `1a6fe7d` after B3.1 merge; **
 
 **B3.1 (CURRENT):** live guards; CF D5 + CF combined 60/60; OpenRouter partial D6; merge SHA **`1a6fe7d`** (PR #39).
 
-**B5 (CURRENT after B5 merge):** `opspilot.agent` JSON-emulated tool loop (D-031); caps 5/8; `POST /ask/stream` SSE (D-032); HITL mail draft edit/approve + allowlist + DEMO_MODE (D-033); `gmail.send`; deleted-message sync; Alembic **0008**/**0009** (`mail_drafts`, `mail_send_audit` + failed/error_code); hermetic `ask_agent` + `redteam_agent` evals.
+**B5 (CURRENT on main):** `opspilot.agent` JSON-emulated tool loop (D-031); caps 5/8; `POST /ask/stream` SSE (D-032); HITL mail draft edit/approve + allowlist + DEMO_MODE (D-033); `gmail.send`; deleted-message sync; Alembic **0008**/**0009** (`mail_drafts`, `mail_send_audit` + failed/error_code); hermetic `ask_agent` + `redteam_agent` evals.
+
+**B6 (CURRENT on branch `b6/morning-run`; LIVE PASS 2026-10-04; not on main):** in-runner GHA `morning_run` + Telegram counts-only; Sync **202**/poll drain + ops_jobs lease/reap/fence; triage corrections overlay; failed-draft reopen; F-05 prepaid ledger plumbing (Anthropic still off); Alembic **0010**; C14 cron `0 12 * * *` in workflow YAML (fires only after merge to default branch). On `main` today: dispatch-only `morning.yml` (PR #43).
 
 ### Endpoints (CURRENT) — `/api/v1`
 
@@ -57,6 +59,8 @@ Primary surface is **`/api/v1/*`**. Legacy unversioned routes were removed in B1
 | DELETE | `/api/v1/oauth/google` |
 | POST | `/api/v1/sync` |
 | GET | `/api/v1/calendar/week` |
+
+**B6 branch also:** Sync **202** + job poll; corrections routes; draft reopen; settings job summary (see OpenAPI on `b6/morning-run`).
 
 Notable: **no** `PATCH` settings. Pipeline runs **in-process** (no CLI subprocess).
 
@@ -137,7 +141,7 @@ Full audit: [docs/audits/2026-09-25-baseline-audit.md](audits/2026-09-25-baselin
 
 ## TARGET
 
-Remaining locked rebuild after **B5**: **B6–B7** (morning job + public deploy). Agent Ask + HITL send are **branch CURRENT** on `b5/agentic-ask` (PR #40) until merge to `main` — see dualism at top of this file. Package layout notes below still guide B6+ prefs/admin splits.
+Remaining locked rebuild after **B5 on main**: finish **B6** merge (morning job + cron on default branch) then **B7** (public deploy). B6 LIVE PASS is recorded on branch — see dualism at top of this file. Package layout notes below still guide B6+ prefs/admin splits.
 
 ### Package layout + dependency rules (D-024)
 
@@ -323,9 +327,9 @@ Datasets under `evals/datasets/` (fictional). Metrics: precision/recall/F1, conf
 
 ### Jobs / scheduling
 
-**CURRENT:** Manual CLI/API only; no in-app scheduler. Local Windows Task Scheduler remains a valid **dev** path.
+**CURRENT on main:** Manual CLI/API still the local path; GitHub Actions **Morning Run** exists as **workflow_dispatch only** (PR #43). No in-app scheduler. Local Windows Task Scheduler remains a valid **dev** path.
 
-**TARGET B6 (D-011):** GitHub Actions cron runs `morning_run` **inside the runner** (install package; GHA secrets for Gemini/Groq, Neon URL, Telegram token, token-encryption key; Google refresh token read encrypted from Neon). Writes Neon; notifies Telegram. **No public backend** before B7. Fail fast if Neon schema ≠ Alembic head; migrations are operator-applied, never by cron. Auth failure → skip sync, brief from existing data, Telegram re-auth alert.
+**CURRENT on B6 branch (D-011):** `morning.yml` has `schedule: 0 12 * * *` plus `workflow_dispatch` (C14 after LIVE PASS). In-runner `morning_run` (secrets → env; Google refresh from Neon; Telegram counts-only). Fail fast if Neon schema ≠ Alembic head; migrations operator-applied, never by cron. Auth-fail drill via `simulate_google_reauth`. **Schedule activates only after this YAML is on `main`.**
 
 **TARGET B7:** Public deploy; optional HMAC webhook wake of deployed API (X2).
 
