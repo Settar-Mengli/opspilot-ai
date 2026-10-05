@@ -6,6 +6,7 @@ from decimal import Decimal
 from typing import Any
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from opspilot.llm.operator_auth import OperatorAnthropicAuth
@@ -18,6 +19,12 @@ from opspilot.persistence.repositories.anthropic_budget import (
     reconcile_reservation,
     set_budget,
 )
+
+
+def _anthropic_rows(session: Session) -> list[LlmCallRow]:
+    return list(
+        session.scalars(select(LlmCallRow).where(LlmCallRow.provider == "anthropic").order_by(LlmCallRow.id)).all()
+    )
 
 
 def _auth() -> OperatorAnthropicAuth:
@@ -200,9 +207,9 @@ def test_4xx_full_refund(monkeypatch: pytest.MonkeyPatch, db_session: Session) -
 
 
 def test_pre_send_full_refund(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
-    """Real pre-send failure: APIConnectionError (SDK 1.8.0 L95) → full refund."""
+    """APIConnectionError with httpx2.ConnectError cause → full refund (connect-phase)."""
     import anthropic
-    import httpx
+    import httpx2
 
     _enable(monkeypatch)
     set_budget(db_session, tokens=1000, usd=Decimal("1"))
@@ -210,8 +217,11 @@ def test_pre_send_full_refund(monkeypatch: pytest.MonkeyPatch, db_session: Sessi
 
     class _Messages:
         def create(self, **_k: Any) -> Any:
-            req = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
-            raise anthropic.APIConnectionError(message="Connection refused", request=req)
+            req = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+            try:
+                raise httpx2.ConnectError("Connection refused")
+            except httpx2.ConnectError as err:
+                raise anthropic.APIConnectionError(message="Connection error.", request=req) from err
 
     class _Client:
         messages = _Messages()
@@ -223,6 +233,72 @@ def test_pre_send_full_refund(monkeypatch: pytest.MonkeyPatch, db_session: Sessi
     assert row is not None
     assert row.remaining_tokens == 1000
     assert row.remaining_usd == Decimal("1")
+    rows = _anthropic_rows(db_session)
+    assert len(rows) == 1
+    assert rows[0].status == "error"
+
+
+def test_api_connection_error_with_read_error_cause_keeps_reservation(
+    monkeypatch: pytest.MonkeyPatch, db_session: Session
+) -> None:
+    """APIConnectionError with ReadError cause → keep (post-send / mid-transfer)."""
+    import anthropic
+    import httpx2
+
+    _enable(monkeypatch)
+    set_budget(db_session, tokens=1000, usd=Decimal("1"))
+    db_session.commit()
+
+    class _Messages:
+        def create(self, **_k: Any) -> Any:
+            req = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+            try:
+                raise httpx2.ReadError("connection reset while reading")
+            except httpx2.ReadError as err:
+                raise anthropic.APIConnectionError(message="Connection error.", request=req) from err
+
+    class _Client:
+        messages = _Messages()
+
+    provider = AnthropicProvider(operator_auth=_auth(), session=db_session, client=_Client())
+    result = provider.complete(task="ask", messages=[Message(role="user", content="hi")], max_tokens=16)
+    assert result.status is AttemptStatus.ERROR
+    row = get_budget(db_session)
+    assert row is not None
+    assert row.remaining_tokens < 1000
+    rows = _anthropic_rows(db_session)
+    assert len(rows) == 1
+    assert rows[0].status == "error"
+
+
+def test_api_connection_error_without_cause_keeps_reservation(
+    monkeypatch: pytest.MonkeyPatch, db_session: Session
+) -> None:
+    """APIConnectionError with no __cause__ → keep (cannot prove connect-phase)."""
+    import anthropic
+    import httpx2
+
+    _enable(monkeypatch)
+    set_budget(db_session, tokens=1000, usd=Decimal("1"))
+    db_session.commit()
+
+    class _Messages:
+        def create(self, **_k: Any) -> Any:
+            req = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+            raise anthropic.APIConnectionError(message="Connection error.", request=req)
+
+    class _Client:
+        messages = _Messages()
+
+    provider = AnthropicProvider(operator_auth=_auth(), session=db_session, client=_Client())
+    result = provider.complete(task="ask", messages=[Message(role="user", content="hi")], max_tokens=16)
+    assert result.status is AttemptStatus.ERROR
+    row = get_budget(db_session)
+    assert row is not None
+    assert row.remaining_tokens < 1000
+    rows = _anthropic_rows(db_session)
+    assert len(rows) == 1
+    assert rows[0].status == "error"
 
 
 def test_401_full_refund(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:

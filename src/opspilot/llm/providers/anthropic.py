@@ -110,6 +110,27 @@ def gate_reason(
     return None
 
 
+def _is_connect_phase_cause(cause: BaseException | None) -> bool:
+    """True only when SDK wrapped a connect-phase failure (httpx2.ConnectError).
+
+    Anthropic 1.8.0 ``_base_client.py`` L1311–1317 (sync) / L2039–2045 (async)::
+
+        except Exception as err:
+            ...
+            raise APIConnectionError(request=request) from err
+
+    Connect-phase type: ``httpx2.ConnectError`` (``httpx2/_exceptions.py`` L187).
+    ReadError / RemoteProtocolError / WriteError / missing / unknown → not connect.
+    """
+    if cause is None:
+        return False
+    try:
+        import httpx2
+    except ImportError:  # pragma: no cover
+        return False
+    return isinstance(cause, httpx2.ConnectError)
+
+
 def _classify_attempt_outcome(exc: BaseException) -> tuple[AttemptStatus, str, str]:
     """Classify ledger_op for an exception after reservation.
 
@@ -120,9 +141,9 @@ def _classify_attempt_outcome(exc: BaseException) -> tuple[AttemptStatus, str, s
       UnprocessableEntityError L159, RateLimitError L163)
     - APIStatusError 5xx → keep (ServiceUnavailableError L167, OverloadedError L171,
       DeadlineExceededError L175, InternalServerError L179)
-    - APIConnectionError L95–97 (not timeout) → refund (connection refused / DNS /
-      connect failure — request not proven sent)
-    - APITimeoutError L100–105 → keep (connect vs read timeout not distinguishable)
+    - APITimeoutError L100–105 → keep
+    - APIConnectionError L95–97 → refund ONLY if ``__cause__`` is httpx2.ConnectError
+      (see ``_is_connect_phase_cause`` / ``_base_client.py`` L1317); else keep
     - CredentialsError L117–119 → refund (client credentials load, pre-send)
     - TypeError / ValueError → refund (client build / serialization, pre-send)
     - Anything else → keep (fail closed)
@@ -142,12 +163,14 @@ def _classify_attempt_outcome(exc: BaseException) -> tuple[AttemptStatus, str, s
         # Credentials cannot be loaded — never reached the wire
         if isinstance(exc, getattr(anthropic, "CredentialsError", ())):
             return AttemptStatus.ERROR, name, "refund"
-        # Timeout: ambiguous connect vs read → keep (cannot classify with certainty)
+        # Timeout: keep (unchanged)
         if isinstance(exc, getattr(anthropic, "APITimeoutError", ())):
             return AttemptStatus.TIMEOUT, name, "keep"
-        # Connection refused / DNS / connect failure — provably not sent
+        # Connection: refund only for connect-phase cause (ConnectError)
         if isinstance(exc, getattr(anthropic, "APIConnectionError", ())):
-            return AttemptStatus.ERROR, name, "refund"
+            if _is_connect_phase_cause(exc.__cause__):
+                return AttemptStatus.ERROR, name, "refund"
+            return AttemptStatus.ERROR, name, "keep"
         # HTTP status errors
         if isinstance(exc, getattr(anthropic, "APIStatusError", ())):
             status_code = getattr(exc, "status_code", None)
@@ -173,8 +196,11 @@ def _classify_attempt_outcome(exc: BaseException) -> tuple[AttemptStatus, str, s
     lower = name.lower()
     if "timeout" in lower or "timedout" in lower or "api_timeout" in lower:
         return AttemptStatus.TIMEOUT, name, "keep"
-    if "apiconnectionerror" in lower or "connectionerror" in lower:
-        return AttemptStatus.ERROR, name, "refund"
+    # Duck-typed APIConnectionError: refund only with ConnectError cause
+    if "apiconnectionerror" in lower:
+        if _is_connect_phase_cause(exc.__cause__):
+            return AttemptStatus.ERROR, name, "refund"
+        return AttemptStatus.ERROR, name, "keep"
     return AttemptStatus.ERROR, name, "keep"
 
 
