@@ -336,6 +336,8 @@ def run_morning(*, force_override: bool = False) -> int:
     engine = create_engine(get_database_url())
     factory = create_session_factory(engine)
     session: Session = factory()
+    job_id: str | None = None
+    generation: int | None = None
 
     try:
         # ── 3. Reap stale/orphan jobs ──
@@ -350,9 +352,10 @@ def run_morning(*, force_override: bool = False) -> int:
             print("day_claim_blocked (already succeeded/running today)")
             session.commit()
             return 0
+        job_id = job.id
         session.commit()
         session.expire_all()
-        job = session.get(type(job), job.id)
+        job = session.get(type(job), job_id)
         assert job is not None
         print(f"job_id={job.id} kind={job.job_kind} force={job.force_override}")
 
@@ -377,7 +380,7 @@ def run_morning(*, force_override: bool = False) -> int:
             return 1
         session.commit()
         session.expire_all()
-        job = session.get(type(job), job.id)
+        job = session.get(type(job), job_id)
         assert job is not None
         print(f"lease_acquired generation={generation}")
 
@@ -528,12 +531,37 @@ def run_morning(*, force_override: bool = False) -> int:
         )
         return 0
 
-    except Exception:
+    except Exception as original:
+        logger.exception("morning_run failed job_id=%s", job_id or "-")
         try:
             session.rollback()
         except Exception:  # noqa: BLE001
-            pass
-        raise
+            logger.exception("morning_run rollback failed")
+        # Cleanup must run even if notify later fails; never mask ``original``.
+        try:
+            if job_id is not None:
+                from opspilot.persistence.models import OpsJobRow
+                from opspilot.persistence.repositories.ops_jobs import update_ops_job_fields
+
+                failed_job = session.get(OpsJobRow, job_id)
+                if failed_job is not None:
+                    update_ops_job_fields(
+                        session,
+                        failed_job,
+                        status="failed",
+                        error_code="morning_run_error",
+                        finished_at=datetime.now(UTC),
+                    )
+                    if generation is not None:
+                        release_lease(session, job_id, generation)
+                    session.commit()
+                    try:
+                        notify_morning_outcome(job_id, "failed")
+                    except Exception:  # noqa: BLE001
+                        logger.exception("telegram notify failed during morning failure cleanup")
+        except Exception:  # noqa: BLE001
+            logger.exception("morning failure cleanup failed job_id=%s", job_id or "-")
+        raise original
     finally:
         session.close()
         engine.dispose()
