@@ -281,6 +281,7 @@ class AnthropicProvider:
                 model=resolved,
                 error_code=err,
                 latency_ms=latency,
+                meta={"ledger_row_owned": True} if call_id is not None else {},
             )
 
         text_parts = [b.text for b in resp.content if getattr(b, "type", None) == "text"]
@@ -320,6 +321,7 @@ class AnthropicProvider:
             output_tokens=tout,
             latency_ms=int((time.perf_counter() - started) * 1000),
             raw={"usd_estimate": str(actual_usd)},
+            meta={"ledger_row_owned": True} if call_id is not None else {},
         )
 
     def complete_json(
