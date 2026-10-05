@@ -1760,3 +1760,113 @@ B6 new states: tol 28. Measurement: update runs 37162007920 vs 37199718443 measu
 - C12 (morning.yml) landed before VISUAL APPROVED (workflow/docs only).
 - C9-C11 collapsed to one commit per owner (visual.spec.ts single file).
 - No C14 / no PR / no live calls in this PART.
+
+## PART 15 -- B6 LIVE PASS + C14 -- 2026-10-04
+
+Append-only after PART 14. Does not edit PART 14. Fills gaps required by the B6 plan PART outline and records owner LIVE PASS evidence.
+
+### PART 14 opening -- verification (report; PART 14 left unchanged)
+
+Plan requirement for B6 first PART opening (PART 14):
+
+| Required fact | In PART 14 opening? | Evidence |
+|---|---|---|
+| B5 merge PR #40 | Yes (summary line) | PART 14 Summary |
+| Merge SHA `2131f32` | Yes (as branch base) | `2131f32` = `Merge pull request #40 from Settar-Mengli/b5/agentic-ask` |
+| Merge CI `37070730054` success | Yes | PART 14 Summary |
+| Tip fill `9957cf4` push `37067782386` / PR `37067788923` | **No** | Still `_(tip)_` placeholder in PART 13 live-smoke CI table; filled below |
+
+### B5 merge facts (record for B6 first PART gap fill)
+
+| Item | Value |
+|---|---|
+| PR | [#40](https://github.com/Settar-Mengli/opspilot-ai/pull/40) |
+| Merge SHA | `2131f32ed351bf41e4702eac7a92b17865064d1d` |
+| Merge CI | [37070730054](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37070730054) **success** |
+
+### PART 13 tip CI fill-in (was `_(tip)_` for live-smoke records commit)
+
+| Item | Value |
+|---|---|
+| Tip SHA | `9957cf492c82f52c599a29352295ecefe63fba1a` |
+| Subject | docs(b5): record live smoke runs (1 real send, PASS); B5 ready for owner merge |
+| Push CI | [37067782386](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37067782386) **success** |
+| PR CI | [37067788923](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37067788923) **success** |
+
+Historical `_(tip)_` rows in PART 13 left unchanged (append-only).
+
+### Owner quotes (verbatim)
+
+- `SECRETS SET` (2026-10-04): All 12 GitHub secrets referenced by `.github/workflows/morning.yml` are set (names verified with `gh secret list`). Record this quote for PART 14.
+- `LIVE PASS` (2026-10-04): owner-run STOP LIVE evidence below; agent did not re-run live steps.
+
+### PR #43 (dispatch-only morning.yml on main)
+
+Unblocked `workflow_dispatch` after HTTP 404 "not found on the default branch".
+
+| Item | Value |
+|---|---|
+| PR | [#43](https://github.com/Settar-Mengli/opspilot-ai/pull/43) |
+| Title | ci: add dispatch-only morning.yml on main for STOP LIVE |
+| Merge SHA | `462062a9fb0b247d331db57c8183061d02ff3c1f` |
+| Merged at | 2026-10-04T20:34:30Z |
+| PR/push CI (pre-merge) | [37231430781](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37231430781), [37231444742](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37231444742) **success** |
+| Merge CI on main | [37232624888](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37232624888) **success** |
+
+### Neon / Alembic (owner)
+
+- Neon host label: `ep-withered-dew-b528cx5k-pooler`
+- Alembic: `0009_mail_send_audit_failed` -> `0010_ops_jobs_corrections_budget` applied by owner
+- Migration run **before** interactive Sync (new Sync code needs 0010 tables) -- deviation from checklist order (checklist had Sync cleanup before migration confirmation order; owner inverted so Sync would not fail on missing tables)
+
+### Demo inbox + local Sync (owner)
+
+- Demo inbox: 1 real third-party mail archived; not present in All Items afterwards
+- Local API Sync against Neon: +4 mail, triaging 4 pending, then triaged 4 (0 pending); 202 + poll path observed in the UI
+
+### GHA Morning Run evidence (owner; all success; Telegram counts-only)
+
+| Run id | Notes | Counts / flags |
+|---|---|---|
+| 37232627000 | happy path | gmail_upserted=0, corrections_only, reauth_needed=false, forced=false |
+| 37236553002 | forced | gmail_upserted=0 |
+| 37236733400 | forced | lease generation 4, gmail_upserted=0 |
+| 37236903160 | forced | lease generation 6, gmail_upserted=0 (local API still running; its Sync drain took generation 5 and triaged the test mail first) |
+| 37247296563 | forced, local API stopped | gmail_upserted=2, triaged=2, pending=2, rules_fallback_count=0 -- **LLM triage in GHA proven** |
+| 37247424719 | drill simulate_google_reauth=true | reauth_needed=true, gmail_upserted=0 |
+| 37247520322 | restore | reauth_needed=false |
+
+### Mail send audit + spend (owner)
+
+- `mail_send_audit` successful sends: 2 before, 2 after (unchanged)
+- Zero paid spend; Anthropic disabled
+
+### C14 (this batch; after LIVE PASS)
+
+| Item | Value |
+|---|---|
+| Commit | `9b4783046ebef2b0e7d0228e813d0b5e6f894611` |
+| Change | `schedule: cron: "0 12 * * *"` added; `workflow_dispatch` kept |
+| Runbook | `docs/runbooks/gha-morning-job.md` updated |
+| Push CI | [37248140191](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37248140191) **success** |
+| When schedule takes effect | Only after the C14 workflow file (with `schedule`) is on **default branch `main`**. Until B6 merges, `main` still has PR #43 dispatch-only YAML. Branch cron does not fire. First scheduled fire = next 12:00 UTC after that merge (GHA may delay registration briefly). |
+
+### Deviations
+
+1. **C13 before STOP LIVE** -- PART 14 / gallery closeout written and committed before owner LIVE PASS (plan order was LIVE then C14; C13 docs landed at STOP VISUAL closeout).
+2. **Migration before Sync** -- Alembic 0010 applied before interactive Sync (required by new Sync tables; checklist order inverted).
+3. **Local API interference** -- while local API Sync drain held lease generation 5, forced morning runs saw gmail_upserted=0 / corrections_only until local API was stopped; run 37247296563 then proved GHA LLM triage.
+4. **PR #43 out-of-band** -- dispatch-only `morning.yml` merged to main to unblock STOP LIVE after workflow_dispatch 404.
+
+### Open findings (record only; no code changes this pass)
+
+1. **corrections_only misnamed / stale comment:** `morning_run.py` takes the corrections_only path on every zero-pending run once a gmail run exists; it never queries `triage_corrections`. Comment is stale.
+2. **Telegram pending vs triaged:** Telegram summary `pending` is the pre-drain count, which reads as contradictory next to `triaged` (e.g. triaged=2, pending=2 on run 37247296563).
+3. **Connections sync status spacing:** sync status line sits flush under the Disconnect button (`.cn-feat-sub` has no top margin).
+4. **Compare `--new-states` excuse:** compare mode fully excuses `dashboard-error` and `evening-error` via `--new-states`.
+5. **gmail_upserted semantics:** `gmail_upserted` counts updates as well as inserts.
+
+### Next
+
+- SoT docs (ROADMAP / README / CHANGELOG / architecture) updated in a following commit on this branch.
+- B6 PR / owner merge -- not this commit. Agent does not merge.
