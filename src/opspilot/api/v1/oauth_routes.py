@@ -38,6 +38,12 @@ logger = logging.getLogger("opspilot.api.oauth")
 
 router = APIRouter(tags=["oauth"])
 
+# Frozen at Sync start; copy_context() carries it into the drain thread.
+# Keeps _spawn_sync_drain(job_id, generation, ceiling) arity stable for hermetic mocks (B6).
+_sync_drain_operator_auth: contextvars.ContextVar[object | None] = contextvars.ContextVar(
+    "opspilot_sync_drain_operator_auth", default=None
+)
+
 _PKCE_COOKIE = "opspilot_pkce"
 _FE_CONNECTIONS = os.environ.get("OPSPILOT_FE_ORIGIN", "http://127.0.0.1:5173").rstrip("/") + "/connections"
 _FE_AFTER_OAUTH = _FE_CONNECTIONS
@@ -227,6 +233,10 @@ def post_sync(request: Request, session: Session = Depends(get_db_session)) -> J
     session.commit()
 
     # Wake in-process drain worker (does not block the request).
+    from opspilot.llm.operator_auth import OperatorAnthropicAuth
+
+    cookie = request.cookies.get(COOKIE_NAME)
+    _sync_drain_operator_auth.set(OperatorAnthropicAuth.from_session(verify_session(cookie)))
     _spawn_sync_drain(job_id, generation, ceiling)
 
     return JSONResponse(
@@ -238,6 +248,7 @@ def post_sync(request: Request, session: Session = Depends(get_db_session)) -> J
 def _spawn_sync_drain(job_id: str, generation: int, ceiling: int) -> None:
     """Fire-and-forget drain in a background thread (pipeline.py pattern)."""
     ctx = contextvars.copy_context()
+    operator_auth = _sync_drain_operator_auth.get()
 
     def _run() -> None:
         from opspilot.persistence.db import create_engine, create_session_factory, get_database_url
@@ -259,6 +270,7 @@ def _spawn_sync_drain(job_id: str, generation: int, ceiling: int) -> None:
                 job=job,
                 generation=generation,
                 ceiling=ceiling,
+                operator_auth=operator_auth,
             )
             final_status = "succeeded"
             if drain_result.ceiling_hit or drain_result.budget_exhausted:

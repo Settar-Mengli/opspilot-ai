@@ -109,6 +109,7 @@ def drain(
     generation: int,
     ceiling: int | None = None,
     heartbeat_interval_s: int | None = None,
+    operator_auth: object | None = None,
 ) -> DrainResult:
     """Triage untriaged gmail items under a request ceiling.
 
@@ -173,6 +174,7 @@ def drain(
                 schema=TriagePayload,
                 max_tokens=_STRUCTURED_MAX_TOKENS,
                 session=session,
+                operator_auth=operator_auth,
             )
             if payload is not None:
                 triage = TriageRecord(

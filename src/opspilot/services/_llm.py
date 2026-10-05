@@ -200,6 +200,7 @@ def complete_structured_raising[T: BaseModel](
     session: Session,
     recorder: AttemptRecorder | None = None,
     request_id: str | None = None,
+    operator_auth: object | None = None,
 ) -> T | None:
     """Like ``complete_structured`` but re-raises budget/exhaustion errors.
 
@@ -208,10 +209,13 @@ def complete_structured_raising[T: BaseModel](
     * All other exceptions are logged and return ``None`` (same as the soft variant).
     """
     from opspilot.llm.errors import LlmPolicyDenied, LlmProvidersExhausted
+    from opspilot.llm.operator_auth import OperatorAnthropicAuth
+    from opspilot.llm.routing import build_providers
 
     if not llm_allowed():
         raise LlmPolicyDenied("remote LLM disabled by policy")
-    providers = providers_or_empty()
+    auth = operator_auth if isinstance(operator_auth, OperatorAnthropicAuth) else None
+    providers = build_providers(operator_auth=auth, session=session) if auth is not None else providers_or_empty()
     if not providers:
         raise LlmProvidersExhausted("no_providers")
 
