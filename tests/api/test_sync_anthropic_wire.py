@@ -189,56 +189,70 @@ def test_busy_lease_does_not_spawn_auth_unchanged(
     assert spawns == []
 
 
-def test_sequential_authorized_then_no_auth_sees_none(
-    sync_client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch
+def test_sequential_spawn_auth_then_none_sees_none(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch, test_database_url: str
 ) -> None:
-    """Two sequential Sync starts on one thread: auth then no-cookie path → second sees None."""
-    _seed_oauth(db_session)
-    monkeypatch.setattr("opspilot.api.v1.oauth_routes.google_sync.run_sync", _noop_sync)
-    captured: list[object | None] = []
+    """Real _spawn_sync_drain twice: from_session(verify_session) auth, then None."""
+    import threading
 
-    def _fake_spawn(job_id: str, generation: int, ceiling: int, operator_auth: object | None = None) -> None:
-        captured.append(operator_auth)
+    from opspilot.api.v1.oauth_routes import _spawn_sync_drain
+    from opspilot.services.drain import DrainResult
+    from opspilot.services.operator_session import verify_session
 
-    monkeypatch.setattr("opspilot.api.v1.oauth_routes._spawn_sync_drain", _fake_spawn)
+    monkeypatch.setenv("DATABASE_URL", test_database_url)
+    monkeypatch.setenv("OPSPILOT_SESSION_SECRET", "test-session-secret-not-real")
 
-    # First: authorized + pending → started
-    _seed_one_untriaged(db_session)
     token = issue_session(email="demo@example.com")
-    sync_client.cookies.set("opspilot_operator", token)
-    r1 = sync_client.post("/api/v1/sync")
-    assert r1.status_code == 202, r1.text
-    assert isinstance(captured[0], OperatorAnthropicAuth)
+    auth = OperatorAnthropicAuth.from_session(verify_session(token))
+    assert isinstance(auth, OperatorAnthropicAuth)
+    assert auth.role == "demo_operator"
 
-    # Clear cookie; seed another item; claim lease free again by releasing via not holding
-    sync_client.cookies.clear()
-    # Force idle lease: update lease to free if prior spawn didn't run
-    from sqlalchemy import text
+    captured: list[object | None] = []
+    done = threading.Event()
 
-    db_session.execute(text("UPDATE ops_job_lease SET job_id = NULL, heartbeat_at = NULL WHERE slot = 1"))
-    db_session.commit()
-    work_items.upsert_by_provider_id(
-        db_session,
-        provider_id="msg_auth_2",
-        source_type="gmail",
-        subject_or_title="B",
-        body_or_description="body",
-        sender_or_requester="b@example.test",
-        received_at=datetime.now(UTC),
-    )
-    db_session.commit()
-    # Second request without cookie still needs operator cookie for Sync itself —
-    # Sync requires operator session. Use a cookie that verify_session rejects
-    # so from_session → None while Sync auth gate still passes... Sync checks cookie.
-    # Use valid cookie then monkeypatch from_session for the second call only.
-    sync_client.cookies.set("opspilot_operator", token)
+    def _capture_drain(
+        session: Any,
+        *,
+        job: Any,
+        generation: int,
+        ceiling: int | None = None,
+        heartbeat_interval_s: int | None = None,
+        operator_auth: object | None = None,
+    ) -> DrainResult:
+        captured.append(operator_auth)
+        done.set()
+        return DrainResult()
+
+    monkeypatch.setattr("opspilot.services.drain.drain", _capture_drain)
+
+    def _add_job(job_id: str) -> None:
+        db_session.add(
+            OpsJobRow(
+                id=job_id,
+                job_kind="sync_drain",
+                day_utc=datetime.now(UTC).date(),
+                status="running",
+                force_override=False,
+                request_ceiling=10,
+                metadata_json={},
+            )
+        )
+        db_session.commit()
+
+    _add_job("spawn-auth")
+    done.clear()
     captured.clear()
-    monkeypatch.setattr(
-        "opspilot.llm.operator_auth.OperatorAnthropicAuth.from_session",
-        lambda session: None,
-    )
-    r2 = sync_client.post("/api/v1/sync")
-    assert r2.status_code == 202, r2.text
+    _spawn_sync_drain("spawn-auth", 1, 10, auth)
+    assert done.wait(timeout=10), "drain thread did not run for auth spawn"
+    assert len(captured) == 1
+    assert isinstance(captured[0], OperatorAnthropicAuth)
+    assert captured[0].role == "demo_operator"
+
+    _add_job("spawn-none")
+    done.clear()
+    captured.clear()
+    _spawn_sync_drain("spawn-none", 1, 10, None)
+    assert done.wait(timeout=10), "drain thread did not run for None spawn"
     assert len(captured) == 1
     assert captured[0] is None
 
