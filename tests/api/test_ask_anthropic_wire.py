@@ -59,6 +59,41 @@ def _anthropic_rows(session: Session) -> int:
     )
 
 
+def test_ask_stream_flag_off_zero_anthropic_rows(
+    api_client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Operator cookie + ENABLED off → no Anthropic provider / no anthropic rows."""
+    from opspilot.llm.routing import build_providers as real_bp
+    from opspilot.services.operator_session import issue_session
+
+    monkeypatch.setenv("OPSPILOT_ANTHROPIC_ENABLED", "0")
+    monkeypatch.setenv("OPSPILOT_DEMO_MODE", "0")
+    fake = FakeProvider(
+        name="gemini",
+        json_results=[
+            ProviderResult(
+                status=AttemptStatus.SUCCESS,
+                text=json.dumps({"kind": "final", "final": "flag off free"}),
+                model="fake-v1",
+            )
+        ],
+    )
+
+    def _bp(**kwargs: Any) -> list[Any]:
+        built = real_bp(order=["fake"], **kwargs)
+        assert all(p.name != "anthropic" for p in built)
+        return [fake]
+
+    monkeypatch.setattr("opspilot.api.v1.routes_ask.build_providers", _bp)
+    token = issue_session(email="op@example.test")
+    api_client.cookies.set(COOKIE_NAME, token)
+    before = _anthropic_rows(db_session)
+    resp = api_client.post("/api/v1/ask/stream", json={"question": "Hi", "assistant_name": "OpsPilot"})
+    assert resp.status_code == 200
+    assert "flag off free" in resp.text
+    assert _anthropic_rows(db_session) == before
+
+
 def test_ask_stream_no_cookie_zero_anthropic_rows(
     api_client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:

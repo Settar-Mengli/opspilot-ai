@@ -168,7 +168,9 @@ def ask_stream(
     operator_auth = OperatorAnthropicAuth.from_session(verify_session(cookie))
     # Free path unchanged: omit providers when unauthenticated so loop.build_providers
     # (and existing hermetic monkeypatches) remain the visitor/default path.
-    providers = build_providers(operator_auth=operator_auth, session=session) if operator_auth is not None else None
+    providers = (
+        build_providers(operator_auth=operator_auth, session=session, task="ask") if operator_auth is not None else None
+    )
     history = [{"role": h.role, "content": h.content} for h in payload.history]
     cancel_check, stop_poller = _disconnect_poller(http_request)
 

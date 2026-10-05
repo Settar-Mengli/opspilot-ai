@@ -36,9 +36,26 @@ def test_routing_strips_anthropic_from_env_order(monkeypatch: pytest.MonkeyPatch
 
 
 def test_routing_prepends_when_authorized(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPSPILOT_ANTHROPIC_ENABLED", "1")
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     auth = OperatorAnthropicAuth(role="demo_operator")
-    providers = build_providers(order=["fake"], operator_auth=auth, session=None)
+    providers = build_providers(order=["fake"], operator_auth=auth, session=None, task="ask")
     assert providers[0].name == "anthropic"
     assert any(p.name == "fake" for p in providers)
+
+
+def test_routing_flag_off_no_anthropic_even_with_auth(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPSPILOT_ANTHROPIC_ENABLED", "0")
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    auth = OperatorAnthropicAuth(role="demo_operator")
+    providers = build_providers(order=["fake"], operator_auth=auth, session=None, task="ask")
+    assert all(p.name != "anthropic" for p in providers)
+    assert any(p.name == "fake" for p in providers)
+
+
+def test_routing_no_task_no_anthropic_even_when_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPSPILOT_ANTHROPIC_ENABLED", "1")
+    auth = OperatorAnthropicAuth(role="demo_operator")
+    providers = build_providers(order=["fake"], operator_auth=auth, session=None, task=None)
+    assert all(p.name != "anthropic" for p in providers)

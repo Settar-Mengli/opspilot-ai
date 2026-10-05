@@ -72,6 +72,67 @@ def _seed_one_untriaged(db_session: Session) -> None:
     db_session.commit()
 
 
+def test_sync_triage_flag_off_zero_anthropic_rows(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    """ENABLED off + operator auth → drain triage builds no Anthropic; row delta 0."""
+    import json
+
+    from sqlalchemy import func, select
+
+    from opspilot.llm.providers.fake import FakeProvider
+    from opspilot.llm.routing import build_providers as real_bp
+    from opspilot.llm.schemas.triage import TriagePayload
+    from opspilot.llm.types import AttemptStatus, ProviderResult
+    from opspilot.persistence.models import LlmCallRow
+    from opspilot.services._llm import complete_structured_raising
+
+    monkeypatch.setenv("OPSPILOT_ANTHROPIC_ENABLED", "0")
+    monkeypatch.setenv("OPSPILOT_DEMO_MODE", "0")
+    monkeypatch.delenv("OPSPILOT_FORCE_RULES", raising=False)
+    monkeypatch.delenv("OPSPILOT_LLM_DISABLE", raising=False)
+    monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_REQ_DAY", "100")
+    monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_TOK_DAY", "100000")
+
+    payload = {
+        "urgency": "low",
+        "urgency_reason": "routine",
+        "category": "other",
+        "category_reason": "general",
+        "sentiment": "neutral",
+        "sentiment_reason": "flat",
+        "confidence": 0.5,
+        "evidence_refs": [],
+    }
+    fake = FakeProvider(
+        name="gemini",
+        json_results=[ProviderResult(status=AttemptStatus.SUCCESS, text=json.dumps(payload), model="fake-v1")],
+    )
+
+    def _bp(**kwargs: Any) -> list[Any]:
+        built = real_bp(order=["fake"], **kwargs)
+        assert all(p.name != "anthropic" for p in built)
+        return [fake]
+
+    monkeypatch.setattr("opspilot.llm.routing.build_providers", _bp)
+    before = int(
+        db_session.scalar(select(func.count()).select_from(LlmCallRow).where(LlmCallRow.provider == "anthropic")) or 0
+    )
+    auth = OperatorAnthropicAuth(role="demo_operator")
+    result = complete_structured_raising(
+        task="triage",
+        system="triage",
+        user="item body",
+        schema=TriagePayload,
+        max_tokens=256,
+        session=db_session,
+        operator_auth=auth,
+    )
+    assert result is not None
+    after = int(
+        db_session.scalar(select(func.count()).select_from(LlmCallRow).where(LlmCallRow.provider == "anthropic")) or 0
+    )
+    assert after == before
+
+
 def test_authorized_sync_passes_auth_to_drain(
     sync_client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -159,6 +159,8 @@ uv run python -m opspilot.jobs.anthropic_budget show
 # expect: by_status success count == S0  (zero new anthropic success rows)
 # expect: remaining_tokens=1; remaining_usd=0.000001  (ledger unchanged)
 # expect: open_reservations=0
+# note: anthropic_rows_total MAY rise — pre-reserve budget_denied rows are still recorded
+#       when ENABLED is on; only success count and ledger remaining must stay flat
 # expect: Ask still answered (SSE final/token from free path or soft string — not an empty crash)
 
 # L8 — flag-off restart

@@ -215,7 +215,9 @@ def complete_structured_raising[T: BaseModel](
     if not llm_allowed():
         raise LlmPolicyDenied("remote LLM disabled by policy")
     auth = operator_auth if isinstance(operator_auth, OperatorAnthropicAuth) else None
-    providers = build_providers(operator_auth=auth, session=session) if auth is not None else providers_or_empty()
+    providers = (
+        build_providers(operator_auth=auth, session=session, task=task) if auth is not None else providers_or_empty()
+    )
     if not providers:
         raise LlmProvidersExhausted("no_providers")
 
