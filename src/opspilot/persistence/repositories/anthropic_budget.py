@@ -221,17 +221,34 @@ def reconcile_reservation(
 
 
 def anthropic_call_counts(session: Session) -> dict[str, Any]:
-    """Counts-only summary for CLI show (B3)."""
-    total = session.scalar(select(func.count()).select_from(LlmCallRow).where(LlmCallRow.provider == "anthropic"))
+    """Counts-only summary for CLI show (B3).
+
+    ``open_reservations`` = unreconciled rows (status=error, error_code=anthropic_reserved).
+    Those rows are excluded from ``by_status`` so error counts are not inflated.
+    """
+    anthropic = LlmCallRow.provider == "anthropic"
+    open_filter = (
+        anthropic,
+        LlmCallRow.status == "error",
+        LlmCallRow.error_code == ERROR_CODE_RESERVED,
+    )
+    total = session.scalar(select(func.count()).select_from(LlmCallRow).where(anthropic))
+    open_reservations = session.scalar(select(func.count()).select_from(LlmCallRow).where(*open_filter))
     by_status_rows = session.execute(
-        select(LlmCallRow.status, func.count()).where(LlmCallRow.provider == "anthropic").group_by(LlmCallRow.status)
+        select(LlmCallRow.status, func.count())
+        .where(
+            anthropic,
+            ~((LlmCallRow.status == "error") & (LlmCallRow.error_code == ERROR_CODE_RESERVED)),
+        )
+        .group_by(LlmCallRow.status)
     ).all()
     by_task_rows = session.execute(
-        select(LlmCallRow.task, func.count()).where(LlmCallRow.provider == "anthropic").group_by(LlmCallRow.task)
+        select(LlmCallRow.task, func.count()).where(anthropic).group_by(LlmCallRow.task)
     ).all()
-    max_id = session.scalar(select(func.max(LlmCallRow.id)).where(LlmCallRow.provider == "anthropic"))
+    max_id = session.scalar(select(func.max(LlmCallRow.id)).where(anthropic))
     return {
         "anthropic_rows_total": int(total or 0),
+        "open_reservations": int(open_reservations or 0),
         "by_status": {str(s): int(c) for s, c in by_status_rows},
         "by_task": {str(t): int(c) for t, c in by_task_rows},
         "max_id": int(max_id) if max_id is not None else None,

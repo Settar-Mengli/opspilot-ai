@@ -61,6 +61,7 @@ def cmd_show(_: argparse.Namespace) -> int:
                 print(f"remaining_usd={row.remaining_usd}")
             counts = anthropic_call_counts(session)
             print(f"anthropic_rows_total={counts['anthropic_rows_total']}")
+            print(f"open_reservations={counts['open_reservations']}")
             by_status = ",".join(f"{k}:{v}" for k, v in sorted(counts["by_status"].items()))
             by_task = ",".join(f"{k}:{v}" for k, v in sorted(counts["by_task"].items()))
             print(f"by_status={by_status or '(none)'}")

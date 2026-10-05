@@ -192,11 +192,37 @@ def test_cli_show_prints_anthropic_counts_by_status_task_max_id(
     out = capsys.readouterr().out
     assert "database host=127" in out
     assert "anthropic_rows_total=1" in out
-    assert "by_status=" in out
-    assert "error:1" in out
+    assert "open_reservations=1" in out
+    assert "by_status=(none)" in out  # open reservations excluded from by_status
     assert "by_task=" in out
     assert "ask:1" in out
     assert f"max_id={call.id}" in out
+
+
+def test_cli_show_works_with_no_ledger_row(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from opspilot.jobs import anthropic_budget as cli
+
+    class _Factory:
+        def __call__(self) -> object:
+            return self
+
+        def __enter__(self) -> Session:
+            return db_session
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+    monkeypatch.setattr(cli, "create_engine", lambda: db_session.get_bind())
+    monkeypatch.setattr(cli, "create_session_factory", lambda _e: _Factory())
+    monkeypatch.setattr(cli, "database_host_label", lambda: "127")
+    monkeypatch.setattr(db_session.get_bind(), "dispose", lambda: None)
+    assert cli.main(["show"]) == 0
+    out = capsys.readouterr().out
+    assert "remaining_tokens=(none)" in out
+    assert "open_reservations=0" in out
+    assert "anthropic_rows_total=0" in out
 
 
 def test_cli_show_never_writes(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -244,5 +270,7 @@ def test_anthropic_call_counts_helper(db_session: Session) -> None:
     db_session.commit()
     counts = anthropic_call_counts(db_session)
     assert counts["anthropic_rows_total"] == 1
+    assert counts["open_reservations"] == 1
+    assert counts["by_status"] == {}
     assert counts["by_task"]["triage"] == 1
     assert counts["max_id"] is not None
