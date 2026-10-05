@@ -229,6 +229,18 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ---
 
+## Remaining order (owner decision 2026-10-05)
+
+**TARGET** sequencing after B6 (details in [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) PART 19; not yet implemented):
+
+1. Anthropic operator switch (operator-only, off by default, never visitor-reachable, hard spend cap; Ask + triage for operator session; D-023 amendment when that batch is planned)
+2. B7 public deploy (recruiter access codes — per-recipient, expiring, revocable — with rate limits + daily cap; fictional demo data only; README via existing Playwright screenshots; security first; data-handling/trust workstream)
+3. MCP connection to GitHub (OpsPilot as MCP client; one read-only official GitHub connection; off by default; after B7 on its own branch — PART 2 CUT reversed for this scope only)
+4. Final general cleanup (stale scratch branches + unneeded extras; only after all batches above complete)
+5. Demo recording
+
+---
+
 ## Open findings (deferred; owner-batch rows unless marked OPTIONAL)
 
 | Item | Owner batch | Notes |
@@ -265,7 +277,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | M14 | Phoenix UI | After LlmCall hooks prove value |
 | M15 | A5 distill / LoRA | After evals + teacher quality |
 
-Also deferred: MCP client, attachments/vision, full PWA+push, **P10 multilingual (DEFER)**, LiteLLM/LangGraph/Celery/Qdrant, visitor BYOK, custom domain.
+Also deferred: MCP client (**superseded for one scope only** by owner decision 2026-10-05 / PART 19: OpsPilot as MCP client with one read-only official GitHub connection, off by default, after B7; other MCP scopes remain CUT/DEFER), attachments/vision, full PWA+push, **P10 multilingual (DEFER)**, LiteLLM/LangGraph/Celery/Qdrant, visitor BYOK, custom domain.
 
 ---
 
