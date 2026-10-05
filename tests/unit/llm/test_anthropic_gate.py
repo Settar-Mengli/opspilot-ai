@@ -200,11 +200,33 @@ def test_4xx_full_refund(monkeypatch: pytest.MonkeyPatch, db_session: Session) -
 
 
 def test_pre_send_full_refund(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
-    """TypeError before HTTP is treated as refund via status_code-less path → keep by default.
+    """Real pre-send failure: APIConnectionError (SDK 1.8.0 L95) → full refund."""
+    import anthropic
+    import httpx
 
-    Explicit pre-send: raise ValueError with no status → keep per fail-closed.
-    For full refund of true pre-send, use http-less Authentication-style with marker.
-    """
+    _enable(monkeypatch)
+    set_budget(db_session, tokens=1000, usd=Decimal("1"))
+    db_session.commit()
+
+    class _Messages:
+        def create(self, **_k: Any) -> Any:
+            req = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+            raise anthropic.APIConnectionError(message="Connection refused", request=req)
+
+    class _Client:
+        messages = _Messages()
+
+    provider = AnthropicProvider(operator_auth=_auth(), session=db_session, client=_Client())
+    result = provider.complete(task="ask", messages=[Message(role="user", content="hi")], max_tokens=16)
+    assert result.status is AttemptStatus.ERROR
+    row = get_budget(db_session)
+    assert row is not None
+    assert row.remaining_tokens == 1000
+    assert row.remaining_usd == Decimal("1")
+
+
+def test_401_full_refund(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
+    """HTTP 401 (AuthenticationError, SDK 1.8.0 L139) → full refund."""
     _enable(monkeypatch)
     set_budget(db_session, tokens=1000, usd=Decimal("1"))
     db_session.commit()
@@ -220,10 +242,36 @@ def test_pre_send_full_refund(monkeypatch: pytest.MonkeyPatch, db_session: Sessi
         messages = _Messages()
 
     provider = AnthropicProvider(operator_auth=_auth(), session=db_session, client=_Client())
-    provider.complete(task="ask", messages=[Message(role="user", content="hi")], max_tokens=16)
+    result = provider.complete(task="ask", messages=[Message(role="user", content="hi")], max_tokens=16)
+    assert result.status is AttemptStatus.ERROR
     row = get_budget(db_session)
     assert row is not None
     assert row.remaining_tokens == 1000
+    assert row.remaining_usd == Decimal("1")
+
+
+def test_unclassified_exception_keeps_reservation(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
+    """Unknown exception after reserve → keep (fail closed)."""
+    _enable(monkeypatch)
+    set_budget(db_session, tokens=1000, usd=Decimal("1"))
+    db_session.commit()
+
+    class _Weird(Exception):
+        pass
+
+    class _Messages:
+        def create(self, **_k: Any) -> Any:
+            raise _Weird("mystery")
+
+    class _Client:
+        messages = _Messages()
+
+    provider = AnthropicProvider(operator_auth=_auth(), session=db_session, client=_Client())
+    result = provider.complete(task="ask", messages=[Message(role="user", content="hi")], max_tokens=16)
+    assert result.status is AttemptStatus.ERROR
+    row = get_budget(db_session)
+    assert row is not None
+    assert row.remaining_tokens < 1000
 
 
 def test_5xx_keep_reservation(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:

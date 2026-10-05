@@ -110,23 +110,71 @@ def gate_reason(
     return None
 
 
-def _classify_http_error(exc: BaseException) -> tuple[AttemptStatus, str, str]:
-    """Return (status, error_code, ledger_op) for post-send failures."""
+def _classify_attempt_outcome(exc: BaseException) -> tuple[AttemptStatus, str, str]:
+    """Classify ledger_op for an exception after reservation.
+
+    SDK 1.8.0 map (site-packages/anthropic/_exceptions.py):
+    - APIStatusError L71–92 + subclasses with status_code 4xx → refund
+      (BadRequestError L135, AuthenticationError L139, PermissionDeniedError L143,
+      NotFoundError L147, ConflictError L151, RequestTooLargeError L155,
+      UnprocessableEntityError L159, RateLimitError L163)
+    - APIStatusError 5xx → keep (ServiceUnavailableError L167, OverloadedError L171,
+      DeadlineExceededError L175, InternalServerError L179)
+    - APIConnectionError L95–97 (not timeout) → refund (connection refused / DNS /
+      connect failure — request not proven sent)
+    - APITimeoutError L100–105 → keep (connect vs read timeout not distinguishable)
+    - CredentialsError L117–119 → refund (client credentials load, pre-send)
+    - TypeError / ValueError → refund (client build / serialization, pre-send)
+    - Anything else → keep (fail closed)
+    """
+    try:
+        import anthropic
+    except ImportError:  # pragma: no cover
+        anthropic = None  # type: ignore[assignment]
+
     name = type(exc).__name__
+
+    # Pre-send: serialization / client build failures
+    if isinstance(exc, (TypeError, ValueError)):
+        return AttemptStatus.ERROR, name, "refund"
+
+    if anthropic is not None:
+        # Credentials cannot be loaded — never reached the wire
+        if isinstance(exc, getattr(anthropic, "CredentialsError", ())):
+            return AttemptStatus.ERROR, name, "refund"
+        # Timeout: ambiguous connect vs read → keep (cannot classify with certainty)
+        if isinstance(exc, getattr(anthropic, "APITimeoutError", ())):
+            return AttemptStatus.TIMEOUT, name, "keep"
+        # Connection refused / DNS / connect failure — provably not sent
+        if isinstance(exc, getattr(anthropic, "APIConnectionError", ())):
+            return AttemptStatus.ERROR, name, "refund"
+        # HTTP status errors
+        if isinstance(exc, getattr(anthropic, "APIStatusError", ())):
+            status_code = getattr(exc, "status_code", None)
+            if isinstance(status_code, int):
+                if 400 <= status_code < 500:
+                    status = AttemptStatus.RATE_LIMITED if status_code == 429 else AttemptStatus.ERROR
+                    return status, f"http_{status_code}", "refund"
+                if status_code >= 500:
+                    return AttemptStatus.ERROR, f"http_{status_code}", "keep"
+            return AttemptStatus.ERROR, name, "keep"
+
+    # Fallback for duck-typed / fake clients in hermetic tests (no SDK instance)
     status_code = getattr(exc, "status_code", None)
     if status_code is None:
         response = getattr(exc, "response", None)
         status_code = getattr(response, "status_code", None)
     if isinstance(status_code, int):
         if 400 <= status_code < 500:
-            return AttemptStatus.ERROR, f"http_{status_code}", "refund"
+            status = AttemptStatus.RATE_LIMITED if status_code == 429 else AttemptStatus.ERROR
+            return status, f"http_{status_code}", "refund"
         if status_code >= 500:
             return AttemptStatus.ERROR, f"http_{status_code}", "keep"
     lower = name.lower()
     if "timeout" in lower or "timedout" in lower or "api_timeout" in lower:
         return AttemptStatus.TIMEOUT, name, "keep"
-    if "ratelimit" in lower or "rate_limit" in lower:
-        return AttemptStatus.RATE_LIMITED, name, "keep"
+    if "apiconnectionerror" in lower or "connectionerror" in lower:
+        return AttemptStatus.ERROR, name, "refund"
     return AttemptStatus.ERROR, name, "keep"
 
 
@@ -267,8 +315,7 @@ class AnthropicProvider:
             latency = int((time.perf_counter() - started) * 1000)
             # Pre-send style failures (client never got a response object): treat unknown
             # construction failures already handled; transport after create → classify.
-            status, err, ledger_op = _classify_http_error(exc)
-            # If no HTTP status and not timeout, still keep (fail closed) unless clearly 4xx.
+            status, err, ledger_op = _classify_attempt_outcome(exc)
             if call_id is not None:
                 self._reconcile(
                     call_id=call_id,
