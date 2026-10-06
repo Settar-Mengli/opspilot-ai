@@ -2311,6 +2311,10 @@ Host label first segment only: `ep-withered-dew-b528cx5k-pooler`. Counts/flags o
 
 Truth-align: D-023 b6.1 addendum CURRENT (shipped+LIVE clauses); `AGENTS.md` zero-spend rule 3; `ROADMAP.md`; `README.md`; `docs/architecture.md`; `CHANGELOG.md`; `docs/runbooks/llm-providers.md` (LIVE result + restore state).
 
+### Dep bump (post-C9; clears Frontend npm audit)
+
+- d0a880e chore(deps): bump source-map-js to clear npm audit -- override source-map-js 1.2.2 (GHSA-68fv-2mgg-jv7q); CI [37411232921](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37411232921) **success**.
+
 ### Next
 
 - Owner merges the b6.1 PR. Agent does not merge.
