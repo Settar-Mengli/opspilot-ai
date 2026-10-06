@@ -19,5 +19,6 @@ Short links to key ADRs. Full text lives under [docs/adr/](adr/).
 | Ask tool contract | [D-031](adr/D-031-ask-tool-contract.md) | JSON-emulated tools; no send tool |
 | Ask SSE | [D-032](adr/D-032-ask-sse.md) | `POST /ask/stream` event set |
 | HITL approve/send | [D-033](adr/D-033-hitl-approve-send.md) | Subject/body edit; allowlist; DEMO_MODE |
+| GitHub MCP read-only | [D-034](adr/D-034-github-mcp-readonly-client.md) | Operator-gated client; four static read tools; flag off; LIVE PASS |
 
 See also: [architecture.md](architecture.md) · [ROADMAP.md](../ROADMAP.md) · [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · [ask-send runbook](runbooks/ask-send.md)

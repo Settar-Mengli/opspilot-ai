@@ -234,12 +234,12 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 **TARGET** sequencing after b6.1 on `main` (supersedes PART 19 **sequencing only**; PART 19 body not edited). Details: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) PART 21.
 
-1. **MCP** — OpsPilot as MCP client; one read-only official GitHub connection; off by default; own branch; **no separate database** (PART 19 item 3 scope minus "after B7")
+1. **MCP — DONE (B6.2 / PART 22)** — OpsPilot as official GitHub MCP **client** (D-034 CURRENT); four static read tools; flag **off** by default; operator-only; LIVE PASS 2026-10-06; branch `mcp/github-readonly` tip `7755c3c` (PR pending owner merge). **No separate database.**
 2. **Final cleanup** — stale scratch branches + unneeded extras
 3. **Professional README** (desktop + mobile Playwright screenshots) **including** the data-handling / trust workstream (not a separate batch; also feeds the demo script)
 4. **Demo recording**
 
-**Done:** **b6.1** Anthropic operator switch — LIVE PASS 2026-10-05; **merged** PR #47 → `fed71d1`. B7 public deploy is **BACKLOG**, not in this order.
+**Done:** **b6.1** Anthropic operator switch — LIVE PASS 2026-10-05; **merged** PR #47 → `fed71d1`. **B6.2** MCP GitHub read-only client — LIVE PASS 2026-10-06 (PART 22). B7 public deploy is **BACKLOG**, not in this order.
 
 ---
 

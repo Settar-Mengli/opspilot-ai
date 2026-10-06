@@ -1,6 +1,6 @@
 # OpsPilot Architecture
 
-**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B6** (PR #44 → `eae1a9a`) plus **b6.1** **merged** PR #47 → `fed71d1` / PART 20. Sections labeled **TARGET** describe the post-spine order (MCP → cleanup → professional README + data-handling/trust → demo recording; PART 21). **B7** public deploy is **BACKLOG**, not next. Do not present TARGET as shipped on `main`.
+**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B6** (PR #44 → `eae1a9a`) plus **b6.1** **merged** PR #47 → `fed71d1` / PART 20, and **B6.2 MCP** GitHub read-only client (D-034 CURRENT; LIVE PASS 2026-10-06 / PART 22) on branch `mcp/github-readonly` tip `7755c3c` until owner merge. Sections labeled **TARGET** describe the remaining post-spine order (cleanup → professional README + data-handling/trust → demo recording; PART 21). **B7** public deploy is **BACKLOG**. Do not present unmerged branch code as already on `main`.
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
@@ -145,7 +145,11 @@ Full audit: [docs/audits/2026-09-25-baseline-audit.md](audits/2026-09-25-baselin
 
 ## TARGET
 
-Remaining work after **B6** and **b6.1** on `main` (`fed71d1`): PART 21 post-spine order — MCP → cleanup → professional README (**including** data-handling/trust TARGET) → demo recording. **B7** public deploy is **BACKLOG**. Package layout notes below still guide prefs/admin splits.
+Remaining work after **B6**, **b6.1**, and **B6.2 MCP** (LIVE PASS / PART 22; PR pending): PART 21 post-spine order — **cleanup** → professional README (**including** data-handling/trust TARGET) → demo recording. **B7** public deploy is **BACKLOG**. Package layout notes below still guide prefs/admin splits.
+
+### GitHub MCP client (CURRENT — shipped; flag off default; operator-only)
+
+OpsPilot is an MCP **client** only ([D-034](adr/D-034-github-mcp-readonly-client.md) CURRENT): Streamable HTTP to `https://api.githubcopilot.com/mcp/readonly`, four static Ask tools (`get_me`, `get_file_contents`, `list_commits`, `pull_request_read`), `OperatorGitHubMcpAuth`, initialize-era pin `2025-11-25`, 15s adapter timeout. Not an LLM provider; not in `llm_calls` as `mcp`. Visitors / DEMO / CI / flag-off never open HTTP. Owner/repo pinned from env. LIVE PASS 2026-10-06 (PART 22).
 
 ### Package layout + dependency rules (D-024)
 
@@ -194,9 +198,11 @@ src/opspilot/
       get_message.py
       get_calendar.py
       draft_reply.py
+      github_mcp.py           # D-034 read-only; flag off default
       send_reply.py
     events.py
   integrations/
+    github_mcp/               # SDK Streamable HTTP adapter; not an LLM provider
     google_oauth.py
     gmail_client.py
     calendar_client.py
@@ -368,4 +374,4 @@ No custom domain. Anthropic only via operator budgeted scripts, not visitor path
 
 ### Deliberately simple
 
-No LangGraph, LiteLLM, Celery, Qdrant, visitor BYOK, multi-tenant beyond operator vs visitor, LoRA, or custom domain in the locked spine. One-scope MCP GitHub read-only client is un-CUT (PART 19/21) and is **next**; no public deploy in the spine (B7 backlog).
+No LangGraph, LiteLLM, Celery, Qdrant, visitor BYOK, multi-tenant beyond operator vs visitor, LoRA, or custom domain in the locked spine. One-scope MCP GitHub read-only client is **CURRENT** (D-034 / PART 22; flag off default; operator-only; PR pending). No public deploy in the spine (B7 backlog).

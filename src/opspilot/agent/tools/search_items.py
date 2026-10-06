@@ -18,8 +18,9 @@ def run(
     gmail_only: bool,
     operator_email: str | None,
     request_id: str | None,
+    github_mcp_auth: object | None = None,
 ) -> dict[str, Any]:
-    del operator_email, request_id
+    del operator_email, request_id, github_mcp_auth
     query = neutralize_text(str(args.get("query") or "")).lower()[:120]
     limit = min(int(args.get("limit") or 10), 20)
     stmt = select(WorkItemRow).order_by(desc(WorkItemRow.received_at)).limit(50)

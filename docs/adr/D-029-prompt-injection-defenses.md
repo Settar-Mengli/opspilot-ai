@@ -87,3 +87,7 @@ Marker leaks and schema-invalid tool calls that fail closed before side effects 
 ### Agentic red-team corpus
 
 Hermetic dataset `evals/datasets/redteam_agent/v1/` includes: tool hijack, exfil via recipient, header/Bcc smuggling, step-loop/budget burn, argument overwrite from tool output.
+
+## Addendum (MCP GitHub, 2026-10-06) — tool output injection via MCP
+
+GitHub file/PR text is hostile. Adapter runs `neutralize_text` + caps **before** the loop UNTRUSTED wrap. Hermetic agent red-team `rta-v1-006`..`009` (n_cases **9**): delimiter breakout, role spoof in PR body, `draft_reply` attacker recipient (server `to_addrs` still wins), non-allowlisted `create_issue`. Marker/schema failures remain `blocked_by_defenses`, not tool-ASR. Live MCP is not a CI path (`GITHUB_ACTIONS` → `ci_blocked`).

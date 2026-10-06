@@ -16,6 +16,7 @@ def test_tool_system_fragment_has_per_tool_schemas() -> None:
     assert '"query":"project sync"' in TOOL_SYSTEM_FRAGMENT
     assert '"work_item_id":"<exact id from search_items>"' in TOOL_SYSTEM_FRAGMENT
     assert "wi_4ebc" not in TOOL_SYSTEM_FRAGMENT
+    assert "get_file_contents" not in TOOL_SYSTEM_FRAGMENT
 
 
 def test_tool_error_hint_content_free() -> None:

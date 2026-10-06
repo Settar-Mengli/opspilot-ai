@@ -86,7 +86,7 @@ def test_unwrap_leaves_flat_instance_alone() -> None:
 
 def test_try_parse_accepts_mistral_schema_echo() -> None:
     text = json.dumps(_MISTRAL_SCHEMA_ECHO)
-    parsed, err, cls = BudgetAwareGateway._try_parse(TriagePayload, text)
+    parsed, err, cls = BudgetAwareGateway([], session=None)._try_parse(TriagePayload, text)
     assert cls == "ok"
     assert err == ""
     assert parsed is not None

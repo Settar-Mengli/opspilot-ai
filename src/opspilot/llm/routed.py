@@ -6,6 +6,7 @@ import json
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import replace
+from typing import Any
 
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.orm import Session
@@ -68,6 +69,7 @@ class BudgetAwareGateway:
         request_id: str | None = None,
         honor_retry_after: bool = True,
         request_pacer: Callable[[], None] | None = None,
+        schema_context: dict[str, Any] | None = None,
     ) -> None:
         self._providers = list(providers)
         self._session = session
@@ -77,6 +79,7 @@ class BudgetAwareGateway:
         self._request_id = request_id
         self._honor_retry_after = honor_retry_after
         self._request_pacer = request_pacer
+        self._schema_context = schema_context
         self.last_repair_used: bool = False
         self.last_parse_error_class: str | None = None
         self.last_parse_output_head: str | None = None
@@ -406,8 +409,7 @@ class BudgetAwareGateway:
             prompt_version=None,
         )
 
-    @staticmethod
-    def _try_parse[T: BaseModel](schema: type[T], text: str) -> tuple[T | None, str, str]:
+    def _try_parse[T: BaseModel](self, schema: type[T], text: str) -> tuple[T | None, str, str]:
         extracted = extract_json_object(text)
         try:
             data = json.loads(extracted)
@@ -415,7 +417,7 @@ class BudgetAwareGateway:
             return None, f"invalid JSON: {exc}", "json_decode"
         data = unwrap_schema_echo(data)
         try:
-            return schema.model_validate(data), "", "ok"
+            return schema.model_validate(data, context=self._schema_context), "", "ok"
         except ValidationError as exc:
             return None, str(exc), "schema_validation"
 

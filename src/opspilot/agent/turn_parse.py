@@ -112,6 +112,36 @@ def validate_tool_args(tool: str, args: dict[str, Any]) -> list[str]:
                 if days < 1 or days > 14:
                     errors.append("days_out_of_range")
         return errors
+    if tool == "get_me":
+        return errors
+    if tool == "get_file_contents":
+        path = str(args.get("path") or "").strip()
+        if not path:
+            errors.append("missing_path")
+        return errors
+    if tool == "list_commits":
+        if "limit" in args and args.get("limit") is not None:
+            try:
+                limit = int(args["limit"])
+            except (TypeError, ValueError):
+                errors.append("invalid_limit")
+            else:
+                if limit < 1 or limit > 20:
+                    errors.append("limit_out_of_range")
+        return errors
+    if tool == "pull_request_read":
+        raw = args.get("pull_number")
+        if raw is None or str(raw).strip() == "":
+            errors.append("missing_pull_number")
+            return errors
+        try:
+            number = int(raw)
+        except (TypeError, ValueError):
+            errors.append("invalid_pull_number")
+        else:
+            if number <= 0:
+                errors.append("invalid_pull_number")
+        return errors
     errors.append("unknown_tool")
     return errors
 
