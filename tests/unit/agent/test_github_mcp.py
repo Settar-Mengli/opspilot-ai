@@ -142,6 +142,19 @@ def test_github_mcp_no_write_tools_registered() -> None:
     assert_no_write_mcp_tools()
     assert "create_issue" not in TOOL_REGISTRY
 
+    def _dummy(**kwargs: object) -> dict[str, object]:
+        del kwargs
+        return {"ok": False, "error": "should_not_run"}
+
+    TOOL_REGISTRY["create_issue"] = _dummy  # type: ignore[assignment]
+    try:
+        with pytest.raises(RuntimeError, match="write_mcp_tool_registered:create_issue"):
+            assert_no_write_mcp_tools()
+    finally:
+        TOOL_REGISTRY.pop("create_issue", None)
+    assert_no_write_mcp_tools()
+    assert "create_issue" not in TOOL_REGISTRY
+
 
 def test_github_mcp_no_meta_tool() -> None:
     assert "call_mcp" not in TOOL_REGISTRY
