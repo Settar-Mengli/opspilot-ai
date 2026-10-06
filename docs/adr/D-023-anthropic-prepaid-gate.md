@@ -56,25 +56,27 @@ Allowlist tasks: `demo_quality`, `leaderboard`, `judge_calibration` — **never*
 
 - B3 leaderboard Anthropic column is documented as **`skipped`** (lock P7). **No Anthropic HTTP** in B3; zero-spend. Optional prepaid column remains future (D-018 historical AC superseded for B3 by P7).
 
-## Addendum (b6.1 operator switch, 2026-10-05) — TARGET until C9
+## Addendum (b6.1 operator switch, 2026-10-05) — CURRENT (shipped + LIVE)
 
-Status of this addendum: **TARGET** (not CURRENT). CURRENT flips happen only in C9 after owner LIVE. Until then, B2/B3 addenda above remain the runtime contract on `main`.
+Status of this addendum: **CURRENT** for clauses below that shipped on `b6.1/anthropic-operator` tip `e181818` and were proven in owner STOP LIVE 2026-10-05 (PART 20). **Anthropic remains off by default and is never reachable by visitors.** Unproven / future items stay labelled **TARGET**.
 
-**Scope (TARGET):** Operator-authorized Anthropic for **Ask SSE** and **Sync drain triage** only. Off by default. Never visitors. Never morning job. Never tests/CI live calls.
+**Scope (CURRENT):** Operator-authorized Anthropic for **Ask SSE** and **Sync drain triage** only. Off by default. Never visitors. Never morning job. Never tests/CI live calls.
 
-**Auth (TARGET):** Request-scoped `OperatorAnthropicAuth` minted only via `from_session` from Ask and Sync routes after `verify_session` returns a real `OperatorSession` with role `demo_operator`. Soft-skip Anthropic (free path serves) when auth absent. Duck-typed role carriers are rejected.
+**Auth (CURRENT):** Request-scoped `OperatorAnthropicAuth` minted only via `from_session` from Ask and Sync routes after `verify_session` returns a real `OperatorSession` with role `demo_operator`. Soft-skip Anthropic (free path serves) when auth absent. Duck-typed role carriers are rejected.
 
-**Gate order (TARGET):** operator_auth → ENABLED → DEMO off → task in `{ask, triage}` → model allowlist → positive USD rates → `est_input` ≤ 16384 → SDK client constructible (`max_retries=0`, timeout default 25s) → ledger row exists → atomic reserve.
+**Gate order (CURRENT):** operator_auth → ENABLED → DEMO off → task in `{ask, triage}` → model allowlist → positive USD rates → `est_input` ≤ 16384 → SDK client constructible (`max_retries=0`, timeout default 25s) → ledger row exists → atomic reserve. Routing prepends Anthropic only when ENABLED + auth + allowlisted task.
 
-**Ledger (TARGET):** `anthropic_prepaid_budget` id=1 is SoT. CLI `show`/`set` is the **only** ledger writer (no env seed; retired `OPSPILOT_ANTHROPIC_BUDGET_TOKENS` / `_USD`). Pre-call reserve + LlmCall open row (`status=error`, `error_code=anthropic_reserved`); reconcile refunds/keeps/excess in one transaction. Rates: env `OPSPILOT_ANTHROPIC_USD_PER_MTOK_IN`/`_OUT` (VERIFY AT DECISION TIME; platform.claude.com 2026-10-05: $1 / $5 MTok). Default model `claude-haiku-4-5-20251001`.
+**Ledger (CURRENT):** `anthropic_prepaid_budget` id=1 is SoT. CLI `show`/`set` is the **only** ledger writer (no env seed; retired `OPSPILOT_ANTHROPIC_BUDGET_TOKENS` / `_USD` not runtime). Pre-call reserve + LlmCall open row (`status=error`, `error_code=anthropic_reserved`); reconcile refunds/keeps/excess in one transaction. Rates: env `OPSPILOT_ANTHROPIC_USD_PER_MTOK_IN`/`_OUT` (platform.claude.com 2026-10-05: $1 / $5 MTok). Default model `claude-haiku-4-5-20251001`.
 
-**Reservation / reconcile ownership (TARGET, F1):** The Anthropic reserve path owns both the ledger debit and the single `llm_calls` row for that attempt. `session_attempt_recorder` never debits the Anthropic ledger and inserts no second Anthropic row when the attempt carries a reservation (`meta.ledger_row_owned`). Pre-reserve denials (no reservation) may still be recorded once by the recorder.
+**Reservation / reconcile ownership (CURRENT, F1):** The Anthropic reserve path owns both the ledger debit and the single `llm_calls` row for that attempt. `session_attempt_recorder` never debits the Anthropic ledger and inserts no second Anthropic row when the attempt carries a reservation (`meta.ledger_row_owned`). Pre-reserve denials (no reservation) may still be recorded once by the recorder.
 
-**Startup (TARGET):** `OPSPILOT_ANTHROPIC_ENABLED` ∧ `OPSPILOT_DEMO_MODE` → refuse to start. Startup config prints `ANTHROPIC_LEDGER=1` when ledger row present.
+**Refund / keep (CURRENT):** `APIConnectionError` full refund only when `__cause__` is `httpx2.ConnectError`; other connection causes / missing cause → keep; HTTP 4xx → refund; HTTP 5xx / timeout / unclassified → keep.
+
+**Startup (CURRENT):** `OPSPILOT_ANTHROPIC_ENABLED` ∧ `OPSPILOT_DEMO_MODE` → refuse to start. Startup config prints `ANTHROPIC_LEDGER=1` when ledger row present. Morning `_preflight` refuses when enabled.
 
 **B7 note (TARGET):** Public host never has `ANTHROPIC_API_KEY` or enable flag.
 
-**Locks L1–L12 (TARGET — from plan prompt; do not silently weaken):**
+**Locks L1–L12 (CURRENT where implemented; L4 public-host rule remains TARGET for B7):**
 
 - **L1 Scope.** Anthropic may serve exactly two paths: (1) POST `/api/v1/ask/stream` (agent loop), (2) triage in the drain started by an operator POST `/api/v1/sync`. Nothing else: not legacy POST `/ask`, not POST `/runs`, not evening, insights, briefing, morning_run, evals, smoke scripts.
 - **L2 Gate, fail-closed, ALL required per call:** `OPSPILOT_ANTHROPIC_ENABLED` true; `OPSPILOT_DEMO_MODE` off; a valid operator session cookie verified server-side on the originating request; task in `{ask, triage}`; model in an explicit allowlist; both USD rates set; ledger row exists and covers the reservation; `ANTHROPIC_API_KEY` present. Any failure → Anthropic is skipped and the existing free-tier order serves the request.
@@ -89,4 +91,4 @@ Status of this addendum: **TARGET** (not CURRENT). CURRENT flips happen only in 
 - **L11 Docs.** This addendum (no D-034): operator-demo profile, allowlist ask+triage under L2, visitor exclusion, ledger + reservation policy, L4 rule, model/rate verification. New master record PART 20 (append-only; C9 after LIVE). Truth-align AGENTS.md, architecture, ROADMAP, README, `.env.example`, llm-providers runbook.
 - **L12 Migration.** Prefer none. If one is needed: expand-only, new head, local Docker only in build; Neon is applied by the owner at STOP LIVE. **b6.1 ships with no migration.**
 
-**Supersedes (when CURRENT):** B2 addendum allowlist that excludes `ask`; env `OPSPILOT_ANTHROPIC_BUDGET_TOKENS`/`_USD` as runtime gate/seed (retired — CLI only).
+**Supersedes (CURRENT):** B2 addendum allowlist that excludes `ask`; env `OPSPILOT_ANTHROPIC_BUDGET_TOKENS`/`_USD` as runtime gate/seed (retired — CLI only; names remain only in the historical B2 table above).

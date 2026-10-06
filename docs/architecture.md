@@ -1,6 +1,6 @@
 # OpsPilot Architecture
 
-**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B6** (PR #44 → `eae1a9a`). Sections labeled **TARGET** describe the remaining locked rebuild (**B7** and optional side batches). Do not present TARGET as shipped on `main`.
+**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B6** (PR #44 → `eae1a9a`) plus **b6.1** as shipped on branch tip `e181818` / PART 20 (owner merge pending). Sections labeled **TARGET** describe the remaining locked rebuild (**B7** and optional side batches). Do not present TARGET as shipped on `main`.
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
@@ -37,9 +37,9 @@ Verified through **B6** on `main` (PR #44 → `eae1a9a`): hermetic pytest (socke
 
 **B5 (CURRENT on main):** `opspilot.agent` JSON-emulated tool loop (D-031); caps 5/8; `POST /ask/stream` SSE (D-032); HITL mail draft edit/approve + allowlist + DEMO_MODE (D-033); `gmail.send`; deleted-message sync; Alembic **0008**/**0009** (`mail_drafts`, `mail_send_audit` + failed/error_code); hermetic `ask_agent` + `redteam_agent` evals.
 
-**B6 (CURRENT on main):** in-runner GHA `morning_run` + Telegram counts-only; Sync **202**/poll drain + ops_jobs lease/reap/fence; triage corrections overlay; failed-draft reopen; F-05 prepaid ledger plumbing (Anthropic still off); Alembic **0010**; C14 cron `0 12 * * *` + `workflow_dispatch` in `.github/workflows/morning.yml` (workflow **active** on default branch; first `event=schedule` observation pending at PART 18).
+**B6 (CURRENT on main):** in-runner GHA `morning_run` + Telegram counts-only; Sync **202**/poll drain + ops_jobs lease/reap/fence; triage corrections overlay; failed-draft reopen; F-05 prepaid ledger plumbing; Alembic **0010**; C14 cron `0 12 * * *` + `workflow_dispatch` (first schedule cancelled by runner non-acquire — PART 20; manual dispatch quiet-day success).
 
-**b6.1 (TARGET on branch `b6.1/anthropic-operator`):** operator-authorized Anthropic for Ask SSE + Sync drain triage only; prepaid ledger reserve/reconcile + CLI; D-023 addendum labelled TARGET until owner LIVE + C9. See `docs/runbooks/llm-providers.md` STOP LIVE.
+**b6.1 (CURRENT on branch tip `e181818`; merge pending):** operator-authorized Anthropic for Ask SSE + Sync drain triage only; off by default; never visitors; prepaid ledger reserve/reconcile + CLI; D-023 addendum CURRENT for shipped+LIVE clauses (PART 20). See `docs/runbooks/llm-providers.md`.
 
 ### Endpoints (CURRENT) — `/api/v1`
 
@@ -145,7 +145,7 @@ Full audit: [docs/audits/2026-09-25-baseline-audit.md](audits/2026-09-25-baselin
 
 ## TARGET
 
-Remaining locked rebuild after **B6 on main**: **b6.1** Anthropic operator switch (PART 19), then **B7** (public deploy). Package layout notes below still guide prefs/admin splits.
+Remaining locked rebuild after **B6 on main** and **b6.1** LIVE PASS (PART 20; PR pending merge): **B7** (public deploy). Package layout notes below still guide prefs/admin splits.
 
 ### Package layout + dependency rules (D-024)
 
@@ -280,7 +280,7 @@ complete(task, messages, schema=None) -> Result
 stream(task, messages) -> AsyncIterator[Event]
 ```
 
-**Default order:** `gemini → groq → ollama → rules` (task-dependent). Anthropic **never** in the env order list; b6.1 TARGET prepends it only when operator-authorized for ask/triage.
+**Default order:** `gemini → groq → ollama → rules` (task-dependent). Anthropic **never** in the env order list; b6.1 prepends it only when ENABLED + operator-authorized for ask/triage.
 
 - **Failover:** on 429/5xx/timeout; honor Retry-After; circuit open N minutes
 - **Budgets:** daily req/token caps per free provider from env; Anthropic hard **token and USD** remaining (D-023)

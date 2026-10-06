@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml)
 
-**CURRENT on `main`:** B0–B6 merged (**B6** PR #44 → `eae1a9a`; Alembic **0010**; Morning Run `schedule: 0 12 * * *` + `workflow_dispatch` on default branch, workflow active; first `event=schedule` observation pending). **Next on branch:** **b6.1** Anthropic operator switch (PART 19 item 1; D-023 addendum TARGET until LIVE). Then **B7**. See:
+**CURRENT on `main`:** B0–B6 merged (**B6** PR #44 → `eae1a9a`; Alembic **0010**; Morning Run `schedule: 0 12 * * *` + `workflow_dispatch`; first schedule cancelled by runner non-acquire — see PART 20). **b6.1** Anthropic operator switch LIVE PASS 2026-10-05 on branch tip `e181818` (PART 20; D-023 CURRENT for shipped clauses; PR pending owner merge). **Next:** **B7**. See:
 
 - [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history, baseline, locked plan
 - [ROADMAP.md](ROADMAP.md) — batches **B0–B7** (+ B1.5 / B2.1 / B3.1)
@@ -13,7 +13,7 @@
 - [docs/design-decisions.md](docs/design-decisions.md) — portfolio ADR index
 - [docs/adr/](docs/adr/) — ADRs D-001–D-030
 
-Built with TypeScript, React, FastAPI, Postgres, and a **hand-rolled multi-provider LLM gateway** (free-tier Gemini → Groq → Mistral → Cloudflare → OpenRouter → Ollama → rules). Anthropic is prepaid-gated only (D-023; off by default).
+Built with TypeScript, React, FastAPI, Postgres, and a **hand-rolled multi-provider LLM gateway** (free-tier Gemini → Groq → Mistral → Cloudflare → OpenRouter → Ollama → rules). Anthropic is prepaid-gated, operator-only Ask/Sync triage (D-023; **off by default**; never visitors).
 
 > **Post-B2 note:** The [2026-09-25 baseline audit](docs/audits/2026-09-25-baseline-audit.md) scored AI engineering 2/5 **before** B2. That historical score is unchanged; CURRENT capability is the gateway described above.
 

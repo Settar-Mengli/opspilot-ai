@@ -57,9 +57,11 @@ Resolution order (Gemini):
 
 **Policy-cap deviation:** Mistral (and OpenRouter/Gemini TOK_DAY policy values) are **OWNER POLICY** where daily measured RPD/TPD was missing or estimated — not pure `floor(0.8 × measured)`. Recorded in PART 7.
 
-## Anthropic (D-023 / b6.1 TARGET until C9)
+## Anthropic (D-023 / b6.1 CURRENT)
 
-`OPSPILOT_ANTHROPIC_ENABLED=false` by default. **TARGET:** Operator-only Ask SSE + Sync drain triage when authorized (`demo_operator` cookie + ENABLED + DEMO off + prepaid ledger). Not CURRENT on `main` until owner LIVE + C9. Visitors / morning job / evals never call Anthropic. Missing positive `OPSPILOT_ANTHROPIC_USD_PER_MTOK_IN` / `_OUT` while enabled → never construct client. Rates: **VERIFY AT DECISION TIME** (platform.claude.com 2026-10-05: $1 / $5 MTok). Default model `claude-haiku-4-5-20251001`. SDK timeout default 25s (`OPSPILOT_ANTHROPIC_TIMEOUT_S`); Ask step wall remains 30s.
+`OPSPILOT_ANTHROPIC_ENABLED=false` by default. **CURRENT:** Operator-only Ask SSE + Sync drain triage when authorized (`demo_operator` cookie + ENABLED + DEMO off + prepaid ledger). Off by default; never visitors. Visitors / morning job / evals never call Anthropic. Missing positive `OPSPILOT_ANTHROPIC_USD_PER_MTOK_IN` / `_OUT` while enabled → never construct client. Rates verified platform.claude.com 2026-10-05: $1 / $5 MTok. Default model `claude-haiku-4-5-20251001`. SDK timeout default 25s (`OPSPILOT_ANTHROPIC_TIMEOUT_S`); Ask step wall remains 30s.
+
+**LIVE PASS (owner-run 2026-10-05, Neon host `ep-withered-dew-b528cx5k-pooler`):** L0–L10 completed; total measured spend 5269 tokens / USD 0.007589; final restore `anthropic_rows_total=5`, ledger remaining 1 / 0.000001, `open_reservations=0` at every check. Full counts in PART 20.
 
 **Ledger CLI — sole writer of `anthropic_prepaid_budget` (no env seed; retired `OPSPILOT_ANTHROPIC_BUDGET_*` names are gone):**
 
@@ -185,8 +187,8 @@ Remove-Item Env:OPSPILOT_ANTHROPIC_ENABLED -ErrorAction SilentlyContinue
 # Ensure API process has OPSPILOT_ANTHROPIC_ENABLED unset; restart if needed
 uv run python -m opspilot.jobs.anthropic_budget show
 # expect: open_reservations=0
-# expect: prints host + remaining after L7 set (1 / 0.000001) unless owner re-set;
-# state chosen remaining in PART 20; anthropic_rows_total=N_final (record)
+# LIVE PASS 2026-10-05 restore state (Neon): remaining_tokens=1 remaining_usd=0.000001
+#   anthropic_rows_total=5; open_reservations=0 (see PART 20)
 ```
 
 ## Discovery (STOP A)
