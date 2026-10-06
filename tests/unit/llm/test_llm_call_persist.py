@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from opspilot.llm import FakeProvider, LlmGateway, Message
+from opspilot.llm.errors import LlmProvidersExhausted
 from opspilot.llm.gateway import session_attempt_recorder
 from opspilot.llm.prompts.versioning import prompt_version_sha256
 from opspilot.llm.routed import BudgetAwareGateway
@@ -91,9 +92,15 @@ def test_recorder_persists_usd_estimate_from_raw(db_session: Session) -> None:
 
 
 @pytest.mark.usefixtures("allow_llm")
-def test_recorder_debits_anthropic_prepaid_on_success(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("OPSPILOT_ANTHROPIC_BUDGET_TOKENS", "1000")
-    monkeypatch.setenv("OPSPILOT_ANTHROPIC_BUDGET_USD", "5")
+def test_recorder_skips_anthropic_when_ledger_row_owned(db_session: Session) -> None:
+    """Reserve path owns the row: recorder must not debit or insert a second llm_calls row."""
+    from opspilot.persistence.repositories.anthropic_budget import set_budget
+
+    set_budget(db_session, tokens=1000, usd=Decimal("5"))
+    db_session.commit()
+    before_tokens = get_budget(db_session)
+    assert before_tokens is not None
+    tok0 = before_tokens.remaining_tokens
     gw = LlmGateway(
         [
             FakeProvider(
@@ -106,6 +113,7 @@ def test_recorder_debits_anthropic_prepaid_on_success(db_session: Session, monke
                         input_tokens=100,
                         output_tokens=50,
                         raw={"usd_estimate": "0.5"},
+                        meta={"ledger_row_owned": True},
                     )
                 ],
             )
@@ -113,11 +121,39 @@ def test_recorder_debits_anthropic_prepaid_on_success(db_session: Session, monke
         recorder=session_attempt_recorder(db_session),
         observe=False,
     )
-    gw.complete(task="demo_quality", messages=[Message(role="user", content="hi")])
+    gw.complete(task="ask", messages=[Message(role="user", content="hi")])
     budget = get_budget(db_session)
     assert budget is not None
-    assert budget.remaining_tokens == 850
-    assert budget.remaining_usd == Decimal("4.5")
+    assert budget.remaining_tokens == tok0  # no debit
+    assert list(db_session.scalars(select(LlmCallRow)).all()) == []  # no duplicate insert
+
+
+@pytest.mark.usefixtures("allow_llm")
+def test_recorder_records_anthropic_prereserve_denial_once(db_session: Session) -> None:
+    """Pre-reserve denial (no ledger_row_owned) is still recorded once; no debit."""
+    gw = LlmGateway(
+        [
+            FakeProvider(
+                name="anthropic",
+                complete_results=[
+                    ProviderResult(
+                        status=AttemptStatus.POLICY_DENIED,
+                        model="claude-test",
+                        error_code="operator_auth_required",
+                    )
+                ],
+            )
+        ],
+        recorder=session_attempt_recorder(db_session),
+        observe=False,
+    )
+    with pytest.raises(LlmProvidersExhausted):
+        gw.complete(task="ask", messages=[Message(role="user", content="hi")])
+    rows = list(db_session.scalars(select(LlmCallRow)).all())
+    assert len(rows) == 1
+    assert rows[0].provider == "anthropic"
+    assert rows[0].status == "policy_denied"
+    assert get_budget(db_session) is None
 
 
 @pytest.mark.usefixtures("allow_llm")

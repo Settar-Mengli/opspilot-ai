@@ -6,19 +6,27 @@ import os
 from collections.abc import Sequence
 
 import httpx
+from sqlalchemy.orm import Session
 
 from opspilot.llm.circuit import CircuitBreaker
+from opspilot.llm.operator_auth import OperatorAnthropicAuth
+from opspilot.llm.providers.anthropic import (
+    AnthropicProvider,
+    anthropic_enabled,
+    task_allowlisted,
+)
 from opspilot.llm.providers.base import LlmProvider
 from opspilot.llm.providers.fake import FakeProvider
 from opspilot.llm.providers.gemini import GeminiProvider
 from opspilot.llm.providers.openai_compatible import OpenAICompatibleProvider
+from opspilot.llm.types import TaskName
 
 _DEFAULT_ORDER = ("gemini", "groq", "mistral", "cloudflare", "openrouter")
 _OPENAI_COMPAT = frozenset({"groq", "mistral", "cloudflare", "openrouter", "ollama"})
 
 
 def provider_order(raw: str | None = None) -> list[str]:
-    """Parse INFERENCE_PROVIDER_ORDER; Anthropic never included."""
+    """Parse INFERENCE_PROVIDER_ORDER; Anthropic never included from env order."""
     text = (raw if raw is not None else os.environ.get("INFERENCE_PROVIDER_ORDER", "")).strip()
     if not text:
         return list(_DEFAULT_ORDER)
@@ -31,10 +39,15 @@ def build_providers(
     *,
     client: httpx.Client | None = None,
     include_missing_keys: bool = False,
+    operator_auth: OperatorAnthropicAuth | None = None,
+    session: Session | None = None,
+    task: TaskName | None = None,
 ) -> list[LlmProvider]:
     """Construct providers for the configured order.
 
     Providers without keys are skipped unless include_missing_keys (tests).
+    Prepend ``AnthropicProvider`` only when ENABLED + operator auth + allowlisted task.
+    Flag off → no Anthropic in the list (no anthropic llm_calls of any status).
     """
     names = list(order) if order is not None else provider_order()
     out: list[LlmProvider] = []
@@ -64,6 +77,11 @@ def build_providers(
             if ready or include_missing_keys:
                 out.append(OpenAICompatibleProvider(name, client=client))
             continue
+    if operator_auth is not None and anthropic_enabled() and task is not None and task_allowlisted(task):
+        out.insert(
+            0,
+            AnthropicProvider(operator_auth=operator_auth, session=session),
+        )
     return out
 
 

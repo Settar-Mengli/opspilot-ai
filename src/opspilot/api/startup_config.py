@@ -8,9 +8,32 @@ from urllib.parse import urlparse
 
 from opspilot.llm.policy import force_rules_enabled, llm_disable_enabled
 from opspilot.llm.providers.anthropic import anthropic_enabled
+from opspilot.persistence.repositories.anthropic_budget import get_budget
 from opspilot.services.operator_session import demo_mode_enabled
 from opspilot.services.send_allowlist import send_recipient_allowlist
 from opspilot.utils.logging_utils import configure_logging
+
+
+def anthropic_ledger_present() -> bool:
+    """True when anthropic_prepaid_budget id=1 exists. Best-effort; False on DB errors."""
+    try:
+        from opspilot.persistence.db import create_engine, create_session_factory
+
+        engine = create_engine()
+        try:
+            factory = create_session_factory(engine)
+            with factory() as session:
+                return get_budget(session) is not None
+        finally:
+            engine.dispose()
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def refuse_if_anthropic_enabled_with_demo() -> None:
+    """Refuse process start when prepaid Anthropic is enabled under DEMO_MODE."""
+    if anthropic_enabled() and demo_mode_enabled():
+        raise RuntimeError("Refusing start: OPSPILOT_ANTHROPIC_ENABLED and OPSPILOT_DEMO_MODE cannot both be set")
 
 
 def ensure_api_logging() -> None:
@@ -62,6 +85,7 @@ def log_startup_config(*, logger: logging.Logger | None = None) -> str:
         f"DEMO_MODE={int(demo_mode_enabled())} "
         f"allowlist_count={allow_n} "
         f"ANTHROPIC_ENABLED={int(anthropic_enabled())} "
+        f"ANTHROPIC_LEDGER={int(anthropic_ledger_present())} "
         f"CSRF_RELAX={_env_flag('OPSPILOT_CSRF_RELAX_DEV')} "
         f"COOKIE_SECURE={_env_flag('OPSPILOT_COOKIE_SECURE')} "
         f"CORS_ORIGIN_HOST={_cors_first_origin_host_label()} "

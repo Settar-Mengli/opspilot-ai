@@ -233,7 +233,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 **TARGET** sequencing after B6 (details in [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) PART 19; not yet implemented):
 
-1. Anthropic operator switch (operator-only, off by default, never visitor-reachable, hard spend cap; Ask + triage for operator session; D-023 amendment when that batch is planned)
+1. **b6.1** Anthropic operator switch — **LIVE PASS 2026-10-05** on branch `b6.1/anthropic-operator` tip `e181818` (PART 20; D-023 CURRENT for shipped clauses; PR open; owner merges)
 2. B7 public deploy (recruiter access codes — per-recipient, expiring, revocable — with rate limits + daily cap; fictional demo data only; README via existing Playwright screenshots; security first; data-handling/trust workstream)
 3. MCP connection to GitHub (OpsPilot as MCP client; one read-only official GitHub connection; off by default; after B7 on its own branch — PART 2 CUT reversed for this scope only)
 4. Final general cleanup (stale scratch branches + unneeded extras; only after all batches above complete)
@@ -260,8 +260,8 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | `complete_json` path split / dual gateway loops | **deps+U9** | OUT of B5; agent uses BudgetAwareGateway |
 | CQ-04 soft-deny user-visible copy unification | **OD** | OUT of B5 |
 | F-11 token cap ≤1-call overshoot | **deps+U9** | OUT of B5 |
-| DM-09 `ttft_ms` / `usd_estimate` / LlmCall links | **partial** | **ttft_ms on Ask SSE in B5**; `usd_estimate` + prepaid ledger plumbing on main (B6); Anthropic still off |
-| F-05 Anthropic USD debit on LlmCall | **B7** | Plumbing on main (B6); precondition before Anthropic ever enabled (P7 off) |
+| DM-09 `ttft_ms` / `usd_estimate` / LlmCall links | **partial** | **ttft_ms on Ask SSE in B5**; `usd_estimate` + prepaid ledger; b6.1 operator Anthropic LIVE PASS (PART 20) |
+| F-05 Anthropic USD debit on LlmCall | **done (b6.1)** | Reserve/reconcile + CLI; LIVE PASS 2026-10-05 (PART 20); PR pending merge |
 | Connections 768 Gmail card subtitle orphan word (cosmetic) | **OD** | Owner-noted after gallery approval 2026-10-02; not a defect; not a merge gate |
 | Ask chose a non-latest, third-party item when asked for “the latest inbox mail” (observed in live smoke Run 2) — add an Ask eval case | **eval/OPTIONAL** | Smoke script fixed (`6eef4c4`); ask_agent case landed in B6 (`n_cases=7`); product Ask targeting quality deferred to eval |
 

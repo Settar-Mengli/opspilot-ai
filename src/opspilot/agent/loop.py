@@ -243,6 +243,10 @@ class _TimeoutProvider:
     def name(self) -> str:
         return self._inner.name
 
+    @property
+    def inner(self) -> LlmProvider:
+        return self._inner
+
     def complete(
         self,
         *,
@@ -361,6 +365,13 @@ def run_ask_agent(
     draft_created = False
     tool_provider: str | None = None
 
+    def _anthropic_attempts() -> int:
+        for p in timed_providers:
+            inner = getattr(p, "inner", p)
+            if getattr(inner, "name", None) == "anthropic":
+                return int(getattr(inner, "anthropic_attempts", 0) or 0)
+        return 0
+
     for step in range(max_steps):
         if cancel_check and cancel_check():
             yield AgentEvent("error", rid, {"code": "aborted", "message": "Ask cancelled."})
@@ -374,6 +385,7 @@ def run_ask_agent(
             return
 
         provider_calls += 1
+        anth_before = _anthropic_attempts()
         try:
             # Gateway (budget debit + record) stays on this thread; provider body is timed.
             turn = gw.complete_json(
@@ -399,6 +411,11 @@ def run_ask_agent(
         except Exception:  # noqa: BLE001 — soft boundary; never leak exception text
             yield AgentEvent("error", rid, {"code": "ask_failed", "message": "Ask failed."})
             return
+
+        anth_delta = _anthropic_attempts() - anth_before
+        if anth_delta > 1:
+            # Free path already counted +1; Anthropic repairs/force_json add extras only.
+            provider_calls += anth_delta - 1
 
         if cancel_check and cancel_check():
             yield AgentEvent("error", rid, {"code": "aborted", "message": "Ask cancelled."})

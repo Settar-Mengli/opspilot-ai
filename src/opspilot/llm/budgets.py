@@ -57,7 +57,10 @@ def try_consume_request(session: Session, *, provider: str, day: date | None = N
     2) UPDATE … SET req_count = req_count + 1 WHERE req_count < :cap RETURNING …
 
     Empty RETURNING → budget deny. Unset cap → deny (fail closed live).
+    Anthropic skips daily counters (prepaid ledger is SoT).
     """
+    if provider.lower() == "anthropic":
+        return True
     cap = req_cap(provider)
     if cap is None:
         return False
@@ -93,6 +96,8 @@ def try_consume_request(session: Session, *, provider: str, day: date | None = N
 
 def add_tokens(session: Session, *, provider: str, tokens: int, day: date | None = None) -> None:
     """Post-call token reconcile (may overshoot tok cap by ≤1 call)."""
+    if provider.lower() == "anthropic":
+        return
     if tokens <= 0:
         return
     day_utc = day or utc_budget_day()
@@ -120,6 +125,8 @@ def add_tokens(session: Session, *, provider: str, tokens: int, day: date | None
 
 def tokens_exhausted(session: Session, *, provider: str, day: date | None = None) -> bool:
     """True when tok_count already at/over cap (pre-call soft check)."""
+    if provider.lower() == "anthropic":
+        return False
     cap = tok_cap(provider)
     if cap is None:
         return True

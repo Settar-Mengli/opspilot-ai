@@ -19,7 +19,6 @@ from opspilot.llm.schema_convert import schema_prompt_fragment, unwrap_schema_ec
 from opspilot.llm.types import AttemptStatus, CompletionResult, Message, ProviderResult, StreamChunk, TaskName
 from opspilot.obs.tracing import LlmSpanAttrs, append_llm_jsonl, emit_llm_span
 from opspilot.persistence.llm_calls import record_llm_call
-from opspilot.persistence.repositories.anthropic_budget import debit_budget
 
 _REPAIR_SUFFIX = (
     "Your previous JSON failed validation. Return corrected JSON only that matches the schema. "
@@ -256,6 +255,9 @@ def session_attempt_recorder(session: Session) -> AttemptRecorder:
         request_id: str | None = None,
         prompt_version: str | None = None,
     ) -> None:
+        # Reserve/reconcile owns the Anthropic llm_calls row + ledger; do not duplicate or debit.
+        if provider == "anthropic" and (result.meta or {}).get("ledger_row_owned") is True:
+            return
         usd_estimate = _usd_estimate_from_raw(result.raw)
         record_llm_call(
             session,
@@ -272,11 +274,6 @@ def session_attempt_recorder(session: Session) -> AttemptRecorder:
             error_code=result.error_code,
             meta=sanitize_meta(result.meta),
         )
-        if provider == "anthropic" and result.status is AttemptStatus.SUCCESS:
-            tokens = result.input_tokens + result.output_tokens
-            debit_usd = usd_estimate if usd_estimate is not None else Decimal(0)
-            if tokens > 0 or debit_usd > 0:
-                debit_budget(session, tokens=tokens, usd=debit_usd)
 
     return _record
 

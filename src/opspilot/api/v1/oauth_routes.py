@@ -227,7 +227,11 @@ def post_sync(request: Request, session: Session = Depends(get_db_session)) -> J
     session.commit()
 
     # Wake in-process drain worker (does not block the request).
-    _spawn_sync_drain(job_id, generation, ceiling)
+    from opspilot.llm.operator_auth import OperatorAnthropicAuth
+
+    cookie = request.cookies.get(COOKIE_NAME)
+    operator_auth = OperatorAnthropicAuth.from_session(verify_session(cookie))
+    _spawn_sync_drain(job_id, generation, ceiling, operator_auth)
 
     return JSONResponse(
         content=_sync_resp("started", job_id=job_id, pending=pending).model_dump(),
@@ -235,9 +239,14 @@ def post_sync(request: Request, session: Session = Depends(get_db_session)) -> J
     )
 
 
-def _spawn_sync_drain(job_id: str, generation: int, ceiling: int) -> None:
+def _spawn_sync_drain(
+    job_id: str,
+    generation: int,
+    ceiling: int,
+    operator_auth: object | None = None,
+) -> None:
     """Fire-and-forget drain in a background thread (pipeline.py pattern)."""
-    ctx = contextvars.copy_context()
+    ctx = contextvars.copy_context()  # request_id only; auth closed over explicitly
 
     def _run() -> None:
         from opspilot.persistence.db import create_engine, create_session_factory, get_database_url
@@ -259,6 +268,7 @@ def _spawn_sync_drain(job_id: str, generation: int, ceiling: int) -> None:
                 job=job,
                 generation=generation,
                 ceiling=ceiling,
+                operator_auth=operator_auth,
             )
             final_status = "succeeded"
             if drain_result.ceiling_hit or drain_result.budget_exhausted:

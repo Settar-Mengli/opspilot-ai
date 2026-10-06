@@ -2193,3 +2193,129 @@ No product code, tests, workflows, ADR body edits, or earlier PART edits.
 
 - Owner merges this docs PR. Agent does not merge.
 - Plan/build each TARGET item in the order above; each batch amends its own ADRs when planned.
+
+## PART 20 -- B6.1 Anthropic operator switch -- 2026-10-05
+
+Append-only after PART 19. Does not edit PART 0-19 bodies. Records b6.1 scope approval, build/fix/LIVE evidence, and CURRENT design as shipped on branch tip `e181818` (merge pending owner). Counts and flags only -- no secrets, mail content, addresses, database URLs, or model output text.
+
+### Owner scope quote
+
+`SCOPE APPROVED (2026-10-05)`
+
+### Branch
+
+| Item | Value |
+|---|---|
+| Branch | `b6.1/anthropic-operator` |
+| Cut from | `main` @ `3bc7753dd6639fdfdf7d1da400ab8f888ad3f17b` |
+| Tip (pre-C9) | `e181818ca1f060403e6f5853a7356c9fd1019abe` |
+| Tip CI | [37386884550](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37386884550) **success** |
+| Local suite at tip | **622** passed; coverage **82.91%** TOTAL |
+| Alembic head | **0010** (unchanged; no migration in b6.1) |
+
+### Process
+
+pre-plan audit → plan + amendments A1-A9 → build conditions B1-B6 → build C0-C8 → post-build audit → fix pass 1 (F1-F6) → verification → fix pass 2 (G1-G3) → re-check → STOP LIVE → this PART (C9).
+
+**What audits caught (named):**
+
+| Audit | Finding |
+|---|---|
+| Post-build | Double ledger debit (reserve path + recorder) |
+| Post-build | ContextVar carrying Sync operator auth |
+| Post-build | Duck-typed `from_session` accepted non-`OperatorSession` |
+| Post-build / verification V1 | Post-send connection errors refunded as if pre-send |
+| Verification V8 | Flag-off still prepended Anthropic into the provider list |
+
+### Commits and CI (oldest first)
+
+Twenty commits on the branch (C0 through G3). Red commits and fix-forwards called out.
+
+| SHA | Subject | CI run | Conclusion | Fix-forward |
+|---|---|---|---|---|
+| `bd3b771` | docs(audit): preaudit + D-023 b6.1 addendum TARGET | 37334810826 | success | -- |
+| `0a8aff3` | feat(llm): OperatorAnthropicAuth + startup DEMO/ENABLED refuse | 37336012761 | success | -- |
+| `492ec0d` | feat(db): ledger reserve/reconcile + CLI show counts | 37337358885 | **failure** | `3b25c95` restored legacy `debit_budget` for hermetic recorder (later deleted in F1) |
+| `3b25c95` | fix(db): keep legacy debit_budget for recorder hermetic test | 37338659807 | success | -- |
+| `f78590a` | feat(llm): Anthropic L2 gate + SDK timeout/max_retries + A3 refund rules | 37342107547 | success | -- |
+| `37b0e11` | feat(llm): prepend Anthropic when authorized; budgets anthropic branch | 37343354622 | success | -- |
+| `9e3d6d8` | feat(ask): operator auth into agent; Anthropic-only attempt counting | 37344688803 | **failure** | `49b64b8` typing workaround (superseded by F3 isinstance) |
+| `49b64b8` | fix(llm): accept Any session in OperatorAnthropicAuth.from_session | 37345952139 | success | -- |
+| `aab4a8a` | feat(sync): operator auth into sync drain triage only | 37347460134 | success | -- |
+| `86bb395` | test(b6.1): cross-cutting Anthropic pins | 37348503702 | success | -- |
+| `e1e45b6` | docs(b6.1): runbook + SoT truth-align (STOP LIVE procedure) | 37349813259 | success | -- |
+| `493fab8` | fix(llm): single owner for Anthropic ledger and rows | 37372605092 | attempt1 failure (FE/UI cancelled queued); attempt2 **success** after rerun | no new commit |
+| `d193b0b` | fix(sync): explicit operator auth, no ContextVar | 37376024103 | success | -- |
+| `ad7b64e` | fix(llm): from_session cannot be fooled | 37377262453 | success | -- |
+| `35c7d91` | fix(llm): true pre-send refund | 37378527771 | success | -- |
+| `89988a7` | feat(cli): honest open_reservations counts | 37379826101 | success | -- |
+| `5bf92dc` | docs(b6.1): truth-align after fix pass | 37381048128 | success | -- |
+| `48ffef4` | fix(llm): keep reservation on post-send connection errors | 37384500397 | success | -- |
+| `0d429c8` | fix(llm): flag off means no Anthropic at all | 37385750245 | success | -- |
+| `e181818` | test(sync): sequential auth without patching the minting function | 37386884550 | success | -- |
+
+### Design as shipped (CURRENT on merge of this branch)
+
+- **Off by default.** `OPSPILOT_ANTHROPIC_ENABLED` false; never visitor Ask; never morning job; never tests/CI live calls.
+- **Operator-session gate.** `OperatorAnthropicAuth.from_session` after `verify_session` returns a real `OperatorSession` with role `demo_operator`; duck-typed carriers rejected. Mint sites: Ask SSE + Sync start only. Sync drain receives auth as an explicit spawn parameter (no ContextVar).
+- **Task allowlist.** `{ask, triage}` only.
+- **Routing.** Anthropic prepended only when ENABLED + operator auth + allowlisted task; else free-tier order only (flag off → zero Anthropic providers / zero anthropic `llm_calls` of any status).
+- **Ledger sole owner.** `anthropic_prepaid_budget` id=1; CLI `show`/`set` only writer; reserve + one `llm_calls` row per attempt; recorder never debits Anthropic and skips duplicate row when `meta.ledger_row_owned`.
+- **est_input cap** 16384; estimator conservative (`utf8//2+64`).
+- **SDK.** anthropic 1.8.0; `max_retries=0`; timeout default 25s (`OPSPILOT_ANTHROPIC_TIMEOUT_S`).
+- **Refund / keep.** Connect-phase `httpx2.ConnectError` as `__cause__` of `APIConnectionError` → full refund; other connection causes / missing cause → keep; HTTP 4xx → refund; HTTP 5xx / timeout / unclassified → keep.
+- **Startup refusal** when ENABLED and DEMO_MODE are both on. Morning `_preflight` refuses when enabled.
+- **No migration.** Alembic head remains **0010**.
+
+### STOP LIVE evidence (owner-run 2026-10-05, Neon)
+
+Host label first segment only: `ep-withered-dew-b528cx5k-pooler`. Counts/flags only. `open_reservations=0` at every show after a completed step.
+
+| Step | Evidence |
+|---|---|
+| L0 | host label `ep-withered-dew-b528cx5k-pooler` |
+| L1 | no ledger row; `anthropic_rows_total=0` |
+| L2 | ledger set 100000 tokens / 0.30 USD with `--confirm-host` |
+| L3 | startup `ANTHROPIC_ENABLED=1` `ANTHROPIC_LEDGER=1` |
+| L4 | operator Ask: rows 0→2, success 2, task ask, max_id 204; ledger 100000/0.300000 → 96830/0.295866 |
+| L5 | no-cookie Ask: rows unchanged at 2; ledger unchanged; answered by free path |
+| L6 | operator Sync one new item: rows 2→4, triage 2, max_id 212; ledger → 94731/0.292411 |
+| L7 | ledger set 1/0.000001; Ask → budget_denied 1, success still 4, ledger unchanged; Ask answered by free path |
+| L8 | flag off, API restarted (`ANTHROPIC_ENABLED=0`): Ask → rows unchanged at 5; no new row of any status |
+| L9 | morning preflight with flag on → `PreflightError` `anthropic_enabled` |
+| L10 | flag unset; ledger left at 1/0.000001; final `anthropic_rows_total=5`; `open_reservations=0` at every check |
+
+**Total measured spend across LIVE:** 5269 tokens, USD 0.007589.
+
+### Model / rates (verified at source)
+
+2026-10-05 on platform.claude.com: `claude-haiku-4-5-20251001` Active; $1 per input MTok; $5 per output MTok. Rates stay in env (`OPSPILOT_ANTHROPIC_USD_PER_MTOK_IN` / `_OUT`); no prices hard-coded in `src/`.
+
+### Deviations and open items carried
+
+1. **R3:** Sync flag-off proof is helper-level (`complete_structured_raising` / `build_providers`), not a full POST `/sync` route hermetic.
+2. **est_input** estimator is conservative (may over-reserve).
+3. **B7 (TARGET):** public host never holds `ANTHROPIC_API_KEY` or the enable flag.
+4. Retired budget env names (`OPSPILOT_ANTHROPIC_BUDGET_TOKENS` / `_USD`) remain only in the historical D-023 B2 table; not runtime.
+
+### Morning Run on main (separate from b6.1; record only)
+
+| Run | Event | Result |
+|---|---|---|
+| 37368659012 | schedule 12:00 UTC 2026-10-05 | **cancelled** by GitHub: "The job was not acquired by Runner of type hosted" -- workflow never started; no Telegram message |
+| 37380490436 | workflow_dispatch | **success** in 22s; true quiet-day no-op; Telegram delivered: status=succeeded, triaged=0, pending=0, forced=false |
+
+**Open item:** a scheduled Morning Run has not yet completed end to end, and nothing alerts the owner when a run never starts -- candidate for B7.
+
+### SoT docs this PART
+
+Truth-align: D-023 b6.1 addendum CURRENT (shipped+LIVE clauses); `AGENTS.md` zero-spend rule 3; `ROADMAP.md`; `README.md`; `docs/architecture.md`; `CHANGELOG.md`; `docs/runbooks/llm-providers.md` (LIVE result + restore state).
+
+### Dep bump (post-C9; clears Frontend npm audit)
+
+- d0a880e chore(deps): bump source-map-js to clear npm audit -- override source-map-js 1.2.2 (GHSA-68fv-2mgg-jv7q); CI [37411232921](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37411232921) **success**.
+
+### Next
+
+- Owner merges the b6.1 PR. Agent does not merge.
+- B7 next per PART 19 order (after this merge).

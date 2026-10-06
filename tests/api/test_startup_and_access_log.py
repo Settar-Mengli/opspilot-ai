@@ -24,6 +24,10 @@ def test_log_startup_config_non_secret(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OPSPILOT_CORS_ORIGINS", "http://127.0.0.1:5173")
     monkeypatch.setenv("OPSPILOT_ASK_MAX_STEPS", "5")
     monkeypatch.setenv("OPSPILOT_ASK_MAX_PROVIDER_CALLS", "8")
+    monkeypatch.setattr(
+        "opspilot.api.startup_config.anthropic_ledger_present",
+        lambda: False,
+    )
     sink = MagicMock()
     line = log_startup_config(logger=sink)
     sink.info.assert_called()
@@ -31,6 +35,7 @@ def test_log_startup_config_non_secret(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "DEMO_MODE=0" in line
     assert "allowlist_count=2" in line
     assert "ANTHROPIC_ENABLED=0" in line
+    assert "ANTHROPIC_LEDGER=0" in line
     assert "CSRF_RELAX=0" in line
     assert "COOKIE_SECURE=0" in line
     assert "CORS_ORIGIN_HOST=127" in line
@@ -38,6 +43,26 @@ def test_log_startup_config_non_secret(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "ASK_MAX_PROVIDER_CALLS=8" in line
     assert "sk-" not in line
     assert "@example.com" not in line
+
+
+def test_startup_refuses_enabled_and_demo(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPSPILOT_ANTHROPIC_ENABLED", "true")
+    monkeypatch.setenv("OPSPILOT_DEMO_MODE", "1")
+    from opspilot.api.startup_config import refuse_if_anthropic_enabled_with_demo
+
+    with pytest.raises(RuntimeError, match="ANTHROPIC_ENABLED"):
+        refuse_if_anthropic_enabled_with_demo()
+
+
+def test_startup_config_ledger_flag(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPSPILOT_ANTHROPIC_ENABLED", "false")
+    monkeypatch.setenv("OPSPILOT_DEMO_MODE", "0")
+    monkeypatch.setattr(
+        "opspilot.api.startup_config.anthropic_ledger_present",
+        lambda: True,
+    )
+    line = log_startup_config(logger=MagicMock())
+    assert "ANTHROPIC_LEDGER=1" in line
 
 
 def test_access_logger_emits_request_id(monkeypatch: pytest.MonkeyPatch) -> None:
