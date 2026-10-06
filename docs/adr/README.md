@@ -37,5 +37,6 @@ Index of ADRs for OpsPilot. Status values: Accepted | Superseded | Proposed.
 | [D-031](D-031-ask-tool-contract.md) | Ask tool contract + JSON-emulated capability map | Accepted | B5 |
 | [D-032](D-032-ask-sse.md) | Ask SSE event stream | Accepted | B5 |
 | [D-033](D-033-hitl-approve-send.md) | HITL approve & send (reply-only) | Accepted | B5 |
+| [D-034](D-034-github-mcp-readonly-client.md) | GitHub MCP read-only Ask client | Proposed | MCP |
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../../OPSPILOT-MASTER-RECORD.md).
