@@ -27,7 +27,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | **B6** | M8 + M9 | Morning run (in-runner) + Telegram + preferences → evals |
 | **B7** | M10 | Public free-tier deploy — **BACKLOG** (dropped from spine 2026-10-06; PART 21) |
 
-**Order:** B0 → B1 → **B1.5a → B1.5b** → B2 → **B2.1** → B3 → B4 → **B3.1** → B5 → B6 → b6.1. **Post-spine order:** cleanup → professional README (+ data-handling/trust in that step) → demo recording (PART 21). MCP (B6.2) **done** — merged PR #49 → `925f1aa`. B7 not in that order.
+**Order:** B0 → B1 → **B1.5a → B1.5b** → B2 → **B2.1** → B3 → B4 → **B3.1** → B5 → B6 → b6.1. **Post-spine remaining:** demo recording (PART 21). MCP (B6.2), cleanup (PART 23), and professional README (+ trust page, PART 24) are **done**. B7 not in that order.
 
 *(Planned spine listed B3.1 before B4; **executed** order was B3 then B4 then B3.1 per owner lock.)*
 
@@ -235,8 +235,8 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 **TARGET** sequencing after b6.1 on `main` (supersedes PART 19 **sequencing only**; PART 19 body not edited). Details: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) PART 21.
 
 1. **MCP — DONE (B6.2 / PART 22)** — OpsPilot as official GitHub MCP **client** (D-034 CURRENT); four static read tools; flag **off** by default; operator-only; LIVE PASS 2026-10-06; **merged** PR #49 → `925f1aa` (branch tip before merge `7755c3c`). **No separate database.**
-2. **Final cleanup** — stale scratch branches + unneeded extras
-3. **Professional README** (desktop + mobile Playwright screenshots) **including** the data-handling / trust workstream (not a separate batch; also feeds the demo script)
+2. **Final cleanup — DONE** (PR #52 → `8c5c320`, PART 23)
+3. **Professional README — DONE** (this batch; desktop + mobile screenshots + [docs/trust-and-data.md](docs/trust-and-data.md); PART 24)
 4. **Demo recording**
 
 **Done:** **b6.1** Anthropic operator switch — LIVE PASS 2026-10-05; **merged** PR #47 → `fed71d1`. **B6.2** MCP GitHub read-only client — LIVE PASS 2026-10-06 (PART 22); **merged** PR #49 → `925f1aa`. B7 public deploy is **BACKLOG**, not in this order.

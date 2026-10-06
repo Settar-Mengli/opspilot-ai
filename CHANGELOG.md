@@ -17,6 +17,7 @@ and this project follows Semantic Versioning principles for release tags.
 
 ### Added
 
+- **Professional README (PART 24):** hiring-facing README + `docs/trust-and-data.md`; morning e2e and provider-order corrections; ROADMAP remaining order → demo recording.
 - **Cleanup 2026-10-06 (PART 23):** duplicate PART 18 removed; scratch branches deleted; living-doc truth-align; Dependabot #41 rebase (owner merges); #50 deferred.
 - **B6.2 MCP GitHub read-only Ask client (LIVE PASS 2026-10-06; PART 22):** official `mcp` SDK Streamable HTTP; four static tools; fail-closed operator gate (`OperatorGitHubMcpAuth`); flag `OPSPILOT_GITHUB_MCP_ENABLED` default **off**; initialize-era pin `2025-11-25`; hermetic fake transport; red-team n=10. PAT never in git/CI. Tip `7755c3c` (659 passed / cov 82.86%); **merged** PR #49 → `925f1aa`.
 - **PART 21 owner decisions (2026-10-06):** B7 public deploy dropped from spine → **BACKLOG**; post-spine order MCP → cleanup → professional README (+ data-handling/trust) → demo recording; D-023 L4 standing ops (operator local only); D-021 idle; B7 pre-audit backlog artifact `docs/audits/2026-10-06-b7-preaudit.md`. MCP step completed (PR #49); remaining order starts at cleanup.

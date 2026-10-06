@@ -2495,3 +2495,68 @@ Head remains **0010**.
 ### Next
 
 Owner deletes remotes (D1/D2) after this commit is CI-green; then living-doc truth-align (C3) → professional README → demo recording.
+
+## PART 24 -- Professional README + trust page -- 2026-10-06
+
+Append-only after PART 23. Docs-only. Does not edit PART bodies 0–23. No src / FE / PNG / workflow / migration / ADR bodies.
+
+### Base
+
+| Item | Value |
+|---|---|
+| origin/main at cut | 82515dfb32e4834bd1d836e85be52db72dff0e7c (PR #51 merge) |
+| Branch | docs/readme-2026-10-06 |
+| Commit 1 | de8e746427b96034849038f212c19c160fd80f19 — README + docs/trust-and-data.md; CI run 37536168254 success |
+| PR | to be opened after this commit is CI-green |
+
+### Owner decisions applied (settled before Build)
+
+- **D1** Cut historical AI-engineering 2/5 callout from README (scorecard remains in PART 1 / master record).
+- **D2** No demo video section yet.
+- **D3** Master record, ROADMAP, ADR index linked near bottom of README only.
+- **D4** Screenshots: four desktop 1280 + three mobile 375 (no error/empty/sync-busy).
+- **D5** Short Trust section in README + full field/cap table in docs/trust-and-data.md.
+
+### Files touched
+
+- `README.md` — hiring-facing rewrite
+- `docs/trust-and-data.md` — new
+- `ROADMAP.md` — Remaining order items 2–3 DONE; Order one-liner remaining = demo recording
+- `CHANGELOG.md` — one Unreleased Added bullet
+- this PART
+
+### Factual corrections in README
+
+- Morning scheduled e2e success: run 37507785445 (2026-10-06); removed false "not completed" line.
+- "Next: cleanup" removed (cleanup merged PR #52 → 8c5c320).
+- Default provider order = gemini → groq → mistral → cloudflare → openrouter; Ollama constructible but not default; rules = fallback, not a provider.
+- Live OpenRouter F1 0.619 stated as **n=15** partial only.
+- Coverage **82.85%** measured vs gate **72%** (CI run 37531681964 on tip 82515df).
+
+### Evidence numbers (tip CI 37531681964 unless noted)
+
+- Backend 659 passed; coverage 82.85% (gate 72%); frontend unit 49 passed.
+- Visual baselines: **90** PNGs across 375 / 768 / 1280 (re-counted at Build).
+- Hermetic F1 floor 0.30 (n=40); red-team corpus n=20.
+- Live F1: Gemini 0.606 n=40; Groq 0.613 n=40; Mistral 0.537 n=40; CF combined 0.706 n=40; OR 0.619 n=15 partial.
+
+### Screenshots in README
+
+- Desktop 1280: dashboard, ask-docked-messages, briefing, items-split
+- Mobile 375: dashboard, ask-with-messages, items
+
+### Trust page
+
+Gemini unpaid vs paid terms **re-verified 2026-10-06** at https://ai.google.dev/gemini-api/terms (Unpaid Services / Paid Services sections). Other free providers not asserted.
+
+### ROADMAP / CHANGELOG
+
+Remaining order open step = **demo recording** only. Cleanup and professional README marked DONE.
+
+### Out of scope
+
+src, FE, PNG, workflow, migration, ADR bodies, PART 0–23 bodies; no demo video section (D2).
+
+### Next
+
+**Demo recording** (PART 21 step 4). B7 remains backlog.
