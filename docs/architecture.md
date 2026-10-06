@@ -1,6 +1,6 @@
 # OpsPilot Architecture
 
-**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B6** (PR #44 → `eae1a9a`) plus **b6.1** **merged** PR #47 → `fed71d1` / PART 20, and **B6.2 MCP** GitHub read-only client (D-034 CURRENT; LIVE PASS 2026-10-06 / PART 22) on branch `mcp/github-readonly` tip `7755c3c` until owner merge. Sections labeled **TARGET** describe the remaining post-spine order (cleanup → professional README + data-handling/trust → demo recording; PART 21). **B7** public deploy is **BACKLOG**. Do not present unmerged branch code as already on `main`.
+**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B6** (PR #44 → `eae1a9a`) plus **b6.1** **merged** PR #47 → `fed71d1` / PART 20, and **B6.2 MCP** GitHub read-only client (D-034 CURRENT; LIVE PASS 2026-10-06 / PART 22) **merged** PR #49 → `925f1aa` / PART 22. Sections labeled **TARGET** describe the remaining post-spine order (cleanup → professional README + data-handling/trust → demo recording; PART 21). **B7** public deploy is **BACKLOG**. Do not present unmerged branch code as already on `main`.
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
@@ -39,7 +39,7 @@ Verified through **B6** on `main` (PR #44 → `eae1a9a`): hermetic pytest (socke
 
 **B6 (CURRENT on main):** in-runner GHA `morning_run` + Telegram counts-only; Sync **202**/poll drain + ops_jobs lease/reap/fence; triage corrections overlay; failed-draft reopen; F-05 prepaid ledger plumbing; Alembic **0010**; C14 cron `0 12 * * *` + `workflow_dispatch` (first schedule cancelled by runner non-acquire — PART 20; manual dispatch quiet-day success).
 
-**b6.1 (CURRENT on branch tip `e181818`; merge pending):** operator-authorized Anthropic for Ask SSE + Sync drain triage only; off by default; never visitors; prepaid ledger reserve/reconcile + CLI; D-023 addendum CURRENT for shipped+LIVE clauses (PART 20). See `docs/runbooks/llm-providers.md`.
+**b6.1 (CURRENT on main; merged PR #47 → `fed71d1`):** operator-authorized Anthropic for Ask SSE + Sync drain triage only; off by default; never visitors; prepaid ledger reserve/reconcile + CLI; D-023 addendum CURRENT for shipped+LIVE clauses (PART 20). See `docs/runbooks/llm-providers.md`.
 
 ### Endpoints (CURRENT) — `/api/v1`
 
@@ -145,11 +145,11 @@ Full audit: [docs/audits/2026-09-25-baseline-audit.md](audits/2026-09-25-baselin
 
 ## TARGET
 
-Remaining work after **B6**, **b6.1**, and **B6.2 MCP** (LIVE PASS / PART 22; PR pending): PART 21 post-spine order — **cleanup** → professional README (**including** data-handling/trust TARGET) → demo recording. **B7** public deploy is **BACKLOG**. Package layout notes below still guide prefs/admin splits.
+Remaining work after **B6**, **b6.1**, and **B6.2 MCP** (LIVE PASS / PART 22; merged PR #49 → `925f1aa`): PART 21 post-spine order — **cleanup** → professional README (**including** data-handling/trust TARGET) → demo recording. **B7** public deploy is **BACKLOG**. Package layout notes below still guide prefs/admin splits.
 
 ### GitHub MCP client (CURRENT — shipped; flag off default; operator-only)
 
-OpsPilot is an MCP **client** only ([D-034](adr/D-034-github-mcp-readonly-client.md) CURRENT): Streamable HTTP to `https://api.githubcopilot.com/mcp/readonly`, four static Ask tools (`get_me`, `get_file_contents`, `list_commits`, `pull_request_read`), `OperatorGitHubMcpAuth`, initialize-era pin `2025-11-25`, 15s adapter timeout. Not an LLM provider; not in `llm_calls` as `mcp`. Visitors / DEMO / CI / flag-off never open HTTP. Owner/repo pinned from env. LIVE PASS 2026-10-06 (PART 22).
+OpsPilot is an MCP **client** only ([D-034](adr/D-034-github-mcp-readonly-client.md) CURRENT): Streamable HTTP to `https://api.githubcopilot.com/mcp/readonly`, four static Ask tools (`get_me`, `get_file_contents`, `list_commits`, `pull_request_read`), `OperatorGitHubMcpAuth`, initialize-era pin `2025-11-25`, 15s adapter timeout. Not an LLM provider; not in `llm_calls` as `mcp`. Visitors / DEMO / CI / flag-off never open HTTP. Owner/repo pinned from env. LIVE PASS 2026-10-06 (PART 22). Merged PR #49 → `925f1aa`.
 
 ### Package layout + dependency rules (D-024)
 
@@ -337,7 +337,7 @@ Datasets under `evals/datasets/` (fictional). Metrics: precision/recall/F1, conf
 
 ### Jobs / scheduling
 
-**CURRENT on main (D-011):** Manual CLI/API remains a valid local path. GitHub Actions **Morning Run** on default branch has `schedule: 0 12 * * *` plus `workflow_dispatch` (C14; workflow **active**). In-runner `morning_run` (secrets → env; Google refresh from Neon; Telegram counts-only). Fail fast if Neon schema ≠ Alembic head; migrations operator-applied, never by cron. Auth-fail drill via `simulate_google_reauth`. No in-app scheduler. Local Windows Task Scheduler remains a valid **dev** path. First `event=schedule` observation on `main` pending at PART 18.
+**CURRENT on main (D-011):** Manual CLI/API remains a valid local path. GitHub Actions **Morning Run** on default branch has `schedule: 0 12 * * *` plus `workflow_dispatch` (C14; workflow **active**). In-runner `morning_run` (secrets → env; Google refresh from Neon; Telegram counts-only). Fail fast if Neon schema ≠ Alembic head; migrations operator-applied, never by cron. Auth-fail drill via `simulate_google_reauth`. No in-app scheduler. Local Windows Task Scheduler remains a valid **dev** path. First `event=schedule` e2e success: run 37507785445 (PART 22).
 
 **BACKLOG (former B7):** Public deploy; optional HMAC webhook wake of deployed API (X2).
 
@@ -374,4 +374,4 @@ No custom domain. Anthropic only via operator budgeted scripts, not visitor path
 
 ### Deliberately simple
 
-No LangGraph, LiteLLM, Celery, Qdrant, visitor BYOK, multi-tenant beyond operator vs visitor, LoRA, or custom domain in the locked spine. One-scope MCP GitHub read-only client is **CURRENT** (D-034 / PART 22; flag off default; operator-only; PR pending). No public deploy in the spine (B7 backlog).
+No LangGraph, LiteLLM, Celery, Qdrant, visitor BYOK, multi-tenant beyond operator vs visitor, LoRA, or custom domain in the locked spine. One-scope MCP GitHub read-only client is **CURRENT** (D-034 / PART 22; flag off default; operator-only; merged PR #49 → `925f1aa`). No public deploy in the spine (B7 backlog).

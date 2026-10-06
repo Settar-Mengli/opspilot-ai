@@ -2043,67 +2043,6 @@ Truth-align only (false CURRENT claims): `ROADMAP.md`, `README.md`, `CHANGELOG.m
 - Owner merges this docs PR. Agent does not merge.
 - First `schedule` Morning Run on `main`: append run id + conclusion when observed (later PART or owner note).
 
-## PART 18 -- B6 merge closeout -- 2026-10-05
-
-Append-only after PART 17. Does not edit PART 14/15/16/17 bodies. Records B6 merge to `main` and truth-aligns SoT docs. Docs-only; no product code.
-
-### B6 merge facts
-
-| Item | Value |
-|---|---|
-| PR | [#44](https://github.com/Settar-Mengli/opspilot-ai/pull/44) |
-| Title | B6: morning run, Sync 202 + poll, corrections, job status |
-| Merge SHA | `eae1a9a47ff7568f9bc7aa8d8f0ca911a2bb9c13` |
-| Parents | `462062a9fb0b247d331db57c8183061d02ff3c1f` (main / PR #43) + `717391b4109fe9148c14399e99f31914bb02a4ce` (b6 tip) |
-| Merged at | 2026-10-05T04:19:52Z |
-| Merge CI | [37263038965](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37263038965) **success** |
-
-### Schedule on default branch
-
-| Item | Value |
-|---|---|
-| Workflow | `.github/workflows/morning.yml` on `main` |
-| Cron | `0 12 * * *` (C14) + `workflow_dispatch` |
-| Workflow state | **active** (`gh api .../actions/workflows/morning.yml`) |
-| First `event=schedule` on `main` | **Pending** — read-only `gh run list --workflow="Morning Run" --event schedule` returned no runs at closeout time (2026-10-05). Prior Morning Run history is `workflow_dispatch` on `b6/morning-run`. First scheduled fire expected at next 12:00 UTC after merge (GHA may delay registration briefly). |
-
-### Alembic / Neon
-
-| Item | Value |
-|---|---|
-| Repo head on `main` | **0010** (`0010_ops_jobs_corrections_budget`) |
-| Neon | Owner-applied **0010** before B6 LIVE (PART 15); not re-queried this PART |
-
-### Open findings / deferrals carried forward
-
-From PART 17 (unchanged; no code this PART):
-
-1. Unexpected raise from `notify_morning_outcome` on a **success** path would enter the H2 except and mark a succeeded job `failed`.
-2. `test_zero_pending_helper_branch_no_run_no_brief` does not call `run_morning` (reimplements finalize).
-3. H2 failure test does not assert Telegram payload fields (counts/flags/`error_code` only via product code path).
-4. Corrections saved while `pending > 0`, or with no latest gmail run, wait for a later zero-pending morning (and a gmail run) before `corrections_only` brief rewrite.
-5. **DEFER:** Connections sync-status spacing (`.cn-feat-sub`); compare `--new-states` full excuse for `dashboard-error` / `evening-error`; `gmail_upserted` rename (counts updates+inserts); M9 `promotion_hook` → eval dataset file write.
-
-ROADMAP Open findings closed as shipped on this merge (docs truth-align only): background-job triage (202 + poll); failed-draft reopen. M9 remainder stays open.
-
-### Remaining order (owner-pending)
-
-Owner-stated order after B6 merge (not a new ADR; record only):
-
-1. Anthropic operator profile + MCP as its own PR (MCP is CUT from B0–B7 spine in PART 2 — needs owner un-CUT / ADR before Plan if MCP is in scope)
-2. B7 public free-tier deploy + hardening
-3. Optional side batches (deps+U9; open-decisions / OD)
-4. Final general repo cleanup
-
-### SoT docs this PART
-
-Truth-align only (false CURRENT claims): `ROADMAP.md`, `README.md`, `CHANGELOG.md`, `docs/architecture.md`, `docs/runbooks/gha-morning-job.md`. Historical audits / `docs/history/` untouched.
-
-### Next
-
-- Owner merges this docs PR. Agent does not merge.
-- First `schedule` Morning Run on `main`: append run id + conclusion when observed (later PART or owner note).
-
 ## PART 19 -- Owner decisions 2026-10-05 -- 2026-10-05
 
 Append-only after PART 18. Does not edit PART 18 (or earlier) bodies, ADR bodies, or product code. Docs-only record of owner decisions made 2026-10-05. All items below are **TARGET** until each batch is planned and shipped; each batch amends its own ADRs when planned.
@@ -2470,3 +2409,89 @@ D-034 CURRENT for shipped + LIVE-proven clauses; ROADMAP / README / architecture
 ### Next
 
 Per PART 21 remaining order after MCP: **cleanup** → professional README (+ data-handling/trust) → demo recording. B7 stays backlog.
+
+## PART 23 -- Final cleanup -- 2026-10-06
+
+Append-only after PART 22. Docs-only cleanup batch on branch chore/cleanup-2026-10-06. Does not edit PART bodies other than the D4 surgical deletion below. No src / FE / PNG / workflow / migration. Alembic head stays **0010**.
+
+### Base
+
+| Item | Value |
+|---|---|
+| origin/main at cut | 925f1aa868960fe41ce86229d5c11de650950325 (PR #49 MCP merge) |
+| Branch | chore/cleanup-2026-10-06 |
+| Preaudit | [docs/audits/2026-10-06-cleanup-preaudit.md](docs/audits/2026-10-06-cleanup-preaudit.md) |
+
+### D4 — Duplicate PART 18 removed
+
+At PART 18 closeout the master record accidentally contained two identical copies of PART 18.
+
+| Copy | Lines (1-indexed, inclusive, before this PART) | Action |
+|---|---|---|
+| First | 1985–2045 | **KEEP** (authoritative PART 18) |
+| Second | 2046–2106 | **DELETED** this commit |
+
+- SHA-256 of each copy (UTF-8 bytes as stored in git, LF line endings): 7da4afc5418afbc47e676f5b2d46fba4b8c48d25860e15dfb9034b065feb759a
+- Both copies were byte-identical ( == b); length **3295** bytes each.
+- Reason: accidental duplicate paste; no content change to the kept copy.
+- After deletion, the next heading remains ## PART 19 -- Owner decisions 2026-10-05. PARTs 0–17, kept PART 18, and PART 19–22 are otherwise byte-identical to the pre-edit blob.
+
+### D1 — Merged remote branches (tip SHAs recorded; owner deletes after this commit is green)
+
+| Branch | Tip SHA | Note |
+|---|---|---|
+| 5/agentic-ask | 9957cf492c82f52c599a29352295ecefe63fba1a | ancestor of main |
+| 6/morning-run | 717391b4109fe9148c14399e99f31914bb02a4ce | ancestor of main |
+| chore/morning-workflow-dispatch | 97ef6e58eeac41d0c90626097cef2997cc2aefd0 | ancestor of main |
+| docs/b6-merge-closeout | 8534f8d261fdfdcee42e5eb1ab5184257aa2ddfa | ancestor of main |
+| docs/owner-decisions-2026-10-05 | 63edfe852f3b0ca9c1e082fbf60be6b1b716d020 | ancestor of main |
+
+**TARGET:** owner deletes these remotes after this commit is pushed and CI is green. Agent does not delete remotes.
+
+### D2 — Gallery scratch branches (tip SHAs + approved run; owner deletes after green)
+
+| Branch | Tip SHA | Note |
+|---|---|---|
+| isual/b6-gallery | d98eb4f405eee54c8489d44d30438401143312ca | not on main |
+| isual/b6-gallery-2 | e02236a2ee7500ff4fb1986c0e9413273f59bd4 | not on main |
+
+Approved UI Baselines gallery run: [37215651414](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37215651414) — head_branch=visual/b6-gallery-2, head_sha=b0cf0fd1be4a4d492a2c0a7fcf92973045fa0783, conclusion success. Tip later advanced to e02236 (record both). Deleting the branch refs does not delete the Actions run.
+
+**TARGET:** owner deletes both remotes after this commit is green; agent prints commands and stops.
+
+### D3 — Local prune (TARGET after remotes gone)
+
+Local branches whose remotes are already gone or deleted in D1/D2: the five merged feature/docs branches, both gallery branches, and thirteen isual/* mutation/determinism branches (isual/before-c5de149, isual/compare-gallery, isual/determinism-a, isual/determinism-b, isual/determinism-e0, isual/harness-r1, isual/mutation-border, isual/mutation-border-fe, isual/mutation-color, isual/mutation-gear, isual/mutation-gear-fe, isual/mutation-margin, isual/mutation-title).
+
+### D5 — Dependabot #41 (TARGET)
+
+PR #41 (	ypescript-eslint 8.70.1→8.71.0): rebase onto main, wait for green CI, **owner merges**. Agent never merges.
+
+### D6 — Dependabot #42 / #50 (CURRENT deferral)
+
+- PR #42 (nthropic 1.8.0→1.10.0 + fastapi) was **closed by Dependabot** as superseded (2026-10-06; not merged).
+- PR #50 is the live successor (nthropic 1.8.0→1.11.0 + fastapi, sqlalchemy, ruff, mypy, dotenv).
+- **DEFER #50** — leave open; do not merge; do not close. Reason: b6.1 was built and proven live against anthropic **1.8.0**, and the wider group also touches sqlalchemy and the lint toolchain — more than a patch bump deserves before the demo recordings. Revisit after demo.
+
+### D7 — Secrets (owner items; honest status)
+
+| Item | Status |
+|---|---|
+| Neon URL in PowerShell history | Found once; owner cleared history; credential was never transmitted; **not rotated** (owner decision). |
+| Gemini API key | Exposed in local logs and a chat transcript during MCP LIVE; **rotation DEFERRED** until after demo recordings (same key shared with owner Agent Arena project; both must update together). Do **not** claim rotated. |
+
+### D8 — Living-doc truth-align (TARGET in C3)
+
+README, ROADMAP, architecture, CHANGELOG, and .env.example still say MCP is pending merge / b6.1 pending in places. Truth-align in a following commit on this branch. Professional README rewrite stays in the next batch.
+
+### Must not touch
+
+`docs/history`, older audits, ADR bodies, PART bodies other than D4, `frontend/design-reference`, committed baselines, `scripts/`, alembic versions, B7 preaudit artifact, runbook lines that intentionally say `cd C:\Dev`.
+
+### Alembic
+
+Head remains **0010**.
+
+### Next
+
+Owner deletes remotes (D1/D2) after this commit is CI-green; then living-doc truth-align (C3) → professional README → demo recording.

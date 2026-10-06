@@ -27,7 +27,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | **B6** | M8 + M9 | Morning run (in-runner) + Telegram + preferences → evals |
 | **B7** | M10 | Public free-tier deploy — **BACKLOG** (dropped from spine 2026-10-06; PART 21) |
 
-**Order:** B0 → B1 → **B1.5a → B1.5b** → B2 → **B2.1** → B3 → B4 → **B3.1** → B5 → B6 → b6.1. **Post-spine order:** MCP → cleanup → professional README (+ data-handling/trust in that step) → demo recording (PART 21). B7 not in that order.
+**Order:** B0 → B1 → **B1.5a → B1.5b** → B2 → **B2.1** → B3 → B4 → **B3.1** → B5 → B6 → b6.1. **Post-spine order:** cleanup → professional README (+ data-handling/trust in that step) → demo recording (PART 21). MCP (B6.2) **done** — merged PR #49 → `925f1aa`. B7 not in that order.
 
 *(Planned spine listed B3.1 before B4; **executed** order was B3 then B4 then B3.1 per owner lock.)*
 
@@ -201,7 +201,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 - **Merged:** PR #44 → `eae1a9a` (merge CI [37263038965](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37263038965) success). Alembic **0010** on `main` / applied on Neon by owner (PART 15). PART 14–17 (branch) + PART 18 (merge closeout).
 - **Workstream M8** — P4 + P11-telegram — **DONE**
   - **Scope:** GHA cron in-runner; morning triage/brief; Telegram notify; schema-head check; fail-closed auth (D-016).
-  - **CURRENT on main:** Sync 202/poll drain; morning_run + Telegram counts-only; C14 schedule `0 12 * * *` + `workflow_dispatch` in `.github/workflows/morning.yml` (workflow **active**). First `event=schedule` run on `main` **pending** at PART 18 closeout.
+  - **CURRENT on main:** Sync 202/poll drain; morning_run + Telegram counts-only; C14 schedule `0 12 * * *` + `workflow_dispatch` in `.github/workflows/morning.yml` (workflow **active**). First `event=schedule` e2e success on `main`: run [37507785445](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37507785445) (PART 22).
   - **Exit criteria (M8):** Cron smoke writes Neon + Telegram; no public BE required; auth-fail path alerts re-auth. **Owner LIVE PASS 2026-10-04** (PART 15) — GHA LLM triage proven (run 37247296563); reauth drill + restore; send count unchanged. Schedule YAML on default branch via merge.
 - **Workstream M9** — P5 lite — **partial**
   - **Scope:** Correction UI; Preference store; promote to eval dataset.
@@ -211,7 +211,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 - **Batch exit criteria:**
   - **Tests:** Job unit tests with fakes; preference→eval path tested (in-memory hook).
   - **Evals:** Promoted case appears in harness path — **open** (M9 remainder).
-  - **Live smoke:** Manual workflow_dispatch succeeded; Telegram received. **LIVE PASS** recorded (dispatch). First scheduled cron on `main` pending observation.
+  - **Live smoke:** Manual workflow_dispatch succeeded; Telegram received. **LIVE PASS** recorded (dispatch). First scheduled cron on `main` observed success (PART 22 run 37507785445).
   - **Docs:** PART 14–18; ROADMAP/CHANGELOG/architecture/runbook truth-aligned.
 - **Deps:** B3, B4/B5 as needed for data · **Size:** L–XL · **Metric:** Scheduled morning brief; feedback → eval cases · **Next (historical at merge):** superseded by PART 21 — MCP first.
 
@@ -234,12 +234,12 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 **TARGET** sequencing after b6.1 on `main` (supersedes PART 19 **sequencing only**; PART 19 body not edited). Details: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) PART 21.
 
-1. **MCP — DONE (B6.2 / PART 22)** — OpsPilot as official GitHub MCP **client** (D-034 CURRENT); four static read tools; flag **off** by default; operator-only; LIVE PASS 2026-10-06; branch `mcp/github-readonly` tip `7755c3c` (PR pending owner merge). **No separate database.**
+1. **MCP — DONE (B6.2 / PART 22)** — OpsPilot as official GitHub MCP **client** (D-034 CURRENT); four static read tools; flag **off** by default; operator-only; LIVE PASS 2026-10-06; **merged** PR #49 → `925f1aa` (branch tip before merge `7755c3c`). **No separate database.**
 2. **Final cleanup** — stale scratch branches + unneeded extras
 3. **Professional README** (desktop + mobile Playwright screenshots) **including** the data-handling / trust workstream (not a separate batch; also feeds the demo script)
 4. **Demo recording**
 
-**Done:** **b6.1** Anthropic operator switch — LIVE PASS 2026-10-05; **merged** PR #47 → `fed71d1`. **B6.2** MCP GitHub read-only client — LIVE PASS 2026-10-06 (PART 22). B7 public deploy is **BACKLOG**, not in this order.
+**Done:** **b6.1** Anthropic operator switch — LIVE PASS 2026-10-05; **merged** PR #47 → `fed71d1`. **B6.2** MCP GitHub read-only client — LIVE PASS 2026-10-06 (PART 22); **merged** PR #49 → `925f1aa`. B7 public deploy is **BACKLOG**, not in this order.
 
 ---
 
@@ -279,7 +279,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | M14 | Phoenix UI | After LlmCall hooks prove value |
 | M15 | A5 distill / LoRA | After evals + teacher quality |
 
-Also deferred: MCP client scopes beyond the one-scope read-only official GitHub connection (**next** per PART 21; other MCP scopes remain CUT/DEFER), attachments/vision, full PWA+push, **P10 multilingual (DEFER)**, LiteLLM/LangGraph/Celery/Qdrant, visitor BYOK, custom domain.
+Also deferred: MCP client scopes beyond the one-scope read-only official GitHub connection (one-scope MCP CURRENT / PART 22; further MCP scopes remain CUT/DEFER), attachments/vision, full PWA+push, **P10 multilingual (DEFER)**, LiteLLM/LangGraph/Celery/Qdrant, visitor BYOK, custom domain.
 
 ---
 
