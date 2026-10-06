@@ -382,6 +382,7 @@ def test_github_mcp_failure_no_llm_calls_row(
 
 def test_github_mcp_flag_off_no_http_in_loop(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("OPSPILOT_GITHUB_MCP_ENABLED", raising=False)
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     monkeypatch.delenv("OPSPILOT_FORCE_RULES", raising=False)
     monkeypatch.delenv("OPSPILOT_LLM_DISABLE", raising=False)
     monkeypatch.setenv("OPSPILOT_BUDGET_GEMINI_REQ_DAY", "100")
@@ -454,6 +455,7 @@ def test_morning_yml_has_no_github_mcp_pat() -> None:
 
 def test_github_mcp_flag_off_no_http(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("OPSPILOT_GITHUB_MCP_ENABLED", raising=False)
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     http_attempted = {"n": 0}
 
     def factory(*, token: str, timeout_s: float) -> httpx2.AsyncClient:
