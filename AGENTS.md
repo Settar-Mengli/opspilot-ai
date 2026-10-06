@@ -6,7 +6,7 @@ Operating rules for AI-assisted and human development in this repository.
 
 > Ground every decision in what the repo actually is. Record facts as CURRENT only when verified in code; label everything planned as TARGET. Recommend, record, and build like a production engineer — no padding, no aspirational claims presented as fact.
 
-Canonical plan: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · [ROADMAP.md](ROADMAP.md) (B0–B7) · [docs/architecture.md](docs/architecture.md) · [docs/adr/](docs/adr/)
+Canonical plan: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · [ROADMAP.md](ROADMAP.md) (B0–B6 + backlog B7; see ROADMAP / PART 21) · [docs/architecture.md](docs/architecture.md) · [docs/adr/](docs/adr/)
 
 ### Source of truth
 
@@ -119,4 +119,4 @@ Every batch plan must show:
 - Local-only until the batch that introduces the integration
 - No paid API dependency
 - No real external service integrations before their locked batch (B4+)
-- Public backend only at **B7** (D6); B6 morning job runs in-runner (D-011)
+- No public backend planned (B7 dropped — PART 21). Local API stays on `127.0.0.1`. B6 morning job in-runner (D-011)
