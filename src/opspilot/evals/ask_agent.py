@@ -103,7 +103,7 @@ def _run_scripted(
         return text
 
     try:
-        loop_mod._model_tool_feedback = _capturing_feedback  # type: ignore[assignment]
+        loop_mod._model_tool_feedback = _capturing_feedback
         if github_mcp is not None:
             import httpx2
 
@@ -151,7 +151,7 @@ def _run_scripted(
         )
         return events, model_facing
     finally:
-        loop_mod._model_tool_feedback = orig_feedback  # type: ignore[assignment]
+        loop_mod._model_tool_feedback = orig_feedback
         set_http_client_factory(None)
         for key, value in saved.items():
             if value is None:
