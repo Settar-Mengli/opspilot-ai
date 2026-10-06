@@ -234,7 +234,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 **TARGET** sequencing after b6.1 on `main` (supersedes PART 19 **sequencing only**; PART 19 body not edited). Details: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) PART 21.
 
-1. **MCP** — OpsPilot as MCP client; one read-only official GitHub connection; off by default; own branch; **no separate database** (PART 19 item 3 scope minus "after B7")
+1. **MCP (TARGET now)** — OpsPilot as official GitHub MCP **client** (D-034); four static read tools; flag **off** by default; branch `mcp/github-readonly`; **no separate database**. LIVE + PART 22 are owner-only after handshake/STOP SECRETS. (PART 19 item 3 scope minus "after B7")
 2. **Final cleanup** — stale scratch branches + unneeded extras
 3. **Professional README** (desktop + mobile Playwright screenshots) **including** the data-handling / trust workstream (not a separate batch; also feeds the demo script)
 4. **Demo recording**

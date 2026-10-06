@@ -145,7 +145,11 @@ Full audit: [docs/audits/2026-09-25-baseline-audit.md](audits/2026-09-25-baselin
 
 ## TARGET
 
-Remaining work after **B6** and **b6.1** on `main` (`fed71d1`): PART 21 post-spine order — MCP → cleanup → professional README (**including** data-handling/trust TARGET) → demo recording. **B7** public deploy is **BACKLOG**. Package layout notes below still guide prefs/admin splits.
+Remaining work after **B6** and **b6.1** on `main` (`fed71d1`): PART 21 post-spine order — **MCP GitHub read-only client (D-034, TARGET on `mcp/github-readonly`, flag off default)** → cleanup → professional README (**including** data-handling/trust TARGET) → demo recording. **B7** public deploy is **BACKLOG**. Package layout notes below still guide prefs/admin splits.
+
+### GitHub MCP client (TARGET until merge + LIVE)
+
+OpsPilot is an MCP **client** only ([D-034](adr/D-034-github-mcp-readonly-client.md)): Streamable HTTP to `https://api.githubcopilot.com/mcp/readonly`, four static Ask tools (`get_me`, `get_file_contents`, `list_commits`, `pull_request_read`), `OperatorGitHubMcpAuth`, 15s adapter timeout. Not an LLM provider; not in `llm_calls` as `mcp`. Visitors / DEMO / CI / flag-off never open HTTP. Owner/repo pinned from env. PART 22 after owner LIVE only.
 
 ### Package layout + dependency rules (D-024)
 
@@ -194,9 +198,11 @@ src/opspilot/
       get_message.py
       get_calendar.py
       draft_reply.py
+      github_mcp.py           # D-034 read-only; flag off default
       send_reply.py
     events.py
   integrations/
+    github_mcp/               # SDK Streamable HTTP adapter; not an LLM provider
     google_oauth.py
     gmail_client.py
     calendar_client.py
@@ -368,4 +374,4 @@ No custom domain. Anthropic only via operator budgeted scripts, not visitor path
 
 ### Deliberately simple
 
-No LangGraph, LiteLLM, Celery, Qdrant, visitor BYOK, multi-tenant beyond operator vs visitor, LoRA, or custom domain in the locked spine. One-scope MCP GitHub read-only client is un-CUT (PART 19/21) and is **next**; no public deploy in the spine (B7 backlog).
+No LangGraph, LiteLLM, Celery, Qdrant, visitor BYOK, multi-tenant beyond operator vs visitor, LoRA, or custom domain in the locked spine. One-scope MCP GitHub read-only client is un-CUT (PART 19/21) and is **TARGET now** (D-034; flag off until owner LIVE). No public deploy in the spine (B7 backlog).

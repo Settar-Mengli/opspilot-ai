@@ -47,10 +47,11 @@ Do not rewrite historical audits or history files to “fix” drift; update ADR
 1. No further paid API purchase.
 2. Default LLM path = free tiers + Ollama + rules — **never** Anthropic by default.
 3. Anthropic only via existing prepaid credits, allowlisted tasks (`ask`/`triage`), and gateway **token + USD** prepaid ledger (D-023). Operator Ask SSE + Sync drain triage under `OperatorAnthropicAuth` when ENABLED (off by default). Never in tests/CI. Never for visitor Ask (D2 / D11).
-4. Fictional demo data only; Google OAuth stays Testing; visitors never connect Gmail.
-5. Do not invent quota numbers — VERIFY AT DECISION TIME.
-6. **Never print secrets** (`.env` values, API keys, refresh tokens) in chat, logs, commits, or docs.
-7. **DEMO_MODE:** visitors cannot send mail or perform operator-only actions.
+4. GitHub MCP (`OPSPILOT_GITHUB_MCP_ENABLED`, `GITHUB_MCP_PAT`, owner/repo env **names** only) is off by default, operator-local, never CI, never a paid Copilot purchase (D-034 / L12). Never print PAT values.
+5. Fictional demo data only; Google OAuth stays Testing; visitors never connect Gmail.
+6. Do not invent quota numbers — VERIFY AT DECISION TIME.
+7. **Never print secrets** (`.env` values, API keys, refresh tokens) in chat, logs, commits, or docs.
+8. **DEMO_MODE:** visitors cannot send mail or perform operator-only actions.
 
 ## X4 — Prompt / data minimization
 

@@ -2,7 +2,7 @@
 
 ## Default path
 
-Free-tier order via `INFERENCE_PROVIDER_ORDER` (default `gemini,groq,mistral,cloudflare,openrouter`). Anthropic is **never** in that list. Final fallback: rules / soft strings / template briefing.
+Free-tier order via `INFERENCE_PROVIDER_ORDER` (default `gemini,groq,mistral,cloudflare,openrouter`). Anthropic is **never** in that list. GitHub MCP is **not** an LLM provider (D-034; `OPSPILOT_GITHUB_MCP_ENABLED` / `GITHUB_MCP_PAT` names in `.env.example`). Final fallback: rules / soft strings / template briefing.
 
 ## Keys (never print values)
 

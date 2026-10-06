@@ -74,3 +74,7 @@ Every free-tier provider used on Ask (`gemini`, `groq`, `mistral`, `cloudflare`,
 ## Consequences
 
 Simpler failover story; slightly higher prompt tokens vs native tools. Native tools can be added later without changing HITL/send invariants.
+
+## Addendum (MCP GitHub, 2026-10-06) — dynamic allowlist
+
+Ask JSON-emulated transport is unchanged. When `OPSPILOT_GITHUB_MCP_ENABLED` is on, DEMO is off, CI is off, and `OperatorGitHubMcpAuth` is minted, `allowed_tools()` adds four **read** names: `get_me`, `get_file_contents`, `list_commits`, `pull_request_read`. Flag off → original four only; MCP names fail `tool_not_allowlisted` before `execute_tool`. Owner/repo are **env-pinned**, never model-chosen. MCP is not a provider and is not in `INFERENCE_PROVIDER_ORDER`. Write GitHub MCP names stay off the registry (`assert_no_write_mcp_tools`).

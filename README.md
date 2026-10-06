@@ -4,14 +4,14 @@
 
 [![CI](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml)
 
-**CURRENT on `main`:** B0–B6 merged (**B6** PR #44 → `eae1a9a`; Alembic **0010**; Morning Run `schedule: 0 12 * * *` + `workflow_dispatch`; first schedule cancelled by runner non-acquire — see PART 20). **b6.1** Anthropic operator switch LIVE PASS 2026-10-05 **merged** to `main` via PR #47 → `fed71d1` (PART 20; D-023 CURRENT). **Next:** MCP GitHub read-only client (PART 21). Public deploy (B7) is **backlog**, not next. See:
+**CURRENT on `main`:** B0–B6 merged (**B6** PR #44 → `eae1a9a`; Alembic **0010**; Morning Run `schedule: 0 12 * * *` + `workflow_dispatch`; first schedule cancelled by runner non-acquire — see PART 20). **b6.1** Anthropic operator switch LIVE PASS 2026-10-05 **merged** to `main` via PR #47 → `fed71d1` (PART 20; D-023 CURRENT). **TARGET next:** GitHub MCP read-only Ask client (D-034; flag off default; LIVE not in this note). Public deploy (B7) is **backlog**. See:
 
 - [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history, baseline, locked plan
 - [ROADMAP.md](ROADMAP.md) — batches **B0–B6** (+ b6.1); B7 backlog — see ROADMAP / PART 21
 - [docs/evals/leaderboard.md](docs/evals/leaderboard.md) — live eval numbers (in-repo JSON only; CF combined; OR partial D6)
 - [docs/architecture.md](docs/architecture.md) — CURRENT vs TARGET
 - [docs/design-decisions.md](docs/design-decisions.md) — portfolio ADR index
-- [docs/adr/](docs/adr/) — ADRs D-001–D-033
+- [docs/adr/](docs/adr/) — ADRs D-001–D-034
 
 Built with TypeScript, React, FastAPI, Postgres, and a **hand-rolled multi-provider LLM gateway** (free-tier Gemini → Groq → Mistral → Cloudflare → OpenRouter → Ollama → rules). Anthropic is prepaid-gated, operator-only Ask/Sync triage (D-023; **off by default**; never visitors).
 

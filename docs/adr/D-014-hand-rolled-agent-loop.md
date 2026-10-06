@@ -42,3 +42,7 @@ Locked env defaults (fail closed when exceeded):
 | `OPSPILOT_ASK_MAX_PROVIDER_CALLS` | **8** | Max provider HTTP attempts per Ask (steps + repair + failover) |
 
 Server-side multi-turn history: last **10** turns, each turn length-capped; tool outputs in history treated as UNTRUSTED (D-029). Daily UTC provider budgets unchanged (B2). Anthropic never on `ask` (D-023). SSE event set extended with `draft` (D-032).
+
+## Addendum (MCP GitHub, 2026-10-06) — adapter timeout not execute_tool
+
+`OPSPILOT_ASK_STEP_TIMEOUT_S` still wraps **provider** `complete` / `complete_json` only. GitHub MCP HTTP is bounded by `OPSPILOT_GITHUB_MCP_TIMEOUT_S` (default **15**) inside `integrations.github_mcp.client` (`asyncio.timeout` around the SDK Streamable HTTP call). Do **not** wrap `execute_tool` in a daemon thread / SQLAlchemy-unsafe timeout (D-034). Disconnect poller still cannot abort an in-flight MCP call; 15s is the wall bound. `mcp_timeout` maps to a content-free tool error + existing repeat-failure soft final.

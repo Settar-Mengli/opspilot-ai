@@ -1,7 +1,7 @@
 # D-034: GitHub MCP read-only Ask client
 
 - **Date:** 2026-10-06
-- **Status:** Proposed
+- **Status:** Accepted
 - **Blocks:** MCP GitHub batch (`mcp/github-readonly`)
 - **Related:** D-014, D-023, D-029, D-031, D-032, PART 19 / PART 21
 
@@ -30,4 +30,12 @@ Never in CI, `morning.yml`, Neon, logs, SSE, `startup_config`, PARTs, or error s
 
 ## Status
 
-Proposed until adapter + LIVE; then Accepted addendum.
+Accepted for the off-by-default operator-gated client on branch `mcp/github-readonly`. PART 22 and LIVE counts are **owner-only** after STOP SECRETS; they are not implied by this ADR.
+
+## Addendum (2026-10-06) — shipped client (flag off default)
+
+- Adapter is **initialize-era** (`ClientSession.initialize` + session header) matching the C0 fake transport (`2025-11-25`). SDK mode auto-negotiate remains; **owner handshake CLI still required before LIVE** (U2 / L12). If the remote requires a paid Copilot entitlement, disable the flag and stop — do not workaround.
+- `OperatorGitHubMcpAuth` is minted in Ask SSE beside Anthropic auth; types are not shared. Fail-closed gate: CI / flag / DEMO / mint / PAT / owner / repo before any SDK HTTP.
+- Four static tools only. `X-MCP-Readonly`, `X-MCP-Lockdown`, `X-MCP-Tools` on adapter requests. Lockdown is a **content filter, not authorization**.
+- Timeout `OPSPILOT_GITHUB_MCP_TIMEOUT_S` default 15s on the SDK/httpx2 call only (not `execute_tool`).
+- Hermetic tests inject `httpx2.ASGITransport` via `set_http_client_factory`; pytest `--disable-socket` unchanged. PAT never in CI workflows.
