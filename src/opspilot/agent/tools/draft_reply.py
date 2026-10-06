@@ -32,7 +32,9 @@ def run(
     gmail_only: bool,
     operator_email: str | None,
     request_id: str | None,
+    github_mcp_auth: object | None = None,
 ) -> dict[str, Any]:
+    del github_mcp_auth
     item_id = neutralize_text(str(args.get("work_item_id") or args.get("id") or ""))[:64]
     # Model-supplied subject is ignored (D-031): server always derives Re: <original>.
     # Owner may edit subject later via HITL edit (D-033).

@@ -29,7 +29,7 @@ def test_ask_agent_hermetic_suite(db_session: Session) -> None:
 
 @pytest.mark.usefixtures("allow_llm")
 def test_redteam_agent_hermetic_suite(db_session: Session) -> None:
-    assert len(load_redteam_agent_cases()) == 5
+    assert len(load_redteam_agent_cases()) == 9
     report = run_redteam_agent_hermetic(db_session)
     assert report["gate_passed"] is True, report["results"]
-    assert report["passed"] == report["n"] == 5
+    assert report["passed"] == report["n"] == 9

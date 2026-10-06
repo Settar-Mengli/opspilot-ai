@@ -20,6 +20,7 @@ from opspilot.agent.loop import CancelCheck, run_ask_agent
 from opspilot.api.csrf import require_csrf_origin
 from opspilot.api.deps import get_db_session
 from opspilot.api.schemas import AskStreamRequest
+from opspilot.llm.github_mcp_auth import OperatorGitHubMcpAuth
 from opspilot.llm.operator_auth import OperatorAnthropicAuth
 from opspilot.llm.routing import build_providers
 from opspilot.persistence.models import LlmCallRow
@@ -166,6 +167,7 @@ def ask_stream(
     operator_email = _operator_email(http_request)
     cookie = http_request.cookies.get(COOKIE_NAME)
     operator_auth = OperatorAnthropicAuth.from_session(verify_session(cookie))
+    github_mcp_auth = OperatorGitHubMcpAuth.from_session(verify_session(cookie))
     # Free path unchanged: omit providers when unauthenticated so loop.build_providers
     # (and existing hermetic monkeypatches) remain the visitor/default path.
     providers = (
@@ -189,6 +191,7 @@ def ask_stream(
                 operator_email=operator_email,
                 providers=providers,
                 cancel_check=cancel_check,
+                github_mcp_auth=github_mcp_auth,
             ):
                 if event.type == "token" and not ttft_done:
                     ttft_ms = int((time.perf_counter() - started) * 1000)

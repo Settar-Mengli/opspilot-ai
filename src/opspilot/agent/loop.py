@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from opspilot.agent.events import AgentEvent
 from opspilot.agent.safety import tool_result_untrusted
-from opspilot.agent.tool_protocol import TOOL_SYSTEM_FRAGMENT, AgentTurn, tool_error_hint
+from opspilot.agent.tool_protocol import AgentTurn, allowed_tools, tool_error_hint, tool_system_fragment
 from opspilot.agent.tools import execute_tool
 from opspilot.agent.turn_parse import (
     collect_key_paths,
@@ -26,6 +26,7 @@ from opspilot.agent.turn_parse import (
 )
 from opspilot.llm.errors import LlmPolicyDenied
 from opspilot.llm.gateway import session_attempt_recorder
+from opspilot.llm.github_mcp_auth import OperatorGitHubMcpAuth
 from opspilot.llm.policy import llm_allowed
 from opspilot.llm.prompt_safety import UNTRUSTED_SYSTEM_POLICY
 from opspilot.llm.providers.base import LlmProvider
@@ -302,6 +303,7 @@ def run_ask_agent(
     operator_email: str | None = None,
     providers: list[LlmProvider] | None = None,
     cancel_check: CancelCheck | None = None,
+    github_mcp_auth: OperatorGitHubMcpAuth | None = None,
 ) -> Iterator[AgentEvent]:
     """Yield agent events until final/error. Enforces step and provider-call caps."""
     rid = (request_id or "ask").strip() or "ask"
@@ -339,9 +341,11 @@ def run_ask_agent(
 
     timed_providers: list[LlmProvider] = [_TimeoutProvider(p, step_timeout_s) for p in provider_list]
 
+    ask_allowed = allowed_tools(github_mcp_auth=github_mcp_auth)
+    fragment = tool_system_fragment(github_mcp_auth=github_mcp_auth)
     system = (
         f"You are {assistant_name}, OpsPilot chief of staff. Calm, concise, first person. "
-        f"{UNTRUSTED_SYSTEM_POLICY} {TOOL_SYSTEM_FRAGMENT}\n"
+        f"{UNTRUSTED_SYSTEM_POLICY} {fragment}\n"
         f"Context:\n{compact_triage_lines(triage_records or [])}"
     )
     messages: list[Message] = [
@@ -357,6 +361,7 @@ def run_ask_agent(
         recorder=recorder,
         observe=True,
         request_id=rid,
+        schema_context={"allowed_tools": ask_allowed},
     )
     provider_calls = 0
     first_token = True
@@ -586,6 +591,7 @@ def run_ask_agent(
             gmail_only=gmail_only,
             operator_email=operator_email,
             request_id=rid,
+            github_mcp_auth=github_mcp_auth,
         )
         _log_ask_tool(
             request_id=rid,

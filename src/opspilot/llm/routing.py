@@ -26,12 +26,12 @@ _OPENAI_COMPAT = frozenset({"groq", "mistral", "cloudflare", "openrouter", "olla
 
 
 def provider_order(raw: str | None = None) -> list[str]:
-    """Parse INFERENCE_PROVIDER_ORDER; Anthropic never included from env order."""
+    """Parse INFERENCE_PROVIDER_ORDER; Anthropic and MCP never included from env order."""
     text = (raw if raw is not None else os.environ.get("INFERENCE_PROVIDER_ORDER", "")).strip()
     if not text:
         return list(_DEFAULT_ORDER)
     names = [p.strip().lower() for p in text.split(",") if p.strip()]
-    return [n for n in names if n and n != "anthropic"]
+    return [n for n in names if n and n not in {"anthropic", "mcp", "github"}]
 
 
 def build_providers(

@@ -18,8 +18,9 @@ def run(
     gmail_only: bool,
     operator_email: str | None,
     request_id: str | None,
+    github_mcp_auth: object | None = None,
 ) -> dict[str, Any]:
-    del gmail_only, operator_email, request_id
+    del gmail_only, operator_email, request_id, github_mcp_auth
     now = datetime.now(UTC)
     days = min(int(args.get("days") or 7), 14)
     start = now - timedelta(days=1)

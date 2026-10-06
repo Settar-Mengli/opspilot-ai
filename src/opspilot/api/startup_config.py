@@ -6,6 +6,7 @@ import logging
 import os
 from urllib.parse import urlparse
 
+from opspilot.integrations.github_mcp.gate import github_mcp_enabled
 from opspilot.llm.policy import force_rules_enabled, llm_disable_enabled
 from opspilot.llm.providers.anthropic import anthropic_enabled
 from opspilot.persistence.repositories.anthropic_budget import get_budget
@@ -86,6 +87,7 @@ def log_startup_config(*, logger: logging.Logger | None = None) -> str:
         f"allowlist_count={allow_n} "
         f"ANTHROPIC_ENABLED={int(anthropic_enabled())} "
         f"ANTHROPIC_LEDGER={int(anthropic_ledger_present())} "
+        f"GITHUB_MCP_ENABLED={int(github_mcp_enabled())} "
         f"CSRF_RELAX={_env_flag('OPSPILOT_CSRF_RELAX_DEV')} "
         f"COOKIE_SECURE={_env_flag('OPSPILOT_COOKIE_SECURE')} "
         f"CORS_ORIGIN_HOST={_cors_first_origin_host_label()} "

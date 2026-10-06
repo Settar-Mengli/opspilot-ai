@@ -14,7 +14,7 @@ _BEARER_RE = re.compile(
 )
 _PASSWORDISH_RE = re.compile(r"(?i)\b(?:password|passwd|secret)\s*[:=]\s*\S+")
 _KEYISH_RE = re.compile(
-    r"\b(?:sk-[A-Za-z0-9_-]{8,}|gsk_[A-Za-z0-9_-]{8,}|AQ\.[A-Za-z0-9_-]{8,}|AIza[A-Za-z0-9_-]{8,})\b"
+    r"\b(?:sk-[A-Za-z0-9_-]{8,}|gsk_[A-Za-z0-9_-]{8,}|AQ\.[A-Za-z0-9_-]{8,}|AIza[A-Za-z0-9_-]{8,}|ghp_[A-Za-z0-9_]{8,}|github_pat_[A-Za-z0-9_]{8,})\b"
 )
 
 

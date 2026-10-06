@@ -17,8 +17,9 @@ def run(
     gmail_only: bool,
     operator_email: str | None,
     request_id: str | None,
+    github_mcp_auth: object | None = None,
 ) -> dict[str, Any]:
-    del operator_email, request_id
+    del operator_email, request_id, github_mcp_auth
     item_id = neutralize_text(str(args.get("id") or args.get("work_item_id") or ""))[:64]
     if not item_id:
         return {"ok": False, "error": "missing_id"}
