@@ -1,73 +1,107 @@
 # OpsPilot AI
 
-**Your AI chief of staff.** OpsPilot surfaces what needs attention, drafts the rest, and briefs you like a trusted advisor — calm UI, fictional demo data, local-first development.
+**Your AI chief of staff.** OpsPilot triages operational work, drafts replies you approve before send, and briefs you in a calm local UI. Demo data is fictional. There is no public deployment — this repo is the portfolio artifact.
 
 [![CI](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml)
 
-**CURRENT on `main`:** B0–B6 merged (**B6** PR #44 → `eae1a9a`; Alembic **0010**; Morning Run `schedule: 0 12 * * *` + `workflow_dispatch`; first schedule cancelled by runner non-acquire — PART 20; first scheduled e2e success run `37507785445` — PART 22). **b6.1** Anthropic operator switch LIVE PASS 2026-10-05 **merged** via PR #47 → `fed71d1` (PART 20; D-023 CURRENT). **B6.2 MCP** GitHub read-only Ask client LIVE PASS 2026-10-06 **merged** via PR #49 → `925f1aa` (D-034 CURRENT; flag off default; operator-only; PART 22). **Next:** cleanup → professional README → demo recording (PART 21). Public deploy (B7) is **backlog**. See:
-
-- [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history, baseline, locked plan
-- [ROADMAP.md](ROADMAP.md) — batches **B0–B6** (+ b6.1); B7 backlog — see ROADMAP / PART 21
-- [docs/evals/leaderboard.md](docs/evals/leaderboard.md) — live eval numbers (in-repo JSON only; CF combined; OR partial D6)
-- [docs/architecture.md](docs/architecture.md) — CURRENT vs TARGET
-- [docs/design-decisions.md](docs/design-decisions.md) — portfolio ADR index
-- [docs/adr/](docs/adr/) — ADRs D-001–D-034
-
-Built with TypeScript, React, FastAPI, Postgres, and a **hand-rolled multi-provider LLM gateway** (free-tier Gemini → Groq → Mistral → Cloudflare → OpenRouter → Ollama → rules). Anthropic is prepaid-gated, operator-only Ask/Sync triage (D-023; **off by default**; never visitors).
-
-> **Post-B2 note:** The [2026-09-25 baseline audit](docs/audits/2026-09-25-baseline-audit.md) scored AI engineering 2/5 **before** B2. That historical score is unchanged; CURRENT capability is the gateway described above.
+Stack: TypeScript, React, FastAPI, Postgres, and a hand-rolled multi-provider LLM gateway. Default free-tier order is Gemini → Groq → Mistral → Cloudflare → OpenRouter. If every remote provider fails or is denied, triage falls back to deterministic rules. Ollama is supported when listed in `INFERENCE_PROVIDER_ORDER` (not in the default order). Anthropic is prepaid-gated, operator-only, and off by default.
 
 ---
 
-## Screenshots (visual baselines)
+## Screenshots
 
-Referenced from existing Playwright container baselines (not regenerated):
+Playwright container baselines (CI visual suite). Captions describe the state shown.
 
-![Dashboard](frontend/e2e/visual.spec.ts-snapshots/dashboard-chromium-1280-linux.png)
+### Desktop (1280)
 
-![Briefing](frontend/e2e/visual.spec.ts-snapshots/briefing-chromium-1280-linux.png)
+Dashboard — home, SAMPLE briefing line, action hub, docked Ask rail:
 
-![Ask docked](frontend/e2e/visual.spec.ts-snapshots/ask-docked-messages-chromium-1280-linux.png)
+![Dashboard desktop](frontend/e2e/visual.spec.ts-snapshots/dashboard-chromium-1280-linux.png)
+
+Ask docked — three-pane shell with a short triage answer in the Ask rail:
+
+![Ask docked with messages](frontend/e2e/visual.spec.ts-snapshots/ask-docked-messages-chromium-1280-linux.png)
+
+Briefing — today’s briefing with Critical / High / Can wait counts:
+
+![Briefing desktop](frontend/e2e/visual.spec.ts-snapshots/briefing-chromium-1280-linux.png)
+
+Items split — full picture list with a selected item detail pane:
+
+![Items split desktop](frontend/e2e/visual.spec.ts-snapshots/items-split-chromium-1280-linux.png)
+
+### Mobile (375)
+
+Dashboard — mobile home and bottom Ask bar:
+
+![Dashboard mobile](frontend/e2e/visual.spec.ts-snapshots/dashboard-chromium-375-linux.png)
+
+Ask — mobile Ask panel with the same triage exchange:
+
+![Ask with messages mobile](frontend/e2e/visual.spec.ts-snapshots/ask-with-messages-chromium-375-linux.png)
+
+Items — urgency-grouped queue (High / Medium / Low):
+
+![Items mobile](frontend/e2e/visual.spec.ts-snapshots/items-chromium-375-linux.png)
 
 ---
 
-## What it does today (CURRENT)
+## What it does
 
-- Ingests fictional operational work items (JSON) and operator **Gmail/Calendar** sync (OAuth Testing; DEMO_MODE)
-- Triages via free-tier gateway **or** deterministic rules when no key / `OPSPILOT_FORCE_RULES`
-- `/api/v1` briefing / ask / evening / insights from **Postgres** (D-025); Neon used for operator demo STOP LIVE
-- Mobile-first React dashboard + ≥1280 three-pane desktop shell
-- Settings GET-only (`provider`, `model`, `api_key_set`)
-- `LlmCall` traces + UTC-day budgets; `X-Request-ID` on requests
+- Ingests fictional work items from JSON, and syncs operator Gmail + Calendar when Google OAuth is connected (Testing app; `DEMO_MODE` blocks OAuth/sync/send for visitors).
+- Triages items through the gateway with structured JSON (urgency, category, sentiment, confidence, evidence refs), or via rules when remote LLM is disabled.
+- Serves briefing, Ask, evening wrap-up, and insights from Postgres over `/api/v1`.
+- Runs a bounded Ask agent (search / get message / calendar / draft reply) over SSE. There is no model-callable send tool.
+- Human-in-the-loop mail: edit draft, approve, then send to an allowlisted recipient (operator only).
+- Morning job on GitHub Actions (`schedule: 0 12 * * *` UTC + `workflow_dispatch`) with counts-only Telegram notify. First scheduled end-to-end success: run [37507785445](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37507785445) (2026-10-06).
+- Optional GitHub MCP read-only Ask tools (flag off by default; operator-local; not used in CI).
+- Mobile-first UI; at ≥1280 a three-pane desktop shell with a docked Ask rail.
 
-**Eval metrics:** published only in [docs/evals/leaderboard.md](docs/evals/leaderboard.md) + [docs/evals/results/](docs/evals/results/) (no invented README scores). Hermetic CI floor = rules macro-F1 ≥ **0.30**. Live: Gemini/Groq/Mistral 60/60; Cloudflare **combined 60/60** (F1 0.706 n=40); OpenRouter **partial** D6 triage n=15 F1 0.619 (ASR N/A; D7–D9 cancelled); Anthropic **skipped**.
+## What it does not do
 
-**Not planned:** public deploy (B7 dropped from spine — PART 21; revive via backlog audit). Morning Run schedule is on `main`; a scheduled run has not yet completed end to end (PART 20/21).
+- No public hosted demo (B7 is backlog).
+- Disconnecting Google removes credentials and sync cursors; it does **not** delete already-synced mail/calendar rows.
+- Free hosted LLM providers may use prompts under their own terms. Local Ollama or `OPSPILOT_FORCE_RULES` avoid remote inference. Details: [docs/trust-and-data.md](docs/trust-and-data.md).
 
 ---
 
-## AI stack (code paths)
+## AI engineering (CURRENT)
 
-| Layer | Path |
-|-------|------|
-| Policy / allow | `src/opspilot/llm/policy.py` (`llm_allowed`) |
-| Production gateway | `src/opspilot/llm/routed.py` (`BudgetAwareGateway`) |
-| Skeleton/test gateway | `src/opspilot/llm/gateway.py` (`LlmGateway` — test-only) |
-| Providers | `src/opspilot/llm/providers/` (Gemini REST + OpenAI-compatible + D-023 Anthropic) |
-| Services | `src/opspilot/services/` (ask / evening / insights) |
-| Triage / briefing adapters | `src/opspilot/adapters/gateway_triage.py`, `briefing_adapter.py` |
+| Piece | Behavior | Code |
+|-------|----------|------|
+| Gateway | Ordered failover, circuit breaker, UTC-day request/token budgets, `LlmCall` traces | `src/opspilot/llm/routed.py`, `budgets.py` |
+| Structured outputs | Schema-validated JSON + one repair attempt | `routed.py` `complete_json`, `src/opspilot/llm/schemas/` |
+| Policy | `OPSPILOT_FORCE_RULES` / `OPSPILOT_LLM_DISABLE` block remote LLM | `src/opspilot/llm/policy.py` |
+| Anthropic | Off by default; operator Ask/Sync only; token + USD prepaid ledger | D-023, `anthropic_budget` repo |
+| Injection defenses | Neutralize + untrusted delimiters; triage body cap 500 chars; grounding on evidence refs | `gateway_triage.py`, D-029 |
+| Ask agent | JSON tool turns; step/provider caps; SSE events | `src/opspilot/agent/loop.py`, D-031/D-032 |
+| HITL send | Approve path; recipient allowlist; DEMO_MODE deny | `mail_hitl.py`, D-033 |
+| Evals | Hermetic rules macro-F1 floor **0.30** (n=40) in CI; live leaderboard in-repo | `rules_baseline.py`, `docs/evals/leaderboard.md` |
+| Red-team | Hermetic corpus n=20; live ASR reported, not CI-gated | `evals/datasets/redteam/v1/` |
 
-### Request path
+---
 
-```mermaid
-flowchart LR
-  Client --> MW[RequestIdMiddleware]
-  MW --> Routes["/api/v1 routes"]
-  Routes --> Services[services / adapters]
-  Services --> BAG[BudgetAwareGateway]
-  BAG --> Providers[llm/providers]
-  BAG --> LlmCall[(llm_calls)]
-```
+## Evidence
+
+Measured on `main` tip CI run [37531681964](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37531681964) (`82515df`, 2026-10-06) unless noted:
+
+- Backend: **659** tests passed; coverage **82.85%** (gate **72%**).
+- Frontend unit: **49** passed.
+- Visual regression: **90** committed Playwright baselines across viewports 375, 768, and 1280.
+- Hermetic CI floor: rules macro-F1 ≥ **0.30** on triage n=40.
+- Live triage (accepted-only F1; see leaderboard for artifacts and dates): Gemini **0.606** (n=40); Groq **0.613** (n=40); Mistral **0.537** (n=40); Cloudflare combined **0.706** (n=40); OpenRouter **0.619** (**n=15**, partial — red-team not run). Anthropic skipped.
+
+Full live table: [docs/evals/leaderboard.md](docs/evals/leaderboard.md).
+
+---
+
+## Trust and data
+
+Mail and triage text sent to an LLM is capped and wrapped as untrusted content. Attachments are not ingested. Sending mail always requires an explicit approve step. Anthropic and GitHub MCP stay off unless the operator enables them locally.
+
+What is not solved: deletion of synced rows on disconnect; full provider retention terms for every free-tier vendor.
+
+→ [docs/trust-and-data.md](docs/trust-and-data.md)
 
 ---
 
@@ -85,49 +119,20 @@ uv run python -m opspilot.jobs.import_json data/raw/sample_input.json
 uv run pytest -q
 ```
 
-Backend:
+Backend: `uv run uvicorn opspilot.api.app:app --app-dir src --reload --host 127.0.0.1 --port 8000`
 
-```powershell
-uv run uvicorn opspilot.api.app:app --app-dir src --reload --host 127.0.0.1 --port 8000
-```
+Frontend: `cd frontend && npm ci && npm run dev`
 
-Frontend:
-
-```powershell
-cd frontend
-npm ci
-npm run dev
-```
-
-**CLI export (files only, no DB):** `uv run python -m opspilot.cli run --output <dir> ...`
-**Load files into DB:** `uv run python -m opspilot.jobs.import_json <path>` (X5).
-
-Details: [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md) · Zero-spend: [docs/runbooks/zero-spend.md](docs/runbooks/zero-spend.md)
+More: [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md) · [docs/runbooks/zero-spend.md](docs/runbooks/zero-spend.md)
 
 ---
 
-## Roadmap (locked)
+## Docs
 
-| Batch | Goal |
-|-------|------|
-| B0 | Docs & architecture lock |
-| B1 | Hermetic foundation + SEC gate |
-| B1.5a/b | UI safety net + desktop three-pane |
-| B2 | LLM gateway + traces |
-| B2.1 | Hardening + truth |
-| B3 | Evals + injection red-team |
-| B4 | Demo Google inbox/calendar |
-| B5 | Agentic Ask + approve & send |
-| B6 | Morning run + Telegram + preferences |
-| B7 | Public free-tier deploy — **BACKLOG** (dropped 2026-10-06) |
-
-Full exits: [ROADMAP.md](ROADMAP.md).
-
----
-
-## Design principles
-
-1. Ground CURRENT vs TARGET honestly.
-2. Zero further spend; free tiers + Ollama; Anthropic prepaid-gated only.
-3. Hermetic tests — no live LLM in default suite/CI.
-4. Calm UX — chief of staff, not alert spam.
+- [docs/architecture.md](docs/architecture.md) — CURRENT vs TARGET
+- [docs/trust-and-data.md](docs/trust-and-data.md) — fields, caps, provider tiers
+- [docs/evals/leaderboard.md](docs/evals/leaderboard.md) — live eval numbers
+- [docs/design-decisions.md](docs/design-decisions.md) — ADR index (D-001–D-034)
+- [docs/adr/](docs/adr/) — decision records
+- [ROADMAP.md](ROADMAP.md) — batches B0–B6; B7 backlog
+- [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history and locked plan
