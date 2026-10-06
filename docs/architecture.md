@@ -1,6 +1,6 @@
 # OpsPilot Architecture
 
-**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B6** (PR #44 → `eae1a9a`) plus **b6.1** as shipped on branch tip `e181818` / PART 20 (owner merge pending). Sections labeled **TARGET** describe the remaining locked rebuild (**B7** and optional side batches). Do not present TARGET as shipped on `main`.
+**Dualism:** Sections labeled **CURRENT** describe behavior on `main` through **B6** (PR #44 → `eae1a9a`) plus **b6.1** **merged** PR #47 → `fed71d1` / PART 20. Sections labeled **TARGET** describe the post-spine order (MCP → cleanup → professional README + data-handling/trust → demo recording; PART 21). **B7** public deploy is **BACKLOG**, not next. Do not present TARGET as shipped on `main`.
 
 Master record: [OPSPILOT-MASTER-RECORD.md](../OPSPILOT-MASTER-RECORD.md) · ADRs: [docs/adr/](adr/) · Roadmap: [ROADMAP.md](../ROADMAP.md)
 
@@ -145,7 +145,7 @@ Full audit: [docs/audits/2026-09-25-baseline-audit.md](audits/2026-09-25-baselin
 
 ## TARGET
 
-Remaining locked rebuild after **B6 on main** and **b6.1** LIVE PASS (PART 20; PR pending merge): **B7** (public deploy). Package layout notes below still guide prefs/admin splits.
+Remaining work after **B6** and **b6.1** on `main` (`fed71d1`): PART 21 post-spine order — MCP → cleanup → professional README (**including** data-handling/trust TARGET) → demo recording. **B7** public deploy is **BACKLOG**. Package layout notes below still guide prefs/admin splits.
 
 ### Package layout + dependency rules (D-024)
 
@@ -315,8 +315,8 @@ Datasets under `evals/datasets/` (fictional). Metrics: precision/recall/F1, conf
 - Auth: Google OAuth operator; visitors anonymous read-only
 - Injection: system prompt policy + **untrusted-content delimiters** around item-derived text + hermetic red-team fixtures (live ASR reported, not CI-gated)
 - PII: fictional policy; if detector fires → **Ollama-only** path
-- X2 HMAC `POST /api/v1/jobs/morning` — **B7 optional** only (D-011); B6 does not need public webhook
-- Rate limits before public (B7)
+- X2 HMAC `POST /api/v1/jobs/morning` — **BACKLOG with B7** optional only (D-011); B6 does not need public webhook
+- Rate limits — **BACKLOG with B7**
 - DEMO_MODE blocks send for visitors
 
 ### Frontend
@@ -333,7 +333,7 @@ Datasets under `evals/datasets/` (fictional). Metrics: precision/recall/F1, conf
 
 **CURRENT on main (D-011):** Manual CLI/API remains a valid local path. GitHub Actions **Morning Run** on default branch has `schedule: 0 12 * * *` plus `workflow_dispatch` (C14; workflow **active**). In-runner `morning_run` (secrets → env; Google refresh from Neon; Telegram counts-only). Fail fast if Neon schema ≠ Alembic head; migrations operator-applied, never by cron. Auth-fail drill via `simulate_google_reauth`. No in-app scheduler. Local Windows Task Scheduler remains a valid **dev** path. First `event=schedule` observation on `main` pending at PART 18.
 
-**TARGET B7:** Public deploy; optional HMAC webhook wake of deployed API (X2).
+**BACKLOG (former B7):** Public deploy; optional HMAC webhook wake of deployed API (X2).
 
 ### Deployment topology
 
@@ -359,7 +359,7 @@ flowchart LR
   BE --> Gmail
   GHA -->|"B6 in-runner write"| Neon
   GHA -->|"B6 notify"| Tg
-  GHA -->|"B7 optional HMAC"| BE
+  GHA -->|"BACKLOG optional HMAC"| BE
   Dev --> Ollama
   Dev --> BE
 ```
@@ -368,4 +368,4 @@ No custom domain. Anthropic only via operator budgeted scripts, not visitor path
 
 ### Deliberately simple
 
-No LangGraph, LiteLLM, Celery, Qdrant, visitor BYOK, multi-tenant beyond operator vs visitor, LoRA, MCP client, or custom domain in the locked spine.
+No LangGraph, LiteLLM, Celery, Qdrant, visitor BYOK, multi-tenant beyond operator vs visitor, LoRA, or custom domain in the locked spine. One-scope MCP GitHub read-only client is un-CUT (PART 19/21) and is **next**; no public deploy in the spine (B7 backlog).

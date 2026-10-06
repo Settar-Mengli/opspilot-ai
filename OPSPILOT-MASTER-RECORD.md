@@ -2319,3 +2319,62 @@ Truth-align: D-023 b6.1 addendum CURRENT (shipped+LIVE clauses); `AGENTS.md` zer
 
 - Owner merges the b6.1 PR. Agent does not merge.
 - B7 next per PART 19 order (after this merge).
+
+## PART 21 -- Owner decisions 2026-10-06 (drop B7) -- 2026-10-06
+
+### Owner decision
+
+B7 public free-tier deploy is **dropped from the spine** and kept as **BACKLOG** (2026-10-06). Reasons (owner terms): a gated fictional demo on sleeping free-tier hosts adds little for recruiters; video + README carry the product signal; dropping public deploy removes the public attack surface found in the B7 pre-audit ([docs/audits/2026-10-06-b7-preaudit.md](docs/audits/2026-10-06-b7-preaudit.md)).
+
+### New post-spine order (supersedes PART 19 sequencing only)
+
+PART 19 body is **not** edited. Sequencing only is superseded:
+
+1. **MCP** — OpsPilot as MCP client; one read-only official GitHub connection; off by default; own branch; **no separate database**. Scope = PART 19 item 3 minus "after B7".
+2. **Final cleanup** — stale scratch branches + unneeded extras.
+3. **Professional README** (desktop + mobile Playwright screenshots) **plus** the data-handling / trust workstream (not a separate batch; also feeds the demo script).
+4. **Demo recording**.
+
+### Data-handling / trust workstream (TARGET; not dropped with B7)
+
+Carried from PART 19 item 2 into step 3 (README) and the demo script. Contents are **TARGET** for when those artifacts are written:
+
+- What mail data leaves the app and to which providers: field names and caps, drawn from the b6.1 pre-audit section J and **re-verified at build time** against `gateway_triage.py`, `_llm.py`, and `get_message.py`.
+- Provider tiers and tradeoffs: local Ollama (nothing leaves); rules-only via `OPSPILOT_FORCE_RULES` (no provider call); paid tier (inputs excluded from training by default); free tier (unpaid Gemini may use prompts to improve Google products — verified at source 2026-10-05; **re-verify before publishing**).
+- Data minimization already in place: capped fields, 500-character body cap, no attachments, delimiter-wrapped untrusted content.
+- What is **not** solved: deletion on disconnect keeps synced rows today (D-016 / B4 G3); provider retention terms unverified for most providers.
+
+Publishing any trust/data-handling copy requires **re-verifying provider terms at the source on the day of publication** (do not reuse the 2026-10-05 Gemini check alone).
+
+### B7 backlog revive
+
+Revive checklist: [docs/audits/2026-10-06-b7-preaudit.md](docs/audits/2026-10-06-b7-preaudit.md). Named gaps only: unauthenticated read routes; connected-means-gmail-only filter; access codes; separate database; rate limits; trust page.
+
+### Open findings / local-first
+
+F-01, F-02, F-13, OBS-2, Docker, X2 HMAC → **BACKLOG/B7**. FE localhost API allowlist is **intended** local-first behaviour (not a defect).
+
+### D-023 L4 standing ops rule (CURRENT)
+
+Never enable Anthropic (`OPSPILOT_ANTHROPIC_ENABLED`) or place `ANTHROPIC_API_KEY` outside the operator's local process. ADR D-023 amended same commit. No public host planned (B7 backlog).
+
+### Carried items
+
+- Third-party demo inbox cleanup before recording.
+- Neon URL may be in PowerShell history → **rotate** credential.
+- Local API unauthenticated → bind `127.0.0.1`.
+- Duplicate PART 18 → cleanup batch.
+- Dependabot #41 / #42 open + green.
+- Morning Run (PART 20): schedule cancelled with no runner acquired; scheduled E2E still not proven.
+
+### b6.1 merge fact
+
+PR #47 → `fed71d1` on `main` (living docs stop saying "PR pending").
+
+### SoT docs this PART
+
+Truth-align: `ROADMAP.md`, `README.md`, `docs/architecture.md`, `AGENTS.md`, `CHANGELOG.md`, `docs/glossary.md`; D-023 L4 standing ops; D-021 idle addendum. B7 pre-audit committed as backlog artifact (separate commit on this branch).
+
+### Next
+
+- Plan MCP batch.

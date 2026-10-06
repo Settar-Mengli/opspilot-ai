@@ -1,6 +1,6 @@
 # OpsPilot Roadmap
 
-**Status:** Locked spine **B0–B7** (2026-09-26). Former M0–M10 are workstreams **inside** batches — scope and exit criteria preserved.
+**Status:** Locked spine **B0–B6** (+ side batches); **B7 public deploy dropped from spine 2026-10-06** (PART 21) and kept as backlog. Former M0–M10 are workstreams **inside** batches — scope and exit criteria preserved.
 
 **Principles:** Zero further spend · fictional demo data · CURRENT vs TARGET grounding · one branch per batch (`bN/...`) · Ask→Plan→Build · Plan requirements in [AGENTS.md](AGENTS.md).
 
@@ -25,9 +25,9 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | **B4** | M5 | Demo Google inbox/calendar |
 | **B5** | M6 + M7 | Agentic Ask + SSE + approve & send |
 | **B6** | M8 + M9 | Morning run (in-runner) + Telegram + preferences → evals |
-| **B7** | M10 | Public free-tier deploy |
+| **B7** | M10 | Public free-tier deploy — **BACKLOG** (dropped from spine 2026-10-06; PART 21) |
 
-**Order:** B0 → B1 → **B1.5a → B1.5b** → B2 → **B2.1** → B3 → B4 → **B3.1** → B5 → B6 → B7.
+**Order:** B0 → B1 → **B1.5a → B1.5b** → B2 → **B2.1** → B3 → B4 → **B3.1** → B5 → B6 → b6.1. **Post-spine order:** MCP → cleanup → professional README (+ data-handling/trust in that step) → demo recording (PART 21). B7 not in that order.
 
 *(Planned spine listed B3.1 before B4; **executed** order was B3 then B4 then B3.1 per owner lock.)*
 
@@ -36,7 +36,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | X | Placement |
 |---|-----------|
 | X1 sync idempotency | **B4** |
-| X2 optional HMAC manual trigger | **B7** |
+| X2 optional HMAC manual trigger | **BACKLOG/B7** |
 | X3 DEMO_MODE introduced | **B4** (B5 exit must enforce DEMO_MODE on send) |
 | X4 prompt/data minimization | **B0** AGENTS + **B2** gateway |
 | X5 JSON→DB importer | **B1** |
@@ -44,7 +44,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | X7 OpenAPI-lite + FE types with `/api/v1` | **B1** |
 | X8 panel lifecycle | **Started B1.5a** (`useOverlay`; `PortalOverlay` introduced then removed in `32fc6e1` unused); agent Ask surfaces finish on **B1.5b layout in B5** |
 
-**Anthropic amendment:** gate in **B2**; optional leaderboard column in **B3**; prod disabled-by-default at **B7**.
+**Anthropic amendment:** gate in **B2**; optional leaderboard column in **B3**; never on a public/shared host; operator local only (D-023 L4 / PART 21).
 
 ---
 
@@ -213,12 +213,13 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
   - **Evals:** Promoted case appears in harness path — **open** (M9 remainder).
   - **Live smoke:** Manual workflow_dispatch succeeded; Telegram received. **LIVE PASS** recorded (dispatch). First scheduled cron on `main` pending observation.
   - **Docs:** PART 14–18; ROADMAP/CHANGELOG/architecture/runbook truth-aligned.
-- **Deps:** B3, B4/B5 as needed for data · **Size:** L–XL · **Metric:** Scheduled morning brief; feedback → eval cases · **Next:** **B7** (owner-pending order may insert Anthropic/MCP PR first — PART 18)
+- **Deps:** B3, B4/B5 as needed for data · **Size:** L–XL · **Metric:** Scheduled morning brief; feedback → eval cases · **Next (historical at merge):** superseded by PART 21 — MCP first.
 
 ### B7 — Public free-tier deploy (M10)
 
-- **Goal:** Public demo URL without custom domain.
-- **Workstream M10** — F2 + X2
+- **Status:** **BACKLOG** — dropped 2026-10-06 (PART 21). Revive: [docs/audits/2026-10-06-b7-preaudit.md](docs/audits/2026-10-06-b7-preaudit.md).
+- **Goal (historical TARGET):** Public demo URL without custom domain.
+- **Workstream M10** — F2 + X2 (historical TARGET under BACKLOG status)
   - **Scope:** Docker; Pages-class FE + Render-class BE + Neon; rate limits; retention; README metrics; `OPSPILOT_ANTHROPIC_ENABLED=false` unless capped operator demo; **optional HMAC** manual trigger (X2). Deploy env must **not** set `OPSPILOT_FORCE_RULES` (tests/CI only).
   - **Exit criteria:**
     - **Tests:** Deploy smoke script / health checks.
@@ -229,15 +230,16 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 
 ---
 
-## Remaining order (owner decision 2026-10-05)
+## Remaining order (owner decision 2026-10-06 / PART 21)
 
-**TARGET** sequencing after B6 (details in [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) PART 19; not yet implemented):
+**TARGET** sequencing after b6.1 on `main` (supersedes PART 19 **sequencing only**; PART 19 body not edited). Details: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) PART 21.
 
-1. **b6.1** Anthropic operator switch — **LIVE PASS 2026-10-05** on branch `b6.1/anthropic-operator` tip `e181818` (PART 20; D-023 CURRENT for shipped clauses; PR open; owner merges)
-2. B7 public deploy (recruiter access codes — per-recipient, expiring, revocable — with rate limits + daily cap; fictional demo data only; README via existing Playwright screenshots; security first; data-handling/trust workstream)
-3. MCP connection to GitHub (OpsPilot as MCP client; one read-only official GitHub connection; off by default; after B7 on its own branch — PART 2 CUT reversed for this scope only)
-4. Final general cleanup (stale scratch branches + unneeded extras; only after all batches above complete)
-5. Demo recording
+1. **MCP** — OpsPilot as MCP client; one read-only official GitHub connection; off by default; own branch; **no separate database** (PART 19 item 3 scope minus "after B7")
+2. **Final cleanup** — stale scratch branches + unneeded extras
+3. **Professional README** (desktop + mobile Playwright screenshots) **including** the data-handling / trust workstream (not a separate batch; also feeds the demo script)
+4. **Demo recording**
+
+**Done:** **b6.1** Anthropic operator switch — LIVE PASS 2026-10-05; **merged** PR #47 → `fed71d1`. B7 public deploy is **BACKLOG**, not in this order.
 
 ---
 
@@ -246,10 +248,10 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | Item | Owner batch | Notes |
 |------|-------------|-------|
 | M9 `promotion_hook` → eval dataset file write / preference promotion | **M9/OPTIONAL** | In-memory hook + unit tests on main; file write not in locked W1–W10 (PART 16) |
-| F-01 authn/authz on public `/api/v1` | **B7** | Operator cookie is local-demo only (D-030) |
-| F-02 HTTP rate limiting | **B7** | |
-| F-13 disable `/docs` in public deploy | **B7** | |
-| OBS-2 `/ready` DB check | **B7** | |
+| F-01 authn/authz on public `/api/v1` | **BACKLOG/B7** | Operator cookie is local-demo only (D-030); FE localhost API allowlist is intended local-first behaviour |
+| F-02 HTTP rate limiting | **BACKLOG/B7** | |
+| F-13 disable `/docs` in public deploy | **BACKLOG/B7** | |
+| OBS-2 `/ready` DB check | **BACKLOG/B7** | |
 | OpenRouter leaderboard completion (triage 016–040 + red-team 20) | **OPTIONAL** | Unassigned; D-B31-4 amended 2026-10-01 (OR stopped at D6 to unblock B5) |
 | Dependabot majors: Playwright 1.63, lucide, TypeScript 7, Vitest 5 | **deps+U9** | Dedicated baseline refresh batch |
 | OD-1 / OD-2 / OD-3 / OD-5 / OD-6 (contrast, focus rings, fonts, axe) | **OD** | Owner-approved OD batch with U9 |
@@ -261,13 +263,13 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | CQ-04 soft-deny user-visible copy unification | **OD** | OUT of B5 |
 | F-11 token cap ≤1-call overshoot | **deps+U9** | OUT of B5 |
 | DM-09 `ttft_ms` / `usd_estimate` / LlmCall links | **partial** | **ttft_ms on Ask SSE in B5**; `usd_estimate` + prepaid ledger; b6.1 operator Anthropic LIVE PASS (PART 20) |
-| F-05 Anthropic USD debit on LlmCall | **done (b6.1)** | Reserve/reconcile + CLI; LIVE PASS 2026-10-05 (PART 20); PR pending merge |
+| F-05 Anthropic USD debit on LlmCall | **done (b6.1)** | Reserve/reconcile + CLI; LIVE PASS 2026-10-05 (PART 20); merged PR #47 → `fed71d1` |
 | Connections 768 Gmail card subtitle orphan word (cosmetic) | **OD** | Owner-noted after gallery approval 2026-10-02; not a defect; not a merge gate |
 | Ask chose a non-latest, third-party item when asked for “the latest inbox mail” (observed in live smoke Run 2) — add an Ask eval case | **eval/OPTIONAL** | Smoke script fixed (`6eef4c4`); ask_agent case landed in B6 (`n_cases=7`); product Ask targeting quality deferred to eval |
 
 ---
 
-## Post-B7 optional (former M11–M15) + backlog
+## Backlog / optional (former M11–M15 + dropped B7)
 
 | Former | Item | Trigger |
 |--------|------|---------|
@@ -277,7 +279,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 | M14 | Phoenix UI | After LlmCall hooks prove value |
 | M15 | A5 distill / LoRA | After evals + teacher quality |
 
-Also deferred: MCP client (**superseded for one scope only** by owner decision 2026-10-05 / PART 19: OpsPilot as MCP client with one read-only official GitHub connection, off by default, after B7; other MCP scopes remain CUT/DEFER), attachments/vision, full PWA+push, **P10 multilingual (DEFER)**, LiteLLM/LangGraph/Celery/Qdrant, visitor BYOK, custom domain.
+Also deferred: MCP client scopes beyond the one-scope read-only official GitHub connection (**next** per PART 21; other MCP scopes remain CUT/DEFER), attachments/vision, full PWA+push, **P10 multilingual (DEFER)**, LiteLLM/LangGraph/Celery/Qdrant, visitor BYOK, custom domain.
 
 ---
 
@@ -287,4 +289,4 @@ Also deferred: MCP client (**superseded for one scope only** by owner decision 2
 - Publishing Google OAuth beyond Testing / visitor Gmail connect
 - Training a model from scratch
 - Cloning the other portfolio repo’s LangGraph/RAG/Celery stack
-- Public backend before B7
+- Public backend (B7 dropped from spine — PART 21)

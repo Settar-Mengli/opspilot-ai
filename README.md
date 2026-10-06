@@ -4,14 +4,14 @@
 
 [![CI](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml)
 
-**CURRENT on `main`:** B0–B6 merged (**B6** PR #44 → `eae1a9a`; Alembic **0010**; Morning Run `schedule: 0 12 * * *` + `workflow_dispatch`; first schedule cancelled by runner non-acquire — see PART 20). **b6.1** Anthropic operator switch LIVE PASS 2026-10-05 on branch tip `e181818` (PART 20; D-023 CURRENT for shipped clauses; PR pending owner merge). **Next:** **B7**. See:
+**CURRENT on `main`:** B0–B6 merged (**B6** PR #44 → `eae1a9a`; Alembic **0010**; Morning Run `schedule: 0 12 * * *` + `workflow_dispatch`; first schedule cancelled by runner non-acquire — see PART 20). **b6.1** Anthropic operator switch LIVE PASS 2026-10-05 **merged** to `main` via PR #47 → `fed71d1` (PART 20; D-023 CURRENT). **Next:** MCP GitHub read-only client (PART 21). Public deploy (B7) is **backlog**, not next. See:
 
 - [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history, baseline, locked plan
-- [ROADMAP.md](ROADMAP.md) — batches **B0–B7** (+ B1.5 / B2.1 / B3.1)
+- [ROADMAP.md](ROADMAP.md) — batches **B0–B6** (+ b6.1); B7 backlog — see ROADMAP / PART 21
 - [docs/evals/leaderboard.md](docs/evals/leaderboard.md) — live eval numbers (in-repo JSON only; CF combined; OR partial D6)
 - [docs/architecture.md](docs/architecture.md) — CURRENT vs TARGET
 - [docs/design-decisions.md](docs/design-decisions.md) — portfolio ADR index
-- [docs/adr/](docs/adr/) — ADRs D-001–D-030
+- [docs/adr/](docs/adr/) — ADRs D-001–D-033
 
 Built with TypeScript, React, FastAPI, Postgres, and a **hand-rolled multi-provider LLM gateway** (free-tier Gemini → Groq → Mistral → Cloudflare → OpenRouter → Ollama → rules). Anthropic is prepaid-gated, operator-only Ask/Sync triage (D-023; **off by default**; never visitors).
 
@@ -42,7 +42,7 @@ Referenced from existing Playwright container baselines (not regenerated):
 
 **Eval metrics:** published only in [docs/evals/leaderboard.md](docs/evals/leaderboard.md) + [docs/evals/results/](docs/evals/results/) (no invented README scores). Hermetic CI floor = rules macro-F1 ≥ **0.30**. Live: Gemini/Groq/Mistral 60/60; Cloudflare **combined 60/60** (F1 0.706 n=40); OpenRouter **partial** D6 triage n=15 F1 0.619 (ASR N/A; D7–D9 cancelled); Anthropic **skipped**.
 
-**Not yet:** public deploy (B7). Morning Run schedule YAML is on `main`; first `event=schedule` fire pending observation.
+**Not planned:** public deploy (B7 dropped from spine — PART 21; revive via backlog audit). Morning Run schedule is on `main`; a scheduled run has not yet completed end to end (PART 20/21).
 
 ---
 
@@ -119,7 +119,7 @@ Details: [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md) · Zero-spend:
 | B4 | Demo Google inbox/calendar |
 | B5 | Agentic Ask + approve & send |
 | B6 | Morning run + Telegram + preferences |
-| B7 | Public free-tier deploy |
+| B7 | Public free-tier deploy — **BACKLOG** (dropped 2026-10-06) |
 
 Full exits: [ROADMAP.md](ROADMAP.md).
 
