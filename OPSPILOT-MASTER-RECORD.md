@@ -2454,7 +2454,14 @@ That result made the adapter's **initialize-era** assumption **correct in fact**
 - Outer `asyncio.timeout` wraps initialize **plus** `tools/call`, not the HTTP call alone (F6).
 - Redaction covers `github_pat_` and `ghp_` only (not other GitHub token prefixes).
 - Gemini API key was exposed in local logs during LIVE — **owner will rotate** that key (do not record the value).
-- Morning Run scheduled end-to-end still unproven (PART 20 / 21).
+
+### Morning Run scheduled e2e (CURRENT — 2026-10-06)
+
+First scheduled Morning Run completed end to end on `main`, closing the item carried in PART 20 and PART 21.
+
+- Run id [37507785445](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37507785445); `event=schedule`; conclusion **success**; duration **28** seconds; date **2026-10-06**.
+- Telegram delivered (counts only): `status=succeeded`, `gmail_upserted=2`, `triaged=2`, `pending=0`, `forced=false`.
+- Prior failure on 2026-10-05 (run [37368659012](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37368659012), cancelled with no hosted runner acquired) was a one-off GitHub capacity event, not a defect.
 
 ### SoT this PART
 
