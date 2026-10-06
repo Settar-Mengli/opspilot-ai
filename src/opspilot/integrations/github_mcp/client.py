@@ -19,6 +19,7 @@ from mcp.types import Implementation
 from opspilot.integrations.github_mcp.constants import (
     DEFAULT_MCP_URL,
     DEFAULT_TIMEOUT_S,
+    EXPECTED_PROTOCOL_VERSION,
     PINNED_MCP_TOOLS,
     X_MCP_TOOLS_HEADER,
 )
@@ -153,7 +154,18 @@ async def _call_tool_async(*, tool: str, arguments: dict[str, Any], token: str, 
                     write_stream,
                     client_info=Implementation(name="opspilot", version="0.1.0"),
                 ) as session:
-                    await session.initialize()
+                    try:
+                        init_result = await session.initialize()
+                    except RuntimeError as exc:
+                        # SDK raises before return when the version is outside HANDSHAKE_PROTOCOL_VERSIONS.
+                        # args[0] is a version string only — never log it; match for the distinct code.
+                        msg = exc.args[0] if exc.args and isinstance(exc.args[0], str) else ""
+                        if "Unsupported protocol version" in msg:
+                            return {"ok": False, "error": "mcp_protocol_version_mismatch"}
+                        raise
+                    negotiated = str(getattr(init_result, "protocol_version", "") or "")
+                    if negotiated != EXPECTED_PROTOCOL_VERSION:
+                        return {"ok": False, "error": "mcp_protocol_version_mismatch"}
                     result = await session.call_tool(tool, arguments)
                     return _map_call_result(tool, result)
     except TimeoutError:

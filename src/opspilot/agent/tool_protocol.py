@@ -29,6 +29,7 @@ TOOL_ERROR_HINTS: dict[str, str] = {
     "mcp_timeout": "retry the same GitHub read",
     "mcp_tool_error": "GitHub MCP tool returned an error",
     "mcp_protocol_error": "GitHub MCP protocol error",
+    "mcp_protocol_version_mismatch": "GitHub MCP protocol version changed; operator must re-run handshake",
     "mcp_disabled": "GitHub MCP is off",
     "missing_path": "path is required",
     "missing_pull_number": "pull_number is required",

@@ -45,6 +45,9 @@ COPILOT_GATED_HINTS: frozenset[str] = frozenset(
 
 DEFAULT_MCP_URL = "https://api.githubcopilot.com/mcp/readonly"
 
+# Owner C0 handshake 2026-10-06: remote spoke initialize-era 2025-11-25.
+EXPECTED_PROTOCOL_VERSION = "2025-11-25"
+
 X_MCP_TOOLS_HEADER = ",".join(PINNED_MCP_TOOLS)
 
 HANDSHAKE_STDOUT_KEYS: frozenset[str] = frozenset(

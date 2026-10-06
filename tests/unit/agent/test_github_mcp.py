@@ -277,6 +277,59 @@ def test_github_mcp_protocol_error(mcp_env: None) -> None:
     assert result["error"] == "mcp_protocol_error"
 
 
+def test_github_mcp_expected_protocol_era_passes(mcp_env: None) -> None:
+    from opspilot.integrations.github_mcp.constants import EXPECTED_PROTOCOL_VERSION
+
+    def handler(params: dict) -> dict:
+        del params
+        return {
+            "content": [{"type": "text", "text": json.dumps({"login": "octo", "id": "1"})}],
+            "isError": False,
+        }
+
+    _factory(make_fake_mcp_app(call_handler=handler, protocol_version=EXPECTED_PROTOCOL_VERSION))
+    result = execute_tool(
+        "get_me",
+        {},
+        session=SimpleNamespace(),  # type: ignore[arg-type]
+        gmail_only=False,
+        operator_email=None,
+        request_id="r",
+        github_mcp_auth=_auth(),
+    )
+    assert result == {"ok": True, "login": "octo", "id": "1"}
+
+
+def test_github_mcp_surprise_protocol_version_mismatch(mcp_env: None) -> None:
+    _factory(make_fake_mcp_app(protocol_version="2026-07-28"))
+    result = execute_tool(
+        "get_me",
+        {},
+        session=SimpleNamespace(),  # type: ignore[arg-type]
+        gmail_only=False,
+        operator_email=None,
+        request_id="r",
+        github_mcp_auth=_auth(),
+    )
+    assert result == {"ok": False, "error": "mcp_protocol_version_mismatch"}
+
+
+def test_github_mcp_adr_pins_initialize_era_not_mode_auto() -> None:
+    from pathlib import Path
+
+    from opspilot.integrations.github_mcp.constants import EXPECTED_PROTOCOL_VERSION
+
+    adr = Path("docs/adr/D-034-github-mcp-readonly-client.md").read_text(encoding="utf-8")
+    assert EXPECTED_PROTOCOL_VERSION == "2025-11-25"
+    assert "2025-11-25" in adr
+    assert "ClientSession.initialize()" in adr
+    assert "mcp_protocol_version_mismatch" in adr
+    assert "does **not** use SDK" in adr
+    assert "Owner C0 result" in adr
+    assert "2026-10-06" in adr
+    assert "owner-run" in adr
+
+
 def test_github_mcp_timeout_maps_to_mcp_timeout(mcp_env: None, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OPSPILOT_GITHUB_MCP_TIMEOUT_S", "0.2")
     _factory(make_fake_mcp_app(hang_tools_call=True))

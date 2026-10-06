@@ -28,6 +28,7 @@ def make_fake_mcp_app(
     session_id: str = "fake-session-1",
     call_handler: Any | None = None,
     hang_tools_call: bool = False,
+    protocol_version: str = PROTOCOL_VERSION,
 ) -> Starlette:
     """JSON Streamable HTTP MCP (initialize-era) plus optional tools/call."""
 
@@ -60,7 +61,7 @@ def make_fake_mcp_app(
                     "jsonrpc": "2.0",
                     "id": req_id,
                     "result": {
-                        "protocolVersion": PROTOCOL_VERSION,
+                        "protocolVersion": protocol_version,
                         "capabilities": {"tools": {"listChanged": False}},
                         "serverInfo": {"name": "fake-github-mcp", "version": "0"},
                     },
