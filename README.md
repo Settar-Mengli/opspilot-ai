@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Settar-Mengli/opspilot-ai/actions/workflows/ci.yml)
 
-**CURRENT on `main`:** B0–B6 merged (**B6** PR #44 → `eae1a9a`; Alembic **0010**; Morning Run `schedule: 0 12 * * *` + `workflow_dispatch`; first schedule cancelled by runner non-acquire — see PART 20). **b6.1** Anthropic operator switch LIVE PASS 2026-10-05 **merged** to `main` via PR #47 → `fed71d1` (PART 20; D-023 CURRENT). **TARGET next:** GitHub MCP read-only Ask client (D-034; flag off default; LIVE not in this note). Public deploy (B7) is **backlog**. See:
+**CURRENT on `main`:** B0–B6 merged (**B6** PR #44 → `eae1a9a`; Alembic **0010**; Morning Run `schedule: 0 12 * * *` + `workflow_dispatch`; first schedule cancelled by runner non-acquire — see PART 20). **b6.1** Anthropic operator switch LIVE PASS 2026-10-05 **merged** to `main` via PR #47 → `fed71d1` (PART 20; D-023 CURRENT). **B6.2 MCP** GitHub read-only Ask client LIVE PASS 2026-10-06 (D-034 CURRENT; flag off default; operator-only; PART 22) on branch `mcp/github-readonly` tip `7755c3c` — **PR pending owner merge**. **Next after merge:** cleanup → professional README → demo recording (PART 21). Public deploy (B7) is **backlog**. See:
 
 - [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) — history, baseline, locked plan
 - [ROADMAP.md](ROADMAP.md) — batches **B0–B6** (+ b6.1); B7 backlog — see ROADMAP / PART 21
