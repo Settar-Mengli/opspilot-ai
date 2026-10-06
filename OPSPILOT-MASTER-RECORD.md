@@ -2560,3 +2560,101 @@ src, FE, PNG, workflow, migration, ADR bodies, PART 0–23 bodies; no demo video
 ### Next
 
 **Demo recording** (PART 21 step 4). B7 remains backlog.
+
+
+## PART 25 -- Session handoff before demo recording -- 2026-10-06
+
+Append-only after PART 24. Docs-only handoff for a fresh session. Does not edit PART bodies 0-24. No src / FE / PNG / workflow / migration.
+
+### Base
+
+| Item | Value |
+|---|---|
+| origin/main at cut | 8bba95010943574ea2e49e3230d071acfef0b7aa (PR #53 merge) |
+| Branch | docs/part25-handoff |
+| Tip CI | run 37539502339 success on 8bba950 |
+| PR | to be opened after this commit is CI-green |
+
+### 1. Post-spine status (PART 21 order)
+
+| Step | State | Merge |
+|---|---|---|
+| 1. MCP (B6.2) | DONE | PR #49 -> 925f1aa868960fe41ce86229d5c11de650950325 |
+| 2. Final cleanup | DONE | PR #52 -> 8c5c32074cbb6131653e96a4cf69af2a46335424 |
+| 3. Professional README (+ trust) | DONE | PR #53 -> 8bba95010943574ea2e49e3230d071acfef0b7aa |
+| 4. Demo recording | REMAINING | TARGET next |
+
+B7 public deploy remains BACKLOG.
+
+### 2. Current main facts (verified at cut)
+
+| Fact | Value | Source |
+|---|---|---|
+| Tip SHA | 8bba95010943574ea2e49e3230d071acfef0b7aa | git rev-parse origin/main |
+| Tip CI | 37539502339 success | gh run list / view |
+| Backend tests | 659 passed | CI Backend Tests log |
+| Coverage | 82.85% measured; gate 72% | same log; .github/workflows/ci.yml --cov-fail-under=72 |
+| Frontend unit | 49 passed (14 files) | CI Frontend Checks log |
+| Alembic head | 0010_ops_jobs_corrections_budget | alembic/versions/0010_*.py |
+| ADR count | 34 (D-001 through D-034) | docs/adr/D-*.md |
+| Open PRs | #50 Dependabot python-minor-patch (OPEN; deferred) | gh pr list |
+
+### 3. Demonstrable capabilities (script raw material)
+
+One line each: what to show, how the operator makes it visible, env/setup names only.
+
+| Capability | How to make it visible | Needs (names only) |
+|---|---|---|
+| Triage with evidence | Sync or import items; open All Items / Briefing; inspect urgency/category/confidence/evidence | GEMINI_API_KEY (or other free keys) + budget envs; or OPSPILOT_FORCE_RULES for rules-only (no remote LLM); DATABASE_URL |
+| Ask agent over SSE + tools | Ask a triage question; watch tool_start/tool_end then final in Ask dock/panel | Same free keys; OPSPILOT_ASK_MAX_STEPS / OPSPILOT_ASK_MAX_PROVIDER_CALLS optional; API + FE up |
+| HITL draft + approve | Ask to draft a reply; edit; Approve (send only if allowlisted) | Operator cookie (Google OAuth); OPSPILOT_DEMO_MODE=0; OPSPILOT_SEND_RECIPIENT_ALLOWLIST for real send; GOOGLE_OAUTH_* ; TOKEN_ENCRYPTION_KEY; OPSPILOT_SESSION_SECRET |
+| Gmail + Calendar sync | Connections -> Connect Google -> Sync now | Same OAuth/session names; OPSPILOT_SYNC_TRIAGE_CAP optional; redirect GOOGLE_OAUTH_REDIRECT_URI |
+| Morning job + Telegram | workflow_dispatch or wait for schedule 0 12 * * *; optional Telegram delivery | GHA secrets for job DB/creds; TELEGRAM_BOT_TOKEN; TELEGRAM_CHAT_ID (counts-only text) |
+| Gateway failover | Temporarily starve/break first provider or watch logs on schema/429 errors | INFERENCE_PROVIDER_ORDER; provider key names; OPSPILOT_BUDGET_*_REQ_DAY / _TOK_DAY |
+| Anthropic operator switch | Enable only for operator Ask/Sync triage; show ledger remaining | OPSPILOT_ANTHROPIC_ENABLED; ANTHROPIC_API_KEY; OPSPILOT_ANTHROPIC_USD_PER_MTOK_IN/OUT; anthropic_budget CLI; DEMO must be off; operator cookie |
+| GitHub MCP read-only Ask tools | Enable flag; Ask a repo question that needs get_file_contents / pull_request_read | OPSPILOT_GITHUB_MCP_ENABLED; GITHUB_MCP_PAT; OPSPILOT_GITHUB_MCP_OWNER; OPSPILOT_GITHUB_MCP_REPO; optional OPSPILOT_GITHUB_MCP_URL / _TIMEOUT_S; operator cookie; not CI |
+| Evals + red-team | Point at docs/evals/leaderboard.md + hermetic pytest floor; do not run live evals on camera | MACRO_F1_FLOOR in rules_baseline; corpora n=40 / n=20; live artifacts already in docs/evals/results/ |
+
+### 4. Local demo setup (order, names only)
+
+Start order:
+
+1. Docker Postgres (docker compose up -d db) using DATABASE_URL pointing at local host/db (see .env.example).
+2. uv run alembic upgrade head (head 0010).
+3. Backend terminal: uv run uvicorn opspilot.api.app:app --app-dir src --reload --host 127.0.0.1 --port 8000.
+4. Frontend terminal: cd frontend then
+pm run dev bound to 127.0.0.1:5173 (see docs/runbooks/local-dev.md).
+5. Browser: http://127.0.0.1:5173 only (not localhost) so the operator cookie works (A1).
+
+Minimum env names for a free-tier Ask/triage demo: DATABASE_URL, GEMINI_API_KEY (and/or GROQ_API_KEY / MISTRAL_API_KEY / CLOUDFLARE_API_TOKEN+CLOUDFLARE_ACCOUNT_ID / OPENROUTER_API_KEY), INFERENCE_PROVIDER_ORDER, OPSPILOT_BUDGET_* for each used provider, OPSPILOT_DEMO_MODE=0 for operator paths, OPSPILOT_SESSION_SECRET + TOKEN_ENCRYPTION_KEY + GOOGLE_OAUTH_CLIENT_ID/SECRET if showing Connect/Sync/HITL send.
+
+Operator Neon DB is optional for STOP LIVE parity; local Docker is enough for a screen recording of UI + Ask.
+
+### 5. Must not appear on camera
+
+- Demo Gmail inbox still has real third-party mail (PART 21 carried item) -- do not scroll raw inbox or screen-share Connections sync payloads that show addresses.
+- API logs can print GEMINI_API_KEY inside request URLs (PART 22 / PART 23 honest notes) -- do not share the backend terminal fullscreen.
+- Neon host label and any DATABASE_URL value.
+- Operator email address (cookie/session UI).
+- Any token: GEMINI_API_KEY, GROQ_API_KEY, MISTRAL_API_KEY, CLOUDFLARE_API_TOKEN, OPENROUTER_API_KEY, ANTHROPIC_API_KEY, GITHUB_MCP_PAT, GOOGLE_OAUTH_CLIENT_SECRET, TOKEN_ENCRYPTION_KEY, OPSPILOT_SESSION_SECRET, TELEGRAM_BOT_TOKEN.
+
+### 6. Carried open items
+
+- Gemini API key rotation DEFERRED until after demo recordings (key shared with owner Agent Arena project; PART 23 D7).
+- Dependabot PR #50 python-minor-patch DEFERRED and still OPEN (PART 23).
+- Google disconnect does not delete synced work_items/meetings (oauth_routes disconnect_google; docs/trust-and-data.md).
+- Provider retention/training terms for Groq, Mistral, Cloudflare, OpenRouter remain unverified (trust page).
+
+### 7. Known rough edges (may appear during recording)
+
+- Free-tier models sometimes write weak finals from good tool results (PART 22 LIVE notes).
+- Groq can return schema errors; gateway failover handles them (PART 22).
+- Gemini can return 503 under load (visible in logs / Ask errors).
+
+### Out of scope this PART
+
+No README rewrite, no demo script prose, no env values, no secret rotation, no Dependabot merge.
+
+### Next
+
+**Demo recording** (PART 21 step 4). B7 remains backlog.
