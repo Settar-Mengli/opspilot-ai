@@ -23,7 +23,9 @@ PART 21 placed a single official GitHub MCP connection (OpsPilot as **client**, 
 
 ## Handshake (C0) — CURRENT
 
-Owner-run 2026-10-06 (counts/names only): `protocol_version=2025-11-25`, `session_id_issued=yes`, `tool_count=4`, four pinned names present, `copilot_gated_advertised=no`. Initialize-era pin matches remote. **L12 clear** (no paid Copilot entitlement for read-only).
+### Owner C0 result (CURRENT — 2026-10-06, owner-run; counts/names only)
+
+Owner-run 2026-10-06 (counts/names only): `protocol_version=2025-11-25`, `session_id_issued=yes`, `tool_count=4`, four pinned names present, `copilot_gated_advertised=no`. Initialize-era pin matches remote. **L12 clear** (no paid Copilot entitlement for read-only). Also recorded in PART 22.
 
 ## STOP LIVE — CURRENT (owner-run 2026-10-06 on Neon; counts/names only)
 
