@@ -139,6 +139,31 @@ def _map_call_result(tool: str, result: Any) -> dict[str, Any]:
     return {"ok": False, "error": "unknown_tool"}
 
 
+def _map_http_status_error(exc: httpx2.HTTPStatusError) -> dict[str, Any]:
+    # Never str(exc) / never dump request — Authorization lives on the request object.
+    status = int(getattr(getattr(exc, "response", None), "status_code", 0) or 0)
+    _logger.info("github_mcp_call_failed error_code=HTTPStatusError status_class=%s", status // 100)
+    if 400 <= status < 500:
+        return {"ok": False, "error": "mcp_http_4xx"}
+    if 500 <= status < 600:
+        return {"ok": False, "error": "mcp_http_5xx"}
+    return {"ok": False, "error": "mcp_http_error"}
+
+
+def _find_http_status_error(exc: BaseException) -> httpx2.HTTPStatusError | None:
+    if isinstance(exc, httpx2.HTTPStatusError):
+        return exc
+    if isinstance(exc, BaseExceptionGroup):
+        for nested in exc.exceptions:
+            found = _find_http_status_error(nested)
+            if found is not None:
+                return found
+    cause = exc.__cause__ or exc.__context__
+    if isinstance(cause, BaseException):
+        return _find_http_status_error(cause)
+    return None
+
+
 async def _call_tool_async(*, tool: str, arguments: dict[str, Any], token: str, timeout_s: float) -> dict[str, Any]:
     if tool not in PINNED_MCP_TOOLS:
         return {"ok": False, "error": "unknown_tool"}
@@ -172,9 +197,14 @@ async def _call_tool_async(*, tool: str, arguments: dict[str, Any], token: str, 
         return {"ok": False, "error": "mcp_timeout"}
     except httpx2.TimeoutException:
         return {"ok": False, "error": "mcp_timeout"}
+    except httpx2.HTTPStatusError as exc:
+        return _map_http_status_error(exc)
     except MCPError:
         return {"ok": False, "error": "mcp_protocol_error"}
     except Exception as exc:  # noqa: BLE001 — never interpolate token
+        http_exc = _find_http_status_error(exc)
+        if http_exc is not None:
+            return _map_http_status_error(http_exc)
         _logger.info("github_mcp_call_failed error_code=%s", type(exc).__name__)
         return {"ok": False, "error": "mcp_protocol_error"}
     finally:

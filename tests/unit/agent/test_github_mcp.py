@@ -366,6 +366,52 @@ def test_github_mcp_failed_call_never_logs_pat(mcp_env: None, caplog: pytest.Log
     assert "Bearer " not in blob
 
 
+def _http_status_factory(status: int) -> None:
+    def factory(*, token: str, timeout_s: float) -> httpx2.AsyncClient:
+        del timeout_s
+
+        class Boom(httpx2.AsyncClient):
+            async def send(self, request: httpx2.Request, **kwargs):  # type: ignore[no-untyped-def]
+                # Attach Authorization so a buggy logger would leak — status path must not.
+                request.headers["Authorization"] = f"Bearer {token}"
+                response = httpx2.Response(status, request=request)
+                raise httpx2.HTTPStatusError("http_status", request=request, response=response)
+
+        return Boom()
+
+    set_http_client_factory(factory)
+
+
+@pytest.mark.parametrize(
+    ("status", "code"),
+    [(401, "mcp_http_4xx"), (403, "mcp_http_4xx"), (500, "mcp_http_5xx")],
+)
+def test_github_mcp_http_status_maps_distinct_code(mcp_env: None, status: int, code: str) -> None:
+    _http_status_factory(status)
+    result = execute_tool(
+        "get_me",
+        {},
+        session=SimpleNamespace(),  # type: ignore[arg-type]
+        gmail_only=False,
+        operator_email=None,
+        request_id="r",
+        github_mcp_auth=_auth(),
+    )
+    assert result == {"ok": False, "error": code}
+
+
+def test_github_mcp_http_status_path_never_logs_pat(mcp_env: None, caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.INFO, logger="opspilot.integrations.github_mcp")
+    _http_status_factory(401)
+    with caplog.at_level(logging.INFO):
+        result = call_pinned_tool("get_me", {})
+    assert result == {"ok": False, "error": "mcp_http_4xx"}
+    blob = caplog.text
+    assert _LEAK not in blob
+    assert "Bearer " not in blob
+    assert "Authorization" not in blob
+
+
 def test_github_mcp_unknown_name_not_executed() -> None:
     result = execute_tool(
         "create_issue",
