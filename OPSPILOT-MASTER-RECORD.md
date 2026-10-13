@@ -1,4 +1,4 @@
-﻿# OpsPilot Master Record
+# OpsPilot Master Record
 
 **Locked:** 2026-09-26
 **Baseline HEAD:** `41a867828c61815b50579114ec127cb80b33c3ff`
@@ -2712,7 +2712,8 @@ GitHub prints step `env` blocks. Secrets appear only as `***` and only on the tw
 | `4d1dee5` | S3 Gemini header | 38343778327 | success |
 | `be1ffd0` | S4 workflows | 38345049841 | success |
 | `e3c6f53` | S5/S6 PART 26 | 38345784593 | success |
-| tip | post-build polish (integrations AST + morning `_log_job_failure` tests + this table) | [PR #57 checks](https://github.com/Settar-Mengli/opspilot-ai/pull/57/checks) | |
+| `556e155` | post-build polish (integrations AST + morning `_log_job_failure` tests + this table) | 38347908733 | success |
+| tip | strip master-record UTF-8 BOM + encoding guard test | [PR #57 checks](https://github.com/Settar-Mengli/opspilot-ai/pull/57/checks) | |
 
 ### Post-build audit (Ask chat, tip `e3c6f53`)
 
