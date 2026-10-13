@@ -536,11 +536,11 @@ def run_morning(*, force_override: bool = False) -> int:
         return 0
 
     except Exception as original:
-        logger.exception("morning_run failed job_id=%s", job_id or "-")
+        _log_job_failure("morning_run failed job_id=%s", job_id or "-", exc=original)
         try:
             session.rollback()
-        except Exception:  # noqa: BLE001
-            logger.exception("morning_run rollback failed")
+        except Exception as rollback_exc:  # noqa: BLE001
+            _log_job_failure("morning_run rollback failed", exc=rollback_exc)
         # Cleanup must run even if notify later fails; never mask ``original``.
         try:
             if job_id is not None:
@@ -561,10 +561,17 @@ def run_morning(*, force_override: bool = False) -> int:
                     session.commit()
                     try:
                         notify_morning_outcome(job_id, "failed")
-                    except Exception:  # noqa: BLE001
-                        logger.exception("telegram notify failed during morning failure cleanup")
-        except Exception:  # noqa: BLE001
-            logger.exception("morning failure cleanup failed job_id=%s", job_id or "-")
+                    except Exception as notify_exc:  # noqa: BLE001
+                        _log_job_failure(
+                            "telegram notify failed during morning failure cleanup",
+                            exc=notify_exc,
+                        )
+        except Exception as cleanup_exc:  # noqa: BLE001
+            _log_job_failure(
+                "morning failure cleanup failed job_id=%s",
+                job_id or "-",
+                exc=cleanup_exc,
+            )
         raise original
     finally:
         session.close()
@@ -582,7 +589,21 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _log_job_failure(message: str, *args: object, exc: BaseException | None = None) -> None:
+    """Local: full exception; public Actions: type + code only (no traceback/message)."""
+    from opspilot.utils.logging_utils import in_github_actions
+
+    if in_github_actions():
+        code = type(exc).__name__ if exc is not None else "error"
+        logger.error("%s error_code=%s", message % args if args else message, code)
+        return
+    logger.exception(message, *args)
+
+
 def main(argv: list[str] | None = None) -> int:
+    from opspilot.jobs.logging_setup import configure_public_job_logging
+
+    configure_public_job_logging()
     load_dotenv()
     args = build_parser().parse_args(argv)
     force = args.force or os.environ.get("OPSPILOT_MORNING_FORCE", "").strip().lower() in {

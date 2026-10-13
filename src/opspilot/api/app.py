@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextvars
 import logging
 import re
 import time
@@ -32,11 +31,10 @@ from opspilot.api.v1.routes import router as v1_router  # noqa: E402
 from opspilot.api.v1.routes_ask import router as ask_router  # noqa: E402
 from opspilot.api.v1.routes_corrections import router as corrections_router  # noqa: E402
 from opspilot.api.v1.routes_mail import router as mail_router  # noqa: E402
+from opspilot.obs.request_context import request_id_ctx  # noqa: E402
 from opspilot.persistence.db import log_active_database_host  # noqa: E402
 
 _lifespan_logger = logging.getLogger("opspilot.api.lifespan")
-
-request_id_ctx: contextvars.ContextVar[str | None] = contextvars.ContextVar("request_id", default=None)
 
 _REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 _access_logger = logging.getLogger("opspilot.api.access")

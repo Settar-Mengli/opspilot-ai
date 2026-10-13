@@ -1,6 +1,8 @@
 # GHA morning job (D-011)
 
-In-runner morning triage on GitHub Actions. **Not** triggered on push/PR. Schedule cron is present after owner `LIVE PASS` (C14); it runs only from the **default branch**.
+In-runner morning triage on GitHub Actions. **Not** triggered on push/PR. Schedule cron is present in the workflow file after owner `LIVE PASS` (C14); it runs only from the **default branch** when the workflow is enabled.
+
+**CURRENT (2026-10-12):** owner set the **Morning Run** workflow to **disabled** (`disabled_manually`). Do not re-enable unless the owner explicitly decides. Cron/dispatch in the YAML do not fire while disabled.
 
 ## Workflow
 
@@ -10,8 +12,8 @@ In-runner morning triage on GitHub Actions. **Not** triggered on push/PR. Schedu
 - `workflow_dispatch` inputs: `force_override`, `simulate_google_reauth`
 - Concurrency group `morning-run`, `cancel-in-progress: false`, timeout 30m
 - `permissions: contents: read`
-- Maps GitHub secrets → process env (see plan §11 / secrets table below)
-- **Schedule on default branch:** C14 cron is on `main` (B6 merge PR #44 → `eae1a9a`). Workflow state **active**. First `event=schedule` run on `main` was **pending** at PART 18 closeout; until observed, use `workflow_dispatch` for manual runs. Branch-only pushes do not register cron.
+- Maps GitHub secrets → process env on the **two steps that need them** only (`db_host`: `DATABASE_URL`; morning job step: the 12 secrets in the table below). Checkout / setup-uv / Python / `uv sync` receive no secrets. GitHub still prints those step env blocks with values as `***`.
+- **Schedule on default branch:** C14 cron is on `main` (B6 merge PR #44 → `eae1a9a`). Workflow state **disabled** by owner 2026-10-12. First `event=schedule` e2e success while active: run 37507785445 (PART 22). Branch-only pushes do not register cron.
 
 ## Secrets (names only)
 
@@ -34,6 +36,8 @@ No `OPSPILOT_SESSION_SECRET` on this job.
 
 ## Operator steps
 
+Only if the owner has **re-enabled** Morning Run:
+
 1. Confirm Neon Alembic head `0010_ops_jobs_corrections_budget`.
 2. Actions → **Morning Run** → Run workflow.
 3. Expect: job conclusion success/partial; Telegram counts-only message; `ops_jobs` status (counts only in chat/logs).
@@ -47,4 +51,4 @@ Counts, flags, error codes only — never titles, subjects, bodies, links, or br
 
 ## Cron (C14 — after LIVE PASS)
 
-`0 12 * * *` (= 07:00 America/Toronto standard; 08:00 during EDT). Present on default branch `main` after B6 merge (PR #44). First scheduled fire is the next 12:00 UTC after that merge (GHA may delay registration briefly). At PART 18 closeout, no `event=schedule` run on `main` had been observed yet.
+`0 12 * * *` (= 07:00 America/Toronto standard; 08:00 during EDT). Present in YAML on default branch `main` after B6 merge (PR #44). **Does not run while the workflow is disabled** (owner 2026-10-12). First scheduled e2e success while active: run 37507785445 (PART 22).

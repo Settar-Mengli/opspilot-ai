@@ -2658,3 +2658,80 @@ No README rewrite, no demo script prose, no env values, no secret rotation, no D
 ### Next
 
 **Demo recording** (PART 21 step 4). B7 remains backlog.
+
+## PART 26 -- Public-log & secrets hardening -- 2026-10-13
+
+Append-only after PART 25. Branch `harden/public-log-secrets`. Does not rewrite PART 0-25 bodies. Does not enable Morning Run.
+
+### Audit (counts only; 2026-10-12 owner + read-only audit)
+
+- Repo public. Only `.github/workflows/morning.yml` ever used real secrets in Actions.
+- Morning Run logs reviewed: **17** runs; **UNMASKED SECRETS = 0**; secret values appeared only as GitHub-masked `***`.
+- Owner actions: workflow **disabled** (`disabled_manually`); logs deleted for all 17 runs (run records kept); local `gh` log cache cleared. Workflow stays disabled -- this PART does not re-enable it.
+
+### Root cause (confirmed)
+
+`services/drain` -> `complete_structured_raising` without `request_id` -> `services/_llm._resolve_request_id` lazily imported `opspilot.api.app` -> module-level `app = create_app()` -> `ensure_api_logging()` set root logger INFO. From the first LLM call, INFO reached public Actions logs (httpx `HTTP Request:` URLs with Gemini `key=` query param masked as `***`; `llm.span` double-emitted under `CI=true` with free-text meta; `startup_config`; database host label).
+
+### Fixes (CURRENT after this PR merges)
+
+- S1: `request_id_ctx` in `opspilot.obs.request_context` (side-effect free); `_llm` imports it directly; AST pin forbids `opspilot.api.app` under jobs/services/llm/obs.
+- S2: job logging WARNING + httpx/httpcore WARNING; GITHUB_ACTIONS allow-list for failure / telegram / morning exception logs; `append_llm_jsonl` skips disk under CI without re-emitting spans; GHA strips free-text span meta keys; D-019 addendum.
+- S3: Gemini `x-goog-api-key` header (not query `key=`) in provider + `llm_discover` -- per https://ai.google.dev/api and https://ai.google.dev/gemini-api/docs/api-key .
+- S4: morning secrets only on `db_host` (DATABASE_URL) and morning job step (12 secrets); gitleaks `--verbose --redact`; ui-baselines expressions moved to step `env` (https://docs.github.com/en/actions/reference/security/secure-use ).
+- S5: docs truth -- Morning Run disabled 2026-10-12; public-CI application log policy; Windows user path placeholders.
+
+Telegram Bot API still requires token in URL path; mitigated by S2 (httpx INFO off in jobs; GHA no `exc_info` on network errors).
+
+### Secrets in Actions logs (CURRENT after merge)
+
+GitHub prints step `env` blocks. Secrets appear only as `***` and only on the two steps that use them (`db_host`: 1; morning job: 12). Checkout / setup-uv / Python / `uv sync` receive no secrets. Do not claim absence of masked secret names.
+
+### Owner decisions (do not revisit)
+
+- Keep `OPSPILOT-MASTER-RECORD.md` (append-only; deleting would not remove history).
+- Never rewrite git history or force-push.
+- Three early commits with a personal email stay as-is.
+- Neon host label is not a credential; stays where it is.
+- History path redaction in `session-01.md` / cleanup-preaudit citation overrides the older "do not rewrite history" preaudit note for privacy.
+
+### STOP LIVE (owner-run, status only)
+
+- `database host=127`
+- gemini `configured=True` `reachable=True` `status=200` (header auth accepted)
+- groq/mistral/openrouter `status=200`; cloudflare not probed; anthropic not configured (off by design)
+- No key material in output
+- Note: `llm_discover` "unusual AQ. prefix" warning is a stale format heuristic -- out of scope; unchanged
+
+### CI run ids (this branch, one commit per push)
+
+| Commit | Scope | CI run | Conclusion |
+|--------|-------|--------|------------|
+| `5ec5b96` | S1 request_context | 38341201983 | success |
+| `6f635b0` | S2 job logging / tracing | 38342270061 | success |
+| `4d1dee5` | S3 Gemini header | 38343778327 | success |
+| `be1ffd0` | S4 workflows | 38345049841 | success |
+| `e3c6f53` | S5/S6 PART 26 | 38345784593 | success |
+| `556e155` | post-build polish (integrations AST + morning `_log_job_failure` tests + this table) | 38347908733 | success |
+| tip | strip master-record UTF-8 BOM + encoding guard test | [PR #57 checks](https://github.com/Settar-Mengli/opspilot-ai/pull/57/checks) | |
+
+### Post-build audit (Ask chat, tip `e3c6f53`)
+
+Verdict: **READY TO MERGE**. Regression proven against `main`'s code. Full suite **672 = 672** passed with `CI` / `GITHUB_ACTIONS` unset and set.
+
+### PR
+
+[PR #57](https://github.com/Settar-Mengli/opspilot-ai/pull/57) — opened after docs tip CI green; agent does not merge.
+
+### Owner-only TARGET (agent did none)
+
+- Cursor GitHub App: do not approve pending permission request; limit to selected repos or uninstall.
+- GitHub email privacy: keep email private + block command-line pushes that expose it.
+- Revoke OpsPilot Google access on the demo account (and check the personal account).
+- If Morning Run stays off: delete its 12 Actions secrets; optionally reset Neon password.
+- Delete unused GitHub tokens; confirm 2FA is on.
+- Merge Dependabot PR #50 after its CI is green.
+
+### Next
+
+Owner review + merge of this PR when ready. Demo recording remains next for product narrative (PART 25).

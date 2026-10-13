@@ -2,7 +2,7 @@
 
 **Developer:** Settar Mengli (GitHub: `Settar-Mengli`)
 **Repository:** `https://github.com/Settar-Mengli/opspilot-ai` (private)
-**Local path:** `C:\Users\setta\OneDrive\Desktop\Git Repository\opspilot-ai`
+**Local path:** `<local clone path>`
 **Session ended:** Handoff to fresh chat for Phase A execution
 **Session assistant:** Claude Opus 4.7 (previous)
 **Copilot model in use:** Claude Opus 4.6 High (VS Code + GitHub Copilot)

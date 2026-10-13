@@ -26,15 +26,20 @@ def _resolve_request_id(request_id: str | None) -> str | None:
     if request_id:
         return request_id
     try:
-        from opspilot.api.app import request_id_ctx
+        from opspilot.obs.request_context import request_id_ctx
 
         return request_id_ctx.get()
-    except Exception:  # noqa: BLE001 — app may be unavailable in some CLI contexts
+    except Exception:  # noqa: BLE001 — context unavailable in some CLI contexts
         return None
 
 
 def _log_llm_failure(task: TaskName, exc: BaseException) -> None:
     code = type(exc).__name__
+    from opspilot.utils.logging_utils import in_github_actions
+
+    if in_github_actions():
+        logger.error("LLM %s failed error_code=%s", task, code)
+        return
     msg = redact_text(str(exc), max_chars=200)
     logger.error("LLM %s failed error_code=%s message=%s", task, code, msg)
 

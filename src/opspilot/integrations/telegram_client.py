@@ -187,8 +187,17 @@ def send_outcome_message(
             url,
             json={"chat_id": chat, "text": text},
         )
-    except httpx.HTTPError:
-        logger.warning("telegram notify network error", exc_info=True)
+    except httpx.HTTPError as exc:
+        from opspilot.utils.logging_utils import in_github_actions
+
+        if in_github_actions():
+            logger.warning(
+                "telegram notify network error error_code=%s exc_type=%s",
+                "telegram_network_error",
+                type(exc).__name__,
+            )
+        else:
+            logger.warning("telegram notify network error", exc_info=True)
         return "telegram_network_error"
 
     if resp.status_code >= 400:

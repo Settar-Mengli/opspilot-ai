@@ -38,7 +38,9 @@ def test_gemini_success_with_mock_transport(monkeypatch: pytest.MonkeyPatch) -> 
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert "generativelanguage.googleapis.com" in str(request.url)
-        assert request.url.params.get("key") == "test-key"
+        assert "key" not in request.url.params
+        assert "key=" not in str(request.url)
+        assert request.headers.get("x-goog-api-key") == "test-key"
         return httpx.Response(
             200,
             json={

@@ -37,3 +37,8 @@ Budget gate and leaderboard can debit real usage; CI asserts no live Anthropic.
 - JSONL under `data/llm_traces/` (gitignored) or stdout-oriented logging when `CI=true`; disable with `OPSPILOT_LLM_JSONL=0`.
 - OTel-compatible structured log attrs (`gen_ai.*` style) via `opspilot.obs.tracing`; Phoenix UI still deferred.
 - **Error meta (S1):** non-2xx → `meta.status_code` + redacted `provider_error` (≤500 chars, F-09). Parse/validation failure → `error_class`, redacted `validation_error`, `output_len`, redacted `output_head` (≤300). Schema/format 400 → optional `force_json_object` retry attempt is a **separate** `LlmCall` row.
+
+## Addendum (public-log hardening, 2026-10-12)
+
+- When `CI=true`, `append_llm_jsonl` skips disk and does **not** re-call `emit_llm_span` (gateway already emitted — no double emit).
+- When `GITHUB_ACTIONS=true`, `emit_llm_span` strips free-text meta keys `provider_error`, `output_head`, `validation_error` from the log payload; keeps `status_code`, `error_class`, `output_len`. DB `llm_calls.meta` is unchanged.

@@ -39,7 +39,7 @@ def _key_format_warning(provider: str, key: str) -> str | None:
 
 
 def _probe_gemini(client: httpx.Client, key: str) -> dict[str, Any]:
-    resp = client.get(gemini_models_list_url(), params={"key": key})
+    resp = client.get(gemini_models_list_url(), headers={"x-goog-api-key": key})
     return {
         "reachable": resp.status_code < 500,
         "status_code": resp.status_code,
