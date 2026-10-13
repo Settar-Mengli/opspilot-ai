@@ -1,4 +1,5 @@
 # B6 morning job (D-011) — in-runner; workflow_dispatch + schedule (C14 after LIVE PASS).
+# Owner disabled this workflow in the GitHub UI (2026-10-12); do not re-enable in this PR.
 
 name: Morning Run
 
@@ -33,18 +34,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      DATABASE_URL: ${{ secrets.OPSPILOT_DATABASE_URL }}
-      TOKEN_ENCRYPTION_KEY: ${{ secrets.TOKEN_ENCRYPTION_KEY }}
-      GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
-      GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       OPSPILOT_DEMO_MODE: "0"
       OPSPILOT_ANTHROPIC_ENABLED: "false"
       INFERENCE_PROVIDER_ORDER: "gemini,groq,mistral,cloudflare,openrouter"
@@ -90,13 +79,28 @@ jobs:
         run: uv sync
 
       - name: Print database host label
+        env:
+          DATABASE_URL: ${{ secrets.OPSPILOT_DATABASE_URL }}
         run: uv run python -m opspilot.jobs.db_host
 
       - name: Run morning job
+        env:
+          DATABASE_URL: ${{ secrets.OPSPILOT_DATABASE_URL }}
+          TOKEN_ENCRYPTION_KEY: ${{ secrets.TOKEN_ENCRYPTION_KEY }}
+          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           set -euo pipefail
           ARGS=()
-          if [ "${{ inputs.force_override }}" = "true" ]; then
+          if [ "${OPSPILOT_MORNING_FORCE}" = "1" ]; then
             ARGS+=(--force)
           fi
           uv run python -m opspilot.jobs.morning_run "${ARGS[@]}"

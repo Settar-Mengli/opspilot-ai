@@ -68,15 +68,23 @@ jobs:
       - name: Resolve visual-run config
         id: cfg
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_MODE: ${{ inputs.mode }}
+          INPUT_FRONTEND_REF: ${{ inputs.frontend_ref }}
+          INPUT_HARNESS_REF: ${{ inputs.harness_ref }}
+          INPUT_ARTIFACT_NAME: ${{ inputs.artifact_name }}
+          INPUT_BEFORE_RUN_ID: ${{ inputs.before_artifact_run_id }}
+          INPUT_BEFORE_NAME: ${{ inputs.before_artifact_name }}
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            MODE="${{ inputs.mode }}"
-            FRONTEND_REF="${{ inputs.frontend_ref }}"
-            HARNESS_REF="${{ inputs.harness_ref }}"
-            ARTIFACT_NAME="${{ inputs.artifact_name }}"
-            BEFORE_RUN_ID="${{ inputs.before_artifact_run_id }}"
-            BEFORE_NAME="${{ inputs.before_artifact_name }}"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            MODE="$INPUT_MODE"
+            FRONTEND_REF="$INPUT_FRONTEND_REF"
+            HARNESS_REF="$INPUT_HARNESS_REF"
+            ARTIFACT_NAME="$INPUT_ARTIFACT_NAME"
+            BEFORE_RUN_ID="$INPUT_BEFORE_RUN_ID"
+            BEFORE_NAME="$INPUT_BEFORE_NAME"
           else
             CFG=".github/visual-run.json"
             if [ ! -f "$CFG" ]; then
@@ -111,10 +119,12 @@ jobs:
 
       - name: Materialize harness + frontend substitution
         shell: bash
+        env:
+          HARNESS: ${{ steps.cfg.outputs.harness_ref }}
+          FRONTEND: ${{ steps.cfg.outputs.frontend_ref }}
+          TRIGGER_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          HARNESS="${{ steps.cfg.outputs.harness_ref }}"
-          FRONTEND="${{ steps.cfg.outputs.frontend_ref }}"
           git fetch origin "$HARNESS" "$FRONTEND" || git fetch --all
           # Prefer remote refs
           if git rev-parse --verify "origin/$HARNESS" >/dev/null 2>&1; then
@@ -144,7 +154,7 @@ jobs:
             fi
           fi
           # Keep gallery script from trigger commit if present on current checkout history
-          git checkout "${{ github.sha }}" -- scripts/visual_gallery.mjs 2>/dev/null || true
+          git checkout "$TRIGGER_SHA" -- scripts/visual_gallery.mjs 2>/dev/null || true
           if [ ! -f scripts/visual_gallery.mjs ]; then
             # Fall back: already on harness which may lack script; fetch from PR branch tip via SHA parents
             echo "visual_gallery.mjs missing after materialize" >&2
@@ -161,10 +171,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           NAME: ${{ steps.cfg.outputs.before_name }}
+          RUN_ID: ${{ steps.cfg.outputs.before_run_id }}
         shell: bash
         run: |
           set -euo pipefail
-          RUN_ID="${{ steps.cfg.outputs.before_run_id }}"
           mkdir -p /tmp/before-artifact
           API="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts"
           curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
@@ -196,11 +206,13 @@ jobs:
         working-directory: frontend
         continue-on-error: true
         shell: bash
+        env:
+          PW_MODE: ${{ steps.cfg.outputs.mode }}
         run: |
           set -euo pipefail
           mkdir -p test-results playwright-report
           EXTRA=()
-          if [ "${{ steps.cfg.outputs.mode }}" = "update" ]; then
+          if [ "$PW_MODE" = "update" ]; then
             EXTRA+=(--update-snapshots)
           fi
           # Dedicated config so JSON lands at repo-root pw-report.json (CLI path:reporter is unsupported).
@@ -251,21 +263,24 @@ jobs:
 
       - name: Gallery index + render gate
         shell: bash
+        env:
+          MODE: ${{ steps.cfg.outputs.mode }}
+          FRONTEND_REF: ${{ steps.cfg.outputs.frontend_ref }}
+          WORKSPACE: ${{ github.workspace }}
         run: |
           set -euo pipefail
-          MODE="${{ steps.cfg.outputs.mode }}"
-          REPORT="${{ github.workspace }}/pw-report.json"
+          REPORT="${WORKSPACE}/pw-report.json"
           if [ ! -f "$REPORT" ]; then
             REPORT=$(find . -name 'pw-report.json' 2>/dev/null | head -n1 || true)
           fi
           if [ ! -f "$REPORT" ]; then
             echo "No Playwright JSON report found" >&2
-            ls -la "${{ github.workspace }}" | head -n 40 || true
+            ls -la "$WORKSPACE" | head -n 40 || true
             find frontend -name '*.json' | head -n 40 || true
             exit 1
           fi
           node scripts/visual_gallery.mjs index "$REPORT" gallery.md --new-states=dashboard-error,evening-error
-          if [ "$MODE" = "update" ] && { [ "${{ steps.cfg.outputs.frontend_ref }}" = "c5de149" ] || [[ "${{ steps.cfg.outputs.frontend_ref }}" == c5de149* ]]; }; then
+          if [ "$MODE" = "update" ] && { [ "$FRONTEND_REF" = "c5de149" ] || [[ "$FRONTEND_REF" == c5de149* ]]; }; then
             node scripts/visual_gallery.mjs render-gate "$REPORT" --new-states=dashboard-error,evening-error --expected-count="$EXPECTED_SNAPSHOT_COUNT"
           elif [ "$MODE" = "update" ]; then
             # Non-c5de149 update: any failure / missing snapshot / wrong count blocks
@@ -278,6 +293,8 @@ jobs:
 
       - name: Stage snapshots for upload
         shell: bash
+        env:
+          WORKSPACE: ${{ github.workspace }}
         run: |
           set -euo pipefail
           mkdir -p artifacts/snapshots
@@ -288,7 +305,7 @@ jobs:
           if [ -d frontend/playwright-report ]; then cp -a frontend/playwright-report/. artifacts/playwright-report/; fi
           if [ -d frontend/test-results ]; then cp -a frontend/test-results/. artifacts/test-results/; fi
           if [ -f gallery.md ]; then cp gallery.md artifacts/gallery.md; fi
-          if [ -f "${{ github.workspace }}/pw-report.json" ]; then cp "${{ github.workspace }}/pw-report.json" artifacts/pw-report.json; fi
+          if [ -f "${WORKSPACE}/pw-report.json" ]; then cp "${WORKSPACE}/pw-report.json" artifacts/pw-report.json; fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
