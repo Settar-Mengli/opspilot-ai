@@ -143,7 +143,7 @@ Local merged remotes still checked out: `b5/agentic-ask`, `b6/morning-run`, `cho
 
 | File | Path reference |
 |------|----------------|
-| `docs/history/session-01.md:5` | `C:\Users\setta\OneDrive\Desktop\Git Repository\opspilot-ai` |
+| `docs/history/session-01.md:5` | `<local clone path>` |
 | `docs/runbooks/llm-providers.md:205` | `cd C:\Dev\opspilot-ai` |
 | `docs/runbooks/local-dev.md:14` | `cd c:\Dev\opspilot-ai` |
 | `docs/audits/2026-09-28-b2-preaudit.md:316` | `cd C:\Dev\opspilot-ai` (historical audit) |

@@ -37,7 +37,7 @@ Verified through **B6** on `main` (PR #44 → `eae1a9a`): hermetic pytest (socke
 
 **B5 (CURRENT on main):** `opspilot.agent` JSON-emulated tool loop (D-031); caps 5/8; `POST /ask/stream` SSE (D-032); HITL mail draft edit/approve + allowlist + DEMO_MODE (D-033); `gmail.send`; deleted-message sync; Alembic **0008**/**0009** (`mail_drafts`, `mail_send_audit` + failed/error_code); hermetic `ask_agent` + `redteam_agent` evals.
 
-**B6 (CURRENT on main):** in-runner GHA `morning_run` + Telegram counts-only; Sync **202**/poll drain + ops_jobs lease/reap/fence; triage corrections overlay; failed-draft reopen; F-05 prepaid ledger plumbing; Alembic **0010**; C14 cron `0 12 * * *` + `workflow_dispatch` (first schedule cancelled by runner non-acquire — PART 20; manual dispatch quiet-day success).
+**B6 (CURRENT on main):** in-runner GHA `morning_run` + Telegram counts-only; Sync **202**/poll drain + ops_jobs lease/reap/fence; triage corrections overlay; failed-draft reopen; F-05 prepaid ledger plumbing; Alembic **0010**; C14 cron `0 12 * * *` + `workflow_dispatch` (workflow **disabled by owner 2026-10-12**; first schedule cancelled by runner non-acquire — PART 20; manual dispatch quiet-day success while active).
 
 **b6.1 (CURRENT on main; merged PR #47 → `fed71d1`):** operator-authorized Anthropic for Ask SSE + Sync drain triage only; off by default; never visitors; prepaid ledger reserve/reconcile + CLI; D-023 addendum CURRENT for shipped+LIVE clauses (PART 20). See `docs/runbooks/llm-providers.md`.
 
@@ -337,7 +337,7 @@ Datasets under `evals/datasets/` (fictional). Metrics: precision/recall/F1, conf
 
 ### Jobs / scheduling
 
-**CURRENT on main (D-011):** Manual CLI/API remains a valid local path. GitHub Actions **Morning Run** on default branch has `schedule: 0 12 * * *` plus `workflow_dispatch` (C14; workflow **active**). In-runner `morning_run` (secrets → env; Google refresh from Neon; Telegram counts-only). Fail fast if Neon schema ≠ Alembic head; migrations operator-applied, never by cron. Auth-fail drill via `simulate_google_reauth`. No in-app scheduler. Local Windows Task Scheduler remains a valid **dev** path. First `event=schedule` e2e success: run 37507785445 (PART 22).
+**CURRENT on main (D-011):** Manual CLI/API remains a valid local path. GitHub Actions **Morning Run** on default branch has `schedule: 0 12 * * *` plus `workflow_dispatch` in YAML (C14; workflow **disabled by owner 2026-10-12**). In-runner `morning_run` (secrets → env on the two steps that need them; Google refresh from Neon; Telegram counts-only). Fail fast if Neon schema ≠ Alembic head; migrations operator-applied, never by cron. Auth-fail drill via `simulate_google_reauth`. No in-app scheduler. Local Windows Task Scheduler remains a valid **dev** path. First `event=schedule` e2e success while active: run 37507785445 (PART 22).
 
 **BACKLOG (former B7):** Public deploy; optional HMAC webhook wake of deployed API (X2).
 

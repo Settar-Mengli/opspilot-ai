@@ -7,6 +7,10 @@ and this project follows Semantic Versioning principles for release tags.
 
 ## [Unreleased]
 
+### Security
+
+- **Public-log & secrets hardening (PART 26):** jobs no longer import `api.app` (root INFO leak); public Actions application logs allow-list; Gemini key via `x-goog-api-key` header; morning.yml secrets scoped to two steps; gitleaks `--redact`; ui-baselines script-injection mitigation. Morning Run remains owner-disabled (2026-10-12).
+
 ### Fixed
 
 - **B5 live smoke recorded:** owner-run 2026-10-02 — default PASS; `--send` on `cb452e0` FAIL (no send, `recipient_not_allowlisted`); `--send` on `6eef4c4` PASS (1 real send). OD-B5-8 + STOP VISUAL closed; **merged** via PR #40 → `2131f32`.

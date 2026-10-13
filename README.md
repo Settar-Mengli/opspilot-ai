@@ -53,7 +53,7 @@ Items — urgency-grouped queue (High / Medium / Low):
 - Serves briefing, Ask, evening wrap-up, and insights from Postgres over `/api/v1`.
 - Runs a bounded Ask agent (search / get message / calendar / draft reply) over SSE. There is no model-callable send tool.
 - Human-in-the-loop mail: edit draft, approve, then send to an allowlisted recipient (operator only).
-- Morning job on GitHub Actions (`schedule: 0 12 * * *` UTC + `workflow_dispatch`) with counts-only Telegram notify. First scheduled end-to-end success: run [37507785445](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37507785445) (2026-10-06).
+- Morning job workflow exists on GitHub Actions (`schedule: 0 12 * * *` UTC + `workflow_dispatch`, counts-only Telegram notify) but was **disabled by the owner on 2026-10-12** (not daily-active). First scheduled end-to-end success while it was active: run [37507785445](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37507785445) (2026-10-06).
 - Optional GitHub MCP read-only Ask tools (flag off by default; operator-local; not used in CI).
 - Mobile-first UI; at ≥1280 a three-pane desktop shell with a docked Ask rail.
 

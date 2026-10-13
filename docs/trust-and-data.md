@@ -33,6 +33,10 @@ Re-verify provider terms at the source before treating any training/retention se
 - Compact Ask context (ids/labels/short reasons), not full mail dumps by default.
 - HITL approve before any send; recipient allowlist.
 
+## Public CI application logs (CURRENT after public-log hardening)
+
+Allow-list for job/application stderr/stdout in public Actions: **counts, ids, and status/error codes only** — no provider/mail/model free text, no exception messages/tracebacks under `GITHUB_ACTIONS`, host **label** only (not full hostname). Workflow secrets still appear in step `env` blocks as GitHub-masked `***` on the steps that receive them (`db_host`: `DATABASE_URL`; morning job step: the 12 mapped secrets); other steps receive no secrets.
+
 ## Not solved
 
 - Google disconnect deletes credential + cursors and clears the operator cookie; **synced `work_items` / meetings remain** (`disconnect_google` in `src/opspilot/api/v1/oauth_routes.py`).

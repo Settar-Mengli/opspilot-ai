@@ -201,7 +201,7 @@ Master record: [OPSPILOT-MASTER-RECORD.md](OPSPILOT-MASTER-RECORD.md) · Archite
 - **Merged:** PR #44 → `eae1a9a` (merge CI [37263038965](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37263038965) success). Alembic **0010** on `main` / applied on Neon by owner (PART 15). PART 14–17 (branch) + PART 18 (merge closeout).
 - **Workstream M8** — P4 + P11-telegram — **DONE**
   - **Scope:** GHA cron in-runner; morning triage/brief; Telegram notify; schema-head check; fail-closed auth (D-016).
-  - **CURRENT on main:** Sync 202/poll drain; morning_run + Telegram counts-only; C14 schedule `0 12 * * *` + `workflow_dispatch` in `.github/workflows/morning.yml` (workflow **active**). First `event=schedule` e2e success on `main`: run [37507785445](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37507785445) (PART 22).
+  - **CURRENT on main:** Sync 202/poll drain; morning_run + Telegram counts-only; C14 schedule `0 12 * * *` + `workflow_dispatch` in `.github/workflows/morning.yml` (workflow **disabled by owner 2026-10-12**). First `event=schedule` e2e success on `main` while active: run [37507785445](https://github.com/Settar-Mengli/opspilot-ai/actions/runs/37507785445) (PART 22).
   - **Exit criteria (M8):** Cron smoke writes Neon + Telegram; no public BE required; auth-fail path alerts re-auth. **Owner LIVE PASS 2026-10-04** (PART 15) — GHA LLM triage proven (run 37247296563); reauth drill + restore; send count unchanged. Schedule YAML on default branch via merge.
 - **Workstream M9** — P5 lite — **partial**
   - **Scope:** Correction UI; Preference store; promote to eval dataset.
