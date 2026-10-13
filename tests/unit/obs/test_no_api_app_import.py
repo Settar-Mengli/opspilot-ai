@@ -1,4 +1,4 @@
-"""Nothing under jobs/services/llm/obs may import opspilot.api.app (S1 public-log hardening)."""
+"""Nothing under jobs/services/llm/obs/integrations may import opspilot.api.app."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import ast
 from pathlib import Path
 
 _ROOT = Path("src/opspilot")
-_PACKAGES = ("jobs", "services", "llm", "obs")
+_PACKAGES = ("jobs", "services", "llm", "obs", "integrations")
 _FORBIDDEN = "opspilot.api.app"
 
 
@@ -22,7 +22,7 @@ def _collect_import_modules(source: str) -> set[str]:
     return modules
 
 
-def test_jobs_services_llm_obs_do_not_import_api_app() -> None:
+def test_jobs_services_llm_obs_integrations_do_not_import_api_app() -> None:
     violations: list[str] = []
     for pkg in _PACKAGES:
         base = _ROOT / pkg
