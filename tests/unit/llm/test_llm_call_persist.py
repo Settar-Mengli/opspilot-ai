@@ -179,6 +179,7 @@ def test_budget_gateway_writes_prompt_version_and_request_id(
 
 def test_append_llm_jsonl_writes_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("CI", raising=False)
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     monkeypatch.setenv("OPSPILOT_LLM_JSONL", "1")
     path = append_llm_jsonl(
         LlmSpanAttrs(task="ask", provider="fake", model="fake-v1", status="success"),
@@ -187,3 +188,22 @@ def test_append_llm_jsonl_writes_file(tmp_path: Path, monkeypatch: pytest.Monkey
     assert path is not None
     assert path.exists()
     assert "fake" in path.read_text(encoding="utf-8")
+
+
+def test_append_llm_jsonl_ci_skips_disk_no_double_emit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CI", "true")
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv("OPSPILOT_LLM_JSONL", "1")
+    calls: list[object] = []
+
+    def _spy(attrs: object, **_kwargs: object) -> None:
+        calls.append(attrs)
+
+    monkeypatch.setattr("opspilot.obs.tracing.emit_llm_span", _spy)
+    path = append_llm_jsonl(
+        LlmSpanAttrs(task="ask", provider="fake", model="fake-v1", status="success"),
+        directory=tmp_path,
+    )
+    assert path is None
+    assert calls == []
+    assert not any(tmp_path.iterdir())

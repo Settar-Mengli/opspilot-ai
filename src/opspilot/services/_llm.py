@@ -35,6 +35,11 @@ def _resolve_request_id(request_id: str | None) -> str | None:
 
 def _log_llm_failure(task: TaskName, exc: BaseException) -> None:
     code = type(exc).__name__
+    from opspilot.utils.logging_utils import in_github_actions
+
+    if in_github_actions():
+        logger.error("LLM %s failed error_code=%s", task, code)
+        return
     msg = redact_text(str(exc), max_chars=200)
     logger.error("LLM %s failed error_code=%s message=%s", task, code, msg)
 

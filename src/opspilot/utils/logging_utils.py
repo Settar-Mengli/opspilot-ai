@@ -3,8 +3,15 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from typing import Any
+
+
+def in_github_actions() -> bool:
+    """True when running under GitHub Actions (public CI log allow-list)."""
+    return os.environ.get("GITHUB_ACTIONS", "").strip().lower() in {"1", "true", "yes"}
+
 
 _SECRET_KEY_RE = re.compile(
     r"(api[_-]?key|token|password|secret|authorization|credential|refresh[_-]?token)",

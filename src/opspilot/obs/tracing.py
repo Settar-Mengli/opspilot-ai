@@ -32,6 +32,20 @@ class LlmSpanAttrs:
     meta: dict[str, Any] | None = None
 
 
+_GHA_STRIP_META_KEYS = frozenset({"provider_error", "output_head", "validation_error"})
+
+
+def _public_ci_meta(meta: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Drop free-text meta keys in public Actions logs; keep codes/lengths."""
+    from opspilot.utils.logging_utils import in_github_actions
+
+    if not meta:
+        return meta
+    if not in_github_actions():
+        return meta
+    return {k: v for k, v in meta.items() if k not in _GHA_STRIP_META_KEYS}
+
+
 def emit_llm_span(attrs: LlmSpanAttrs, *, extra: dict[str, Any] | None = None) -> None:
     """Emit a structured log span (OTel exporter deferred; JSON attrs for collectors)."""
     payload: dict[str, Any] = {
@@ -51,24 +65,25 @@ def emit_llm_span(attrs: LlmSpanAttrs, *, extra: dict[str, Any] | None = None) -
         payload["opspilot.error_code"] = attrs.error_code
     if attrs.prompt_version:
         payload["opspilot.prompt_version"] = attrs.prompt_version
-    if attrs.meta:
-        payload["opspilot.meta"] = attrs.meta
+    meta = _public_ci_meta(attrs.meta)
+    if meta:
+        payload["opspilot.meta"] = meta
     if extra:
         payload.update(extra)
     logger.info("llm.span %s", json.dumps(payload, sort_keys=True, default=str))
 
 
 def append_llm_jsonl(attrs: LlmSpanAttrs, *, directory: Path | None = None) -> Path | None:
-    """Append one JSONL record under data/llm_traces/ (or stdout path when CI).
+    """Append one JSONL record under data/llm_traces/.
 
-    Returns the file written, or None when JSONL is disabled via OPSPILOT_LLM_JSONL=0.
+    Returns the file written, or None when JSONL is disabled via OPSPILOT_LLM_JSONL=0
+    or when ``CI`` is set (gateway already called ``emit_llm_span`` — no double emit).
     """
     if os.environ.get("OPSPILOT_LLM_JSONL", "1").strip().lower() in {"0", "false", "no", "off"}:
         return None
 
     if os.environ.get("CI", "").strip().lower() in {"1", "true", "yes"}:
-        # CI: keep on stdout via emit_llm_span only; skip disk.
-        emit_llm_span(attrs)
+        # CI: skip disk; caller (gateway) already emitted the span — do not re-emit.
         return None
 
     root = directory or Path(os.environ.get("OPSPILOT_LLM_TRACE_DIR", str(_DEFAULT_TRACE_DIR)))

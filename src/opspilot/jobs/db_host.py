@@ -8,10 +8,12 @@ Usage (from repo root)::
 from __future__ import annotations
 
 from opspilot.config.env_load import load_repo_dotenv
+from opspilot.jobs.logging_setup import configure_public_job_logging
 from opspilot.persistence.db import database_host_label
 
 
 def main() -> int:
+    configure_public_job_logging()
     load_repo_dotenv()
     print(f"database host={database_host_label()}")
     return 0
