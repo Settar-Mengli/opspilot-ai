@@ -149,7 +149,11 @@ class GeminiProvider:
 
         started = time.perf_counter()
         try:
-            response = self._client.post(url, params={"key": self._api_key}, json=body)
+            response = self._client.post(
+                url,
+                headers={"x-goog-api-key": self._api_key},
+                json=body,
+            )
         except httpx.TimeoutException:
             return ProviderResult(
                 status=AttemptStatus.TIMEOUT,

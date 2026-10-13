@@ -2,9 +2,28 @@
 
 from __future__ import annotations
 
+import httpx
 import pytest
 
 from opspilot.jobs import llm_discover
+
+
+def test_probe_gemini_uses_header_not_query_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert "key" not in request.url.params
+        assert "key=" not in str(request.url)
+        assert request.headers.get("x-goog-api-key") == "test-key"
+        return httpx.Response(200, json={"models": []})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    try:
+        result = llm_discover._probe_gemini(client, "test-key")
+    finally:
+        client.close()
+    assert result["status_code"] == 200
+    assert result["reachable"] is True
 
 
 def test_discover_without_keys_skips_http(monkeypatch: pytest.MonkeyPatch) -> None:
